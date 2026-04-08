@@ -62,9 +62,12 @@ abstract class AbstractIMAPTool : Tool {
                 put("mail.imaps.port", port)
             }
         }
+
+        println(">>> " + this::class.java.name + " - " + props)
+
         val session = Session.getDefaultInstance(props)
         val store = session.getStore(protocol)
-        store.connect(host, username, password)
+        store.connect(host, port.toInt(), username, password)
         return store
     }
 

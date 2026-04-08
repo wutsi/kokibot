@@ -44,7 +44,7 @@ class ChatHistory(private val home: File, private val jsonMapper: JsonMapper) {
     }
 
     private fun getFile(): File {
-        val dir = File(File(home, "workspace"), "history")
+        val dir = File(File(home, "workspace"), "memory")
         if (!dir.exists()) {
             dir.mkdirs()
         }

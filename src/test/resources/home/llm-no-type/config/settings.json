@@ -1,0 +1,26 @@
+{
+  "llm": {
+    "api_key": "${DEEPSEEK_API_KEY}",
+    "model": "deepseek-chat"
+  },
+  "channels": [
+    {
+      "type": "telegram",
+      "token": "${TELEGRAM_TOKEN}"
+    }
+  ],
+  "mail": {
+    "smtp": {
+      "host": "smtp.example.com",
+      "port": 587,
+      "username": "foo",
+      "from": "yo.man@gmail.com"
+    },
+    "imap": {
+      "host": "imap.example.com",
+      "port": 993,
+      "username": "foo",
+      "password": "bar"
+    }
+  }
+}

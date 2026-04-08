@@ -1,0 +1,39 @@
+package com.wutsi.kokibot.tools.web
+
+import com.wutsi.kokibot.tools.ToolParameterType
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import kotlin.test.assertEquals
+
+class WebSearchToolTest {
+    val tool = WebSearchTool()
+
+    @Test
+    fun metadata() {
+        val meta = tool.metadata()
+        assertEquals(WebSearchTool.NAME, meta.name)
+        assertEquals(1, meta.parameters.size)
+        assertEquals("query", meta.parameters[0].name)
+        assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
+        assertTrue(meta.parameters[0].required)
+    }
+
+    @Test
+    fun exec() {
+        val args = mapOf("query" to "Capitale de la France")
+        val result = tool.exec(args)
+        assertTrue(result.contains("Result #1"))
+        assertTrue(result.contains("Paris"))
+    }
+
+    @Test
+    fun `exec - empty command`() {
+        assertThrows<IllegalArgumentException> { tool.exec(mapOf("query" to "")) }
+    }
+
+    @Test
+    fun `exec - no command`() {
+        assertThrows<IllegalArgumentException> { tool.exec(emptyMap<String, String>()) }
+    }
+}

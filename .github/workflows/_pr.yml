@@ -4,8 +4,6 @@ on:
     push:
         branches:
             - pr
-        paths:
-            - '!**/*.md'
 
 jobs:
     build:

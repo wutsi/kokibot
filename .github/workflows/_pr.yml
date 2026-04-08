@@ -5,9 +5,7 @@ on:
         branches:
             - pr
         paths:
-            - 'pom.xml'
-            - 'settings.xml'
-            - '.github/workflows/_pr.yml'
+            - '!**/*.md'
 
 jobs:
     build:

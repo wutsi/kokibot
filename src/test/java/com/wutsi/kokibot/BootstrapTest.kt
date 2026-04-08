@@ -53,7 +53,7 @@ class BootstrapTest {
         assertEquals(channel, bootstrap.channels[0])
         verify(channel).init(any())
         verify(llm).init(any(), eq(toolRegistry))
-        verify(toolRegistry, times(12)).register(any())
+        verify(toolRegistry, times(10)).register(any())
     }
 
     @Test

@@ -25,7 +25,7 @@ jobs:
                     TELEGRAM_CHATBOT: ${{secrets.TELEGRAM_CHATBOT}}
                 run: |
                     mvn validate
-                    mvn package
+                    mvn install
 
             -   name: Upload app bundle
                 uses: actions/upload-artifact@v6

@@ -9,8 +9,6 @@ import com.wutsi.kokibot.memory.ChatHistory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.tools.date.ClockTool
-import com.wutsi.kokibot.tools.filesystem.FSRead
-import com.wutsi.kokibot.tools.filesystem.FSWrite
 import com.wutsi.kokibot.tools.mail.MailFindTool
 import com.wutsi.kokibot.tools.mail.MailListTool
 import com.wutsi.kokibot.tools.mail.MailReadTool
@@ -135,10 +133,6 @@ class Bootstrap(
         return listOf(
             /* date */
             ClockTool(),
-
-            /* File system */
-            FSRead(),
-            FSWrite(),
 
             /* Mail */
             MailListTool(),

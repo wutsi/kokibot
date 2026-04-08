@@ -29,5 +29,5 @@ jobs:
                     TELEGRAM_TOKEN: ${{secrets.TELEGRAM_TOKEN_TEST}}
                     TELEGRAM_CHATBOT: ${{secrets.TELEGRAM_CHATBOT_TEST}}
                 run: |
-                    mvn -s settings.xml validate
+                    mvn validate
                     mvn package

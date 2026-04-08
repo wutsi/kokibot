@@ -24,10 +24,9 @@ jobs:
 
             -   name: Build
                 env:
-                    DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY_TEST}}
-                    KIMI_API_KEY: ${{secrets.KIMI_API_KEY_TEST}}
-                    TELEGRAM_TOKEN: ${{secrets.TELEGRAM_TOKEN_TEST}}
-                    TELEGRAM_CHATBOT: ${{secrets.TELEGRAM_CHATBOT_TEST}}
+                    DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY}}
+                    TELEGRAM_TOKEN: ${{secrets.TELEGRAM_TOKEN}}
+                    TELEGRAM_CHATBOT: ${{secrets.TELEGRAM_CHATBOT}}
                 run: |
                     mvn validate
                     mvn package

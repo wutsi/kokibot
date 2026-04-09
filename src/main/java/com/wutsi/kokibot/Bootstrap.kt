@@ -1,23 +1,6 @@
 package com.wutsi.kokibot
 
-import com.wutsi.kokibot.channel.ChannelFactory
-import com.wutsi.kokibot.exception.ConfigurationException
-import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.llm.LLMFactory
-import com.wutsi.kokibot.memory.ChatHistory
-import com.wutsi.kokibot.memory.Memory
-import com.wutsi.kokibot.tools.Tool
-import com.wutsi.kokibot.tools.ToolRegistry
-import com.wutsi.kokibot.tools.date.ClockTool
-import com.wutsi.kokibot.tools.mail.MailFindTool
-import com.wutsi.kokibot.tools.mail.MailListTool
-import com.wutsi.kokibot.tools.mail.MailReadTool
-import com.wutsi.kokibot.tools.mail.MailSendTool
-import com.wutsi.kokibot.tools.mail.MailUnsubscribeTool
-import com.wutsi.kokibot.tools.python.PythonTool
-import com.wutsi.kokibot.tools.shell.ShellTool
-import com.wutsi.kokibot.tools.web.WebFetchTool
-import com.wutsi.kokibot.tools.web.WebSearchTool
+import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.util.MapUtil
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
@@ -28,17 +11,15 @@ import java.io.File
 
 @Service
 class Bootstrap(
-    val channelFactory: ChannelFactory = ChannelFactory(),
-    val llmFactory: LLMFactory = LLMFactory(),
-    val toolRegistry: ToolRegistry = ToolRegistry(),
-    val jsonMapper: JsonMapper
+    val contextFactory: ContextFactory,
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Bootstrap::class.java)
     }
 
-    internal lateinit var context: Context
-    internal lateinit var assistant: Assistant
+    private lateinit var context: Context
+    private lateinit var assistant: Assistant
+    private lateinit var channels: MutableList<Channel>
 
     @PostConstruct
     fun init() {
@@ -48,129 +29,21 @@ class Bootstrap(
 
     @PreDestroy
     fun destroy() {
-        context.channels.forEach { channel -> channel.destroy() }
-        toolRegistry.tools.values.forEach { tool -> tool.destroy() }
-        context.llm.destroy()
-        context.chatHistory.destroy()
-        context.memory.destroy()
         assistant.destroy()
+        context.destroy()
+        channels.forEach { channel -> channel.destroy() }
     }
 
     internal fun init(home: File) {
         LOGGER.info("Initializing form $home")
 
         val config = loadConfig(File(getConfigDir(home), "settings.json"))
+        this.context = contextFactory.create(home, config)
         this.assistant = Assistant()
-        this.context = Context(
-            home = home,
-            llm = createLLM(config),
-            toolRegistry = toolRegistry,
-            chatHistory = ChatHistory(),
-            memory = Memory(),
-            config = config,
-            channels = mutableListOf(),
-            jsonMapper = jsonMapper,
-        )
+        this.channels = mutableListOf()
 
-        initLLM(config, context)
-        initMemory(home, config)
-        initAssistant(config, context)
-        initChannels(assistant, config)
-        initTools(home, context)
-    }
-
-    private fun initAssistant(config: Map<*, *>, context: Context) {
-        val root = MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>()
-        assistant.init(root, context)
-    }
-
-    private fun initChannels(agent: Assistant, config: Map<*, *>) {
-        val root = MapUtil.toList("channels", config)
-        root?.forEach { node ->
-            if (node is Map<*, *>) {
-                initChannel(agent, node)
-            }
-        }
-    }
-
-    private fun initChannel(agent: Assistant, config: Map<*, *>) {
-        val type = config["type"]?.toString()
-            ?: throw ConfigurationException("channel type is required")
-
-        LOGGER.info("Channel: $type")
-        val channel = channelFactory.create(type, agent)
-        channel.init(config)
-        context.channels.add(channel)
-    }
-
-    private fun createLLM(config: Map<*, *>): LLM {
-        val root = MapUtil.toMap("llm", config)
-            ?: throw ConfigurationException("LLM has invalid structure or missing")
-
-        val type = root["type"]?.toString()
-            ?: throw ConfigurationException("LLM type is required")
-
-        LOGGER.info("LLM: $type")
-        return llmFactory.create(type)
-    }
-
-    private fun initLLM(config: Map<*, *>, context: Context) {
-        val root = MapUtil.toMap("llm", config)
-            ?: throw ConfigurationException("LLM has invalid structure or missing")
-
-        context.llm.init(root, context)
-    }
-
-    private fun initMemory(home: File, config: Map<*, *>) {
-        val root = MapUtil.toMap("memory", config)
-            ?: emptyMap<String, Any>()
-
-        context.chatHistory.init(root, context)
-        context.memory.init(config, context)
-    }
-
-    private fun initTools(home: File, context: Context) {
-        val tools = discoverTools()
-        tools.forEach { tool ->
-            LOGGER.info("Tool: ${tool.metadata().name}")
-            initTool(home, tool, context)
-            toolRegistry.register(tool)
-        }
-    }
-
-    private fun initTool(home: File, tool: Tool, context: Context) {
-        val dir = File(getConfigDir(home), "tools")
-        val file = File(dir, tool.metadata().name + ".json")
-        if (file.exists()) {
-            val config = loadConfig(file)
-            tool.init(config, context)
-        } else {
-            tool.init(emptyMap<String, Any>(), context)
-        }
-    }
-
-    private fun discoverTools(): List<Tool> {
-        return listOf(
-            /* date */
-            ClockTool(),
-
-            /* Mail */
-            MailListTool(),
-            MailReadTool(),
-            MailSendTool(),
-            MailFindTool(),
-            MailUnsubscribeTool(),
-
-            /* Python */
-            PythonTool(),
-
-            // Shell
-            ShellTool(),
-
-            /* Web */
-            WebSearchTool(),
-            WebFetchTool(),
-        )
+        context.init(assistant, config)
+        assistant.init(config, context)
     }
 
     private fun loadConfig(file: File): Map<*, *> {

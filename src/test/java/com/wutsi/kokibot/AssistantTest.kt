@@ -32,7 +32,14 @@ class AssistantTest {
     private val toolRegistry = mock<ToolRegistry>()
     private val chatHistory = mock<ChatHistory>()
     private val memory = mock<Memory>()
-    private val context = Context(home, llm, toolRegistry, chatHistory, memory, emptyMap<String, String>())
+    private val context = Context(
+        home = home,
+        llm = llm,
+        toolRegistry = toolRegistry,
+        chatHistory = chatHistory,
+        memory = memory,
+        config = emptyMap<String, String>(),
+    )
     private val assistant: Assistant = Assistant()
 
     @BeforeEach
@@ -92,7 +99,14 @@ class AssistantTest {
         // GIVEN
         assistant.init(
             emptyMap<Any, Any>(),
-            context.copy(home = getResourceFile("/home/no-system-instruction"))
+            context = Context(
+                home = getResourceFile("/home/no-system-instruction"),
+                llm = llm,
+                toolRegistry = toolRegistry,
+                chatHistory = chatHistory,
+                memory = memory,
+
+                )
         )
 
         doReturn(

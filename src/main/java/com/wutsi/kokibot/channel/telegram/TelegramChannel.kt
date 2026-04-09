@@ -22,9 +22,9 @@ import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.generics.TelegramClient
 
 class TelegramChannel(
-    agent: Assistant,
+    assistant: Assistant,
     val factory: TelegramFactory = TelegramFactory(),
-) : Channel(agent), LongPollingSingleThreadUpdateConsumer {
+) : Channel(assistant), LongPollingSingleThreadUpdateConsumer {
     companion object {
         const val TYPING_DELAY = 2000L
     }
@@ -65,7 +65,7 @@ class TelegramChannel(
 
             /* Process message */
             val message = try {
-                agent.process(
+                assistant.process(
                     Message(
                         text = update.message.text,
                         role = Role.USER,

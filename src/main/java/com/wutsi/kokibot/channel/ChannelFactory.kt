@@ -3,11 +3,13 @@ package com.wutsi.kokibot.channel
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.channel.telegram.TelegramChannel
 import com.wutsi.kokibot.exception.ConfigurationException
+import org.springframework.stereotype.Service
 
+@Service
 class ChannelFactory {
-    fun create(type: String, agent: Assistant): Channel {
+    fun create(type: String, assistant: Assistant): Channel {
         return when (type) {
-            "telegram" -> TelegramChannel(agent)
+            "telegram" -> TelegramChannel(assistant)
             else -> throw ConfigurationException("Unsupported channel type: $type")
         }
     }

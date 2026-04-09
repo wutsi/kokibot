@@ -73,7 +73,7 @@ class DeepseekClient(
                     )
                 }
             ),
-            "tools" to toolRegistry.tools.values.map { tool ->
+            "tools" to toolRegistry.all().map { tool ->
                 val meta = tool.metadata()
                 mapOf(
                     "type" to "function",

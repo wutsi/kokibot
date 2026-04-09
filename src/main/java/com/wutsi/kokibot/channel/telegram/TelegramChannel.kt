@@ -25,6 +25,10 @@ class TelegramChannel(
     agent: Assistant,
     val factory: TelegramFactory = TelegramFactory(),
 ) : Channel(agent), LongPollingSingleThreadUpdateConsumer {
+    companion object {
+        const val TYPING_DELAY = 2000L
+    }
+
     private lateinit var app: TelegramBotsLongPollingApplication
     private lateinit var client: TelegramClient
     private var botToken: String? = null
@@ -55,7 +59,7 @@ class TelegramChannel(
                 while (true) {
                     ensureActive()
                     typing(chatId)
-                    delay(2000)
+                    delay(TYPING_DELAY)
                 }
             }
 

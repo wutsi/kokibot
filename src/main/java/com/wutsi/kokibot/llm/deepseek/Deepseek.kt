@@ -1,16 +1,16 @@
 package com.wutsi.kokibot.llm.deepseek
 
+import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
-import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.util.MapUtil
 
 class Deepseek : LLM {
     internal lateinit var client: DeepseekClient
 
-    override fun init(config: Map<*, *>, toolRegistry: ToolRegistry) {
+    override fun init(config: Map<*, *>, context: Context) {
         val apiKey = config["api_key"] as String? ?: throw ConfigurationException("api_key is required")
         val model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
@@ -22,7 +22,7 @@ class Deepseek : LLM {
             temperature = MapUtil.toDouble("temperature", config),
             readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config),
             connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config),
-            toolRegistry = toolRegistry,
+            toolRegistry = context.toolRegistry,
         )
     }
 

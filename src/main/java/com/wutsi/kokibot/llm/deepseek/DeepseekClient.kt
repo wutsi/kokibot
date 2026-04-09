@@ -96,6 +96,8 @@ class DeepseekClient(
                     ).filter { entry -> entry.value != null }
                 )
             }.ifEmpty { null },
+
+            "parallel_tool_calls" to true
         )
     }
 
@@ -129,7 +131,7 @@ class DeepseekClient(
                                 }
                             } ?: emptyMap<String, Any>()
                         )
-                    } ?: emptyList()
+                    } ?: emptyList(),
                 )
             }
         )

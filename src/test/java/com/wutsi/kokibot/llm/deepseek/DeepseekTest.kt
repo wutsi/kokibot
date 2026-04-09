@@ -2,7 +2,9 @@ package com.wutsi.kokibot.llm.deepseek
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.ConfigurationException
+import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.tools.Tool
@@ -13,6 +15,7 @@ import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
+import java.io.File
 import kotlin.test.assertEquals
 
 class DeepseekTest {
@@ -28,10 +31,16 @@ class DeepseekTest {
         "connect-timeout-millis" to 10000,
         "tools" to listOf("date_tool_now", "web_tool_search", "web_tool_fetch"),
     )
+    private val context = Context(
+        home = File("/target"),
+        toolRegistry = toolRegistry,
+        llm = mock<LLM>(),
+        config = config,
+    )
 
     @Test
     fun init() {
-        deepseek.init(config, toolRegistry)
+        deepseek.init(config, context)
 
         assertEquals("ds-000001", deepseek.client.apiKey)
         assertEquals("deepseek-chat", deepseek.client.model)
@@ -47,7 +56,7 @@ class DeepseekTest {
         val config = mapOf(
             "model" to "deepseek-chat",
         )
-        assertThrows<ConfigurationException> { deepseek.init(config, toolRegistry) }
+        assertThrows<ConfigurationException> { deepseek.init(config, context) }
     }
 
     @Test
@@ -55,7 +64,7 @@ class DeepseekTest {
         val config = mapOf(
             "api_key" to "ds-000001",
         )
-        assertThrows<ConfigurationException> { deepseek.init(config, toolRegistry) }
+        assertThrows<ConfigurationException> { deepseek.init(config, context) }
     }
 
     @Test
@@ -64,7 +73,7 @@ class DeepseekTest {
             "api_key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-chat",
         )
-        deepseek.init(config, toolRegistry)
+        deepseek.init(config, context)
 
         val response = deepseek.completion(
             request = LLMRequest(prompt = "What is the capital of France?")
@@ -101,7 +110,7 @@ class DeepseekTest {
             "model" to "deepseek-chat",
             "tools" to listOf("date_tool_now"),
         )
-        deepseek.init(config, toolRegistry)
+        deepseek.init(config, context)
 
         val response = deepseek.completion(
             request = LLMRequest(prompt = "What time is it?")

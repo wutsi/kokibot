@@ -14,6 +14,7 @@ import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.memory.ChatHistory
+import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolRegistry
@@ -30,7 +31,8 @@ class AssistantTest {
     private val llm = mock<LLM>()
     private val toolRegistry = mock<ToolRegistry>()
     private val chatHistory = mock<ChatHistory>()
-    private val context = Context(home, llm, toolRegistry, chatHistory, emptyMap<String, String>())
+    private val memory = mock<Memory>()
+    private val context = Context(home, llm, toolRegistry, chatHistory, memory, emptyMap<String, String>())
     private val assistant: Assistant = Assistant()
 
     @BeforeEach
@@ -82,7 +84,7 @@ class AssistantTest {
             req.firstValue.systemInstructions
         )
 
-        verify(chatHistory).save(prompt, result)
+        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -121,7 +123,7 @@ class AssistantTest {
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
         assertEquals(null, req.firstValue.systemInstructions)
 
-        verify(chatHistory).save(prompt, result)
+        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -143,7 +145,7 @@ class AssistantTest {
 
         val history =
             "[{\"text\":\"Hello\",\"role\":\"USER\",\"finishReason\":\"DONE\",\"exception\":null,\"dateTime\":\"2024-06-01T10:00:00\"}]"
-        doReturn(history).whenever(chatHistory).loadJson()
+        doReturn(history).whenever(chatHistory).get()
 
         // WHEN
         val prompt = Message("Yo", Role.USER)
@@ -159,7 +161,7 @@ class AssistantTest {
         assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
         assertEquals(true, req.firstValue.prompt.contains(history))
 
-        verify(chatHistory).save(prompt, result)
+        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -207,7 +209,7 @@ class AssistantTest {
 
         verify(llm, times(2)).completion(any())
 
-        verify(chatHistory).save(prompt, result)
+        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -255,7 +257,7 @@ class AssistantTest {
         assertEquals(Role.ASSISTANT, result.role)
         assertEquals(FinishReason.FAILURE, result.finishReason)
 
-        verify(chatHistory).save(prompt, result)
+        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -303,7 +305,7 @@ class AssistantTest {
         assertEquals(Role.ASSISTANT, result.role)
         assertEquals(FinishReason.FAILURE, result.finishReason)
 
-        verify(chatHistory).save(prompt, result)
+        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -341,7 +343,7 @@ class AssistantTest {
 
         verify(llm, times(4)).completion(any())
 
-        verify(chatHistory).save(prompt, result)
+        verify(chatHistory).append(prompt, result)
     }
 
     private fun getResourceFile(path: String): File {

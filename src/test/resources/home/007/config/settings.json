@@ -18,6 +18,9 @@
       "token": "${TELEGRAM_TOKEN}"
     }
   ],
+  "memory": {
+    "window": 5
+  },
   "mail": {
     "smtp": {
       "host": "smtp.example.com",

@@ -6,6 +6,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.memory.ChatHistory
+import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.tools.ToolRegistry
 import jakarta.mail.Message.RecipientType
@@ -108,13 +109,53 @@ class MailSendToolTest : AbstractSMTPToolTest() {
         assertEquals(messageID, messages[0].getHeader("References")?.get(0))
     }
 
+    @Test
+    fun `exec - missing required argument - to`() {
+        assertThrows<IllegalArgumentException> {
+            tool.exec(
+                mapOf(
+                    "from_name" to "Roger Milla",
+                    "subject" to "Hello",
+                    "body" to "World...",
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `exec - missing required argument - subject`() {
+        assertThrows<IllegalArgumentException> {
+            tool.exec(
+                mapOf(
+                    "from_name" to "Roger Milla",
+                    "to" to "ray.sponsible@gmail.com",
+                    "body" to "World...",
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `exec - missing required argument - body`() {
+        assertThrows<IllegalArgumentException> {
+            tool.exec(
+                mapOf(
+                    "from_name" to "Roger Milla",
+                    "to" to "ray.sponsible@gmail.com",
+                    "subject" to "Hello",
+                )
+            )
+        }
+    }
+
     private fun createContext(config: Map<*, *>): Context {
         return Context(
             home = File("target/test-data/" + this::class.java.simpleName),
             llm = mock<LLM>(),
             toolRegistry = mock<ToolRegistry>(),
             chatHistory = mock<ChatHistory>(),
-            config = emptyMap<String, Any>()
+            memory = mock<Memory>(),
+            config = config
         )
     }
 

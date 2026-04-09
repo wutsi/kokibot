@@ -7,7 +7,6 @@ import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 class ShellTool : Tool {
@@ -19,9 +18,8 @@ class ShellTool : Tool {
         const val TIMEOUT = 5
     }
 
-    private lateinit var root: File
     private var timeout: Int = TIMEOUT
-    val forbiddenPatterns = listOf(
+    private val forbiddenPatterns = listOf(
         "sudo",
         "rm -rf",
         "chmod",
@@ -31,14 +29,6 @@ class ShellTool : Tool {
 
     override fun init(config: Map<*, *>, context: Context) {
         timeout = MapUtil.toInt("timeout", config) ?: TIMEOUT
-
-        val rootPath = config["root-directory"]?.toString()?.ifEmpty { null }
-            ?: File(context.home, "workspace").absolutePath
-        root = File(rootPath)
-        LOGGER.info("Shell working directory: ${root.absolutePath}")
-        if (!root.exists()) {
-            root.mkdirs()
-        }
     }
 
     override fun metadata(): ToolMetadata = ToolMetadata(
@@ -72,7 +62,6 @@ class ShellTool : Tool {
         }
 
         val process = ProcessBuilder("sh", "-c", command)
-            .directory(root)
             .start()
 
         val finished = process.waitFor(10, TimeUnit.SECONDS)

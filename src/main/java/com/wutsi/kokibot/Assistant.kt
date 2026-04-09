@@ -42,7 +42,7 @@ class Assistant {
         if (LOGGER.isDebugEnabled) {
             LOGGER.debug("answer: ${response.text}")
         }
-        context.chatHistory.save(prompt, response)
+        context.chatHistory.append(prompt, response)
         return response
     }
 
@@ -122,15 +122,18 @@ class Assistant {
             memory.forEach { line -> sb.append("$line\n\n") }
         }
 
-        val json = context.chatHistory.loadJson()
+        val json = context.chatHistory.get()
         if (json != null) {
             sb.append("\n\n# Conversation history\n")
-            sb.append(
-                """
-                    Here is the conversation history between you and the user in JSON format.
-                """.trimIndent()
-            )
+            sb.append("Here is the conversation history between you and the user in JSON format:\n")
             sb.append("```json\n$json\n```\n")
+        }
+
+        val memory = context.memory.get()
+        if (memory != null) {
+            sb.append("\n\n# Long-Term Memory\n")
+            sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
+            sb.append("```markdown\n$memory\n```\n")
         }
         return sb.toString()
     }

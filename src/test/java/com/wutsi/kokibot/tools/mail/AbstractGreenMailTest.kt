@@ -45,7 +45,7 @@ abstract class AbstractGreenMailTest {
     ): MimeMessage {
         val message = createMimeMessage(from, subject, markAsRead)
         if (unsubscribeUrl != null) {
-            message.addHeader("List-Unsubscribe", "<$unsubscribeUrl>")
+            message.addHeader("List-Unsubscribe", "<yo@gmail.com><$unsubscribeUrl>")
         }
         message.setText(body)
         return deliver(message)

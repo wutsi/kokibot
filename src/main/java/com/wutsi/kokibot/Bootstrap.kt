@@ -1,11 +1,11 @@
 package com.wutsi.kokibot
 
-import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.channel.ChannelFactory
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.memory.ChatHistory
+import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.tools.date.ClockTool
@@ -37,8 +37,8 @@ class Bootstrap(
         private val LOGGER = LoggerFactory.getLogger(Bootstrap::class.java)
     }
 
-    lateinit var assistant: Assistant
-    internal val channels = mutableListOf<Channel>()
+    internal lateinit var context: Context
+    internal lateinit var assistant: Assistant
 
     @PostConstruct
     fun init() {
@@ -48,8 +48,11 @@ class Bootstrap(
 
     @PreDestroy
     fun destroy() {
-        channels.forEach { channel -> channel.destroy() }
+        context.channels.forEach { channel -> channel.destroy() }
         toolRegistry.tools.values.forEach { tool -> tool.destroy() }
+        context.llm.destroy()
+        context.chatHistory.destroy()
+        context.memory.destroy()
         assistant.destroy()
     }
 
@@ -57,46 +60,50 @@ class Bootstrap(
         LOGGER.info("Initializing form $home")
 
         val config = loadConfig(File(getConfigDir(home), "settings.json"))
-        val context = Context(
+        this.assistant = Assistant()
+        this.context = Context(
             home = home,
-            llm = setupLLM(config),
+            llm = createLLM(config),
             toolRegistry = toolRegistry,
-            chatHistory = ChatHistory(home, jsonMapper),
+            chatHistory = ChatHistory(),
+            memory = Memory(),
             config = config,
+            channels = mutableListOf(),
+            jsonMapper = jsonMapper,
         )
 
-        assistant = setupAssistant(config, context)
-        setupChannels(assistant, config)
-        setupTools(home, context)
+        initLLM(config, context)
+        initMemory(home, config)
+        initAssistant(config, context)
+        initChannels(assistant, config)
+        initTools(home, context)
     }
 
-    private fun setupAssistant(config: Map<*, *>, context: Context): Assistant {
-        val assistant = Assistant()
+    private fun initAssistant(config: Map<*, *>, context: Context) {
         val root = MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>()
         assistant.init(root, context)
-        return assistant
     }
 
-    private fun setupChannels(agent: Assistant, config: Map<*, *>) {
+    private fun initChannels(agent: Assistant, config: Map<*, *>) {
         val root = MapUtil.toList("channels", config)
         root?.forEach { node ->
             if (node is Map<*, *>) {
-                setupChannel(agent, node)
+                initChannel(agent, node)
             }
         }
     }
 
-    private fun setupChannel(agent: Assistant, config: Map<*, *>) {
+    private fun initChannel(agent: Assistant, config: Map<*, *>) {
         val type = config["type"]?.toString()
             ?: throw ConfigurationException("channel type is required")
 
         LOGGER.info("Channel: $type")
         val channel = channelFactory.create(type, agent)
         channel.init(config)
-        channels.add(channel)
+        context.channels.add(channel)
     }
 
-    private fun setupLLM(config: Map<*, *>): LLM {
+    private fun createLLM(config: Map<*, *>): LLM {
         val root = MapUtil.toMap("llm", config)
             ?: throw ConfigurationException("LLM has invalid structure or missing")
 
@@ -104,21 +111,34 @@ class Bootstrap(
             ?: throw ConfigurationException("LLM type is required")
 
         LOGGER.info("LLM: $type")
-        val llm = llmFactory.create(type)
-        llm.init(root, toolRegistry)
-        return llm
+        return llmFactory.create(type)
     }
 
-    private fun setupTools(home: File, context: Context) {
+    private fun initLLM(config: Map<*, *>, context: Context) {
+        val root = MapUtil.toMap("llm", config)
+            ?: throw ConfigurationException("LLM has invalid structure or missing")
+
+        context.llm.init(root, context)
+    }
+
+    private fun initMemory(home: File, config: Map<*, *>) {
+        val root = MapUtil.toMap("memory", config)
+            ?: emptyMap<String, Any>()
+
+        context.chatHistory.init(root, context)
+        context.memory.init(config, context)
+    }
+
+    private fun initTools(home: File, context: Context) {
         val tools = discoverTools()
         tools.forEach { tool ->
             LOGGER.info("Tool: ${tool.metadata().name}")
-            setupTool(home, tool, context)
+            initTool(home, tool, context)
             toolRegistry.register(tool)
         }
     }
 
-    private fun setupTool(home: File, tool: Tool, context: Context) {
+    private fun initTool(home: File, tool: Tool, context: Context) {
         val dir = File(getConfigDir(home), "tools")
         val file = File(dir, tool.metadata().name + ".json")
         if (file.exists()) {

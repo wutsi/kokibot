@@ -5,6 +5,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.memory.ChatHistory
+import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.ToolRegistry
 import java.io.File
 
@@ -15,6 +16,7 @@ abstract class AbstractSMTPToolTest : AbstractGreenMailTest() {
         llm = mock<LLM>(),
         toolRegistry = mock<ToolRegistry>(),
         chatHistory = mock<ChatHistory>(),
+        memory = mock<Memory>(),
         config = smtpConfig()
     )
 

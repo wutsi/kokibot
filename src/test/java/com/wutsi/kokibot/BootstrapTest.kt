@@ -2,7 +2,6 @@ package com.wutsi.kokibot
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -49,17 +48,20 @@ class BootstrapTest {
         val home = getResourceFile("/home/007")
         bootstrap.init(home)
 
-        assertEquals(1, bootstrap.channels.size)
-        assertEquals(channel, bootstrap.channels[0])
+        assertEquals(1, bootstrap.context.channels.size)
+        assertEquals(channel, bootstrap.context.channels[0])
+
         verify(channel).init(any())
-        verify(llm).init(any(), eq(toolRegistry))
+
+        verify(llm).init(any(), any())
+
         verify(toolRegistry, times(10)).register(any())
     }
 
     @Test
     fun `channel - none`() {
         bootstrap.init(getResourceFile("/home/channel-none"))
-        assertEquals(0, bootstrap.channels.size)
+        assertEquals(0, bootstrap.context.channels.size)
     }
 
     @Test

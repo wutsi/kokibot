@@ -6,6 +6,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.memory.ChatHistory
+import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.BeforeEach
@@ -51,6 +52,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
             llm = mock<LLM>(),
             toolRegistry = mock<ToolRegistry>(),
             chatHistory = mock<ChatHistory>(),
+            memory = mock<Memory>(),
             config = imapsConfig()
         )
 
@@ -64,6 +66,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
             llm = mock<LLM>(),
             toolRegistry = mock<ToolRegistry>(),
             chatHistory = mock<ChatHistory>(),
+            memory = mock<Memory>(),
             config = mapOf(
                 "x" to mapOf(
                     "imap" to mapOf(
@@ -81,11 +84,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
     @Test
     fun `init - no imap`() {
-        val ctx = Context(
-            home = File("target/test-data/mail-list-tool"),
-            llm = mock<LLM>(),
-            toolRegistry = mock<ToolRegistry>(),
-            chatHistory = mock<ChatHistory>(),
+        val ctx = buildContext(
             config = mapOf(
                 "mail" to mapOf(
                     "imap" to 123
@@ -98,11 +97,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
     @Test
     fun `init - no host`() {
-        val ctx = Context(
-            home = File("target/test-data/mail-list-tool"),
-            llm = mock<LLM>(),
-            toolRegistry = mock<ToolRegistry>(),
-            chatHistory = mock<ChatHistory>(),
+        val ctx = buildContext(
             config = mapOf(
                 "mail" to mapOf(
                     "imap" to mapOf(
@@ -119,11 +114,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
     @Test
     fun `init - no port`() {
-        val ctx = Context(
-            home = File("target/test-data/mail-list-tool"),
-            llm = mock<LLM>(),
-            toolRegistry = mock<ToolRegistry>(),
-            chatHistory = mock<ChatHistory>(),
+        val ctx = buildContext(
             config = mapOf(
                 "mail" to mapOf(
                     "imap" to mapOf(
@@ -140,11 +131,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
     @Test
     fun `init - no username`() {
-        val ctx = Context(
-            home = File("target/test-data/mail-list-tool"),
-            llm = mock<LLM>(),
-            toolRegistry = mock<ToolRegistry>(),
-            chatHistory = mock<ChatHistory>(),
+        val ctx = buildContext(
             config = mapOf(
                 "mail" to mapOf(
                     "imap" to mapOf(
@@ -161,11 +148,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
     @Test
     fun `init - no password`() {
-        val ctx = Context(
-            home = File("target/test-data/mail-list-tool"),
-            llm = mock<LLM>(),
-            toolRegistry = mock<ToolRegistry>(),
-            chatHistory = mock<ChatHistory>(),
+        val ctx = buildContext(
             config = mapOf(
                 "mail" to mapOf(
                     "imap" to mapOf(
@@ -327,5 +310,16 @@ class MailListToolTest : AbstractIMAPToolTest() {
     fun `earliest missing value`() {
         val value = tool.earliestValue("")
         assertEquals(86400000L, value)
+    }
+
+    private fun buildContext(config: Map<*, *>): Context {
+        return Context(
+            home = File("target/test-data/mail-list-tool"),
+            llm = mock<LLM>(),
+            toolRegistry = mock<ToolRegistry>(),
+            chatHistory = mock<ChatHistory>(),
+            memory = mock<Memory>(),
+            config = config
+        )
     }
 }

@@ -1,32 +1,13 @@
 package com.wutsi.kokibot.tools.shell
 
-import com.nhaarman.mockitokotlin2.mock
-import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.memory.ChatHistory
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.ToolRegistry
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ShellToolTest {
     private val tool = ShellTool()
-    private val context = Context(
-        home = File("target/test-data/" + this::class.java.simpleName),
-        llm = mock<LLM>(),
-        toolRegistry = mock<ToolRegistry>(),
-        chatHistory = mock<ChatHistory>(),
-        config = emptyMap<String, String>()
-    )
-
-    @BeforeEach
-    fun setUp() {
-        tool.init(mapOf("root-directory" to File("target").absolutePath), context)
-    }
 
     @Test
     fun metadata() {

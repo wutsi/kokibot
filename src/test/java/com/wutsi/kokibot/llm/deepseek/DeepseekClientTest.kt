@@ -112,11 +112,12 @@ class DeepseekClientTest {
         assertEquals("Bearer $API_KEY", req.firstValue.headers["Authorization"]?.firstOrNull())
 
         val body = req.firstValue.body as Map<*, *>
-        assertEquals(5, body.size)
+        assertEquals(6, body.size)
         assertEquals(MODEL, body["model"])
         assertEquals("enabled", body["thinking"])
         assertEquals(2048, body["max_tokens"])
         assertEquals(1.0, body["temperature"])
+        assertEquals(true, body["parallel_tool_calls"])
         assertEquals(
             listOf(
                 mapOf(
@@ -156,8 +157,9 @@ class DeepseekClientTest {
         assertEquals("Bearer $API_KEY", req.firstValue.headers["Authorization"]?.firstOrNull())
 
         val body = req.firstValue.body as Map<*, *>
-        assertEquals(2, body.size)
+        assertEquals(3, body.size)
         assertEquals(MODEL, body["model"])
+        assertEquals(true, body["parallel_tool_calls"])
         assertEquals(
             listOf(
                 mapOf(

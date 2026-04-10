@@ -43,7 +43,10 @@ class Bootstrap(
         this.channels = mutableListOf()
 
         context.init(assistant, config)
-        assistant.init(config, context)
+        assistant.init(
+            MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>(),
+            context,
+        )
     }
 
     private fun loadConfig(file: File): Map<*, *> {

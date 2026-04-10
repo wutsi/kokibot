@@ -1,6 +1,7 @@
 package com.wutsi.kokibot
 
 import com.wutsi.kokibot.command.Command
+import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.exception.CommandNotFoundException
 import com.wutsi.kokibot.exception.TooManyIterationException
 import com.wutsi.kokibot.llm.LLMRequest
@@ -131,11 +132,20 @@ class Assistant {
             return null
         }
 
+        val name = text.split(" ")[0]
         try {
-            val name = text.split(" ")[0]
             return context.commandRegistry.get(name)
         } catch (ex: CommandNotFoundException) {
-            return null
+            LOGGER.warn("Command not found: $name", ex)
+            return object : Command {
+                override fun metadata(): CommandMetadata {
+                    return CommandMetadata(name = "")
+                }
+
+                override fun exec(input: String, context: Context): String {
+                    return "Invalid command: $name.\nUse /help to get the list of available commands."
+                }
+            }
         }
     }
 

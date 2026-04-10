@@ -14,7 +14,16 @@ class ClearCommand : Command {
     }
 
     override fun exec(input: String, context: Context): String {
-        context.chatHistory.clear()
-        return "Chat history cleared"
+        if (!input.trim().equals("confirm", ignoreCase = true)) {
+            return """
+                To clear the chat history, please use the command with the "confirm" parameter:
+                  /clear confirm
+
+                This is to avoid accidentally clearing the chat history, which cannot be undone.
+            """.trimIndent()
+        } else {
+            context.chatHistory.clear()
+            return "Chat history cleared"
+        }
     }
 }

@@ -12,6 +12,7 @@ import jakarta.mail.internet.MimeMultipart
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import java.io.File
+import java.util.Date
 
 abstract class AbstractGreenMailTest {
     protected lateinit var greenMail: GreenMail
@@ -42,6 +43,7 @@ abstract class AbstractGreenMailTest {
         markAsRead: Boolean = false,
         body: String = "-",
         unsubscribeUrl: String? = null,
+        sentDate: Date = Date(),
     ): MimeMessage {
         val message = createMimeMessage(from, subject, markAsRead)
         if (unsubscribeUrl != null) {

@@ -5,10 +5,12 @@ import com.wutsi.kokibot.command.ClearCommand
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.command.CompactCommand
+import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.command.ToolsCommand
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
+import com.wutsi.kokibot.mail.SMTP
 import com.wutsi.kokibot.memory.ChatHistory
 import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.Tool
@@ -57,6 +59,7 @@ class ContextFactory(
             chatHistory = ChatHistory(),
             commandRegistry = commandRegistry,
             memory = Memory(),
+            smtp = SMTP(),
             config = config,
             jsonMapper = jsonMapper,
         )
@@ -99,6 +102,7 @@ class ContextFactory(
         return listOf(
             ClearCommand(),
             CompactCommand(),
+            HelpCommand(),
             ToolsCommand(),
         )
     }

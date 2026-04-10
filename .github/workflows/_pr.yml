@@ -1,9 +1,6 @@
 name: pr
 
-on:
-    push:
-        branches:
-            - pr
+on: [ pull_request ]
 
 jobs:
     build:

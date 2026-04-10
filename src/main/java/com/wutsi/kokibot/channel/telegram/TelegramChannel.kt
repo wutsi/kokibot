@@ -92,7 +92,7 @@ class TelegramChannel(
         val sendMessage = SendMessage.builder()
             .chatId(chatId)
             .text(message.text)
-            .parseMode(if (message.role != Role.COMMAND) ParseMode.MARKDOWN else null)
+            .parseMode(ParseMode.MARKDOWN)
             .build()
         client.execute(sendMessage)
     }

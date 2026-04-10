@@ -17,38 +17,30 @@ abstract class AbstractSMTPToolTest : AbstractGreenMailTest() {
         toolRegistry = mock<ToolRegistry>(),
         chatHistory = mock<ChatHistory>(),
         memory = mock<Memory>(),
-        config = smtpConfig()
+        config = mapOf(
+            "mail" to mapOf(
+                "smtp" to smtpConfig()
+            )
+        )
     )
 
     override fun port(): Int {
         return ServerSetupTest.SMTP.port
     }
 
-    protected fun smtpsConfig(): Map<String, Any> {
+    protected fun smtpConfig(): Map<String, Any> {
         return mapOf(
-            "mail" to mapOf(
-                "smtps" to mapOf(
-                    "host" to "localhost",
-                    "port" to ServerSetupTest.SMTPS.port,
-                    "username" to username,
-                    "password" to password,
-                    "from" to from,
-                )
-            )
+            "host" to "localhost",
+            "port" to ServerSetupTest.SMTP.port,
+            "username" to username,
+            "password" to password,
+            "from" to from,
         )
     }
 
-    protected fun smtpConfig(): Map<String, Any> {
-        return mapOf(
-            "mail" to mapOf(
-                "smtp" to mapOf(
-                    "host" to "localhost",
-                    "port" to ServerSetupTest.SMTP.port,
-                    "username" to username,
-                    "password" to password,
-                    "from" to from,
-                )
-            )
-        )
+    @Override
+    override fun setup() {
+        super.setup()
+        context.smtp.init(smtpConfig(), context)
     }
 }

@@ -11,6 +11,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.command.CommandRegistry
+import com.wutsi.kokibot.exception.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
@@ -369,6 +370,23 @@ class AssistantTest {
         assertEquals(FinishReason.DONE, result.finishReason)
 
         verify(cmd).exec("", context)
+
+        verify(chatHistory, never()).append(any(), any())
+    }
+
+    @Test
+    fun `process execute invalid command`() {
+        // GIVEN
+        doThrow(CommandNotFoundException::class).whenever(commandRegistry).get(any())
+
+        // WHEN
+        val prompt = Message("/tool Hello world", Role.USER)
+        val result = assistant.process(prompt)
+
+        // THEN
+        assertEquals("Invalid command: /tool.\nUse /help to get the list of available commands.", result.text)
+        assertEquals(Role.COMMAND, result.role)
+        assertEquals(FinishReason.DONE, result.finishReason)
 
         verify(chatHistory, never()).append(any(), any())
     }

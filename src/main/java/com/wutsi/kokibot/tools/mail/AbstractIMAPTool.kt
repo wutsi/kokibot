@@ -1,18 +1,13 @@
 package com.wutsi.kokibot.tools.mail
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.HtmlUtil
-import com.wutsi.kokibot.util.MapUtil
 import jakarta.mail.Folder
 import jakarta.mail.Message
 import jakarta.mail.Multipart
 import jakarta.mail.Part
-import jakarta.mail.Session
-import jakarta.mail.Store
 import jakarta.mail.internet.MimeMessage
-import java.util.Properties
 
 abstract class AbstractIMAPTool : Tool {
     companion object {
@@ -20,59 +15,14 @@ abstract class AbstractIMAPTool : Tool {
         const val MAX_LIMIT = 200
     }
 
-    private lateinit var host: String
-    private lateinit var username: String
-    private lateinit var password: String
-    private lateinit var port: String
-    private lateinit var protocol: String
+    private lateinit var context: Context
 
     override fun init(config: Map<*, *>, context: Context) {
-        val mail = MapUtil.toMap("mail", context.config)
-            ?: throw ConfigurationException("Missing required configuration: mail")
-
-        val imap = MapUtil.toMap("imap", mail)
-            ?: MapUtil.toMap("imaps", mail)?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/imap and mail/imaps")
-
-        protocol = mail["imap"]?.let { "imap" } ?: "imaps"
-
-        host = imap["host"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/$protocol/host")
-
-        username = imap["username"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/$protocol/username")
-
-        password = imap["password"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/$protocol/password")
-
-        port = imap["port"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/$protocol/port")
-    }
-
-    protected fun getStore(): Store {
-        val props = Properties().apply {
-            if (protocol == "imap") {
-                put("mail.store.protocol", "imap")
-                put("mail.imap.host", host)
-                put("mail.imap.port", port)
-            } else {
-                put("mail.store.protocol", "imaps")
-                put("mail.imaps.ssl.enable", "true")
-                put("mail.imaps.host", host)
-                put("mail.imaps.port", port)
-            }
-        }
-
-        println(">>> " + this::class.java.name + " - " + props)
-
-        val session = Session.getDefaultInstance(props)
-        val store = session.getStore(protocol)
-        store.connect(host, port.toInt(), username, password)
-        return store
+        this.context = context
     }
 
     override fun exec(arguments: Map<*, *>): String {
-        val store = getStore()
+        val store = context.imap.getStore()
         store.use {
             val inbox = store.getFolder("INBOX")
             inbox.use {

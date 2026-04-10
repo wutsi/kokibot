@@ -24,17 +24,25 @@ class ContextTest {
         chatHistory = mock(),
         memory = mock(),
         commandRegistry = mock(),
+        imap = mock(),
+        smtp = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
     private val memoryConfig = mapOf("window" to 1)
     private val channelConfig = mapOf("type" to "foo")
+    private val smptConfig = mapOf("smtp" to "foo")
+    private val imapConfig = mapOf("imap" to "foo")
     private val config = mapOf(
         "foo" to "bar",
         "llm" to llmConfig,
         "memory" to memoryConfig,
         "channels" to listOf(
             channelConfig
+        ),
+        "mail" to mapOf(
+            "smtp" to smptConfig,
+            "imap" to imapConfig,
         )
     )
     private val assistant = mock<Assistant>()
@@ -58,6 +66,8 @@ class ContextTest {
         verify(context.chatHistory).destroy()
         verify(channel).destroy()
         verify(context.commandRegistry).destroy()
+        verify(context.smtp).destroy()
+        verify(context.imap).destroy()
     }
 
     @Test
@@ -68,8 +78,10 @@ class ContextTest {
         verify(context.llm).init(llmConfig, context)
         verify(context.memory).init(memoryConfig, context)
         verify(context.chatHistory).init(memoryConfig, context)
-        verify(channel).init(channelConfig)
+        verify(context.smtp).init(smptConfig, context)
+        verify(context.imap).init(imapConfig, context)
         verify(context.commandRegistry).init(context)
+        verify(channel).init(channelConfig)
     }
 
     private fun getResourceFile(path: String): File {

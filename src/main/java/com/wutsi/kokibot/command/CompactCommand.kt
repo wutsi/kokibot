@@ -11,7 +11,16 @@ class CompactCommand : Command {
     }
 
     override fun exec(input: String, context: Context): String {
-        context.memory.compact()
-        return "Memory compacted"
+        if (!input.trim().equals("confirm", ignoreCase = true)) {
+            return """
+                To compact the memory, please use the command with the "confirm" parameter:
+                  /compact confirm
+
+                This is to avoid accidentally compacting the memory, which cannot be undone.
+            """.trimIndent()
+        } else {
+            context.memory.compact()
+            return "Memory compacted"
+        }
     }
 }

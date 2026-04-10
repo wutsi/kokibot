@@ -1,33 +1,25 @@
 package com.wutsi.kokibot.tools.mail
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.util.MapUtil
-import jakarta.mail.Authenticator
 import jakarta.mail.Message
-import jakarta.mail.PasswordAuthentication
-import jakarta.mail.Session
 import jakarta.mail.Transport
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
-import java.util.Properties
 
 class MailSendTool : Tool {
     companion object {
         const val NAME = "mail_send"
     }
 
-    private lateinit var host: String
-    private lateinit var from: String
-    private lateinit var username: String
-    private lateinit var password: String
-    private lateinit var port: String
-    private lateinit var useTLS: String
-    private lateinit var useSSL: String
+    private lateinit var context: Context
+
+    override fun init(config: Map<*, *>, context: Context) {
+        this.context = context
+    }
 
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
@@ -66,32 +58,6 @@ class MailSendTool : Tool {
         )
     )
 
-    override fun init(config: Map<*, *>, context: Context) {
-        val mail = MapUtil.toMap("mail", context.config)
-            ?: throw ConfigurationException("Missing required configuration: mail")
-
-        val smtp = MapUtil.toMap("smtp", mail)
-            ?: throw ConfigurationException("Missing required configuration: mail/smtp")
-
-        host = smtp["host"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/smtp/host")
-
-        username = smtp["username"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/smtp/username")
-
-        password = smtp["password"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/smtp/password")
-
-        port = smtp["port"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/smtp/port")
-
-        from = smtp["from"]?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing required configuration: mail/smtp/from")
-
-        useSSL = MapUtil.toString("use-ssl", smtp) ?: "false"
-        useTLS = MapUtil.toString("use-tls", smtp) ?: "false"
-    }
-
     override fun exec(arguments: Map<*, *>): String {
         val fromName = arguments["from_name"]?.toString()
 
@@ -116,10 +82,12 @@ class MailSendTool : Tool {
         body: String,
         replyMessageId: String?
     ): String {
-        val session = getSession()
-        val senderEmail = from
+        val session = context.smtp.getSession()
+        val from = context.smtp.getFrom()
         val message = MimeMessage(session).apply {
-            setFrom(toInternetAddress(senderEmail, fromName))
+            if (from != null) {
+                setFrom(toInternetAddress(from, fromName))
+            }
             setRecipients(Message.RecipientType.TO, InternetAddress.parse(to))
             setSubject(subject)
             setText(body)
@@ -139,23 +107,5 @@ class MailSendTool : Tool {
         } else {
             InternetAddress(email, name)
         }
-    }
-
-    private fun getSession(): Session {
-        val props = Properties().apply {
-            if (useSSL.toBoolean()) {
-                put("mail.smtp.ssl.enable", "true")
-            }
-            if (useTLS.toBoolean()) {
-                put("mail.smtp.starttls.enable", "true")
-            }
-            put("mail.smtp.auth", "true")
-            put("mail.smtp.host", host)
-            put("mail.smtp.port", port)
-        }
-
-        return Session.getInstance(props, object : Authenticator() {
-            override fun getPasswordAuthentication() = PasswordAuthentication(username, password)
-        })
     }
 }

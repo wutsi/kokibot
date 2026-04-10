@@ -4,6 +4,7 @@ import com.icegreen.greenmail.util.ServerSetupTest
 import com.nhaarman.mockitokotlin2.mock
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.mail.IMAP
 import com.wutsi.kokibot.memory.ChatHistory
 import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.ToolRegistry
@@ -16,7 +17,12 @@ abstract class AbstractIMAPToolTest : AbstractGreenMailTest() {
         toolRegistry = mock<ToolRegistry>(),
         chatHistory = mock<ChatHistory>(),
         memory = mock<Memory>(),
-        config = imapConfig()
+        imap = IMAP(),
+        config = mapOf(
+            "mail" to mapOf(
+                "imap" to imapConfig()
+            )
+        )
     )
 
     override fun port(): Int {
@@ -25,27 +31,16 @@ abstract class AbstractIMAPToolTest : AbstractGreenMailTest() {
 
     protected fun imapConfig(): Map<String, Any> {
         return mapOf(
-            "mail" to mapOf(
-                "imap" to mapOf(
-                    "host" to "localhost",
-                    "port" to ServerSetupTest.IMAP.port,
-                    "username" to username,
-                    "password" to password
-                )
-            )
+            "host" to "localhost",
+            "port" to ServerSetupTest.IMAP.port,
+            "username" to username,
+            "password" to password
         )
     }
 
-    protected fun imapsConfig(): Map<String, Any> {
-        return mapOf(
-            "mail" to mapOf(
-                "imaps" to mapOf(
-                    "host" to "localhost",
-                    "port" to ServerSetupTest.IMAPS.port,
-                    "username" to username,
-                    "password" to password
-                )
-            )
-        )
+    @Override
+    override fun setup() {
+        super.setup()
+        context.imap.init(imapConfig(), context)
     }
 }

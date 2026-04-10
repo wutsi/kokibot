@@ -19,6 +19,10 @@ class CommandRegistry {
     fun destroy() {
     }
 
+    fun all(): List<Command> {
+        return commands.values.toList()
+    }
+
     fun register(command: Command) {
         val name = command.metadata().name.lowercase()
         val xname = if (!name.startsWith("/")) "/$name" else name
@@ -27,7 +31,7 @@ class CommandRegistry {
         commands[xname] = command
     }
 
-    fun get(name: String): Command? {
+    fun get(name: String): Command {
         return commands[name]
             ?: throw CommandNotFoundException("Command not found: $name")
     }

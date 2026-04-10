@@ -1,21 +1,12 @@
 package com.wutsi.kokibot.tools.mail
 
-import com.icegreen.greenmail.util.ServerSetupTest
-import com.nhaarman.mockitokotlin2.mock
-import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.ConfigurationException
-import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.memory.ChatHistory
-import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.ToolRegistry
 import jakarta.mail.Message.RecipientType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.io.File
 import java.util.UUID
 
 class MailSendToolTest : AbstractSMTPToolTest() {
@@ -146,123 +137,5 @@ class MailSendToolTest : AbstractSMTPToolTest() {
                 )
             )
         }
-    }
-
-    private fun createContext(config: Map<*, *>): Context {
-        return Context(
-            home = File("target/test-data/" + this::class.java.simpleName),
-            llm = mock<LLM>(),
-            toolRegistry = mock<ToolRegistry>(),
-            chatHistory = mock<ChatHistory>(),
-            memory = mock<Memory>(),
-            config = config
-        )
-    }
-
-    @Test
-    fun `init - no mail configuration`() {
-        val ctx = createContext(emptyMap<String, Any>())
-
-        assertThrows<ConfigurationException> { tool.init(emptyMap<String, Any>(), ctx) }
-    }
-
-    @Test
-    fun `init - no SMTP configuration`() {
-        val ctx = createContext(
-            mapOf(
-                "mail" to emptyMap<String, Any>()
-            )
-        )
-
-        assertThrows<ConfigurationException> { tool.init(emptyMap<String, Any>(), ctx) }
-    }
-
-    @Test
-    fun `init - no SMTP host configuration`() {
-        val ctx = createContext(
-            mapOf(
-                "mail" to mapOf(
-                    "smtp" to mapOf(
-                        "port" to ServerSetupTest.SMTP.port,
-                        "username" to username,
-                        "password" to password,
-                        "from" to from
-                    )
-                )
-            )
-        )
-
-        assertThrows<ConfigurationException> { tool.init(emptyMap<String, Any>(), ctx) }
-    }
-
-    @Test
-    fun `init - no SMTP port configuration`() {
-        val ctx = createContext(
-            mapOf(
-                "mail" to mapOf(
-                    "smtp" to mapOf(
-                        "host" to "localhost",
-                        "username" to username,
-                        "password" to password,
-                        "from" to from
-                    )
-                )
-            )
-        )
-        assertThrows<ConfigurationException> { tool.init(emptyMap<String, Any>(), ctx) }
-    }
-
-    @Test
-    fun `init - no SMTP username configuration`() {
-        val ctx = createContext(
-            mapOf(
-                "mail" to mapOf(
-                    "smtp" to mapOf(
-                        "host" to "localhost",
-                        "port" to ServerSetupTest.SMTP.port,
-                        "password" to password,
-                        "from" to from
-                    )
-                )
-            )
-        )
-
-        assertThrows<ConfigurationException> { tool.init(emptyMap<String, Any>(), ctx) }
-    }
-
-    @Test
-    fun `init - no SMTP password configuration`() {
-        val ctx = createContext(
-            mapOf(
-                "mail" to mapOf(
-                    "smtp" to mapOf(
-                        "host" to "localhost",
-                        "port" to ServerSetupTest.SMTP.port,
-                        "username" to username,
-                        "from" to from
-                    )
-                )
-            )
-        )
-
-        assertThrows<ConfigurationException> { tool.init(emptyMap<String, Any>(), ctx) }
-    }
-
-    @Test
-    fun `init - no SMTP from configuration`() {
-        val ctx = createContext(
-            mapOf(
-                "mail" to mapOf(
-                    "smtp" to mapOf(
-                        "host" to "localhost",
-                        "port" to ServerSetupTest.SMTP.port,
-                        "username" to username,
-                        "password" to password
-                    )
-                )
-            )
-        )
-
-        assertThrows<ConfigurationException> { tool.init(emptyMap<String, Any>(), ctx) }
     }
 }

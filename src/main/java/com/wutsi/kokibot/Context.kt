@@ -5,6 +5,8 @@ import com.wutsi.kokibot.channel.ChannelFactory
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.mail.IMAP
+import com.wutsi.kokibot.mail.SMTP
 import com.wutsi.kokibot.memory.ChatHistory
 import com.wutsi.kokibot.memory.Memory
 import com.wutsi.kokibot.tools.ToolRegistry
@@ -23,6 +25,8 @@ class Context(
     val chatHistory: ChatHistory = ChatHistory(),
     val memory: Memory = Memory(),
     val commandRegistry: CommandRegistry = CommandRegistry(),
+    val smtp: SMTP = SMTP(),
+    val imap: IMAP = IMAP(),
     val jsonMapper: JsonMapper = JsonMapper(),
 ) {
     companion object {
@@ -37,6 +41,8 @@ class Context(
         memory.destroy()
         toolRegistry.destroy()
         commandRegistry.destroy()
+        smtp.destroy()
+        imap.destroy()
         channels.forEach { it.destroy() }
         channels.clear()
     }
@@ -47,6 +53,7 @@ class Context(
         initMemory(config)
         initTools()
         initCommands()
+        initMail(config)
     }
 
     private fun initChannels(agent: Assistant, config: Map<*, *>) {
@@ -89,5 +96,21 @@ class Context(
 
     private fun initCommands() {
         commandRegistry.init(this)
+    }
+
+    private fun initMail(config: Map<*, *>) {
+        val root = MapUtil.toMap("mail", config)
+
+        val smtpRoot = root?.let { node -> MapUtil.toMap("smtp", node) }
+        if (smtpRoot != null) {
+            LOGGER.info("Mail: SMTP")
+            smtp.init(smtpRoot, this)
+        }
+
+        val imapNode = root?.let { node -> MapUtil.toMap("imap", node) }
+        if (imapNode != null) {
+            LOGGER.info("Mail: IMAP")
+            imap.init(imapNode, this)
+        }
     }
 }

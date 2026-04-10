@@ -56,9 +56,6 @@ class Memory {
         if (compacted != null) {
             val file = getFile()
             file.writeText(compacted)
-
-            /* Clear the short term memory */
-            context.chatHistory.clear()
         }
     }
 

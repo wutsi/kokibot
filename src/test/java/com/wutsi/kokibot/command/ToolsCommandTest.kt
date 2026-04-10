@@ -1,26 +1,29 @@
-package com.wutsi.kokibot.tools
+package com.wutsi.kokibot.command
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.tools.ToolMetadata
+import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertEquals
 
 class ToolsCommandTest {
-    private val toolReegistry = mock<ToolRegistry>()
+    private val toolRegistry = mock<ToolRegistry>()
     private val context = Context(
         home = File("/target"),
         llm = mock<LLM>(),
-        toolRegistry = toolReegistry,
+        toolRegistry = toolRegistry,
     )
     private val cmd = ToolsCommand()
 
     @Test
-    fun name() {
-        assertEquals("/tools", cmd.name())
+    fun metadata() {
+        assertEquals("/tools", cmd.metadata().name)
     }
 
     @Test
@@ -29,7 +32,7 @@ class ToolsCommandTest {
         val tool2 = mock<Tool>()
         doReturn(ToolMetadata(name = "tool1")).whenever(tool1).metadata()
         doReturn(ToolMetadata(name = "tool2")).whenever(tool2).metadata()
-        doReturn(listOf(tool1, tool2)).whenever(toolReegistry).all()
+        doReturn(listOf(tool1, tool2)).whenever(toolRegistry).all()
 
         val result = cmd.exec("", context)
 

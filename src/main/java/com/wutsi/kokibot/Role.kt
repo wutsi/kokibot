@@ -6,4 +6,5 @@ enum class Role {
     ASSISTANT,
     SYSTEM,
     TOOL,
+    COMMAND,
 }

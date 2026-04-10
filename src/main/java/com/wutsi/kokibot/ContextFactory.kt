@@ -1,7 +1,11 @@
 package com.wutsi.kokibot
 
 import com.wutsi.kokibot.channel.ChannelFactory
+import com.wutsi.kokibot.command.ClearCommand
+import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
+import com.wutsi.kokibot.command.CompactCommand
+import com.wutsi.kokibot.command.ToolsCommand
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
@@ -40,6 +44,9 @@ class ContextFactory(
     fun create(home: File, config: Map<*, *>): Context {
         // Tools
         discoverTools().forEach { tool -> toolRegistry.register(tool) }
+
+        // Commands
+        discoverCommands().forEach { command -> commandRegistry.register(command) }
 
         // Context
         return Context(
@@ -85,6 +92,14 @@ class ContextFactory(
             /* Web */
             WebSearchTool(),
             WebFetchTool(),
+        )
+    }
+
+    private fun discoverCommands(): List<Command> {
+        return listOf(
+            ClearCommand(),
+            CompactCommand(),
+            ToolsCommand(),
         )
     }
 }

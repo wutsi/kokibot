@@ -76,7 +76,7 @@ class TelegramChannel(
             }
 
             /* Send response */
-            send(chatId, message.text)
+            send(chatId, message)
         }
     }
 
@@ -88,11 +88,11 @@ class TelegramChannel(
         client.execute(action)
     }
 
-    private fun send(chatId: String, text: String) {
+    private fun send(chatId: String, message: Message) {
         val sendMessage = SendMessage.builder()
             .chatId(chatId)
-            .text(text)
-            .parseMode(ParseMode.MARKDOWN)
+            .text(message.text)
+            .parseMode(if (message.role != Role.COMMAND) ParseMode.MARKDOWN else null)
             .build()
         client.execute(sendMessage)
     }

@@ -75,8 +75,6 @@ class MemoryTest {
             LocalDate.now(),
         )
 
-        verify(chatHistory).clear()
-
         val file = File(home.absolutePath + "/workspace/memory/MEMORY.md")
         assertTrue(file.exists())
         assertEquals("Fact1\nFact2\nFact3", file.readText())

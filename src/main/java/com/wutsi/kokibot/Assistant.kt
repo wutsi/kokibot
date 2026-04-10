@@ -1,5 +1,7 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.command.Command
+import com.wutsi.kokibot.exception.CommandNotFoundException
 import com.wutsi.kokibot.exception.TooManyIterationException
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
@@ -39,10 +41,10 @@ class Assistant {
             Message(FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
         }
 
-        if (LOGGER.isDebugEnabled) {
-            LOGGER.debug("answer: ${response.text}")
+        LOGGER.debug("answer: ${response.text}")
+        if (response.role != Role.COMMAND) {
+            context.chatHistory.append(prompt, response)
         }
-        context.chatHistory.append(prompt, response)
         return response
     }
 
@@ -55,13 +57,23 @@ class Assistant {
             }
 
             LOGGER.debug("-- ITERATION: $iteration --------------------------------------------------------------")
-            val response = ask(prompt, memory)
-            if (decide(response, memory)) {
+            val command = getCommand(prompt)
+            if (command != null) {
+                val result = exec(prompt, command)
                 return Message(
-                    text = response.choices.first().content,
-                    role = Role.ASSISTANT,
+                    text = result,
+                    role = Role.COMMAND,
                     finishReason = FinishReason.DONE,
                 )
+            } else {
+                val response = ask(prompt, memory)
+                if (decide(response, memory)) {
+                    return Message(
+                        text = response.choices.first().content,
+                        role = Role.ASSISTANT,
+                        finishReason = FinishReason.DONE,
+                    )
+                }
             }
         }
     }
@@ -111,6 +123,33 @@ class Assistant {
 
         memory.add(content)
         memory.add("Calling the tool `${call.name}` returned the following result: $result")
+    }
+
+    private fun getCommand(query: Message): Command? {
+        val text = query.text.trim()
+        if (!text.startsWith("/")) {
+            return null
+        }
+
+        try {
+            val name = text.split(" ")[0]
+            return context.commandRegistry.get(name)
+        } catch (ex: CommandNotFoundException) {
+            return null
+        }
+    }
+
+    private fun exec(query: Message, command: Command): String {
+        val text = query.text.trim()
+        val name = command.metadata().name
+        val input = if (text.equals(name, ignoreCase = true)) {
+            ""
+        } else {
+            text.substring(name.length).trim()
+        }
+
+        LOGGER.debug("Command execution: name={} - input={}", name, input)
+        return command.exec(input, context)
     }
 
     private fun buildPrompt(prompt: Message, memory: List<String>): String {

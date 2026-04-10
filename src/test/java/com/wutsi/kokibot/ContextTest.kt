@@ -23,6 +23,7 @@ class ContextTest {
         channelFactory = mock(),
         chatHistory = mock(),
         memory = mock(),
+        commandRegistry = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
@@ -56,6 +57,7 @@ class ContextTest {
         verify(context.memory).destroy()
         verify(context.chatHistory).destroy()
         verify(channel).destroy()
+        verify(context.commandRegistry).destroy()
     }
 
     @Test
@@ -67,6 +69,7 @@ class ContextTest {
         verify(context.memory).init(memoryConfig, context)
         verify(context.chatHistory).init(memoryConfig, context)
         verify(channel).init(channelConfig)
+        verify(context.commandRegistry).init(context)
     }
 
     private fun getResourceFile(path: String): File {

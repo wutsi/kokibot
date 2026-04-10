@@ -4,9 +4,13 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.command.Command
+import com.wutsi.kokibot.command.CommandMetadata
+import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
@@ -32,15 +36,20 @@ class AssistantTest {
     private val toolRegistry = mock<ToolRegistry>()
     private val chatHistory = mock<ChatHistory>()
     private val memory = mock<Memory>()
+    private val commandRegistry = mock<CommandRegistry>()
     private val context = Context(
         home = home,
         llm = llm,
         toolRegistry = toolRegistry,
         chatHistory = chatHistory,
         memory = memory,
+        commandRegistry = commandRegistry,
         config = emptyMap<String, String>(),
     )
     private val assistant: Assistant = Assistant()
+
+    private val cmd = mock<Command>()
+    private val meta = CommandMetadata(name = "/tool")
 
     @BeforeEach
     fun setup() {
@@ -320,6 +329,48 @@ class AssistantTest {
         assertEquals(FinishReason.FAILURE, result.finishReason)
 
         verify(chatHistory).append(prompt, result)
+    }
+
+    @Test
+    fun `process execute command`() {
+        // GIVEN
+        doReturn(meta).whenever(cmd).metadata()
+        doReturn(cmd).whenever(commandRegistry).get(any())
+        doReturn("Command executed").whenever(cmd).exec(any(), any())
+
+        // WHEN
+        val prompt = Message("/tool Hello world", Role.USER)
+        val result = assistant.process(prompt)
+
+        // THEN
+        assertEquals("Command executed", result.text)
+        assertEquals(Role.COMMAND, result.role)
+        assertEquals(FinishReason.DONE, result.finishReason)
+
+        verify(cmd).exec("Hello world", context)
+
+        verify(chatHistory, never()).append(any(), any())
+    }
+
+    @Test
+    fun `process execute command without arguments`() {
+        // GIVEN
+        doReturn(meta).whenever(cmd).metadata()
+        doReturn(cmd).whenever(commandRegistry).get(any())
+        doReturn("Command executed").whenever(cmd).exec(any(), any())
+
+        // WHEN
+        val prompt = Message("/tool", Role.USER)
+        val result = assistant.process(prompt)
+
+        // THEN
+        assertEquals("Command executed", result.text)
+        assertEquals(Role.COMMAND, result.role)
+        assertEquals(FinishReason.DONE, result.finishReason)
+
+        verify(cmd).exec("", context)
+
+        verify(chatHistory, never()).append(any(), any())
     }
 
     @Test

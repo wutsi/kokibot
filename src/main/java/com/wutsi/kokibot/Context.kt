@@ -33,13 +33,10 @@ class Context(
 
     fun destroy() {
         llm.destroy()
-
         chatHistory.destroy()
-
         memory.destroy()
-
         toolRegistry.destroy()
-
+        commandRegistry.destroy()
         channels.forEach { it.destroy() }
         channels.clear()
     }
@@ -49,6 +46,7 @@ class Context(
         initLLM(config)
         initMemory(config)
         initTools()
+        initCommands()
     }
 
     private fun initChannels(agent: Assistant, config: Map<*, *>) {
@@ -87,5 +85,9 @@ class Context(
 
     private fun initTools() {
         toolRegistry.init(this)
+    }
+
+    private fun initCommands() {
+        commandRegistry.init(this)
     }
 }

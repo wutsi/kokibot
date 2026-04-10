@@ -13,8 +13,9 @@ class CommandRegistryTest {
 
     @Test
     fun `register and get - name with slash`() {
+        val meta = CommandMetadata("/foo")
         val cmd = mock<Command>()
-        doReturn("/foo").whenever(cmd).name()
+        doReturn(meta).whenever(cmd).metadata()
 
         registry.register(cmd)
         val result = registry.get("/foo")
@@ -24,8 +25,9 @@ class CommandRegistryTest {
 
     @Test
     fun `register and get - name without slash`() {
+        val meta = CommandMetadata("foo")
         val cmd = mock<Command>()
-        doReturn("foo").whenever(cmd).name()
+        doReturn(meta).whenever(cmd).metadata()
 
         registry.register(cmd)
         val result = registry.get("/foo")

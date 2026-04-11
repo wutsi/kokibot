@@ -18,6 +18,7 @@ jobs:
                     distribution: 'zulu'
                     java-version: 17
 
+
             -   name: Build
                 env:
                     DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY}}

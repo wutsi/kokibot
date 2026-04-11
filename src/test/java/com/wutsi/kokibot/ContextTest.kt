@@ -22,8 +22,9 @@ class ContextTest {
         toolRegistry = mock(),
         channelFactory = mock(),
         chatHistory = mock(),
-        memory = mock(),
         commandRegistry = mock(),
+        skillRegistry = mock(),
+        memory = mock(),
         imap = mock(),
         smtp = mock(),
     )
@@ -31,7 +32,7 @@ class ContextTest {
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
     private val memoryConfig = mapOf("window" to 1)
     private val channelConfig = mapOf("type" to "foo")
-    private val smptConfig = mapOf("smtp" to "foo")
+    private val smtpConfig = mapOf("smtp" to "foo")
     private val imapConfig = mapOf("imap" to "foo")
     private val config = mapOf(
         "foo" to "bar",
@@ -41,7 +42,7 @@ class ContextTest {
             channelConfig
         ),
         "mail" to mapOf(
-            "smtp" to smptConfig,
+            "smtp" to smtpConfig,
             "imap" to imapConfig,
         )
     )
@@ -64,8 +65,9 @@ class ContextTest {
         verify(context.toolRegistry).destroy()
         verify(context.memory).destroy()
         verify(context.chatHistory).destroy()
-        verify(channel).destroy()
         verify(context.commandRegistry).destroy()
+        verify(context.skillRegistry).destroy()
+        verify(channel).destroy()
         verify(context.smtp).destroy()
         verify(context.imap).destroy()
     }
@@ -78,9 +80,10 @@ class ContextTest {
         verify(context.llm).init(llmConfig, context)
         verify(context.memory).init(memoryConfig, context)
         verify(context.chatHistory).init(memoryConfig, context)
-        verify(context.smtp).init(smptConfig, context)
-        verify(context.imap).init(imapConfig, context)
         verify(context.commandRegistry).init(context)
+        verify(context.skillRegistry).init(context)
+        verify(context.smtp).init(smtpConfig, context)
+        verify(context.imap).init(imapConfig, context)
         verify(channel).init(channelConfig)
     }
 

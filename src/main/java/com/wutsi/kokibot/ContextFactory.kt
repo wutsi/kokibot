@@ -1,19 +1,20 @@
 package com.wutsi.kokibot
 
 import com.wutsi.kokibot.channel.ChannelFactory
-import com.wutsi.kokibot.command.ClearCommand
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
-import com.wutsi.kokibot.command.CompactCommand
 import com.wutsi.kokibot.command.HelpCommand
-import com.wutsi.kokibot.command.ToolsCommand
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.mail.SMTP
 import com.wutsi.kokibot.memory.ChatHistory
+import com.wutsi.kokibot.memory.ClearCommand
+import com.wutsi.kokibot.memory.CompactCommand
 import com.wutsi.kokibot.memory.Memory
+import com.wutsi.kokibot.skill.SkillCommand
 import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.tools.ToolCommand
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.tools.date.ClockTool
 import com.wutsi.kokibot.tools.mail.MailFindTool
@@ -103,7 +104,8 @@ class ContextFactory(
             ClearCommand(),
             CompactCommand(),
             HelpCommand(),
-            ToolsCommand(),
+            SkillCommand(),
+            ToolCommand(),
         )
     }
 }

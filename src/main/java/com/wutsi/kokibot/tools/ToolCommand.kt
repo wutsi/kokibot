@@ -1,17 +1,20 @@
-package com.wutsi.kokibot.command
+package com.wutsi.kokibot.tools
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.command.Command
+import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.util.MarkdownSanitizer
 import org.slf4j.LoggerFactory
 
-class ToolsCommand : Command {
+class ToolCommand : Command {
     companion object {
-        private val LOGGER = LoggerFactory.getLogger(ToolsCommand::class.java)
+        private val LOGGER = LoggerFactory.getLogger(ToolCommand::class.java)
+        const val NAME = "/tools"
     }
 
     override fun metadata(): CommandMetadata {
         return CommandMetadata(
-            name = "/tools",
+            name = NAME,
             description = """
                 Return the list of available tools or the details of a specific tool.
                 Usages:

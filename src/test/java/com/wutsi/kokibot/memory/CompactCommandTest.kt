@@ -1,11 +1,10 @@
-package com.wutsi.kokibot.command
+package com.wutsi.kokibot.memory
 
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.memory.Memory
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertEquals

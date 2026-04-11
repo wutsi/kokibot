@@ -9,6 +9,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.ToolNotFoundException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.tools.ToolCommand
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
@@ -17,18 +18,18 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertEquals
 
-class ToolsCommandTest {
+class ToolCommandTest {
     private val toolRegistry = mock<ToolRegistry>()
     private val context = Context(
         home = File("/target"),
         llm = mock<LLM>(),
         toolRegistry = toolRegistry,
     )
-    private val cmd = ToolsCommand()
+    private val cmd = ToolCommand()
 
     @Test
     fun metadata() {
-        assertEquals("/tools", cmd.metadata().name)
+        assertEquals(ToolCommand.NAME, cmd.metadata().name)
     }
 
     @Test

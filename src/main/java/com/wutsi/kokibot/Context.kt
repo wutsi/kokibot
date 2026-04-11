@@ -9,6 +9,8 @@ import com.wutsi.kokibot.mail.IMAP
 import com.wutsi.kokibot.mail.SMTP
 import com.wutsi.kokibot.memory.ChatHistory
 import com.wutsi.kokibot.memory.Memory
+import com.wutsi.kokibot.skill.SkillParser
+import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
@@ -21,10 +23,11 @@ class Context(
 
     val config: Map<*, *> = emptyMap<String, String>(),
     val toolRegistry: ToolRegistry = ToolRegistry(),
-    val channelFactory: ChannelFactory = ChannelFactory(),
     val chatHistory: ChatHistory = ChatHistory(),
-    val memory: Memory = Memory(),
+    val skillRegistry: SkillRegistry = SkillRegistry(SkillParser()),
     val commandRegistry: CommandRegistry = CommandRegistry(),
+    val channelFactory: ChannelFactory = ChannelFactory(),
+    val memory: Memory = Memory(),
     val smtp: SMTP = SMTP(),
     val imap: IMAP = IMAP(),
     val jsonMapper: JsonMapper = JsonMapper(),
@@ -41,6 +44,7 @@ class Context(
         memory.destroy()
         toolRegistry.destroy()
         commandRegistry.destroy()
+        skillRegistry.destroy()
         smtp.destroy()
         imap.destroy()
         channels.forEach { it.destroy() }
@@ -54,6 +58,7 @@ class Context(
         initTools()
         initCommands()
         initMail(config)
+        initSkills()
     }
 
     private fun initChannels(agent: Assistant, config: Map<*, *>) {
@@ -112,5 +117,9 @@ class Context(
             LOGGER.info("Mail: IMAP")
             imap.init(imapNode, this)
         }
+    }
+
+    private fun initSkills() {
+        skillRegistry.init(this)
     }
 }

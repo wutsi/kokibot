@@ -1,6 +1,8 @@
-package com.wutsi.kokibot.command
+package com.wutsi.kokibot.memory
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.command.Command
+import com.wutsi.kokibot.command.CommandMetadata
 
 class ClearCommand : Command {
     override fun metadata(): CommandMetadata {

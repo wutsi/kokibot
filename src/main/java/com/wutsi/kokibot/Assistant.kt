@@ -85,10 +85,6 @@ class Assistant {
 
         if (LOGGER.isDebugEnabled) {
             LOGGER.debug("LLM chat: ${query.text}")
-//            LOGGER.debug(
-//                "SYSTEM INSTRUCTIONS\n" + (systemInstructions ?: "-") +
-//                    "\n\nPROMPT\n$prompt\n"
-//            )
         }
 
         return context.llm.completion(

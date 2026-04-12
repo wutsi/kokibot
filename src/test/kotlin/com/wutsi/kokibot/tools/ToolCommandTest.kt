@@ -1,4 +1,4 @@
-package com.wutsi.kokibot.command
+package com.wutsi.kokibot.tools
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -8,12 +8,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.ToolNotFoundException
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.tools.Tool
-import com.wutsi.kokibot.tools.ToolCommand
-import com.wutsi.kokibot.tools.ToolMetadata
-import com.wutsi.kokibot.tools.ToolParameter
-import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertEquals

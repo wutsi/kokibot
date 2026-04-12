@@ -1,5 +1,7 @@
 package com.wutsi.kokibot.llm.deepseek
 
+import com.wutsi.kokibot.exception.UnsupportedMimeTypeException
+import com.wutsi.kokibot.file.TextExtractorFactory
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
@@ -12,7 +14,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.http.MediaTypeFactory
 import tools.jackson.databind.json.JsonMapper
+import java.io.File
 
 class DeepseekClient(
     val apiKey: String,
@@ -31,6 +35,7 @@ class DeepseekClient(
 
     private val rest = restBuilder.build(readTimeoutMillis, connectTimeoutMillis)
     private val jsonMapper = JsonMapper()
+    private val textExtractorFactory = TextExtractorFactory()
 
     /**
      * See https://api-docs.deepseek.com/api/create-chat-completion
@@ -61,17 +66,13 @@ class DeepseekClient(
             "max_tokens" to maxTokens,
             "temperature" to temperature,
             "messages" to listOfNotNull(
-                mapOf(
-                    "role" to "user",
-                    "content" to request.prompt
-                ),
                 request.systemInstructions?.let { systemInstructions ->
                     mapOf(
                         "role" to "system",
                         "content" to systemInstructions
                     )
                 }
-            ),
+            ) + toMessages(request),
             "tools" to tools.map { tool ->
                 val meta = tool.metadata()
                 mapOf(
@@ -133,5 +134,59 @@ class DeepseekClient(
                 )
             }
         )
+    }
+
+    private fun toMessages(request: LLMRequest): List<Map<String, Any>> {
+        return if (request.files.isEmpty()) {
+            listOf(
+                mapOf(
+                    "role" to "user",
+                    "content" to request.prompt
+                )
+            )
+        } else {
+            listOf(
+                mapOf(
+                    "role" to "user",
+                    "content" to request.prompt
+                )
+            ) +
+                request.files.map { file ->
+                    try {
+                        val content = extractContent(file)
+                        mapOf(
+                            "role" to "user",
+                            "content" to mapOf(
+                                "type" to "text",
+                                "text" to content,
+                            )
+                        )
+                    } catch (_: UnsupportedMimeTypeException) {
+                        mapOf(
+                            "role" to "user",
+                            "content" to "File ${file.name} has unsupported mime type. It's content cannot be read and will be ignored."
+                        )
+                    } catch (ex: Exception) {
+                        LOGGER.warn("Failed to extract the content of file ${file.name}", ex)
+                        mapOf(
+                            "role" to "user",
+                            "content" to "Failed to extract the content of file ${file.name}. The file will be ignored."
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun extractContent(file: File): String {
+        val mimeType = MediaTypeFactory.getMediaType(file.name)
+            .map { it.toString() }
+            .orElse("application/octet-stream")
+
+        if (mimeType == "application/json" || mimeType.startsWith("text/")) {
+            return file.readText()
+        } else {
+            val extractor = textExtractorFactory.create(mimeType)
+            return extractor.extract(file)
+        }
     }
 }

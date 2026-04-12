@@ -76,7 +76,7 @@ class Context(
 
         LOGGER.info("Channel: $type")
         val channel = channelFactory.create(type, agent)
-        channel.init(config)
+        channel.init(config, this)
         channels.add(channel)
     }
 

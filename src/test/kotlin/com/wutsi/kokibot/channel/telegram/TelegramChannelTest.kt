@@ -8,6 +8,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.exception.ConfigurationException
@@ -22,6 +23,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.chat.Chat
 import org.telegram.telegrambots.meta.generics.TelegramClient
+import java.io.File
 import kotlin.test.assertEquals
 
 class TelegramChannelTest {
@@ -31,6 +33,10 @@ class TelegramChannelTest {
     private val agent = mock<Assistant>()
     private val telegram = TelegramChannel(agent, factory)
     private val config = mapOf("token" to "test-token")
+    private val context = Context(
+        home = File("target/test-data/telegram"),
+        llm = mock()
+    )
 
     @BeforeEach
     fun setUp() {
@@ -41,7 +47,7 @@ class TelegramChannelTest {
     @Test
     fun `init - should create telegram client and register bot`() {
         // WHEN
-        telegram.init(config)
+        telegram.init(config, context)
 
         // THEN
         verify(factory).createTelegramClient("test-token")
@@ -52,7 +58,7 @@ class TelegramChannelTest {
     @Test
     fun `init - should throw exception when token is missing`() {
         assertThrows<ConfigurationException> {
-            telegram.init(emptyMap<String, Any>())
+            telegram.init(emptyMap<String, Any>(), context)
         }
     }
 
@@ -60,14 +66,14 @@ class TelegramChannelTest {
     fun `init - should throw exception on invalid token`() {
         doThrow(TelegramApiErrorResponseException::class).whenever(app).registerBot(any(), any())
         assertThrows<TelegramApiErrorResponseException> {
-            telegram.init(config)
+            telegram.init(config, context)
         }
     }
 
     @Test
     fun `destroy - should stop the application`() {
         // GIVEN
-        telegram.init(config)
+        telegram.init(config, context)
 
         // WHEN
         telegram.destroy()
@@ -88,7 +94,7 @@ class TelegramChannelTest {
     @Test
     fun `consume - should forward message to agent and return response`() {
         // GIVEN
-        telegram.init(config)
+        telegram.init(config, context)
         doReturn(Message("World")).whenever(agent).process(any())
 
         // WHEN
@@ -100,6 +106,7 @@ class TelegramChannelTest {
         verify(agent).process(prompt.capture())
         assertEquals("Hello", prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
+        assertEquals("ray.sponsible@telegram", prompt.firstValue.userId)
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -110,7 +117,7 @@ class TelegramChannelTest {
     @Test
     fun `consume - should ignore update without message text`() {
         // GIVEN
-        telegram.init(config)
+        telegram.init(config, context)
 
         // WHEN
         val update = createUpdateText(null, 4309)
@@ -118,13 +125,17 @@ class TelegramChannelTest {
 
         // THEN
         verify(agent, never()).process(any())
-        verify(client, never()).execute(any<SendMessage>())
+
+        val sendMessage = argumentCaptor<SendMessage>()
+        verify(client).execute(sendMessage.capture())
+        assertEquals(TelegramChannel.ERROR_UNSUPPORTED_MESSAGE, sendMessage.firstValue.text)
+        assertEquals("4309", sendMessage.firstValue.chatId)
     }
 
     @Test
     fun `consume - should ignore update without message`() {
         // GIVEN
-        telegram.init(config)
+        telegram.init(config, context)
 
         // WHEN
         val update = createUpdateWithNoMessage(555)
@@ -136,9 +147,14 @@ class TelegramChannelTest {
     }
 
     private fun createUpdateText(text: String?, chatId: Long): Update {
+        val chat = Chat(chatId, "")
+        chat.userName = "ray.sponsible"
+        chat.firstName = "Ray"
+        chat.lastName = "Responsible"
+
         val update = Update()
         val message = org.telegram.telegrambots.meta.api.objects.message.Message()
-        message.chat = Chat(chatId, "")
+        message.chat = chat
         message.text = text
         update.message = message
         return update

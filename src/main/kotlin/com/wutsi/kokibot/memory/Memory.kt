@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 /**
  * This is the long term memory of the assistant, which is used to store facts and information that can be used to answer questions.
  * It's build by compacting the chat history, and extracting facts and information that can be used to answer questions.
+ * The long term memory is stored into workspace/memory/MEMORY.md
  */
 class Memory {
     companion object {
@@ -26,6 +27,13 @@ class Memory {
     private lateinit var context: Context
     private lateinit var compactJob: ScheduledFuture<*>
 
+    /**
+     * Initialize the memory with the given configuration and context.
+     *
+     * The configuration can contain the following parameters:
+     * - window: the number of days to look back when compacting the memory (default: 3)
+     * - compaction-frequency: the frequency (in hours) to run the compaction job (default: 6)
+     */
     fun init(config: Map<*, *>, context: Context) {
         this.context = context
         this.window = MapUtil.toInt("window", config) ?: DEFAULT_WINDOW

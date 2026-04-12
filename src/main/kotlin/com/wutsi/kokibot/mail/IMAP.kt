@@ -7,6 +7,9 @@ import jakarta.mail.Session
 import jakarta.mail.Store
 import java.util.Properties
 
+/**
+ * This is the IMAP service, which is used to read emails.
+ */
 class IMAP {
     private lateinit var host: String
     private lateinit var username: String
@@ -14,6 +17,15 @@ class IMAP {
     private lateinit var port: String
     private lateinit var useSSL: String
 
+    /**
+     * Initialize the IMAP client with the given configuration and context.
+     * The configuration can contain the following parameters:
+     * - host: the IMAP server host (required)
+     * - port: the IMAP server port (required)
+     * - username: the IMAP server username (required)
+     * - password: the IMAP server password (required)
+     * - use-ssl: whether to use SSL (default: false)
+     */
     fun init(config: Map<*, *>, context: Context) {
         host = config["host"]?.toString()?.ifEmpty { null }
             ?: throw ConfigurationException("Missing required configuration: mail/imap/host")

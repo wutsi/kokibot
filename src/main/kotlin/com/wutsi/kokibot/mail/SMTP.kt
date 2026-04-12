@@ -8,6 +8,9 @@ import jakarta.mail.PasswordAuthentication
 import jakarta.mail.Session
 import java.util.Properties
 
+/**
+ * This is the SMTP service, which is used to send emails.
+ */
 class SMTP {
     private var from: String? = null
     private lateinit var host: String
@@ -17,6 +20,18 @@ class SMTP {
     private lateinit var useTLS: String
     private lateinit var useSSL: String
 
+    /**
+     * Initialize the SMTP client with the given configuration and context.
+     *
+     * The configuration can contain the following parameters:
+     * - host: the SMTP server host (required)
+     * - port: the SMTP server port (required)
+     * - username: the SMTP server username (required)
+     * - password: the SMTP server password (required)
+     * - from: the email address to use as the sender (required)
+     * - use-ssl: whether to use SSL (default: false)
+     * - use-tls: whether to use TLS (default: false)
+     */
     fun init(config: Map<*, *>, context: Context) {
         host = config["host"]?.toString()?.ifEmpty { null }
             ?: throw ConfigurationException("Missing required configuration: mail/smtp/host")

@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 
 /**
  * This is the short term memory of the assistant, which is used to store the chat history of the current day.
- * The conversation history is stored into workspace/memory/YYYY-MM-DD.json.
+ * The conversation history is stored into workspace/memory/history/YYYY-MM-DD.json.
  */
 class ChatHistory {
     private lateinit var context: Context

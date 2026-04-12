@@ -10,6 +10,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.util.RestBuilder
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -17,7 +18,7 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
-import kotlin.test.assertEquals
+import java.io.File
 
 class DeepseekClientTest {
     companion object {
@@ -119,12 +120,134 @@ class DeepseekClientTest {
         assertEquals(
             listOf(
                 mapOf(
+                    "role" to "system",
+                    "content" to "You are a helpful assistant"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "Hi sir"
+                )
+            ),
+            body["messages"]
+        )
+    }
+
+    @Test
+    fun `completion with TXT file`() {
+        // WHEN
+        val request = LLMRequest(
+            prompt = "Hi sir",
+            systemInstructions = "You are a helpful assistant",
+            files = listOf(
+                File(this::class.java.getResource("/deepseek/txt-sample.txt")!!.file)
+            )
+        )
+        val client = createClient()
+        client.completion(request, emptyList())
+
+        // THEN
+        val req = argumentCaptor<HttpEntity<Map<*, *>>>()
+        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+
+        val body = req.firstValue.body as Map<*, *>
+        assertEquals(
+            listOf(
+                mapOf(
+                    "role" to "system",
+                    "content" to "You are a helpful assistant"
+                ),
+                mapOf(
                     "role" to "user",
                     "content" to "Hi sir"
                 ),
                 mapOf(
+                    "role" to "user",
+                    "content" to mapOf(
+                        "type" to "text",
+                        "text" to "Content of TXT file\n"
+                    )
+                )
+
+            ),
+            body["messages"]
+        )
+    }
+
+    @Test
+    fun `completion with JSON file`() {
+        // WHEN
+        val request = LLMRequest(
+            prompt = "Hi sir",
+            systemInstructions = "You are a helpful assistant",
+            files = listOf(
+                File(this::class.java.getResource("/deepseek/json-sample.json")!!.file)
+            )
+        )
+        val client = createClient()
+        client.completion(request, emptyList())
+
+        // THEN
+        val req = argumentCaptor<HttpEntity<Map<*, *>>>()
+        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+
+        val body = req.firstValue.body as Map<*, *>
+        assertEquals(
+            listOf(
+                mapOf(
                     "role" to "system",
                     "content" to "You are a helpful assistant"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "Hi sir"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to mapOf(
+                        "type" to "text",
+                        "text" to "{\n  \"foo\": 2\n}\n"
+                    )
+                )
+
+            ),
+            body["messages"]
+        )
+    }
+
+    @Test
+    fun `completion with DOC file`() {
+        // WHEN
+        val request = LLMRequest(
+            prompt = "Hi sir",
+            systemInstructions = "You are a helpful assistant",
+            files = listOf(
+                File(this::class.java.getResource("/deepseek/doc-sample.doc")!!.file)
+            )
+        )
+        val client = createClient()
+        client.completion(request, emptyList())
+
+        // THEN
+        val req = argumentCaptor<HttpEntity<Map<*, *>>>()
+        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+
+        val body = req.firstValue.body as Map<*, *>
+        assertEquals(
+            listOf(
+                mapOf(
+                    "role" to "system",
+                    "content" to "You are a helpful assistant"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "Hi sir"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to mapOf(
+                        "type" to "text",
+                        "text" to "Sample doc file\r"
+                    )
                 )
             ),
             body["messages"]
@@ -161,12 +284,12 @@ class DeepseekClientTest {
         assertEquals(
             listOf(
                 mapOf(
-                    "role" to "user",
-                    "content" to "Hi sir"
-                ),
-                mapOf(
                     "role" to "system",
                     "content" to "You are a helpful assistant"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "Hi sir"
                 )
             ),
             body["messages"]

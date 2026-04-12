@@ -7,4 +7,6 @@ data class Message(
     val role: Role = Role.UNKNOWN,
     val finishReason: FinishReason = FinishReason.UNKNOWN,
     val dateTime: LocalDateTime = LocalDateTime.now(),
+    val userId: String? = null,
+    val filePaths: List<String> = emptyList(),
 )

@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.util
 
 import org.springframework.boot.restclient.RestTemplateBuilder
+import org.springframework.http.converter.ByteArrayHttpMessageConverter
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter
 import org.springframework.web.client.RestTemplate
 import tools.jackson.databind.DeserializationFeature
@@ -20,6 +21,7 @@ class RestBuilder {
     ): RestTemplate {
         val builder = RestTemplateBuilder()
             .additionalMessageConverters(JacksonJsonHttpMessageConverter(jsonMapper))
+            .additionalMessageConverters(ByteArrayHttpMessageConverter())
 
         if (readTimeoutMillis != null) {
             builder.readTimeout(Duration.of(readTimeoutMillis, ChronoUnit.MILLIS))

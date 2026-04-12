@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.0.5</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.wutsi</groupId>
     <artifactId>kokibot</artifactId>
@@ -43,6 +43,7 @@
         <kotlinx-coroutines-core.version>1.10.2</kotlinx-coroutines-core.version>
         <ktlint.version>1.8.0</ktlint.version>
         <pdfbox.vesion>3.0.6</pdfbox.vesion>
+        <poi.version>5.5.1</poi.version>
         <snakeyaml.version>2.6</snakeyaml.version>
         <telegram.version>9.5.0</telegram.version>
     </properties>
@@ -87,6 +88,21 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>${pdfbox.vesion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>

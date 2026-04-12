@@ -84,7 +84,7 @@ class ContextTest {
         verify(context.skillRegistry).init(context)
         verify(context.smtp).init(smtpConfig, context)
         verify(context.imap).init(imapConfig, context)
-        verify(channel).init(channelConfig)
+        verify(channel).init(channelConfig, context)
     }
 
     private fun getResourceFile(path: String): File {

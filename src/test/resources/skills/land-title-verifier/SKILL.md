@@ -9,7 +9,7 @@ metadata:
     categories: [ "real estate", "legal", "verification" ]
 ---
 
-# Land Title Verifier
+# Skill: Land Title Verifier
 
 This skill allows the agent to check the authenticity of a "Titre Foncier" (Land Title) in Cameroon. It should be used
 whenever a user provides a title number or asks for property verification.

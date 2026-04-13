@@ -157,7 +157,8 @@ class TelegramChannel(
         val path = MapUtil.toMap("result", response)?.get("file_path")?.toString()
             ?: throw IllegalStateException("file_path not found")
 
-        val contentUrl = "https://api.telegram.org/file/bot$botToken/$path"
+        val xpath = if (path.startsWith("/")) path else "/$path"
+        val contentUrl = "https://api.telegram.org/file/bot$botToken$path"
         val content = rest.getForEntity(contentUrl, ByteArray::class.java).body!!
 
         val now = LocalDate.now()

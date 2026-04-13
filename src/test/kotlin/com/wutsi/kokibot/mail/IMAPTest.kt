@@ -36,6 +36,11 @@ class IMAPTest {
     }
 
     @Test
+    fun id() {
+        assertEquals("service:imap", imap.id())
+    }
+
+    @Test
     fun getStore() {
         val config = mapOf(
             "host" to "localhost",
@@ -91,11 +96,9 @@ class IMAPTest {
     @Test
     fun `init - no host`() {
         val cfg = mapOf(
-            "imap" to mapOf(
-                "port" to ServerSetupTest.IMAPS.port,
-                "username" to username,
-                "password" to password
-            )
+            "port" to ServerSetupTest.IMAPS.port,
+            "username" to username,
+            "password" to password
         )
 
         assertThrows<ConfigurationException> { imap.init(cfg, context) }
@@ -104,11 +107,9 @@ class IMAPTest {
     @Test
     fun `init - no port`() {
         val cfg = mapOf(
-            "imap" to mapOf(
-                "host" to "localhost",
-                "username" to username,
-                "password" to password
-            )
+            "host" to "localhost",
+            "username" to username,
+            "password" to password
         )
 
         assertThrows<ConfigurationException> { imap.init(cfg, context) }
@@ -117,11 +118,9 @@ class IMAPTest {
     @Test
     fun `init - no username`() {
         val cfg = mapOf(
-            "imap" to mapOf(
-                "host" to "localhost",
-                "port" to ServerSetupTest.IMAPS.port,
-                "password" to password
-            )
+            "host" to "localhost",
+            "port" to ServerSetupTest.IMAPS.port,
+            "password" to password
         )
 
         assertThrows<ConfigurationException> { imap.init(cfg, context) }
@@ -136,5 +135,39 @@ class IMAPTest {
         )
 
         assertThrows<ConfigurationException> { imap.init(cfg, context) }
+    }
+
+    @Test
+    fun `health - up`() {
+        val config = mapOf(
+            "host" to "localhost",
+            "port" to ServerSetupTest.IMAP.port,
+            "username" to username,
+            "password" to password,
+            "use-ssl" to false,
+        )
+
+        imap.init(config, context)
+        val health = imap.health()
+
+        assertEquals(imap.id(), health.id)
+        assertEquals(true, health.up)
+    }
+
+    @Test
+    fun `health - down`() {
+        val config = mapOf(
+            "host" to "localhost",
+            "port" to 11111,
+            "username" to username,
+            "password" to password,
+            "use-ssl" to false,
+        )
+
+        imap.init(config, context)
+        val health = imap.health()
+
+        assertEquals(imap.id(), health.id)
+        assertEquals(false, health.up)
     }
 }

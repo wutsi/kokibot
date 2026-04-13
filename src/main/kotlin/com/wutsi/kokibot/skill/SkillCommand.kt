@@ -48,7 +48,7 @@ class SkillCommand : Command {
                 "*Tools:*\n$tools"
         } catch (ex: Exception) {
             LOGGER.warn("Unexpected error", ex)
-            return "Tool not found: ${sanitize(name)}"
+            return "Skill not found: `$name`"
         }
     }
 

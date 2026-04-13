@@ -17,6 +17,7 @@ class BootstrapTest {
 
     @BeforeEach
     fun setup() {
+        doReturn(Health(id = "-")).whenever(context).health()
         doReturn(context).whenever(contextFactory).create(any(), any())
     }
 

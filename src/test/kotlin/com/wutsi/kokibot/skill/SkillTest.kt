@@ -11,6 +11,8 @@ import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SkillTest {
     val context = Context(
@@ -52,9 +54,12 @@ class SkillTest {
                     )
                 )
             ),
+            categories = listOf("real estate"),
+            keywords = listOf("land title", "land ownership", "property title"),
             requiredBins = listOf("java"),
             requiredEnv = listOf("PATH"),
-        )
+        ),
+        body = "",
     )
 
     @Test
@@ -93,7 +98,8 @@ class SkillTest {
     @Test
     fun `health - missing env`() {
         val xskill = Skill(
-            metadata = skill.metadata.copy(requiredEnv = listOf("__MISSING_ENV__"))
+            metadata = skill.metadata.copy(requiredEnv = listOf("__MISSING_ENV__")),
+            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val health = xskill.health()
@@ -105,7 +111,8 @@ class SkillTest {
     @Test
     fun `health - missing bin`() {
         val xskill = Skill(
-            metadata = skill.metadata.copy(requiredBins = listOf("__missin_bin__"))
+            metadata = skill.metadata.copy(requiredBins = listOf("__missin_bin__")),
+            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val health = xskill.health()
@@ -124,13 +131,60 @@ class SkillTest {
                         description = "Verify land title information",
                     )
                 )
-            )
+            ),
+            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val health = xskill.health()
 
         assertEquals(false, health.up)
         assertNotNull(health.details)
+    }
+
+    @Test
+    fun `canActivate - matches by name`() {
+        skill.init(emptyMap<String, Any>(), context)
+        assertTrue(skill.canActivate("I to perform use the land-title-verifier skill"))
+    }
+
+    @Test
+    fun `canActivate - matches by keywords`() {
+        skill.init(emptyMap<String, Any>(), context)
+        assertTrue(skill.canActivate("I want to check a land title"))
+    }
+
+    @Test
+    fun `canActivate - matches by category`() {
+        skill.init(emptyMap<String, Any>(), context)
+        assertTrue(skill.canActivate("I to perform real ESTATE ownership verification"))
+    }
+
+    @Test
+    fun `canActivate - no matches`() {
+        skill.init(emptyMap<String, Any>(), context)
+        assertFalse(skill.canActivate("Hello :-)"))
+    }
+
+    @Test
+    fun `canActivate - missing env`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(requiredEnv = listOf("__MISSING_ENV__")),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+
+        assertFalse(xskill.canActivate("I to perform use the land-title-verifier skill"))
+    }
+
+    @Test
+    fun `canActivate - missing bin`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(requiredBins = listOf("__missing_bin__")),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+
+        assertFalse(xskill.canActivate("I to perform use the land-title-verifier skill"))
     }
 
     private fun getResourceFile(path: String): File {

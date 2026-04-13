@@ -2,6 +2,7 @@ package com.wutsi.kokibot.skill
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.BootstrapTest
 import com.wutsi.kokibot.Context
@@ -62,8 +63,8 @@ class SkillRegistryTest {
     @Test
     fun init() {
         // GIVEN
-        doReturn(meta1)
-            .doReturn(meta2)
+        doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
             .whenever(parser).parse(any())
 
         val home = getResourceFile("/home/007")
@@ -91,6 +92,30 @@ class SkillRegistryTest {
     }
 
     @Test
+    fun `init - failure`() {
+        // GIVEN
+        doReturn(Pair(meta1, ""))
+            .doThrow(IllegalArgumentException::class.java)
+            .whenever(parser).parse(any())
+
+        val home = getResourceFile("/home/007")
+        val context = Context(
+            home = home,
+            llm = mock(),
+        )
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skills = registry.all()
+
+        assertEquals(1, skills.size)
+
+        assertEquals(meta1, skills[0].metadata)
+    }
+
+    @Test
     fun `init - no skills`() {
         // GIVEN
         val home = getResourceFile("/home/no-skills")
@@ -106,6 +131,53 @@ class SkillRegistryTest {
         val skills = registry.all()
 
         assertEquals(0, skills.size)
+    }
+
+    @Test
+    fun get() {
+        // GIVEN
+        doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
+            .whenever(parser).parse(any())
+
+        val home = getResourceFile("/home/007")
+        val context = Context(
+            home = home,
+            llm = mock(),
+        )
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skill = registry.get(meta1.name)
+        assertEquals(meta1, skill.metadata)
+    }
+
+    @Test
+    fun destroy() {
+        // GIVEN
+        val home = getResourceFile("/home/007")
+        val context = Context(
+            home = home,
+            llm = mock(),
+        )
+
+        val skill1 = mock<Skill>()
+        doReturn(meta1).whenever(skill1).metadata
+        registry.register(skill1)
+
+        val skill2 = mock<Skill>()
+        doReturn(meta2).whenever(skill2).metadata
+        registry.register(skill2)
+
+        // WHEN
+        registry.init(context)
+        registry.destroy()
+
+        // THEN
+        verify(skill1).destroy()
+        verify(skill2).destroy()
     }
 
     private fun getResourceFile(path: String): File {

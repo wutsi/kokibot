@@ -27,8 +27,8 @@
         <url/>
     </scm>
     <properties>
-        <jacoco.threshold.line>0.92</jacoco.threshold.line>
-        <jacoco.threshold.class>0.92</jacoco.threshold.class>
+        <jacoco.threshold.line>0.93</jacoco.threshold.line>
+        <jacoco.threshold.class>0.93</jacoco.threshold.class>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
 
         <flexmark.version>0.64.8</flexmark.version>

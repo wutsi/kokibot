@@ -8,6 +8,7 @@ import com.wutsi.kokibot.file.TextExtractor
 import com.wutsi.kokibot.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -28,18 +29,38 @@ class FSReadTest {
     }
 
     @Test
-    fun exec() {
+    fun `exec - pdf`() {
         val extractor = mock<TextExtractor>()
         doReturn("Hello, World!").whenever(extractor).extract(any())
         doReturn(extractor).whenever(factory).create(any())
 
+        tool.init(emptyMap<String, Any>(), mock())
         val result = tool.exec(mapOf("file" to "/path/to/file.pdf"))
 
         assertEquals("Hello, World!", result)
     }
 
     @Test
-    fun error() {
+    fun `exec - json`() {
+        val result = tool.exec(mapOf("file" to this::class.java.getResource("/file/sample.json")!!.file))
+
+        assertEquals("{\n  \"foo\": 2\n}\n", result)
+    }
+
+    @Test
+    fun `exec - txt`() {
+        val result = tool.exec(mapOf("file" to this::class.java.getResource("/file/sample.txt")!!.file))
+
+        assertEquals("Content of TXT file\n", result)
+    }
+
+    @Test
+    fun `exec - missing param`() {
+        assertThrows<IllegalArgumentException> { tool.exec(mapOf("xxx" to "/path/to/file.pdf")) }
+    }
+
+    @Test
+    fun `exec - error`() {
         doThrow(IllegalStateException("Failure")).whenever(factory).create(any())
 
         val result = tool.exec(mapOf("file" to "/path/to/file.pdf"))

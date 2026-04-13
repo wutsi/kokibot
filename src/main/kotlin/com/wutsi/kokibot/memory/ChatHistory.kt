@@ -1,7 +1,9 @@
 package com.wutsi.kokibot.memory
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.Resource
 import tools.jackson.core.type.TypeReference
 import java.io.File
 import java.time.LocalDate
@@ -11,18 +13,23 @@ import java.time.format.DateTimeFormatter
  * This is the short term memory of the assistant, which is used to store the chat history of the current day.
  * The conversation history is stored into workspace/memory/history/YYYY-MM-DD.json.
  */
-class ChatHistory {
+class ChatHistory : Resource {
     private lateinit var context: Context
 
     fun append(prompt: Message, response: Message) {
         return append(prompt, response, LocalDate.now())
     }
 
-    fun init(config: Map<*, *>, context: Context) {
+    override fun id(): String {
+        return "service:chat-history"
+    }
+
+    override fun init(config: Map<*, *>, context: Context) {
         this.context = context
     }
 
-    fun destroy() {
+    override fun health(): Health {
+        return Health(id = id(), up = true)
     }
 
     internal fun append(prompt: Message, response: Message, date: LocalDate) {

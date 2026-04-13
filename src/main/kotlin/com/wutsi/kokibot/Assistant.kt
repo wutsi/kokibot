@@ -9,7 +9,6 @@ import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.skill.Skill
-import com.wutsi.kokibot.skill.SkillMatcher
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
@@ -24,7 +23,6 @@ class Assistant {
     }
 
     private var maxIterations: Int = MAX_ITERATIONS
-    private val skillMatcher = SkillMatcher()
     private lateinit var context: Context
 
     fun init(config: Map<*, *>, context: Context) {
@@ -90,11 +88,11 @@ class Assistant {
         LOGGER.debug("LLM chat: ${query.text}")
 
         val skills = activateSkills(query, tools)
-        LOGGER.debug("Skills activated: ${skills.map { it.metadata.name }}")
+        LOGGER.debug("Skills activated: {}", skills.map { it.metadata.name })
 
         val tools = context.toolRegistry.all() + skills.flatMap { skill -> skill.getTools() }
 
-        val prompt = buildPrompt(query, memory)
+        val prompt = buildPrompt(query, memory, skills)
         val systemInstructions = buildSystemInstructions()
         return context.llm.completion(
             request = LLMRequest(prompt, systemInstructions),
@@ -103,7 +101,7 @@ class Assistant {
     }
 
     private fun activateSkills(query: Message, tools: MutableMap<String, Tool>): List<Skill> {
-        val skills = context.skillRegistry.all().filter { skill -> skillMatcher.matches(query.text, skill.metadata) }
+        val skills = context.skillRegistry.all().filter { skill -> skill.canActivate(query.text) }
         skills.flatMap { skill -> skill.getTools() }.forEach { tool ->
             tools[tool.metadata().name] = tool
         }
@@ -133,7 +131,12 @@ class Assistant {
     private fun exec(content: String, call: LLMToolCall, memory: MutableList<String>, tools: Map<String, Tool>) {
         LOGGER.debug("Tool execution: name={} - arguments={}", call.name, call.arguments)
 
-        val tool = tools[call.name]!!
+        val tool = tools[call.name]
+        if (tool == null) {
+            memory.add("Tool `${call.name}` is not available!")
+            return
+        }
+
         val result = tool.exec(call.arguments)
 
         memory.add(content)
@@ -176,27 +179,36 @@ class Assistant {
         return command.exec(input, context)
     }
 
-    private fun buildPrompt(prompt: Message, memory: List<String>): String {
+    private fun buildPrompt(prompt: Message, memory: List<String>, skills: List<Skill>): String {
         val sb = StringBuilder()
         sb.append("Query: ${prompt.text}")
+
+        val longTermMemory = context.memory.get()
+        if (longTermMemory != null) {
+            sb.append("\n\n# Long-Term Memory\n")
+            sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
+            sb.append("```markdown\n$longTermMemory\n```\n")
+        }
+
+        val shortTermMemory = context.chatHistory.get()
+        if (shortTermMemory != null) {
+            sb.append("\n\n# Conversation history\n")
+            sb.append("Here is the conversation history between you and the user in JSON format:\n")
+            sb.append("```json\n$shortTermMemory\n```\n")
+        }
 
         if (memory.isNotEmpty()) {
             sb.append("\n\n# Previous reasoning steps and observations")
             memory.forEach { line -> sb.append("$line\n\n") }
         }
 
-        val json = context.chatHistory.get()
-        if (json != null) {
-            sb.append("\n\n# Conversation history\n")
-            sb.append("Here is the conversation history between you and the user in JSON format:\n")
-            sb.append("```json\n$json\n```\n")
-        }
-
-        val memory = context.memory.get()
-        if (memory != null) {
-            sb.append("\n\n# Long-Term Memory\n")
-            sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
-            sb.append("```markdown\n$memory\n```\n")
+        if (skills.isNotEmpty()) {
+            sb.append("\n\n# Skills\n")
+            sb.append("Here are the details of each skill in markdown format\n")
+            skills.forEach { skill ->
+                sb.append("\n\n$## ${skill.metadata.name}\n")
+                sb.append("```markdown\n${skill.body}\n```\n")
+            }
         }
         return sb.toString()
     }
@@ -209,13 +221,14 @@ class Assistant {
             ""
         }
 
-        val skills = context.skillRegistry.all().map { skill ->
-            listOfNotNull(
-                "## ${skill.metadata.name}",
-                if (skill.metadata.categories.isNotEmpty()) "Categories: " + skill.metadata.categories.joinToString(",") else null,
-                skill.metadata.description,
-            ).joinToString("\n")
-        }
+        val skills = context.skillRegistry
+            .all()
+            .filter { skill -> skill.health().up }
+            .map { skill ->
+                listOfNotNull(
+                    "- `${skill.metadata.name}`: ${skill.metadata.description}",
+                ).joinToString("\n")
+            }
 
         if (skills.isNotEmpty()) {
             return base + "\n# Available skills\n" + skills.joinToString("\n\n")

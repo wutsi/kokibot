@@ -1,6 +1,8 @@
 package com.wutsi.kokibot.mail
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Health
+import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.util.MapUtil
 import jakarta.mail.Authenticator
@@ -11,7 +13,7 @@ import java.util.Properties
 /**
  * This is the SMTP service, which is used to send emails.
  */
-class SMTP {
+class SMTP : Resource {
     private var from: String? = null
     private lateinit var host: String
     private lateinit var username: String
@@ -19,6 +21,10 @@ class SMTP {
     private lateinit var port: String
     private lateinit var useTLS: String
     private lateinit var useSSL: String
+
+    override fun id(): String {
+        return "service:smtp"
+    }
 
     /**
      * Initialize the SMTP client with the given configuration and context.
@@ -32,7 +38,7 @@ class SMTP {
      * - use-ssl: whether to use SSL (default: false)
      * - use-tls: whether to use TLS (default: false)
      */
-    fun init(config: Map<*, *>, context: Context) {
+    override fun init(config: Map<*, *>, context: Context) {
         host = config["host"]?.toString()?.ifEmpty { null }
             ?: throw ConfigurationException("Missing required configuration: mail/smtp/host")
 
@@ -52,7 +58,14 @@ class SMTP {
         useTLS = MapUtil.toString("use-tls", config) ?: "false"
     }
 
-    fun destroy() {
+    override fun health(): Health {
+        try {
+            getSession().transport.connect()
+            getSession().transport.close()
+            return Health(id(), true)
+        } catch (ex: Exception) {
+            return Health(id(), false, ex.message ?: "Unknown error")
+        }
     }
 
     fun getSession(): Session {

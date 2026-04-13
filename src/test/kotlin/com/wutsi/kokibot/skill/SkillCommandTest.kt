@@ -1,14 +1,17 @@
 package com.wutsi.kokibot.skill
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.exception.SkillNotFoundException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.tools.ToolMetadata
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
-import kotlin.test.assertEquals
 
 class SkillCommandTest {
     private val skillRegistry = mock<SkillRegistry>()
@@ -56,7 +59,8 @@ class SkillCommandTest {
                     ToolMetadata(name = "tool1", description = "description of tool1"),
                     ToolMetadata(name = "tool2", description = "description of tool2"),
                 )
-            )
+            ),
+            body = "",
         )
         doReturn(skill).whenever(skillRegistry).get("skill1")
 
@@ -79,5 +83,14 @@ class SkillCommandTest {
             """.trimIndent(),
             result
         )
+    }
+
+    @Test
+    fun `exec skill not found`() {
+        doThrow(SkillNotFoundException("not found")).whenever(skillRegistry).get(any())
+
+        val result = cmd.exec("skill1", context)
+
+        assertEquals("Skill not found: `skill1`", result)
     }
 }

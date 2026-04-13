@@ -46,6 +46,11 @@ class MemoryTest {
     }
 
     @Test
+    fun id() {
+        assertEquals("service:memory", memory.id())
+    }
+
+    @Test
     fun `compact and get`() {
         // GIVEN
         val dir = File(home.absolutePath + "/workspace/memory")
@@ -125,5 +130,27 @@ class MemoryTest {
     fun `get no file`() {
         val result = memory.get()
         assertNull(result)
+    }
+
+    @Test
+    fun `get file`() {
+        // GIVEN
+        val dir = File(home.absolutePath + "/workspace/memory")
+        dir.mkdirs()
+        val ff = File(dir, "MEMORY.md")
+        ff.writeText("This is the current memory")
+
+        // WHEN
+        val result = memory.get()
+
+        // THEN
+        assertEquals("This is the current memory", result)
+    }
+
+    @Test
+    fun health() {
+        val health = memory.health()
+        assertEquals(memory.id(), health.id)
+        assertTrue(health.up)
     }
 }

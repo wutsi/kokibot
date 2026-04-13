@@ -2,7 +2,6 @@ package com.wutsi.kokibot.command
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
-import com.wutsi.kokibot.util.MarkdownSanitizer
 
 class HealthCommand : Command {
     override fun metadata(): CommandMetadata {
@@ -40,15 +39,12 @@ class HealthCommand : Command {
     private fun overall(context: Context): String {
         val overall = context.health()
         return "Overall Health: " + status(overall) + "\n\n" +
-            overall.children.joinToString("\n") { health -> status(health) + " `${health.id}`" }
+            overall.children
+                .sortedBy { health -> health.id }
+                .joinToString("\n") { health -> status(health) + " `${health.id}`" }
     }
 
     private fun status(health: Health): String {
         return if (health.up) "✅" else "❌"
-    }
-
-    private fun sanitize(input: String?): String {
-        if (input == null) return ""
-        return MarkdownSanitizer.escape(input)
     }
 }

@@ -27,12 +27,12 @@ import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolRegistry
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.File
 import java.util.UUID
-import kotlin.test.assertEquals
 
 class AssistantTest {
     private val home = getResourceFile("/home/007")
@@ -166,7 +166,7 @@ class AssistantTest {
     }
 
     @Test
-    fun `process with chat history`() {
+    fun `process with memory`() {
         // GIVEN
         doReturn(
             LLMResponse(
@@ -181,6 +181,9 @@ class AssistantTest {
                 )
             )
         ).whenever(llm).completion(any(), any())
+
+        val memory = "- Fact1, Fact2"
+        doReturn(memory).whenever(this.memory).get()
 
         val history =
             "[{\"text\":\"Hello\",\"role\":\"USER\",\"finishReason\":\"DONE\",\"exception\":null,\"dateTime\":\"2024-06-01T10:00:00\"}]"
@@ -197,8 +200,27 @@ class AssistantTest {
 
         val req = argumentCaptor<LLMRequest>()
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
-        assertEquals(true, req.firstValue.prompt.contains(history))
+
+        assertEquals(
+            """
+                Query: Yo
+
+                # Long-Term Memory
+                Here are information that you have stored in your long-term memory in Markdown format:
+                ```markdown
+                $memory
+                ```
+
+
+                # Conversation history
+                Here is the conversation history between you and the user in JSON format:
+                ```json
+                $history
+                ```
+
+               """.trimIndent(),
+            req.firstValue.prompt
+        )
 
         verify(chatHistory).append(prompt, result)
     }
@@ -264,7 +286,7 @@ class AssistantTest {
                         reasoningContent = null,
                         toolCalls = listOf(
                             LLMToolCall(
-                                name = "forecast-tool",
+                                name = "get_forecast",
                                 arguments = emptyMap<String, Any>()
                             )
                         ),
@@ -285,18 +307,35 @@ class AssistantTest {
             )
         ).whenever(llm).completion(any(), any())
 
+        val memory = "- Fact1, Fact2"
+        doReturn(memory).whenever(this.memory).get()
+
+        val history =
+            "[{\"text\":\"Hello\",\"role\":\"USER\",\"finishReason\":\"DONE\",\"exception\":null,\"dateTime\":\"2024-06-01T10:00:00\"}]"
+        doReturn(history).whenever(chatHistory).get()
+
         val skill = Skill(
             metadata = SkillMetadata(
-                name = "weather-skill",
+                name = "weather",
                 description = "Provides weather information",
                 keywords = listOf("weather", "temperature", "forecast"),
                 tools = listOf(
                     ToolMetadata(
-                        name = "forecast-tool",
+                        name = "get_forecast",
                         parameters = emptyList()
                     )
-                )
+                ),
             ),
+            body = """
+                    # Skill: Weather
+
+                    This skill provides weather information.
+
+                    ## Tools
+
+                    - `get_forecast`: Get accurate weather forecasts for a given location
+                       - `region`:`string` (optional): Specify the region for the weather forecast
+                """.trimIndent()
         )
         skill.init(emptyMap<String, Any>(), context)
         doReturn(listOf(skill)).whenever(skillRegistry).all()
@@ -312,14 +351,49 @@ class AssistantTest {
 
         val req = argumentCaptor<LLMRequest>()
         verify(llm, times(2)).completion(req.capture(), eq(listOf(tool1, tool2) + skill.getTools()))
-        assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
+        assertEquals(
+            """
+                Query: How does weather looks like today?
+
+                # Long-Term Memory
+                Here are information that you have stored in your long-term memory in Markdown format:
+                ```markdown
+                $memory
+                ```
+
+
+                # Conversation history
+                Here is the conversation history between you and the user in JSON format:
+                ```json
+                $history
+                ```
+
+
+                # Skills
+                Here are the details of each skill in markdown format
+
+
+                $## weather
+                ```markdown
+                # Skill: Weather
+
+                This skill provides weather information.
+
+                ## Tools
+
+                - `get_forecast`: Get accurate weather forecasts for a given location
+                   - `region`:`string` (optional): Specify the region for the weather forecast
+                ```
+
+               """.trimIndent(),
+            req.firstValue.prompt
+        )
         assertEquals(
             """
                 You are a system agent designed to assist users with various tasks.
 
                 # Available skills
-                ## weather-skill
-                Provides weather information
+                - `weather`: Provides weather information
             """.trimIndent(),
             req.firstValue.systemInstructions
         )

@@ -39,15 +39,7 @@ class Context(
     private val channels: MutableList<Channel> = mutableListOf()
 
     fun destroy() {
-        llm.destroy()
-        chatHistory.destroy()
-        memory.destroy()
-        toolRegistry.destroy()
-        commandRegistry.destroy()
-        skillRegistry.destroy()
-        smtp.destroy()
-        imap.destroy()
-        channels.forEach { it.destroy() }
+        resources().forEach { resource -> resource.destroy() }
         channels.clear()
     }
 
@@ -56,9 +48,9 @@ class Context(
         initSkills()
         initTools()
         initLLM(config)
+        initMail(config)
         initMemory(config)
         initCommands()
-        initMail(config)
     }
 
     fun health(): Health {
@@ -73,7 +65,8 @@ class Context(
     fun resources(): List<Resource> {
         return channels +
             skillRegistry.all() +
-            toolRegistry.all()
+            toolRegistry.all() +
+            listOf(llm, imap, smtp, chatHistory, memory)
     }
 
     private fun initChannels(agent: Assistant, config: Map<*, *>) {
@@ -128,17 +121,26 @@ class Context(
 
     private fun initMail(config: Map<*, *>) {
         val root = MapUtil.toMap("mail", config)
+            ?: return // No email configuration
 
-        val smtpRoot = root?.let { node -> MapUtil.toMap("smtp", node) }
+        val smtpRoot = root.let { node -> MapUtil.toMap("smtp", node) }
         if (smtpRoot != null) {
             LOGGER.info("Mail: SMTP")
-            smtp.init(smtpRoot, this)
+            try {
+                smtp.init(smtpRoot, this)
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to initialize SMTP - ${ex.message}")
+            }
         }
 
-        val imapNode = root?.let { node -> MapUtil.toMap("imap", node) }
+        val imapNode = root.let { node -> MapUtil.toMap("imap", node) }
         if (imapNode != null) {
             LOGGER.info("Mail: IMAP")
-            imap.init(imapNode, this)
+            try {
+                imap.init(imapNode, this)
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to initialize IMAP - ${ex.message}")
+            }
         }
     }
 

@@ -173,13 +173,13 @@ class DeepseekClient(
                     } catch (_: UnsupportedMimeTypeException) {
                         mapOf(
                             "role" to "user",
-                            "content" to "File ${file.name} has unsupported mime type. It's content cannot be read and will be ignored."
+                            "content" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
                         )
                     } catch (ex: Exception) {
                         LOGGER.warn("Failed to extract the content of file ${file.name}", ex)
                         mapOf(
                             "role" to "user",
-                            "content" to "Failed to extract the content of file ${file.name}. The file will be ignored."
+                            "content" to "Failed to extract the content of file ${file.absolutePath}. The file will be ignored. Error: ${ex.message}"
                         )
                     }
                 }

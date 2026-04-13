@@ -21,7 +21,8 @@ class SkillToolTest {
     private val skill = Skill(
         metadata = SkillMetadata(
             name = "land-title-verifier",
-        )
+        ),
+        body = "",
     )
 
     @Test

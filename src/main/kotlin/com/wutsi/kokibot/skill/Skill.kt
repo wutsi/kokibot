@@ -7,7 +7,7 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
 
-class Skill(val metadata: SkillMetadata) : Resource {
+class Skill(val metadata: SkillMetadata, val body: String) : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Skill::class.java)
     }
@@ -55,4 +55,15 @@ class Skill(val metadata: SkillMetadata) : Resource {
     }
 
     fun getTools() = tools
+
+    /**
+     * Check if the skill can be activated based on the input string and its metadata.
+     */
+    fun canActivate(input: String): Boolean {
+        val found = input.contains(metadata.name, ignoreCase = true) ||
+            metadata.keywords.any { keyword -> input.contains(keyword, ignoreCase = true) } ||
+            metadata.categories.any { keyword -> input.contains(keyword, ignoreCase = true) }
+
+        return found && health().up
+    }
 }

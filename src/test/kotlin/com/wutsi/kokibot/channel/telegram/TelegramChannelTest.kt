@@ -3,6 +3,7 @@ package com.wutsi.kokibot.channel.telegram
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
@@ -16,6 +17,7 @@ import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.util.RestBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
@@ -25,11 +27,13 @@ import org.springframework.web.client.RestTemplate
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
 import org.telegram.telegrambots.longpolling.exceptions.TelegramApiErrorResponseException
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.objects.Document
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.chat.Chat
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class TelegramChannelTest {
     private val app = mock<TelegramBotsLongPollingApplication>()
@@ -37,19 +41,20 @@ class TelegramChannelTest {
     private val factory = mock<TelegramFactory>()
     private val assistant = mock<Assistant>()
     private val rest = mock<RestTemplate>()
-    private val restBuider = mock<RestBuilder>()
-    private val telegram = TelegramChannel(assistant, factory, restBuider)
-    private val config = mapOf("token" to "test-token")
+    private val restBuilder = mock<RestBuilder>()
+    private val botToken = "13200493:AAH-abc123def456ghi789jkl012mno345pqr"
+    private val config = mapOf("token" to botToken)
     private val context = Context(
         home = File("target/test-data/telegram"),
         llm = mock()
     )
+    private val telegram = TelegramChannel(assistant, factory, restBuilder)
 
     @BeforeEach
     fun setUp() {
         doReturn(client).whenever(factory).createTelegramClient(any())
         doReturn(app).whenever(factory).createTelegramBotsLongPollingApplication()
-        doReturn(rest).whenever(restBuider).build(anyOrNull(), anyOrNull())
+        doReturn(rest).whenever(restBuilder).build(anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -63,9 +68,9 @@ class TelegramChannelTest {
         telegram.init(config, context)
 
         // THEN
-        verify(factory).createTelegramClient("test-token")
+        verify(factory).createTelegramClient(botToken)
         verify(factory).createTelegramBotsLongPollingApplication()
-        verify(app).registerBot(eq("test-token"), any())
+        verify(app).registerBot(eq(botToken), any())
     }
 
     @Test
@@ -92,7 +97,7 @@ class TelegramChannelTest {
         telegram.destroy()
 
         // THEN
-        verify(app).unregisterBot("test-token")
+        verify(app).unregisterBot(botToken)
     }
 
     @Test
@@ -105,13 +110,16 @@ class TelegramChannelTest {
     }
 
     @Test
-    fun `consume - should forward message to agent and return response`() {
+    fun `consume - should process text message`() {
         // GIVEN
         telegram.init(config, context)
-        doReturn(Message("World")).whenever(assistant).process(any())
+        doAnswer {
+            Thread.sleep(2 * TelegramChannel.TYPING_DELAY)
+            Message("World")
+        }.whenever(assistant).process(any())
 
         // WHEN
-        val update = createUpdateText("Hello", 123L)
+        val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
 
         // THEN
@@ -120,6 +128,7 @@ class TelegramChannelTest {
         assertEquals("Hello", prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("ray.sponsible@telegram", prompt.firstValue.userId)
+        assertEquals(emptyList(), prompt.firstValue.filePaths)
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -128,12 +137,45 @@ class TelegramChannelTest {
     }
 
     @Test
+    fun `consume - should process documents`() {
+        // GIVEN
+        doReturn(Message("Received")).whenever(assistant).process(any())
+
+        val update = createDocumentUpdate(123L, fileId = "21093209")
+        doReturn(ResponseEntity(mapOf("result" to mapOf("file_path" to "/files/1.pdf")), HttpStatus.OK))
+            .whenever(rest)
+            .getForEntity(any<String>(), eq(Map::class.java))
+
+        doReturn(ResponseEntity("Hello world".toByteArray(), HttpStatus.OK))
+            .whenever(rest)
+            .getForEntity(any<String>(), eq(ByteArray::class.java))
+
+        // WHEN
+        telegram.init(config, context)
+        telegram.consume(update)
+
+        // THEN
+        verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=21093209", Map::class.java)
+        verify(rest).getForEntity("https://api.telegram.org/file/bot$botToken/files/1.pdf", ByteArray::class.java)
+
+        val prompt = argumentCaptor<Message>()
+        verify(assistant).process(prompt.capture())
+        assertNotNull(prompt.firstValue.text)
+        assertEquals(Role.USER, prompt.firstValue.role)
+        assertEquals(1, prompt.firstValue.filePaths.size)
+
+        val file = File(prompt.firstValue.filePaths[0])
+        assertTrue(file.exists())
+        assertEquals("Hello world", file.readText())
+    }
+
+    @Test
     fun `consume - should ignore update without message text`() {
         // GIVEN
         telegram.init(config, context)
 
         // WHEN
-        val update = createUpdateText(null, 4309)
+        val update = createTextUpdate(null, 4309)
         telegram.consume(update)
 
         // THEN
@@ -151,7 +193,7 @@ class TelegramChannelTest {
         telegram.init(config, context)
 
         // WHEN
-        val update = createUpdateWithNoMessage(555)
+        val update = createEmptyUpdate(555)
         telegram.consume(update)
 
         // THEN
@@ -194,7 +236,24 @@ class TelegramChannelTest {
         assertEquals(0, result.children.size)
     }
 
-    private fun createUpdateText(text: String?, chatId: Long): Update {
+    private fun createDocumentUpdate(chatId: Long, fileId: String): Update {
+        val chat = Chat(chatId, "")
+        chat.userName = "ray.sponsible"
+        chat.firstName = "Ray"
+        chat.lastName = "Responsible"
+
+        val document = Document()
+        document.fileId = fileId
+
+        val update = Update()
+        val message = org.telegram.telegrambots.meta.api.objects.message.Message()
+        message.chat = chat
+        message.document = document
+        update.message = message
+        return update
+    }
+
+    private fun createTextUpdate(text: String?, chatId: Long): Update {
         val chat = Chat(chatId, "")
         chat.userName = "ray.sponsible"
         chat.firstName = "Ray"
@@ -208,7 +267,7 @@ class TelegramChannelTest {
         return update
     }
 
-    private fun createUpdateWithNoMessage(chatId: Long): Update {
+    private fun createEmptyUpdate(chatId: Long): Update {
         val update = Update()
         val message = org.telegram.telegrambots.meta.api.objects.message.Message()
         message.chat = Chat(chatId, "")

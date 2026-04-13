@@ -1,6 +1,8 @@
 package com.wutsi.kokibot.memory
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Health
+import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
@@ -15,7 +17,7 @@ import java.util.concurrent.TimeUnit
  * It's build by compacting the chat history, and extracting facts and information that can be used to answer questions.
  * The long term memory is stored into workspace/memory/MEMORY.md
  */
-class Memory {
+class Memory : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Memory::class.java)
         const val DEFAULT_WINDOW = 3
@@ -27,6 +29,10 @@ class Memory {
     private lateinit var context: Context
     private lateinit var compactJob: ScheduledFuture<*>
 
+    override fun id(): String {
+        return "service:memory"
+    }
+
     /**
      * Initialize the memory with the given configuration and context.
      *
@@ -34,7 +40,7 @@ class Memory {
      * - window: the number of days to look back when compacting the memory (default: 3)
      * - compaction-frequency: the frequency (in hours) to run the compaction job (default: 6)
      */
-    fun init(config: Map<*, *>, context: Context) {
+    override fun init(config: Map<*, *>, context: Context) {
         this.context = context
         this.window = MapUtil.toInt("window", config) ?: DEFAULT_WINDOW
 
@@ -42,8 +48,8 @@ class Memory {
         compactJob = launchCompactJob(frequency)
     }
 
-    fun destroy() {
-        compactJob.cancel(true)
+    override fun health(): Health {
+        return Health(id = id(), up = true)
     }
 
     fun get(): String? {

@@ -13,7 +13,10 @@ import java.util.regex.Pattern
 class SkillParser {
     private val yaml = Yaml()
 
-    fun parse(file: File): SkillMetadata {
+    /**
+     * Parses a SKILL.md file and extracts both the SkillMetadata and the raw body content.
+     */
+    fun parse(file: File): Pair<SkillMetadata, String> {
         val content = file.readText()
         val parts = content.split("---")
         if (parts.size < 3) throw ConfigurationException("skill: ${file.name} - Invalid SKILL.md format")
@@ -81,14 +84,17 @@ class SkillParser {
         // Add the final tool in the loop
         currentTool?.let { tools.add(it.copy(parameters = currentParams)) }
 
-        return SkillMetadata(
-            name = metadataMap["name"]?.toString() ?: file.name.lowercase(),
-            description = metadataMap["description"]?.toString() ?: "",
-            keywords = keywords,
-            categories = categories,
-            requiredBins = bins,
-            requiredEnv = env,
-            tools = tools
+        return Pair(
+            SkillMetadata(
+                name = (metadataMap["name"]?.toString() ?: file.name).lowercase(),
+                description = metadataMap["description"]?.toString() ?: "",
+                keywords = keywords,
+                categories = categories,
+                requiredBins = bins,
+                requiredEnv = env,
+                tools = tools
+            ),
+            body.trim(),
         )
     }
 }

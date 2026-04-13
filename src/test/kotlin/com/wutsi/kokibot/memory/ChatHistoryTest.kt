@@ -34,6 +34,11 @@ class ChatHistoryTest {
     }
 
     @Test
+    fun id() {
+        assertEquals("service:chat-history", history.id())
+    }
+
+    @Test
     fun `append first and get`() {
         // WHEN
         val prompt = Message("Hello", Role.USER)
@@ -132,5 +137,28 @@ class ChatHistoryTest {
 
         // THEN
         assertNull(history)
+    }
+
+    @Test
+    fun clear() {
+        // GIVEN
+        val prompt = Message("Hello", Role.USER)
+        val response = Message("Hi there!", Role.ASSISTANT)
+        history.append(prompt, response)
+
+        // WHEN
+        history.clear()
+
+        // THEN
+        val json = history.get()
+        assertNull(json)
+    }
+
+    @Test
+    fun health() {
+        val health = history.health()
+
+        assertEquals(history.id(), health.id)
+        assertTrue(health.up)
     }
 }

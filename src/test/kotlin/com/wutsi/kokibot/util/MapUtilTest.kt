@@ -22,7 +22,7 @@ class MapUtilTest {
     @Test
     fun `to Long`() {
         assertEquals(123L, MapUtil.toLong("key", mapOf("key" to "123")))
-        assertEquals(123L, MapUtil.toLong("key", mapOf("key" to 123)))
+        assertEquals(123L, MapUtil.toLong("key", mapOf("key" to 123L)))
         assertEquals(null, MapUtil.toLong("key", mapOf("key" to null)))
     }
 

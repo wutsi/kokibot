@@ -37,6 +37,11 @@ class SMTPTest {
     }
 
     @Test
+    fun id() {
+        assertEquals("service:smtp", smtp.id())
+    }
+
+    @Test
     fun getSession() {
         val config = mapOf(
             "host" to "localhost",
@@ -171,5 +176,39 @@ class SMTPTest {
         )
 
         assertThrows<ConfigurationException> { smtp.init(cfg, context) }
+    }
+
+    @Test
+    fun `health - up`() {
+        val config = mapOf(
+            "host" to "localhost",
+            "port" to ServerSetupTest.SMTP.port,
+            "username" to username,
+            "password" to password,
+            "from" to from,
+        )
+
+        smtp.init(config, context)
+        val health = smtp.health()
+
+        assertEquals("service:smtp", health.id)
+        assertEquals(true, health.up)
+    }
+
+    @Test
+    fun `health - down`() {
+        val config = mapOf(
+            "host" to "localhost",
+            "port" to 1111,
+            "username" to username,
+            "password" to password,
+            "from" to from,
+        )
+
+        smtp.init(config, context)
+        val health = smtp.health()
+
+        assertEquals("service:smtp", health.id)
+        assertEquals(false, health.up)
     }
 }

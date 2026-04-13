@@ -2,6 +2,8 @@ package com.wutsi.kokibot
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.channel.Channel
@@ -54,6 +56,12 @@ class ContextTest {
     fun setUp() {
         doReturn(Health(id = "-", up = true)).whenever(channel).health()
         doReturn(channel).whenever(context.channelFactory).create(any(), any())
+
+        doReturn(Health(id = "-", up = true)).whenever(context.imap).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.llm).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.smtp).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.chatHistory).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
     }
 
     @Test
@@ -65,11 +73,8 @@ class ContextTest {
         context.destroy()
 
         verify(context.llm).destroy()
-        verify(context.toolRegistry).destroy()
         verify(context.memory).destroy()
         verify(context.chatHistory).destroy()
-        verify(context.commandRegistry).destroy()
-        verify(context.skillRegistry).destroy()
         verify(channel).destroy()
         verify(context.smtp).destroy()
         verify(context.imap).destroy()
@@ -91,6 +96,72 @@ class ContextTest {
     }
 
     @Test
+    fun `init - channel missing type`() {
+        doThrow(RuntimeException()).whenever(context.channelFactory).create(any(), any())
+
+        context.init(assistant, config)
+    }
+
+    @Test
+    fun `init - channel initiatilization error`() {
+        val cfg = mapOf(
+            "channels" to listOf(
+                emptyMap<String, Any>()
+            )
+        )
+
+        context.init(assistant, cfg)
+
+        verify(context.channelFactory, never()).create(any(), any())
+    }
+
+    @Test
+    fun `init - LLM missing configuration`() {
+        val cfg = config - "llm"
+
+        context.init(assistant, cfg)
+
+        verify(context.llm, never()).init(emptyMap<String, Any>(), context)
+    }
+
+    @Test
+    fun `init - LLM configuration erorr`() {
+        doThrow(RuntimeException()).whenever(context.llm).init(any(), any())
+
+        context.init(assistant, config)
+    }
+
+    @Test
+    fun `init - mail missing configuration`() {
+        val cfg = config - "mail"
+
+        context.init(assistant, cfg)
+
+        verify(context.smtp, never()).init(any(), any())
+        verify(context.imap, never()).init(any(), any())
+    }
+
+    @Test
+    fun `init - mail missing IMAP`() {
+        val cfg = config - "mail" + ("mail" to mapOf("smtp" to smtpConfig))
+
+        context.init(assistant, cfg)
+
+        verify(context.smtp).init(smtpConfig, context)
+        verify(context.imap, never()).init(any(), any())
+    }
+
+    @Test
+    fun `init - mail missing SMTP`() {
+        val cfg = config - "mail" + ("mail" to mapOf("imap" to imapConfig))
+
+        context.init(assistant, cfg)
+
+        verify(context.smtp, never()).init(any(), any())
+        verify(context.imap).init(imapConfig, context)
+    }
+
+    @Test
     fun health() {
         // GIVEN
         context.init(assistant, config)
@@ -100,7 +171,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(1, health.children.size)
+        assertEquals(6, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

@@ -121,6 +121,6 @@ class ToolCommandTest {
 
         val result = cmd.exec("tool1", context)
 
-        assertEquals("Tool not found: tool1", result)
+        assertEquals("Tool not found: `tool1`", result)
     }
 }

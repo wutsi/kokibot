@@ -1,6 +1,7 @@
 package com.wutsi.kokibot
 
 import com.wutsi.kokibot.channel.Channel
+import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.util.MapUtil
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
@@ -47,6 +48,11 @@ class Bootstrap(
             MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>(),
             context,
         )
+
+        LOGGER.info("Checking health...")
+        LOGGER.info(HealthCommand().exec("", context))
+
+        LOGGER.info("Initialization completed")
     }
 
     private fun loadConfig(file: File): Map<*, *> {

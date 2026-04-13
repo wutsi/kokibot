@@ -28,10 +28,12 @@ class SkillRegistry(private val parser: SkillParser) {
     private fun init(dir: File, context: Context) {
         val md = File(dir, "SKILL.md")
         try {
-            val meta = parser.parse(md)
+            val result = parser.parse(md)
+            val meta = result.first
+            val body = result.second
             LOGGER.info("Skill: ${meta.name}")
 
-            val skill = Skill(metadata = meta)
+            val skill = Skill(metadata = meta, body = body)
             register(skill)
             skill.init(emptyMap<String, Any>(), context)
         } catch (ex: Exception) {
@@ -47,7 +49,7 @@ class SkillRegistry(private val parser: SkillParser) {
         return skills.values.toList()
     }
 
-    private fun register(skill: Skill) {
+    fun register(skill: Skill) {
         val name = skill.metadata.name.lowercase()
         skills[name] = skill
     }

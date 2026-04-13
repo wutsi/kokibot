@@ -1,6 +1,8 @@
 package com.wutsi.kokibot.mail
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Health
+import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.util.MapUtil
 import jakarta.mail.Session
@@ -10,12 +12,16 @@ import java.util.Properties
 /**
  * This is the IMAP service, which is used to read emails.
  */
-class IMAP {
+class IMAP : Resource {
     private lateinit var host: String
     private lateinit var username: String
     private lateinit var password: String
     private lateinit var port: String
     private lateinit var useSSL: String
+
+    override fun id(): String {
+        return "service:imap"
+    }
 
     /**
      * Initialize the IMAP client with the given configuration and context.
@@ -26,7 +32,7 @@ class IMAP {
      * - password: the IMAP server password (required)
      * - use-ssl: whether to use SSL (default: false)
      */
-    fun init(config: Map<*, *>, context: Context) {
+    override fun init(config: Map<*, *>, context: Context) {
         host = config["host"]?.toString()?.ifEmpty { null }
             ?: throw ConfigurationException("Missing required configuration: mail/imap/host")
 
@@ -42,7 +48,13 @@ class IMAP {
         useSSL = MapUtil.toString("use-ssl", config) ?: "false"
     }
 
-    fun destroy() {
+    override fun health(): Health {
+        try {
+            getStore().close()
+            return Health(id(), true)
+        } catch (ex: Exception) {
+            return Health(id(), false, ex.message ?: "Unknown error")
+        }
     }
 
     fun getStore(): Store {

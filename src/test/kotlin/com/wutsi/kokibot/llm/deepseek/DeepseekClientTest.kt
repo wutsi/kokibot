@@ -275,7 +275,7 @@ class DeepseekClientTest {
 
         val body = req.firstValue.body as Map<*, *>
         val messages = MapUtil.toList("messages", body) as List<Map<String, Any>>
-        assertEquals(3, messages?.size)
+        assertEquals(3, messages.size)
 
         val message = messages[2]
         assertEquals("user", message["role"])
@@ -283,6 +283,79 @@ class DeepseekClientTest {
         val content = MapUtil.toMap("content", message)
         assertEquals("image_url", content?.get("type"))
         assertTrue(content?.get("url").toString().startsWith("data:image/jpeg;base64,"))
+    }
+
+    @Test
+    fun `completion with Unsupported file`() {
+        // WHEN
+        val file = File(this::class.java.getResource("/deepseek/sample.sh")!!.file)
+        val request = LLMRequest(
+            prompt = "Hi sir",
+            systemInstructions = "You are a helpful assistant",
+            files = listOf(file)
+        )
+        val client = createClient()
+        client.completion(request, emptyList())
+
+        // THEN
+        val req = argumentCaptor<HttpEntity<Map<*, *>>>()
+        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+
+        val body = req.firstValue.body as Map<*, *>
+        assertEquals(
+            listOf(
+                mapOf(
+                    "role" to "system",
+                    "content" to "You are a helpful assistant"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "Hi sir"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
+                )
+            ),
+            body["messages"]
+        )
+    }
+
+    @Test
+    fun `completion with error while processing file`() {
+        // WHEN
+        val request = LLMRequest(
+            prompt = "Hi sir",
+            systemInstructions = "You are a helpful assistant",
+            files = listOf(
+                File("/path/to/non-existing-file.txt")
+            )
+        )
+        val client = createClient()
+        client.completion(request, emptyList())
+
+        // THEN
+        val req = argumentCaptor<HttpEntity<Map<*, *>>>()
+        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+
+        val body = req.firstValue.body as Map<*, *>
+        assertEquals(
+            listOf(
+                mapOf(
+                    "role" to "system",
+                    "content" to "You are a helpful assistant"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "Hi sir"
+                ),
+                mapOf(
+                    "role" to "user",
+                    "content" to "Failed to extract the content of file /path/to/non-existing-file.txt. The file will be ignored. Error: /path/to/non-existing-file.txt (No such file or directory)"
+                )
+            ),
+            body["messages"]
+        )
     }
 
     @Test

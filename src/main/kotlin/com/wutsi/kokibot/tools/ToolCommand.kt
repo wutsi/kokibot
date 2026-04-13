@@ -48,7 +48,7 @@ class ToolCommand : Command {
                 "*Parameters:*\n$params"
         } catch (ex: Exception) {
             LOGGER.warn("Unexpected error", ex)
-            return "Tool not found: ${sanitize(name)}"
+            return "Tool not found: `$name`"
         }
     }
 

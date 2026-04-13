@@ -183,40 +183,4 @@ class MailListToolTest : AbstractIMAPToolTest() {
         assertTrue(result.contains("From: omam.mbiyic@gmail.com"))
         assertTrue(result.contains("Subject: Yo man"))
     }
-
-    @Test
-    fun `earliest 1d`() {
-        val value = tool.earliestValue("1d")
-        assertEquals(86400000L, value)
-    }
-
-    @Test
-    fun `earliest 2d`() {
-        val value = tool.earliestValue("3d")
-        assertEquals(259200000L, value)
-    }
-
-    @Test
-    fun `earliest 3h`() {
-        val value = tool.earliestValue("3h")
-        assertEquals(10800000L, value)
-    }
-
-    @Test
-    fun `earliest 30m`() {
-        val value = tool.earliestValue("30m")
-        assertEquals(1800000L, value)
-    }
-
-    @Test
-    fun `earliest invalid value`() {
-        val value = tool.earliestValue("xxx")
-        assertEquals(86400000L, value)
-    }
-
-    @Test
-    fun `earliest missing value`() {
-        val value = tool.earliestValue("")
-        assertEquals(86400000L, value)
-    }
 }

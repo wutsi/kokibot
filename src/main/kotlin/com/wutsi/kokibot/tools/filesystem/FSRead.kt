@@ -1,6 +1,6 @@
 package com.wutsi.kokibot.tools.filesystem
 
-import com.wutsi.kokibot.file.TextExtractorFactory
+import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter

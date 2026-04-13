@@ -4,8 +4,8 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.whenever
-import com.wutsi.kokibot.file.TextExtractor
-import com.wutsi.kokibot.file.TextExtractorFactory
+import com.wutsi.kokibot.service.file.TextExtractor
+import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

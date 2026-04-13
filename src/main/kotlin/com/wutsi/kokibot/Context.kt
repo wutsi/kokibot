@@ -5,10 +5,10 @@ import com.wutsi.kokibot.channel.ChannelFactory
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.mail.IMAP
-import com.wutsi.kokibot.mail.SMTP
-import com.wutsi.kokibot.memory.ChatHistory
-import com.wutsi.kokibot.memory.Memory
+import com.wutsi.kokibot.service.mail.IMAP
+import com.wutsi.kokibot.service.mail.SMTP
+import com.wutsi.kokibot.service.memory.ChatHistory
+import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillParser
 import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.ToolRegistry

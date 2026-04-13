@@ -4,9 +4,9 @@ import com.icegreen.greenmail.util.ServerSetupTest
 import com.nhaarman.mockitokotlin2.mock
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.mail.IMAP
-import com.wutsi.kokibot.memory.ChatHistory
-import com.wutsi.kokibot.memory.Memory
+import com.wutsi.kokibot.service.mail.IMAP
+import com.wutsi.kokibot.service.memory.ChatHistory
+import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.tools.ToolRegistry
 import java.io.File
 

@@ -8,11 +8,11 @@ import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
-import com.wutsi.kokibot.mail.SMTP
-import com.wutsi.kokibot.memory.ChatHistory
-import com.wutsi.kokibot.memory.ClearCommand
-import com.wutsi.kokibot.memory.CompactCommand
-import com.wutsi.kokibot.memory.Memory
+import com.wutsi.kokibot.service.mail.SMTP
+import com.wutsi.kokibot.service.memory.ChatHistory
+import com.wutsi.kokibot.service.memory.ClearCommand
+import com.wutsi.kokibot.service.memory.CompactCommand
+import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillCommand
 import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.Tool

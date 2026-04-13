@@ -1,12 +1,12 @@
 package com.wutsi.kokibot.llm.deepseek
 
 import com.wutsi.kokibot.exception.UnsupportedMimeTypeException
-import com.wutsi.kokibot.file.TextExtractorFactory
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder

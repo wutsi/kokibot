@@ -3,6 +3,7 @@ package com.wutsi.kokibot.tools.mail
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
+import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import jakarta.mail.Flags
 import jakarta.mail.Folder
@@ -79,7 +80,7 @@ class MailListTool : AbstractIMAPTool() {
         return sb.toString()
     }
 
-    internal fun filter(messages: List<Message>, earliest: Long?, limit: Int): List<Message> {
+    private fun filter(messages: List<Message>, earliest: Long?, limit: Int): List<Message> {
         var i = 0
         val xmessages = mutableListOf<Message>()
         if (earliest != null) {
@@ -100,24 +101,7 @@ class MailListTool : AbstractIMAPTool() {
         return xmessages
     }
 
-    internal fun earliestValue(earliest: String): Long {
-        return when {
-            earliest.endsWith("d") -> {
-                val days = earliest.dropLast(1).toIntOrNull() ?: 1
-                days * 24 * 60 * 60 * 1000L
-            }
-
-            earliest.endsWith("h") -> {
-                val hours = earliest.dropLast(1).toIntOrNull() ?: 1
-                hours * 60 * 60 * 1000L
-            }
-
-            earliest.endsWith("m") -> {
-                val minutes = earliest.dropLast(1).toIntOrNull() ?: 1
-                minutes * 60 * 1000L
-            }
-
-            else -> 24 * 60 * 60 * 1000L // default to 1 day
-        }
+    private fun earliestValue(earliest: String): Long {
+        return DurationUtil.millis(earliest, DurationUtil.ONE_DAY)
     }
 }

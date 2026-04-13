@@ -2,6 +2,7 @@ package com.wutsi.kokibot
 
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.command.HealthCommand
+import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.util.MapUtil
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
@@ -20,7 +21,8 @@ class Bootstrap(
 
     private lateinit var context: Context
     private lateinit var assistant: Assistant
-    private lateinit var channels: MutableList<Channel>
+    private lateinit var heartbeat: Heartbeat
+    private val channels: MutableList<Channel> = mutableListOf()
 
     @PostConstruct
     fun init() {
@@ -32,7 +34,9 @@ class Bootstrap(
     fun destroy() {
         assistant.destroy()
         context.destroy()
+        heartbeat.destroy()
         channels.forEach { channel -> channel.destroy() }
+        channels.clear()
     }
 
     internal fun init(home: File) {
@@ -41,11 +45,16 @@ class Bootstrap(
         val config = loadConfig(File(getConfigDir(home), "settings.json"))
         this.context = contextFactory.create(home, config)
         this.assistant = Assistant()
-        this.channels = mutableListOf()
 
         context.init(assistant, config)
         assistant.init(
             MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>(),
+            context,
+        )
+
+        heartbeat = Heartbeat(assistant)
+        heartbeat.init(
+            MapUtil.toMap("heartbeat", config) ?: emptyMap<String, Any>(),
             context,
         )
 

@@ -19,8 +19,8 @@ import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.memory.ChatHistory
-import com.wutsi.kokibot.memory.Memory
+import com.wutsi.kokibot.service.memory.ChatHistory
+import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.Skill
 import com.wutsi.kokibot.skill.SkillMetadata
 import com.wutsi.kokibot.skill.SkillRegistry

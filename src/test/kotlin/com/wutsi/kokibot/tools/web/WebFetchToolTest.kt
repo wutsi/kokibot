@@ -23,14 +23,14 @@ class WebFetchToolTest {
     fun exec() {
         val args = mapOf("url" to "https://evendo.com/locations/cameroon/yaounde/odza")
         val result = tool.exec(args)
-        println(result)
+//        println(result)
     }
 
     @Test
     fun `exec PDF`() {
         val args = mapOf("url" to "https://www.amicaall.org/publications/profiles/Profil_municipal%20Soa_finalise.pdf")
         val result = tool.exec(args)
-        println(result)
+//        println(result)
     }
 
     @Test

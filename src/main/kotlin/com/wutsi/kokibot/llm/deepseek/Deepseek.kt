@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.llm.deepseek
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMRequest
@@ -19,6 +20,10 @@ class Deepseek : LLM {
     }
 
     internal lateinit var client: DeepseekClient
+
+    override fun id(): String {
+        return "llm:deepseek"
+    }
 
     /**
      * Initialize the Deepseek client with the given configuration and context.
@@ -44,6 +49,15 @@ class Deepseek : LLM {
             readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,
             connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
         )
+    }
+
+    override fun health(): Health {
+        return try {
+            client.completion(LLMRequest(prompt = "Hello"), emptyList())
+            Health(id = id())
+        } catch (ex: Exception) {
+            Health(id = id(), up = false, details = ex.message ?: "unknown error")
+        }
     }
 
     override fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {

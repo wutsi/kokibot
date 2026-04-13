@@ -3,6 +3,7 @@ package com.wutsi.kokibot
 import com.wutsi.kokibot.channel.ChannelFactory
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
+import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
@@ -110,6 +111,7 @@ class ContextFactory(
         return listOf(
             ClearCommand(),
             CompactCommand(),
+            HealthCommand(),
             HelpCommand(),
             SkillCommand(),
             ToolCommand(),

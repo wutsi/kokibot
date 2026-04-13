@@ -298,7 +298,7 @@ class AssistantTest {
                 )
             ),
         )
-        skill.init(context)
+        skill.init(emptyMap<String, Any>(), context)
         doReturn(listOf(skill)).whenever(skillRegistry).all()
 
         // WHEN

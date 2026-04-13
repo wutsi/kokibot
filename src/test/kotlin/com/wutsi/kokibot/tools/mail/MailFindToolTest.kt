@@ -45,7 +45,7 @@ class MailFindToolTest : AbstractIMAPToolTest() {
         val result = tool.exec(
             mapOf("keyword" to "ball")
         )
-        println(result)
+//        println(result)
 
         assertEquals(true, result.contains("2 email(s) found with keyword 'ball'"))
 
@@ -66,7 +66,7 @@ class MailFindToolTest : AbstractIMAPToolTest() {
         val result = tool.exec(
             mapOf("keyword" to "ball")
         )
-        println(result)
+//        println(result)
 
         assertEquals(true, result.contains("2 email(s) found with keyword 'ball'"))
 
@@ -90,7 +90,7 @@ class MailFindToolTest : AbstractIMAPToolTest() {
                 "limit" to 2
             )
         )
-        println(result)
+//        println(result)
 
         assertEquals(true, result.contains("2 email(s) found with keyword 'the'"))
 
@@ -111,7 +111,7 @@ class MailFindToolTest : AbstractIMAPToolTest() {
         val result = tool.exec(
             mapOf("keyword" to "xxxx")
         )
-        println(result)
+//        println(result)
 
         assertEquals("0 email(s) found with keyword 'xxxx'\n", result)
     }

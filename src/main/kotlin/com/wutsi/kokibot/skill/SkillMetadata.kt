@@ -4,7 +4,7 @@ import com.wutsi.kokibot.tools.ToolMetadata
 
 data class SkillMetadata(
     val name: String,
-    val description: String? = null,
+    val description: String = "",
     val tools: List<ToolMetadata> = emptyList(),
     val categories: List<String> = emptyList(),
     val keywords: List<String> = emptyList(),

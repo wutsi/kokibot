@@ -55,7 +55,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
         // WHEN
         val result = tool.exec(emptyMap<String, Any>())
-        println(result)
+//        println(result)
 
         // THEN
         assertEquals(true, result.contains("3 email(s) found"))
@@ -91,7 +91,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
         // WHEN
         val result = tool.exec(mapOf("limit" to 2))
-        println(result)
+//        println(result)
 
         // THEN
         assertEquals(true, result.contains("2 email(s) found"))
@@ -127,7 +127,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
                 "unread" to true,
             )
         )
-        println(result)
+//        println(result)
 
         // THEN
         assertEquals(true, result.contains("2 unread email(s) found"))
@@ -161,7 +161,7 @@ class MailListToolTest : AbstractIMAPToolTest() {
 
         // WHEN
         val result = tool.exec(mapOf("earliest" to "1d"))
-        println(result)
+//        println(result)
 
         // THEN
         assertEquals(true, result.contains("3 email(s) found"))

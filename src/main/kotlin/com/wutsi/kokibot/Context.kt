@@ -53,12 +53,27 @@ class Context(
 
     fun init(assistant: Assistant, config: Map<*, *>) {
         initChannels(assistant, config)
+        initSkills()
+        initTools()
         initLLM(config)
         initMemory(config)
-        initTools()
         initCommands()
         initMail(config)
-        initSkills()
+    }
+
+    fun health(): Health {
+        val healths = resources().map { resource -> resource.health() }
+        return Health(
+            id = "context",
+            up = healths.all { it.up },
+            children = healths,
+        )
+    }
+
+    fun resources(): List<Resource> {
+        return channels +
+            skillRegistry.all() +
+            toolRegistry.all()
     }
 
     private fun initChannels(agent: Assistant, config: Map<*, *>) {
@@ -71,20 +86,28 @@ class Context(
     }
 
     private fun initChannel(agent: Assistant, config: Map<*, *>) {
-        val type = config["type"]?.toString()
-            ?: throw ConfigurationException("channel type is required")
+        try {
+            val type = config["type"]?.toString()
+                ?: throw ConfigurationException("channel type is required")
 
-        LOGGER.info("Channel: $type")
-        val channel = channelFactory.create(type, agent)
-        channel.init(config, this)
-        channels.add(channel)
+            LOGGER.info("Channel: $type")
+            val channel = channelFactory.create(type, agent)
+            channel.init(config, this)
+            channels.add(channel)
+        } catch (ex: Exception) {
+            LOGGER.warn("Failed to initialize the channel - ${ex.message}")
+        }
     }
 
     private fun initLLM(config: Map<*, *>) {
-        val root = MapUtil.toMap("llm", config)
-            ?: throw ConfigurationException("LLM has invalid structure or missing")
+        try {
+            val root = MapUtil.toMap("llm", config)
+                ?: throw ConfigurationException("LLM has invalid structure or missing")
 
-        llm.init(root, this)
+            llm.init(root, this)
+        } catch (ex: Exception) {
+            LOGGER.warn("Failed to initialize the LLM - ${ex.message}")
+        }
     }
 
     private fun initMemory(config: Map<*, *>) {

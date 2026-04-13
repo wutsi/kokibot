@@ -66,15 +66,16 @@ class SkillCommandTest {
             """
                 *Skill:* skill1
 
-                *Description:* description of skill1
+                *Description:*
+                description of skill1
 
-                *Required Bin:* - \`bin1\`,- \`bin2\`
+                *Required Bin:* `bin1`, `bin2`
 
-                *Required Env:* - \`env1\`,- \`env2\`
+                *Required Env:* `env1`, `env2`
 
                 *Tools:*
-                - tool1
-                - tool2
+                - `tool1`
+                - `tool2`
             """.trimIndent(),
             result
         )

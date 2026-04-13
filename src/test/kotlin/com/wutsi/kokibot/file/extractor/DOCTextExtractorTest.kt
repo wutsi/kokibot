@@ -9,7 +9,7 @@ class DOCTextExtractorTest {
 
     @Test
     fun extract() {
-        val file = this::class.java.getResource("/file/doc-sample.doc")!!.file
+        val file = this::class.java.getResource("/file/sample.doc")!!.file
         val text = extractor.extract(file = File(file))
 
         assertTrue(

@@ -6,9 +6,12 @@ import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SkillToolTest {
     val context = Context(
@@ -20,6 +23,17 @@ class SkillToolTest {
             name = "land-title-verifier",
         )
     )
+
+    @Test
+    fun id() {
+        val metadata = ToolMetadata(
+            name = "check_title",
+            description = "Verify land title information",
+        )
+        val tool = SkillTool(skill, metadata)
+
+        assertEquals("tool:check_title", tool.id())
+    }
 
     @Test
     fun metadata() {
@@ -127,6 +141,53 @@ class SkillToolTest {
             "Sorry, I cannot execute the tool `${metadata.name}`. No script found!\n",
             result
         )
+    }
+
+    @Test
+    fun `health - up`() {
+        val metadata = ToolMetadata(
+            name = "get_title_history",
+            description = "Verify land title history",
+            parameters = listOf(
+                ToolParameter(
+                    name = "title_number",
+                    description = "The unique ID of the land title (e.g., \"1234/LIT\")",
+                    required = true,
+                    type = ToolParameterType.STRING,
+                ),
+            )
+        )
+        val tool = SkillTool(skill, metadata)
+        tool.init(emptyMap<String, Any>(), context)
+
+        val health = tool.health()
+
+        assertTrue(health.up)
+        assertEquals(tool.id(), health.id)
+    }
+
+    @Test
+    fun `health - down`() {
+        val metadata = ToolMetadata(
+            name = "no_script",
+            description = "Verify land title history",
+            parameters = listOf(
+                ToolParameter(
+                    name = "title_number",
+                    description = "The unique ID of the land title (e.g., \"1234/LIT\")",
+                    required = true,
+                    type = ToolParameterType.STRING,
+                ),
+            )
+        )
+        val tool = SkillTool(skill, metadata)
+        tool.init(emptyMap<String, Any>(), context)
+
+        val health = tool.health()
+
+        assertFalse(health.up)
+        assertEquals(tool.id(), health.id)
+        assertNotNull(health.details)
     }
 
     private fun getResourceFile(path: String): File {

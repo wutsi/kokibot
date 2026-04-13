@@ -83,7 +83,7 @@ class SkillParser {
 
         return SkillMetadata(
             name = metadataMap["name"]?.toString() ?: file.name.lowercase(),
-            description = metadataMap["description"]?.toString(),
+            description = metadataMap["description"]?.toString() ?: "",
             keywords = keywords,
             categories = categories,
             requiredBins = bins,

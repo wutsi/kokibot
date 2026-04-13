@@ -9,6 +9,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
+import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -19,6 +20,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
 import java.io.File
+import kotlin.test.assertTrue
 
 class DeepseekClientTest {
     companion object {
@@ -139,7 +141,7 @@ class DeepseekClientTest {
             prompt = "Hi sir",
             systemInstructions = "You are a helpful assistant",
             files = listOf(
-                File(this::class.java.getResource("/deepseek/txt-sample.txt")!!.file)
+                File(this::class.java.getResource("/deepseek/sample.txt")!!.file)
             )
         )
         val client = createClient()
@@ -180,7 +182,7 @@ class DeepseekClientTest {
             prompt = "Hi sir",
             systemInstructions = "You are a helpful assistant",
             files = listOf(
-                File(this::class.java.getResource("/deepseek/json-sample.json")!!.file)
+                File(this::class.java.getResource("/deepseek/sample.json")!!.file)
             )
         )
         val client = createClient()
@@ -221,7 +223,7 @@ class DeepseekClientTest {
             prompt = "Hi sir",
             systemInstructions = "You are a helpful assistant",
             files = listOf(
-                File(this::class.java.getResource("/deepseek/doc-sample.doc")!!.file)
+                File(this::class.java.getResource("/deepseek/sample.doc")!!.file)
             )
         )
         val client = createClient()
@@ -252,6 +254,35 @@ class DeepseekClientTest {
             ),
             body["messages"]
         )
+    }
+
+    @Test
+    fun `completion with JPG file`() {
+        // WHEN
+        val request = LLMRequest(
+            prompt = "Hi sir",
+            systemInstructions = "You are a helpful assistant",
+            files = listOf(
+                File(this::class.java.getResource("/deepseek/sample.jpg")!!.file)
+            )
+        )
+        val client = createClient()
+        client.completion(request, emptyList())
+
+        // THEN
+        val req = argumentCaptor<HttpEntity<Map<*, *>>>()
+        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+
+        val body = req.firstValue.body as Map<*, *>
+        val messages = MapUtil.toList("messages", body) as List<Map<String, Any>>
+        assertEquals(3, messages?.size)
+
+        val message = messages[2]
+        assertEquals("user", message["role"])
+
+        val content = MapUtil.toMap("content", message)
+        assertEquals("image_url", content?.get("type"))
+        assertTrue(content?.get("url").toString().startsWith("data:image/jpeg;base64,"))
     }
 
     @Test

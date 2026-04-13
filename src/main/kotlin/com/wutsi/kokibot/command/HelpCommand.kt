@@ -15,8 +15,8 @@ class HelpCommand : Command {
             description = """
                 Return the list of available commands or the details of a specific command.
                 Usages:
-                 - /help: list all commands
-                 - /help [command]: Show details of a specific command",
+                 - `/help`: list all commands
+                 - `/help [command]`: Show details of a specific command
             """.trimIndent()
         )
     }
@@ -32,14 +32,11 @@ class HelpCommand : Command {
 
     private fun tool(name: String, context: Context): String {
         try {
-            val command = context.commandRegistry.get(name)
+            val xname = if (name.startsWith("/")) name else "/$name"
+            val command = context.commandRegistry.get(xname)
             val meta = command.metadata()
 
-            return """
-                *Command:* ${sanitize(meta.name)}
-
-                *Description:* ${sanitize(meta.description)}
-            """.trimIndent()
+            return "${sanitize(meta.name)}\n\n${command.metadata().description}"
         } catch (ex: Exception) {
             LOGGER.warn("Unexpected error", ex)
             return "Command not found: ${sanitize(name)}"
@@ -47,9 +44,11 @@ class HelpCommand : Command {
     }
 
     private fun list(context: Context): String {
-        val tools = context.commandRegistry.all()
+        val tools = context.commandRegistry
+            .all()
+            .sortedBy { cmd -> cmd.metadata().name }
         val result = "${tools.size} command(s) found\n" +
-            tools.joinToString(separator = "\n") { tool -> "- ${sanitize(tool.metadata().name)}" }
+            tools.joinToString(separator = "\n") { tool -> "- ${tool.metadata().name}" }
 
         return result
     }

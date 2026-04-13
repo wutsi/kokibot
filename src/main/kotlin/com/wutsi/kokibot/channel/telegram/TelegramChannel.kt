@@ -2,6 +2,7 @@ package com.wutsi.kokibot.channel.telegram
 
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
@@ -16,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
+import org.springframework.web.client.RestTemplate
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer
 import org.telegram.telegrambots.meta.api.methods.ActionType
@@ -35,7 +37,7 @@ class TelegramChannel(
 ) : Channel(assistant), LongPollingSingleThreadUpdateConsumer {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TelegramChannel::class.java)
-
+        const val ID = "channel:telegram"
         const val TYPING_DELAY = 2000L
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
     }
@@ -44,9 +46,11 @@ class TelegramChannel(
     private lateinit var client: TelegramClient
     private lateinit var botToken: String
     private lateinit var context: Context
+    private lateinit var rest: RestTemplate
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("telegram-channel"))
-    private val rest = restBuilder.build(null, null)
+
+    override fun id(): String = ID
 
     override fun init(config: Map<*, *>, context: Context) {
         this.botToken = config["token"]?.toString()
@@ -55,6 +59,7 @@ class TelegramChannel(
         app = factory.createTelegramBotsLongPollingApplication()
         app.registerBot(botToken, this)
         client = factory.createTelegramClient(botToken)
+        rest = restBuilder.build(null, null)
         this.context = context
     }
 
@@ -63,6 +68,20 @@ class TelegramChannel(
             app.unregisterBot(botToken)
         } catch (e: Exception) {
             LOGGER.warn("error during telegram channel destroy", e)
+        }
+    }
+
+    override fun health(): Health {
+        try {
+            val response = rest.getForEntity("https://api.telegram.org/bot$botToken/getMe", Map::class.java).body
+            if (response?.get("ok") == true) {
+                return Health(id(), true)
+            } else {
+                return Health(id(), false, "Unhealthy")
+            }
+        } catch (ex: Exception) {
+            LOGGER.warn("error during telegram channel heath", ex)
+            return Health(id(), false, ex.message ?: "Unhealthy")
         }
     }
 

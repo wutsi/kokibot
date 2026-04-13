@@ -23,7 +23,11 @@ class ToolRegistry {
     fun init(context: Context) {
         tools.values.forEach { tool ->
             LOGGER.info("Tool: ${tool.metadata().name}")
-            init(tool, context)
+            try {
+                init(tool, context)
+            } catch (e: Exception) {
+                LOGGER.warn("Unable to initialize the Tool ${tool.metadata().name} - Error:" + e.message)
+            }
         }
     }
 
@@ -33,10 +37,6 @@ class ToolRegistry {
 
     fun register(tool: Tool) {
         tools[tool.metadata().name.lowercase()] = tool
-    }
-
-    fun unregister(tool: Tool) {
-        tools.remove(tool.metadata().name.lowercase())
     }
 
     fun get(name: String): Tool {

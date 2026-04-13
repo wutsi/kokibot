@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.File
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ContextTest {
     val home = getResourceFile("/home/007")
@@ -50,6 +52,7 @@ class ContextTest {
 
     @BeforeEach
     fun setUp() {
+        doReturn(Health(id = "-", up = true)).whenever(channel).health()
         doReturn(channel).whenever(context.channelFactory).create(any(), any())
     }
 
@@ -85,6 +88,19 @@ class ContextTest {
         verify(context.smtp).init(smtpConfig, context)
         verify(context.imap).init(imapConfig, context)
         verify(channel).init(channelConfig, context)
+    }
+
+    @Test
+    fun health() {
+        // GIVEN
+        context.init(assistant, config)
+
+        // WHEN
+        val health = context.health()
+
+        // THEN
+        assertTrue(health.up)
+        assertEquals(1, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

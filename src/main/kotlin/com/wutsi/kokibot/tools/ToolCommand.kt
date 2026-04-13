@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 class ToolCommand : Command {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ToolCommand::class.java)
-        const val NAME = "/tools"
+        const val NAME = "/tool"
     }
 
     override fun metadata(): CommandMetadata {
@@ -18,8 +18,8 @@ class ToolCommand : Command {
             description = """
                 Return the list of available tools or the details of a specific tool.
                 Usages:
-                 - /tools: list all tools
-                 - /tools [tool]: Show details of a specific tool,
+                 - `/tool`: list all available tools
+                 - `/tool [tool]`: Show details of a specific tool
             """.trimIndent(),
         )
     }
@@ -39,17 +39,13 @@ class ToolCommand : Command {
             val meta = tool.metadata()
             val params = meta.parameters.joinToString(separator = "\n") { param ->
                 "- `${sanitize(param.name)}`:`${param.type}`" +
-                    (if (param.required) " \\[required\\]" else "") +
+                    (if (param.required) " \\[required]" else "") +
                     " " + sanitize(param.description)
-            }
+            }.ifEmpty { "N/A" }
 
-            return """
-                *Tool:* ${sanitize(meta.name)}
-
-                *Description:* ${sanitize(meta.description)}
-
-                *Parameters:*
-            """.trimIndent() + (if (params.isEmpty()) " N/A" else "\n$params")
+            return "*Tool:* ${sanitize(meta.name)}\n\n" +
+                "*Description:*\n${sanitize(meta.description)}\n\n" +
+                "*Parameters:*\n$params"
         } catch (ex: Exception) {
             LOGGER.warn("Unexpected error", ex)
             return "Tool not found: ${sanitize(name)}"
@@ -58,8 +54,10 @@ class ToolCommand : Command {
 
     private fun list(context: Context): String {
         val tools = context.toolRegistry.all()
+            .sortedBy { tool -> tool.metadata().name }
+
         val result = "${tools.size} tool(s) found\n" +
-            tools.joinToString(separator = "\n") { tool -> "- ${sanitize(tool.metadata().name)}" }
+            tools.joinToString(separator = "\n") { tool -> "- `${tool.metadata().name}`" }
 
         return result
     }

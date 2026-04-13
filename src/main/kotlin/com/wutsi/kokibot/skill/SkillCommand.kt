@@ -16,10 +16,10 @@ class SkillCommand : Command {
         return CommandMetadata(
             name = NAME,
             description = """
-                Return the list of available skills or the details of a specific tool.
+                Return the list of available skills or the details of a specific skill.
                 Usages:
-                 - /skills: list all skill
-                 - /skills [skill]: Show details of a specific skill,
+                 - `/skill`: list all skill
+                 - `/skill [skill]`: Show details of a specific skill
             """.trimIndent(),
         )
     }
@@ -37,21 +37,15 @@ class SkillCommand : Command {
         try {
             val skill = context.skillRegistry.get(name)
             val meta = skill.metadata
-            val tools = meta.tools.joinToString(separator = "\n") { tool -> "- ${sanitize(tool.name)}" }
-            val requiredBin = meta.requiredBins.joinToString(separator = ",") { bin -> "- `${sanitize(bin)}`" }
-            val requiredEnv = meta.requiredEnv.joinToString(separator = ",") { bin -> "- `${sanitize(bin)}`" }
+            val tools = meta.tools.joinToString(separator = "\n") { tool -> "- `${tool.name}`" }
+            val requiredBin = meta.requiredBins.joinToString(separator = ", ") { bin -> "`$bin`" }.ifEmpty { "None" }
+            val requiredEnv = meta.requiredEnv.joinToString(separator = ", ") { env -> "`$env`" }.ifEmpty { "None" }
 
-            return """
-                *Skill:* ${sanitize(meta.name)}
-
-                *Description:* ${sanitize(meta.description ?: "N/A")}
-
-                *Required Bin:* ${sanitize(requiredBin.ifEmpty { " N/A" })}
-
-                *Required Env:* ${sanitize(requiredEnv.ifEmpty { " N/A" })}
-
-                *Tools:*
-            """.trimIndent() + (if (tools.isEmpty()) " N/A" else "\n$tools")
+            return "*Skill:* ${sanitize(meta.name)}\n\n" +
+                "*Description:*\n${sanitize(meta.description)}\n\n" +
+                "*Required Bin:* $requiredBin\n\n" +
+                "*Required Env:* $requiredEnv\n\n" +
+                "*Tools:*\n$tools"
         } catch (ex: Exception) {
             LOGGER.warn("Unexpected error", ex)
             return "Tool not found: ${sanitize(name)}"
@@ -59,9 +53,11 @@ class SkillCommand : Command {
     }
 
     private fun list(context: Context): String {
-        val tools = context.skillRegistry.all()
-        val result = "${tools.size} skill(s) found\n" +
-            tools.joinToString(separator = "\n") { tool -> "- ${sanitize(tool.metadata.name)}" }
+        val skill = context.skillRegistry.all()
+            .sortedBy { skill -> skill.metadata.name }
+
+        val result = "${skill.size} skill(s) found\n" +
+            skill.joinToString(separator = "\n") { tool -> "- ${sanitize(tool.metadata.name)}" }
 
         return result
     }

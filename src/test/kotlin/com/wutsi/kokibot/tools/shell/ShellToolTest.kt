@@ -24,7 +24,7 @@ class ShellToolTest {
     fun exec() {
         val result = tool.exec(mapOf("command" to "ls -la"))
 
-        println(result)
+//        println(result)
         assertTrue(result.isNotEmpty())
     }
 
@@ -32,7 +32,7 @@ class ShellToolTest {
     fun `exec - bad command`() {
         val result = tool.exec(mapOf("command" to "xx -la"))
 
-        println(result)
+//        println(result)
         assertTrue(result.isNotEmpty())
     }
 
@@ -40,7 +40,7 @@ class ShellToolTest {
     fun `exec - with redirected`() {
         val result = tool.exec(mapOf("command" to "find ./ -type f 2>/dev/null | wc -l"))
 
-        println(result)
+//        println(result)
         assertTrue(result.isNotEmpty())
     }
 

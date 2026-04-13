@@ -30,7 +30,7 @@ class ToolCommandTest {
     fun `exec list`() {
         val tool1 = mock<Tool>()
         val tool2 = mock<Tool>()
-        doReturn(ToolMetadata(name = "tool_1")).whenever(tool1).metadata()
+        doReturn(ToolMetadata(name = "tool1")).whenever(tool1).metadata()
         doReturn(ToolMetadata(name = "tool2")).whenever(tool2).metadata()
         doReturn(listOf(tool1, tool2)).whenever(toolRegistry).all()
 
@@ -39,8 +39,8 @@ class ToolCommandTest {
         assertEquals(
             """
                 2 tool(s) found
-                - tool\_1
-                - tool2
+                - `tool1`
+                - `tool2`
             """.trimIndent(),
             result
         )
@@ -77,10 +77,11 @@ class ToolCommandTest {
             """
                 *Tool:* tool\_1
 
-                *Description:* description of tool1
+                *Description:*
+                description of tool1
 
                 *Parameters:*
-                - `p1`:`STRING` \[required\] description of p1
+                - `p1`:`STRING` \[required] description of p1
                 - `p2`:`INTEGER` description of p2
             """.trimIndent(),
             result
@@ -104,9 +105,11 @@ class ToolCommandTest {
             """
                 *Tool:* tool1
 
-                *Description:* description of tool1
+                *Description:*
+                description of tool1
 
-                *Parameters:* N/A
+                *Parameters:*
+                N/A
             """.trimIndent(),
             result
         )

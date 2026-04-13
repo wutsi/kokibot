@@ -38,7 +38,7 @@ class MailReadToolTest : AbstractIMAPToolTest() {
         )
 
         val result = tool.exec(mapOf("message_id" to msg.messageID))
-        println(result)
+//        println(result)
 
         assertTrue(result.contains("Here are the details of the email ${msg.messageID}:"))
         assertTrue(result.contains("Message-ID: ${msg.messageID}"))
@@ -54,7 +54,7 @@ class MailReadToolTest : AbstractIMAPToolTest() {
         val msg = deliverHtml("ray.sponsible@gmail.com", "Yo man!!", "Hello <b>world</b>")
 
         val result = tool.exec(mapOf("message_id" to msg.messageID))
-        println(result)
+//        println(result)
 
         assertTrue(result.contains("Here are the details of the email ${msg.messageID}:"))
         assertTrue(result.contains("Message-ID: ${msg.messageID}"))
@@ -67,7 +67,7 @@ class MailReadToolTest : AbstractIMAPToolTest() {
     @Test
     fun `read - not found`() {
         val result = tool.exec(mapOf("message_id" to "<100>"))
-        println(result)
+//        println(result)
 
         assertEquals("Email <100> not found", result)
     }

@@ -17,6 +17,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.MediaTypeFactory
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
+import java.util.Base64
 
 class DeepseekClient(
     val apiKey: String,
@@ -153,13 +154,21 @@ class DeepseekClient(
             ) +
                 request.files.map { file ->
                     try {
-                        val content = extractContent(file)
+                        val mimeType = getMimeType(file)
+                        val content = extractContent(file, mimeType)
                         mapOf(
                             "role" to "user",
-                            "content" to mapOf(
-                                "type" to "text",
-                                "text" to content,
-                            )
+                            "content" to if (mimeType.startsWith("image/")) {
+                                mapOf(
+                                    "type" to "image_url",
+                                    "url" to content,
+                                )
+                            } else {
+                                mapOf(
+                                    "type" to "text",
+                                    "text" to content,
+                                )
+                            }
                         )
                     } catch (_: UnsupportedMimeTypeException) {
                         mapOf(
@@ -177,16 +186,23 @@ class DeepseekClient(
         }
     }
 
-    private fun extractContent(file: File): String {
-        val mimeType = MediaTypeFactory.getMediaType(file.name)
-            .map { it.toString() }
-            .orElse("application/octet-stream")
-
+    private fun extractContent(file: File, mimeType: String): String {
         if (mimeType == "application/json" || mimeType.startsWith("text/")) {
             return file.readText()
+        } else if (mimeType.startsWith("image/")) {
+            val base64Content = Base64
+                .getEncoder()
+                .encodeToString(file.readBytes())
+            return "data:$mimeType;base64,$base64Content"
         } else {
             val extractor = textExtractorFactory.create(mimeType)
             return extractor.extract(file)
         }
+    }
+
+    private fun getMimeType(file: File): String {
+        return MediaTypeFactory.getMediaType(file.name)
+            .map { it.toString() }
+            .orElse("application/octet-stream")
     }
 }

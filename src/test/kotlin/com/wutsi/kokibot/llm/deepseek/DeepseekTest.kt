@@ -11,6 +11,8 @@ import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
@@ -33,6 +35,11 @@ class DeepseekTest {
         llm = mock(),
         config = config,
     )
+
+    @Test
+    fun id() {
+        assertEquals("llm:deepseek", deepseek.id())
+    }
 
     @Test
     fun init() {
@@ -75,7 +82,7 @@ class DeepseekTest {
             request = LLMRequest(prompt = "What is the capital of France?"),
             emptyList(),
         )
-        System.out.println(response)
+        // println(response)
 
         val choices = response.choices
         assertEquals(1, choices.size)
@@ -119,5 +126,35 @@ class DeepseekTest {
         assertEquals(1, choices[0].toolCalls.size)
         assertEquals(meta.name, choices[0].toolCalls[0].name)
         assertEquals(mapOf("location" to "Paris"), choices[0].toolCalls[0].arguments)
+    }
+
+    @Test
+    fun `health - up`() {
+        val config = mapOf(
+            "api_key" to System.getenv("DEEPSEEK_API_KEY"),
+            "model" to "deepseek-chat",
+        )
+        deepseek.init(config, context)
+
+        val health = deepseek.health()
+
+        assertEquals(deepseek.id(), health.id)
+        assertEquals(true, health.up)
+        assertNull(health.details)
+    }
+
+    @Test
+    fun `health - down`() {
+        val config = mapOf(
+            "api_key" to "xxxxx",
+            "model" to "deepseek-chat",
+        )
+        deepseek.init(config, context)
+
+        val health = deepseek.health()
+
+        assertEquals(deepseek.id(), health.id)
+        assertEquals(false, health.up)
+        assertNotNull(health.details)
     }
 }

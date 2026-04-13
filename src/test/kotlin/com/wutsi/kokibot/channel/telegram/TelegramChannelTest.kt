@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.channel.telegram
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
@@ -12,11 +13,15 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.exception.ConfigurationException
+import com.wutsi.kokibot.util.RestBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.client.RestTemplate
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
 import org.telegram.telegrambots.longpolling.exceptions.TelegramApiErrorResponseException
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -30,8 +35,10 @@ class TelegramChannelTest {
     private val app = mock<TelegramBotsLongPollingApplication>()
     private val client = mock<TelegramClient>()
     private val factory = mock<TelegramFactory>()
-    private val agent = mock<Assistant>()
-    private val telegram = TelegramChannel(agent, factory)
+    private val assistant = mock<Assistant>()
+    private val rest = mock<RestTemplate>()
+    private val restBuider = mock<RestBuilder>()
+    private val telegram = TelegramChannel(assistant, factory, restBuider)
     private val config = mapOf("token" to "test-token")
     private val context = Context(
         home = File("target/test-data/telegram"),
@@ -42,6 +49,12 @@ class TelegramChannelTest {
     fun setUp() {
         doReturn(client).whenever(factory).createTelegramClient(any())
         doReturn(app).whenever(factory).createTelegramBotsLongPollingApplication()
+        doReturn(rest).whenever(restBuider).build(anyOrNull(), anyOrNull())
+    }
+
+    @Test
+    fun id() {
+        assertEquals(TelegramChannel.ID, telegram.id())
     }
 
     @Test
@@ -95,7 +108,7 @@ class TelegramChannelTest {
     fun `consume - should forward message to agent and return response`() {
         // GIVEN
         telegram.init(config, context)
-        doReturn(Message("World")).whenever(agent).process(any())
+        doReturn(Message("World")).whenever(assistant).process(any())
 
         // WHEN
         val update = createUpdateText("Hello", 123L)
@@ -103,7 +116,7 @@ class TelegramChannelTest {
 
         // THEN
         val prompt = argumentCaptor<Message>()
-        verify(agent).process(prompt.capture())
+        verify(assistant).process(prompt.capture())
         assertEquals("Hello", prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("ray.sponsible@telegram", prompt.firstValue.userId)
@@ -124,7 +137,7 @@ class TelegramChannelTest {
         telegram.consume(update)
 
         // THEN
-        verify(agent, never()).process(any())
+        verify(assistant, never()).process(any())
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -142,8 +155,43 @@ class TelegramChannelTest {
         telegram.consume(update)
 
         // THEN
-        verify(agent, never()).process(any())
+        verify(assistant, never()).process(any())
         verify(client, never()).execute(any<SendMessage>())
+    }
+
+    @Test
+    fun `health - up`() {
+        doReturn(ResponseEntity(mapOf("ok" to true), HttpStatus.OK))
+            .whenever(rest)
+            .getForEntity(any<String>(), eq(Map::class.java))
+
+        telegram.init(config, context)
+        val result = telegram.health()
+
+        assertEquals(true, result.up)
+        assertEquals(TelegramChannel.ID, result.id)
+        assertEquals(0, result.children.size)
+    }
+
+    @Test
+    fun `health - down`() {
+        doReturn(mapOf("ok" to false)).whenever(rest).getForObject(any<String>(), eq(Map::class.java))
+
+        telegram.init(config, context)
+        val result = telegram.health()
+
+        assertEquals(false, result.up)
+        assertEquals(TelegramChannel.ID, result.id)
+        assertEquals(0, result.children.size)
+    }
+
+    @Test
+    fun `health - error`() {
+        val result = telegram.health()
+
+        assertEquals(false, result.up)
+        assertEquals(TelegramChannel.ID, result.id)
+        assertEquals(0, result.children.size)
     }
 
     private fun createUpdateText(text: String?, chatId: Long): Update {

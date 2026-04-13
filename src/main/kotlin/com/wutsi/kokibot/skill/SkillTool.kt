@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.util.ShellUtil
@@ -16,6 +17,14 @@ class SkillTool(
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
+    }
+
+    override fun health(): Health {
+        return if (!getScript("sh").exists() && !getScript("py").exists()) {
+            Health(id = id(), up = false, details = "No script found for tool `${metadata.name}`!")
+        } else {
+            super.health()
+        }
     }
 
     override fun exec(arguments: Map<*, *>): String {

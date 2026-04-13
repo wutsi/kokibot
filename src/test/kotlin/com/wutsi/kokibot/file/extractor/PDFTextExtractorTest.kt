@@ -8,7 +8,7 @@ class PDFTextExtractorTest {
 
     @Test
     fun extract() {
-        val file = this::class.java.getResource("/file/pdf-sample.pdf")!!.file
+        val file = this::class.java.getResource("/file/sample.pdf")!!.file
         val text = extractor.extract(file = java.io.File(file))
 
         assertTrue(

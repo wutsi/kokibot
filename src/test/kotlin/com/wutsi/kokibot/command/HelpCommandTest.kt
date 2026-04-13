@@ -30,8 +30,8 @@ class HelpCommandTest {
     fun `exec list`() {
         val command1 = mock<Command>()
         val command2 = mock<Command>()
-        doReturn(CommandMetadata(name = "command_1")).whenever(command1).metadata()
-        doReturn(CommandMetadata(name = "command2")).whenever(command2).metadata()
+        doReturn(CommandMetadata(name = "command2")).whenever(command1).metadata()
+        doReturn(CommandMetadata(name = "command1")).whenever(command2).metadata()
         doReturn(listOf(command1, command2)).whenever(commandRegistry).all()
 
         val result = cmd.exec("", context)
@@ -39,7 +39,7 @@ class HelpCommandTest {
         assertEquals(
             """
                 2 command(s) found
-                - command\_1
+                - command1
                 - command2
             """.trimIndent(),
             result
@@ -51,8 +51,8 @@ class HelpCommandTest {
         val command = mock<Command>()
         doReturn(
             CommandMetadata(
-                name = "command_1",
-                description = "description of command1",
+                name = "command1",
+                description = "Description of command1",
             )
         ).whenever(command).metadata()
         doReturn(command).whenever(commandRegistry).get(any())
@@ -61,9 +61,9 @@ class HelpCommandTest {
 
         assertEquals(
             """
-                *Command:* command\_1
+                command1
 
-                *Description:* description of command1
+                Description of command1
             """.trimIndent(),
             result
         )

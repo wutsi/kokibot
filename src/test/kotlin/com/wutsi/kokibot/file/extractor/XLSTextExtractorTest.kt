@@ -9,7 +9,7 @@ class XLSTextExtractorTest {
 
     @Test
     fun extract() {
-        val file = this::class.java.getResource("/file/xls-sample.xls")!!.file
+        val file = this::class.java.getResource("/file/sample.xls")!!.file
         val text = extractor.extract(file = File(file))
 
         assertEquals(

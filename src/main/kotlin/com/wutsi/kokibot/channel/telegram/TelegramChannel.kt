@@ -143,10 +143,14 @@ class TelegramChannel(
     }
 
     private fun send(chatId: String, message: Message) {
+        val html = MarkdownToTelegramHTML.convert(message.text)
+        println(message.text)
+        println()
+        println(html)
         val sendMessage = SendMessage.builder()
             .chatId(chatId)
-            .text(message.text)
-            .parseMode(ParseMode.MARKDOWN)
+            .text(html)
+            .parseMode(ParseMode.HTML)
             .build()
         client.execute(sendMessage)
     }
@@ -158,7 +162,7 @@ class TelegramChannel(
             ?: throw IllegalStateException("file_path not found")
 
         val xpath = if (path.startsWith("/")) path else "/$path"
-        val contentUrl = "https://api.telegram.org/file/bot$botToken$path"
+        val contentUrl = "https://api.telegram.org/file/bot$botToken$xpath"
         val content = rest.getForEntity(contentUrl, ByteArray::class.java).body!!
 
         val now = LocalDate.now()

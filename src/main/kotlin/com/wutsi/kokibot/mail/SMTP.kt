@@ -14,6 +14,10 @@ import java.util.Properties
  * This is the SMTP service, which is used to send emails.
  */
 class SMTP : Resource {
+    companion object {
+        private val LOGGER = org.slf4j.LoggerFactory.getLogger(SMTP::class.java)
+    }
+
     private var from: String? = null
     private lateinit var host: String
     private lateinit var username: String
@@ -64,6 +68,7 @@ class SMTP : Resource {
             getSession().transport.close()
             return Health(id(), true)
         } catch (ex: Exception) {
+            LOGGER.warn("Could not connect to Smtp.", ex)
             return Health(id(), false, ex.message ?: "Unknown error")
         }
     }

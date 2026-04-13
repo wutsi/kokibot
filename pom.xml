@@ -76,6 +76,11 @@
             <artifactId>flexmark-html2md-converter</artifactId>
             <version>${flexmark.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-gfm-strikethrough</artifactId>
+            <version>${flexmark.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>jakarta.mail</groupId>

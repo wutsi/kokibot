@@ -13,6 +13,10 @@ import java.util.Properties
  * This is the IMAP service, which is used to read emails.
  */
 class IMAP : Resource {
+    companion object {
+        private val LOGGER = org.slf4j.LoggerFactory.getLogger(IMAP::class.java)
+    }
+
     private lateinit var host: String
     private lateinit var username: String
     private lateinit var password: String
@@ -53,6 +57,7 @@ class IMAP : Resource {
             getStore().close()
             return Health(id(), true)
         } catch (ex: Exception) {
+            LOGGER.warn("Failed to connect to IMAP", ex)
             return Health(id(), false, ex.message ?: "Unknown error")
         }
     }

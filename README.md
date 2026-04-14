@@ -1,47 +1,111 @@
+<div align="center">
+
 # Kokibot
 
-An extensible AI assistant framework built with Kotlin and Spring Boot that provides pluggable architecture for LLM providers, communication channels, and custom tools.
+### Your Extensible AI Assistant Framework
+
+*Build production-ready AI assistants with pluggable architecture for LLM providers, communication channels, and custom tools*
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg?logo=openjdk)](https://openjdk.org/)
-[![JaCoCo Coverage](https://img.shields.io/badge/Coverage-92%25-brightgreen.svg)](target/site/jacoco/index.html)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen.svg?logo=spring)](https://spring.io/projects/spring-boot)
+[![Master Build](https://github.com/wutsi/kokibot/actions/workflows/_master.yml/badge.svg)](https://github.com/wutsi/kokibot/actions/workflows/_master.yml)
+[![PR Build](https://github.com/wutsi/kokibot/actions/workflows/_pr.yml/badge.svg)](https://github.com/wutsi/kokibot/actions/workflows/_pr.yml)
+[![JaCoCo Coverage](https://img.shields.io/badge/Coverage-93%25-brightgreen.svg)](target/site/jacoco/index.html)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Features
+[Features](#-key-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)
 
-- **Iterative Reasoning**: Multi-step reasoning loop with configurable max iterations
-- **Tool System**: Extensible tool architecture with 10+ built-in tools
-- **Skills System**: Modular, keyword-activated extensions for domain-specific capabilities
-- **Multiple Channels**: Support for Telegram (extensible to other platforms)
-- **Long-Term Memory**: Automatic conversation compaction and fact extraction
-- **Email Integration**: Send, read, search, and manage emails via SMTP/IMAP
-- **Code Execution**: Run Python code and shell commands safely
-- **Web Capabilities**: Search the web and fetch content from URLs
-- **Commands**: Built-in commands for system control and debugging
+</div>
 
-## Prerequisites
+---
+
+## 📖 Introduction
+
+**Kokibot** is a powerful, extensible AI assistant framework built with Kotlin and Spring Boot. It provides a pluggable architecture that makes it easy to build production-ready AI assistants capable of complex reasoning, tool execution, and multi-channel communication.
+
+### The Problem
+
+Traditional chatbots are limited to basic query-response patterns. Building AI assistants that can execute multi-step reasoning tasks, interact with external systems (email, web, databases), maintain conversation context and long-term memory, extend capabilities through modular plugins, and support multiple communication channels requires significant engineering effort and architectural planning.
+
+### The Solution
+
+Kokibot solves these challenges by providing a **production-ready framework** with:
+
+- **Iterative Reasoning Engine** - Multi-step reasoning loop that breaks down complex queries into manageable steps
+- **Pluggable Tool System** - 10+ built-in tools with easy extensibility for custom capabilities
+- **Dynamic Skills System** - Modular, keyword-activated extensions for domain-specific functionality
+- **Long-Term Memory** - Automatic conversation compaction and intelligent fact extraction
+- **Multi-Channel Support** - Telegram integration with extensible architecture for other platforms
+- **Enterprise-Ready Architecture** - Built on Spring Boot with comprehensive testing and security features
+
+---
+
+## ✨ Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Iterative Reasoning** | Multi-step reasoning loop with configurable max iterations |
+| **Tool System** | 10+ built-in tools: web search, code execution, email management, and more |
+| **Skills System** | Modular, keyword-activated extensions for domain-specific capabilities |
+| **Multiple Channels** | Telegram support with extensible architecture for additional platforms |
+| **Long-Term Memory** | Automatic conversation compaction and fact extraction |
+| **Email Integration** | Full SMTP/IMAP support for sending, reading, searching, and managing emails |
+| **Code Execution** | Safe Python and shell command execution with security restrictions |
+| **Web Capabilities** | Web search and content extraction from URLs (HTML, PDF) |
+| **Commands** | Built-in commands for system control, debugging, and health monitoring |
+| **Configuration** | Flexible JSON-based configuration with environment variable support |
+
+---
+
+## 🛠 Technology Stack
+
+| Category | Technologies |
+|----------|-------------|
+| **Language** | Kotlin 2.2.0 |
+| **Framework** | Spring Boot 4.0.5 |
+| **LLM Integration** | Custom REST client (Deepseek support) |
+| **Python Engine** | GraalVM Polyglot 25.0.2 |
+| **Email** | Jakarta Mail API 2.1.5 |
+| **Messaging** | Telegram Bots SDK 9.5.0 |
+| **HTML Parsing** | JSoup 1.22.1 |
+| **PDF Parsing** | Apache PDFBox 3.0.6 |
+| **Testing** | JUnit 5, Mockito Kotlin, GreenMail |
+
+---
+
+## 📋 Prerequisites
+
+Before getting started, ensure you have:
 
 - **Java 17** or higher
-- **Maven 3.6+**
-- **GraalVM** (for Python tool support)
-- **Environment Variables** (for LLM and channel integrations):
-  - `DEEPSEEK_API_KEY` - API key for Deepseek LLM
+- **Maven 3.6+** for building the project
+- **GraalVM** (optional, for Python tool support)
+- **API Keys & Credentials**:
+  - `DEEPSEEK_API_KEY` - API key for Deepseek LLM (required)
   - `TELEGRAM_TOKEN` - Bot token for Telegram integration (optional)
-  - `MAIL_USERNAME` / `MAIL_PASSWORD` - Email credentials (optional)
+  - `MAIL_USERNAME` / `MAIL_PASSWORD` - Email credentials for mail tools (optional)
 
-## Quick Start
+---
 
-### 1. Clone and Build
+## 🚀 Quick Start
+
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/wutsi/kokibot.git
 cd kokibot
+```
+
+### Step 2: Build the Project
+
+```bash
 mvn clean install
 ```
 
-### 2. Setup Configuration
+### Step 3: Setup Configuration
 
-Create the configuration directory and file:
+Create your configuration directory and settings file:
 
 ```bash
 mkdir -p ~/kokibot/config
@@ -69,7 +133,7 @@ cat > ~/kokibot/config/settings.json << 'EOF'
 EOF
 ```
 
-### 3. Run the Application
+### Step 4: Run the Application
 
 ```bash
 export DEEPSEEK_API_KEY="your-api-key"
@@ -77,7 +141,22 @@ export TELEGRAM_TOKEN="your-telegram-token"
 mvn spring-boot:run
 ```
 
-## Configuration
+That's it! Your Kokibot instance is now running and ready to receive messages.
+
+---
+
+## 📚 Documentation
+
+For detailed technical documentation, architecture guides, and implementation details, please refer to:
+
+- **[AGENT.md](AGENT.md)** - Complete architecture documentation, component overview, and development guide
+- **[Built-in Tools](#-built-in-tools)** - See below for tool reference
+- **[Skills System](#-skills-system)** - Learn about creating custom skills
+- **[Commands Reference](#-commands)** - Available system commands
+
+---
+
+## 🔧 Configuration
 
 ### Directory Structure
 
@@ -89,30 +168,30 @@ mvn spring-boot:run
 │       └── {tool-name}.json
 ├── skills/                    # Custom skills
 │   └── {skill-name}/
-│       └── SKILL.md
+│       ├── SKILL.md           # Skill definition
+│       └── scripts/           # Tool implementations
 ├── workspace/
-│   ├── history/
-│   │   └── history.json       # Conversation history
-│   └── memory/
-│       └── MEMORY.md          # Long-term memory
+│   ├── history/               # Conversation history
+│   └── memory/                # Long-term memory
 └── AGENT.md                   # System instructions (optional)
 ```
 
-### Configuration Options
+### Configuration Examples
 
-#### Assistant Configuration
+<details>
+<summary><b>Assistant Configuration</b></summary>
 
 ```json
 {
   "assistant": {
-    "max-iterations": 10  // Maximum reasoning loop iterations
+    "max-iterations": 10
   }
 }
 ```
+</details>
 
-#### LLM Configuration
-
-Currently supports Deepseek:
+<details>
+<summary><b>LLM Configuration</b></summary>
 
 ```json
 {
@@ -123,8 +202,10 @@ Currently supports Deepseek:
   }
 }
 ```
+</details>
 
-#### Email Configuration
+<details>
+<summary><b>Email Configuration</b></summary>
 
 ```json
 {
@@ -145,58 +226,55 @@ Currently supports Deepseek:
   }
 }
 ```
+</details>
 
-#### Memory Configuration
+<details>
+<summary><b>Memory Configuration</b></summary>
 
 ```json
 {
   "memory": {
-    "window": 3,                    // Days of history to compact
-    "compaction-frequency": 6       // Hours between compaction runs
+    "window": 3,
+    "compaction-frequency": 6
   }
 }
 ```
+</details>
 
-## Built-in Tools
+---
 
-Kokibot comes with 10+ built-in tools:
+## 🧰 Built-in Tools
 
-| Tool | Description |
-|------|-------------|
-| `clock` | Get current date and time |
-| `web_search` | Search the web via Brave Search API |
-| `web_fetch` | Fetch content from URLs (HTML, PDF) |
-| `python` | Execute Python code safely |
-| `shell` | Run shell commands with security restrictions |
-| `mail_list` | List emails from mailbox |
-| `mail_read` | Read email content |
-| `mail_send` | Send emails or replies |
-| `mail_find` | Search emails by criteria |
-| `mail_unsubscribe` | Unsubscribe from mailing lists |
+Kokibot comes with 10+ production-ready tools:
 
-## Commands
+| Tool | Description | Example Use Case |
+|------|-------------|------------------|
+| `clock` | Get current date and time | "What's the current date?" |
+| `web_search` | Search the web via Brave Search API | "Search for latest Kotlin news" |
+| `web_fetch` | Fetch content from URLs (HTML, PDF) | "Summarize this article" |
+| `python` | Execute Python code safely | "Calculate fibonacci(100)" |
+| `shell` | Run shell commands with restrictions | "List files in current directory" |
+| `mail_list` | List emails from mailbox | "Show my recent emails" |
+| `mail_read` | Read email content | "Read email with ID 12345" |
+| `mail_send` | Send emails or replies | "Send email to john@example.com" |
+| `mail_find` | Search emails by criteria | "Find emails from boss this week" |
+| `mail_unsubscribe` | Unsubscribe from mailing lists | "Unsubscribe from this newsletter" |
 
-Commands are invoked with `/command` syntax:
+---
 
-- `/help` - Display available commands
-- `/clear` - Clear conversation history
-- `/compact` - Manually trigger memory compaction
-- `/skill [name]` - Show skill details or list all skills
-- `/tool [name]` - Show tool details or list all tools
+## 💡 Skills System
 
-## Skills System
-
-Skills are modular extensions that activate dynamically based on user intent.
+Skills are modular extensions that activate dynamically based on user intent. They provide domain-specific capabilities through custom tools and instructions.
 
 ### Creating a Custom Skill
 
-1. Create a skill directory:
+**Step 1:** Create a skill directory
 
 ```bash
 mkdir -p ~/kokibot/skills/my-skill
 ```
 
-2. Create `SKILL.md`:
+**Step 2:** Create `SKILL.md` with frontmatter
 
 ```markdown
 ---
@@ -212,7 +290,7 @@ metadata:
 
 # My Skill
 
-Detailed description
+Detailed description of what this skill does.
 
 ## Tools
 
@@ -222,47 +300,70 @@ Detailed description
 
 ## Instructions
 
-Guidelines for the assistant
+Guidelines for the assistant on how to use this skill effectively.
 
 ## Examples
 
-User: "Example query"
+User: "Example query that triggers this skill"
 Action: Call `my_tool(param1="value")`
 ```
 
-3. Restart Kokibot - the skill will be automatically discovered
+**Step 3:** Restart Kokibot
 
-### Skill Activation
+The skill will be automatically discovered and made available.
 
-Skills automatically activate when:
-- User query matches skill keywords
-- Activated skills' tools are made available to the LLM
-- Skill instructions are injected into system prompt
+### How Skills Work
 
-## Architecture
+- **Automatic Activation**: Skills activate when user queries match configured keywords
+- **Tool Registration**: Activated skills' tools are made available to the LLM
+- **Context Injection**: Skill instructions are injected into the system prompt
+
+---
+
+## 🎮 Commands
+
+Commands provide system-level functionality via `/command` syntax:
+
+| Command | Description |
+|---------|-------------|
+| `/help [cmd]` | Display available commands or show details for a specific command |
+| `/clear` | Clear conversation history |
+| `/compact` | Manually trigger memory compaction |
+| `/health` | System health check for all components |
+| `/skill [name]` | Show skill details or list all available skills |
+| `/tool [name]` | Show tool details or list all available tools |
+
+---
+
+## 🏗 Architecture Overview
 
 ### Core Components
 
-- **Assistant**: Main reasoning loop with tool execution
-- **Context**: System state container passed to all components
-- **ToolRegistry**: Manages available tools
-- **SkillRegistry**: Discovers and activates skills
-- **CommandRegistry**: Handles system commands
-- **ChatHistory**: Persists conversation history
-- **Memory**: Long-term fact extraction and storage
+- **Assistant** - Main reasoning loop with tool execution orchestration
+- **Context** - System state container passed to all components
+- **ToolRegistry** - Manages and provides access to available tools
+- **SkillRegistry** - Discovers and activates skills dynamically
+- **CommandRegistry** - Handles system-level commands
+- **ChatHistory** - Persists and retrieves conversation history
+- **Memory** - Extracts and stores long-term facts from conversations
 
 ### LLM Integration
 
-Pluggable LLM providers via factory pattern. Currently supports:
-- Deepseek (with function calling support)
+Pluggable LLM provider architecture via factory pattern:
+- Currently supports **Deepseek** with function calling
+- Extensible to other LLM providers
 
 ### Channels
 
 Communication interfaces for the assistant:
-- Telegram (via long polling)
-- Extensible to other platforms
+- **Telegram** - Long polling integration
+- **Extensible** - Add custom channels via the `Channel` abstract class
 
-## Development
+For detailed architecture documentation, see [AGENT.md](AGENT.md).
+
+---
+
+## 👨‍💻 Development
 
 ### Build and Test
 
@@ -290,14 +391,11 @@ mvn antrun:run@ktlint
 mvn antrun:run@ktlint-format
 ```
 
-### Code Coverage Requirements
-
-- **Line Coverage**: 92% minimum
-- **Class Coverage**: 92% minimum
+**Coverage Requirements**: 93% minimum for both line and class coverage
 
 ### Adding a New Tool
 
-1. Create a class implementing `Tool` interface:
+**Step 1:** Implement the `Tool` interface
 
 ```kotlin
 class MyTool : Tool {
@@ -322,7 +420,7 @@ class MyTool : Tool {
 }
 ```
 
-2. Register in `ContextFactory.discoverTools()`:
+**Step 2:** Register in `ContextFactory.discoverTools()`
 
 ```kotlin
 private fun discoverTools(): List<Tool> {
@@ -335,7 +433,7 @@ private fun discoverTools(): List<Tool> {
 
 ### Adding a New Channel
 
-1. Create a class extending `Channel`:
+**Step 1:** Extend the `Channel` class
 
 ```kotlin
 class MyChannel(agent: Assistant) : Channel(agent) {
@@ -349,7 +447,7 @@ class MyChannel(agent: Assistant) : Channel(agent) {
 }
 ```
 
-2. Register in `ChannelFactory.create()`:
+**Step 2:** Register in `ChannelFactory.create()`
 
 ```kotlin
 fun create(type: String, agent: Assistant): Channel {
@@ -361,45 +459,123 @@ fun create(type: String, agent: Assistant): Channel {
 }
 ```
 
-3. Add configuration to `settings.json`
+**Step 3:** Add configuration to `settings.json`
 
-## Security
+---
 
-- **Shell Tool**: Blocks dangerous commands (`sudo`, `rm -rf`, etc.)
-- **Python Tool**: Runs in sandboxed GraalVM context
-- **Command Timeout**: 5-second default timeout for shell commands
-- **Environment Variables**: Sensitive data stored as environment variables
+## 🔒 Security
 
-## Technology Stack
+Kokibot implements multiple security measures:
 
-- **Language**: Kotlin 2.2.0
-- **Framework**: Spring Boot 4.0.5
-- **LLM Client**: Custom REST client
-- **Python Engine**: GraalVM Polyglot 25.0.2
-- **Email**: Jakarta Mail API 2.1.5
-- **Telegram**: Telegram Bots SDK 9.5.0
-- **HTML Parsing**: JSoup 1.22.1
-- **PDF Parsing**: Apache PDFBox 3.0.6
-- **Testing**: JUnit 5, Mockito Kotlin
+- **Shell Tool Security** - Blocks dangerous commands (`sudo`, `rm -rf`, `chmod`, `chown`, etc.)
+- **Python Sandboxing** - Executes Python code in isolated GraalVM context
+- **Command Timeouts** - 5-second default timeout for shell commands
+- **Environment Variables** - Sensitive data stored as environment variables, never in code
+- **No Code Execution on User Input** - All tool execution goes through validated interfaces
 
-## Contributing
+---
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## 🗺 Roadmap
 
-## License
+### Current Version (v0.0.1-SNAPSHOT)
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- ✅ Core iterative reasoning engine
+- ✅ 10+ built-in tools
+- ✅ Skills system with dynamic activation
+- ✅ Telegram channel support
+- ✅ Long-term memory with automatic compaction
+- ✅ Email integration (SMTP/IMAP)
 
-## Support
+### Upcoming Features
 
-For issues, questions, or contributions, please open an issue on GitHub.
+- 🔄 Additional LLM provider support (OpenAI, Anthropic, etc.)
+- 🔄 Slack and Discord channel integrations
+- 🔄 Database integration tools
+- 🔄 Advanced scheduling and automation capabilities
+- 🔄 Web UI for configuration and monitoring
+- 🔄 Plugin marketplace for community-contributed skills
 
-## Acknowledgments
+### Future Vision
 
-- Built with [Spring Boot](https://spring.io/projects/spring-boot)
-- LLM integration via [Deepseek](https://www.deepseek.com/)
-- Telegram integration via [Telegram Bots](https://github.com/rubenlagus/TelegramBots)
+- 🎯 Multi-agent collaboration
+- 🎯 Visual workflow builder
+- 🎯 Enhanced memory with semantic search
+- 🎯 Fine-tuning support for domain-specific models
+
+Contributions for roadmap features are welcome! Check our [Contributing](#-contributing) section.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Here's how to get started:
+
+### Getting Started
+
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Make your changes**
+4. **Run tests and ensure quality**
+   ```bash
+   mvn test
+   mvn antrun:run@ktlint
+   ```
+5. **Commit your changes**
+   ```bash
+   git commit -m 'Add amazing feature'
+   ```
+6. **Push to your fork**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+7. **Open a Pull Request**
+
+### Contribution Guidelines
+
+- ✅ Ensure all tests pass
+- ✅ Maintain 93% code coverage
+- ✅ Follow ktlint code style
+- ✅ Add tests for new features
+- ✅ Update documentation as needed
+- ✅ Write clear commit messages
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 💬 Support
+
+Need help? Here's how to get support:
+
+- **Issues**: Open an issue on [GitHub Issues](https://github.com/wutsi/kokibot/issues)
+- **Questions**: Start a discussion on [GitHub Discussions](https://github.com/wutsi/kokibot/discussions)
+- **Documentation**: Check [AGENT.md](AGENT.md) for technical details
+
+---
+
+## 🙏 Acknowledgments
+
+Kokibot is built with excellent open-source technologies:
+
+- [Spring Boot](https://spring.io/projects/spring-boot) - Application framework
+- [Kotlin](https://kotlinlang.org/) - Primary programming language
+- [Deepseek](https://www.deepseek.com/) - LLM integration
+- [Telegram Bots](https://github.com/rubenlagus/TelegramBots) - Telegram integration
+- [GraalVM](https://www.graalvm.org/) - Python execution engine
+
+---
+
+<div align="center">
+
+**Built with ❤️ by the Kokibot team**
+
+[⭐ Star us on GitHub](https://github.com/wutsi/kokibot) • [🐛 Report a Bug](https://github.com/wutsi/kokibot/issues) • [💡 Request a Feature](https://github.com/wutsi/kokibot/issues)
+
+</div>

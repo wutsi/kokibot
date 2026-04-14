@@ -29,6 +29,12 @@ class DurationUtilTest {
     }
 
     @Test
+    fun `millis 30s`() {
+        val millis = DurationUtil.millis("30S")
+        assertEquals(30000L, millis)
+    }
+
+    @Test
     fun `millis invalid millis`() {
         val millis = DurationUtil.millis("xxx", 555)
         assertEquals(555L, millis)

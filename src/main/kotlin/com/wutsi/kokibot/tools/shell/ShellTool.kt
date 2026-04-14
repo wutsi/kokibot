@@ -5,6 +5,7 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
+import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
@@ -15,10 +16,10 @@ class ShellTool : Tool {
         const val ERROR_FORBIDDEN = "Forbidden! You are not allowed to run this command for security reasons."
         const val ERROR_TIMEOUT = "Error: Execution timed out."
         const val NAME = "shell"
-        const val TIMEOUT = 5
+        const val TIMEOUT = 5L
     }
 
-    private var timeout: Int = TIMEOUT
+    private var timeout: Long = TIMEOUT
     private val forbiddenPatterns = listOf(
         "sudo",
         "rm -rf",
@@ -28,7 +29,7 @@ class ShellTool : Tool {
     )
 
     override fun init(config: Map<*, *>, context: Context) {
-        timeout = MapUtil.toInt("timeout", config) ?: TIMEOUT
+        timeout = DurationUtil.millis(MapUtil.toString("timeout", config) ?: "${TIMEOUT}s") / 1000L
     }
 
     override fun metadata(): ToolMetadata = ToolMetadata(
@@ -61,7 +62,7 @@ class ShellTool : Tool {
             return ERROR_FORBIDDEN
         }
 
-        return ShellUtil.exec(command, timeout.toLong(), null)
+        return ShellUtil.exec(command, timeout, null)
     }
 
     private fun isForbidden(command: String): Boolean {

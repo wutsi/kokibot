@@ -12,8 +12,11 @@ import com.wutsi.kokibot.util.MapUtil
 /**
  * This is the implementation of the Deepseek LLM.
  * It uses the Deepseek API to generate responses.
+ *
+ * API Documentations:
+ * - chat completions: https://api-docs.deepseek.com/api/create-chat-completion
  */
-class Deepseek : LLM {
+open class Deepseek : LLM {
     companion object {
         val CONNECT_TIMEOUT_MILLIS = 5000L
         val READ_TIMEOUT_MILLIS = 60000L
@@ -29,7 +32,7 @@ class Deepseek : LLM {
      * Initialize the Deepseek client with the given configuration and context.
      * The configuration can contain the following parameters:
      * - api_key: the API key for Deepseek (required)
-     * - model: the model to use for generation (required)
+     * - model: the model to use for generation. Values: deepseek-chat, deepseek-reasoner (required)
      * - thinking: whether to enable thinking mode
      * - max-tokens: the maximum number of tokens to generate
      * - temperature: the temperature to use for generation
@@ -40,15 +43,7 @@ class Deepseek : LLM {
         val apiKey = config["api_key"] as String? ?: throw ConfigurationException("api_key is required")
         val model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
-        client = DeepseekClient(
-            apiKey = apiKey,
-            model = model,
-            thinking = MapUtil.toBoolean("thinking", config),
-            maxTokens = MapUtil.toInt("max-tokens", config),
-            temperature = MapUtil.toDouble("temperature", config),
-            readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,
-            connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
-        )
+        client = createClient(apiKey, model, config)
     }
 
     override fun health(): Health {
@@ -62,5 +57,17 @@ class Deepseek : LLM {
 
     override fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
         return client.completion(request, tools)
+    }
+
+    protected open fun createClient(apiKey: String, model: String, config: Map<*, *>): DeepseekClient {
+        return DeepseekClient(
+            apiKey = apiKey,
+            model = model,
+            thinking = MapUtil.toBoolean("thinking", config),
+            maxTokens = MapUtil.toInt("max-tokens", config),
+            temperature = MapUtil.toDouble("temperature", config),
+            readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,
+            connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
+        )
     }
 }

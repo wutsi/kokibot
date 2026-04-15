@@ -68,7 +68,6 @@ jobs:
                     cp -r install/* kokibot_temp/
                     cd kokibot_temp
                     zip -r ../target/kokibot.zip .
-                    cp target/kokibot.zip .
                     cd ..
                     rm -rf kokibot_temp
 
@@ -81,6 +80,6 @@ jobs:
                         ## Changes
                         ${{ steps.changelog.outputs.changelog }}
                     files: |
-                        kokibot.zip
+                        target/kokibot.zip
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

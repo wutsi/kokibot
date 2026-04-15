@@ -118,8 +118,8 @@ cleanup() {
 main() {
     check_java
     install_files
-    #install_service
-    #cleanup
+    install_service
+    cleanup
 }
 
 main

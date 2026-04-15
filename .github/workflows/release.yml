@@ -61,6 +61,16 @@ jobs:
                     git commit -m "Bump version for next development iteration"
                     git push
 
+            -   name: Create Release ZIP
+                run: |
+                    mkdir -p kokibot_temp
+                    cp target/*.jar kokibot_temp/
+                    cp -r install/* kokibot_temp/
+                    cd kokibot_temp
+                    zip -r ../target/kokibot.zip .
+                    cd ..
+                    rm -rf kokibot_temp
+
             -   name: Create Release
                 uses: softprops/action-gh-release@v1
                 with:
@@ -70,7 +80,6 @@ jobs:
                         ## Changes
                         ${{ steps.changelog.outputs.changelog }}
                     files: |
-                        target/*.jar
-                        install/**/*
+                        kokibot.zip
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

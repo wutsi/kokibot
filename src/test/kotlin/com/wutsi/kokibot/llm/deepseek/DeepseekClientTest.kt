@@ -85,7 +85,11 @@ class DeepseekClientTest {
 
         doReturn(ResponseEntity(dsContentResponse, HttpStatus.OK))
             .whenever(rest)
-            .postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), any<HttpEntity<*>>(), eq(Map::class.java))
+            .postForEntity(
+                eq("https://api.deepseek.com/v1/chat/completions"),
+                any<HttpEntity<*>>(),
+                eq(Map::class.java)
+            )
     }
 
     @Test
@@ -108,7 +112,11 @@ class DeepseekClientTest {
         assertEquals(0, response.choices[0].toolCalls.size)
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         assertEquals("Bearer $API_KEY", req.firstValue.headers["Authorization"]?.firstOrNull())
 
@@ -149,7 +157,11 @@ class DeepseekClientTest {
 
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         val body = req.firstValue.body as Map<*, *>
         assertEquals(
@@ -190,7 +202,11 @@ class DeepseekClientTest {
 
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         val body = req.firstValue.body as Map<*, *>
         assertEquals(
@@ -231,7 +247,11 @@ class DeepseekClientTest {
 
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         val body = req.firstValue.body as Map<*, *>
         assertEquals(
@@ -271,7 +291,11 @@ class DeepseekClientTest {
 
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         val body = req.firstValue.body as Map<*, *>
         val messages = MapUtil.toList("messages", body) as List<Map<String, Any>>
@@ -299,7 +323,11 @@ class DeepseekClientTest {
 
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         val body = req.firstValue.body as Map<*, *>
         assertEquals(
@@ -336,7 +364,11 @@ class DeepseekClientTest {
 
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         val body = req.firstValue.body as Map<*, *>
         assertEquals(
@@ -377,7 +409,11 @@ class DeepseekClientTest {
         assertEquals("Thinking...", response.choices[0].reasoningContent)
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
 
         assertEquals("Bearer $API_KEY", req.firstValue.headers["Authorization"]?.firstOrNull())
 
@@ -405,7 +441,11 @@ class DeepseekClientTest {
         // GIVEN
         doReturn(ResponseEntity(dsContentResponse, HttpStatus.OK))
             .whenever(rest)
-            .postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), any<HttpEntity<*>>(), eq(Map::class.java))
+            .postForEntity(
+                eq("https://api.deepseek.com/v1/chat/completions"),
+                any<HttpEntity<*>>(),
+                eq(Map::class.java)
+            )
 
         // WHEN
         val request = LLMRequest(
@@ -424,7 +464,11 @@ class DeepseekClientTest {
         assertEquals("Thinking...", response.choices[0].reasoningContent)
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
         val body = req.firstValue.body as Map<*, *>
         assertEquals(
             listOf(
@@ -442,7 +486,11 @@ class DeepseekClientTest {
         // GIVEN
         doReturn(ResponseEntity(dsToolCallResponse, HttpStatus.OK))
             .whenever(rest)
-            .postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), any<HttpEntity<*>>(), eq(Map::class.java))
+            .postForEntity(
+                eq("https://api.deepseek.com/v1/chat/completions"),
+                any<HttpEntity<*>>(),
+                eq(Map::class.java)
+            )
 
         // WHEN
         val request = LLMRequest(prompt = "Hi sir")
@@ -462,7 +510,11 @@ class DeepseekClientTest {
         assertEquals(mapOf("location" to "Paris"), response.choices[0].toolCalls[0].arguments)
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(eq(DeepseekClient.COMPLETION_ENDPOINT), req.capture(), eq(Map::class.java))
+        verify(rest).postForEntity(
+            eq("https://api.deepseek.com/v1/chat/completions"),
+            req.capture(),
+            eq(Map::class.java)
+        )
         val body = req.firstValue.body as Map<*, *>
         assertEquals(
             listOf(

@@ -10,6 +10,7 @@ import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -19,7 +20,11 @@ import tools.jackson.databind.json.JsonMapper
 import java.io.File
 import java.util.Base64
 
-class DeepseekClient(
+/**
+ * This is the client for the Deepseek API.
+ * It is responsible for sending requests to the Deepseek API and parsing the responses.
+ */
+open class DeepseekClient(
     val apiKey: String,
     val model: String,
     val thinking: Boolean? = null,
@@ -30,17 +35,17 @@ class DeepseekClient(
     val restBuilder: RestBuilder = RestBuilder(),
 ) {
     companion object {
-        const val COMPLETION_ENDPOINT = "https://api.deepseek.com/chat/completions"
-        private val LOGGER = LoggerFactory.getLogger(DeepseekClient::class.java)
+        const val COMPLETION_ENDPOINT = "/chat/completions"
     }
 
     private val rest = restBuilder.build(readTimeoutMillis, connectTimeoutMillis)
     private val jsonMapper = JsonMapper()
     private val textExtractorFactory = TextExtractorFactory()
 
-    /**
-     * See https://api-docs.deepseek.com/api/create-chat-completion
-     */
+    protected open fun getBaseUrl(): String {
+        return "https://api.deepseek.com/v1"
+    }
+
     fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
         val body = toDeepseekRequest(request, tools)
 
@@ -51,7 +56,7 @@ class DeepseekClient(
         val xbody = body.filter { entry -> entry.value != null }
         val entity = HttpEntity(xbody, headers)
         val resp = rest.postForEntity(
-            COMPLETION_ENDPOINT,
+            getBaseUrl() + COMPLETION_ENDPOINT,
             entity,
             Map::class.java
         ).body!!
@@ -126,7 +131,7 @@ class DeepseekClient(
                                 try {
                                     jsonMapper.readValue(args, Map::class.java)
                                 } catch (ex: Exception) {
-                                    LOGGER.warn("Failed to parse tool call arguments. arguments=$args", ex)
+                                    getLogger().warn("Failed to parse tool call arguments. arguments=$args", ex)
                                     emptyMap<String, Any>()
                                 }
                             } ?: emptyMap<String, Any>()
@@ -176,7 +181,7 @@ class DeepseekClient(
                             "content" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
                         )
                     } catch (ex: Exception) {
-                        LOGGER.warn("Failed to extract the content of file ${file.name}", ex)
+                        getLogger().warn("Failed to extract the content of file ${file.name}", ex)
                         mapOf(
                             "role" to "user",
                             "content" to "Failed to extract the content of file ${file.absolutePath}. The file will be ignored. Error: ${ex.message}"
@@ -204,5 +209,9 @@ class DeepseekClient(
         return MediaTypeFactory.getMediaType(file.name)
             .map { it.toString() }
             .orElse("application/octet-stream")
+    }
+
+    private fun getLogger(): Logger {
+        return LoggerFactory.getLogger(this::class.java)
     }
 }

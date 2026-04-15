@@ -1,0 +1,18 @@
+{
+  "assistant": {
+    "max-iterations": 30
+  },
+  "heartbeat": {
+    "frequency": "3h"
+  },
+  "llm": {
+    "type": "deepseek",
+    "api_key": "${DEEPSEEK_API_KEY}",
+    "model": "deepseek-chat",
+    "max-tokens": 512
+  },
+  "memory": {
+    "window": "5d",
+    "compaction-frequency": "6h"
+  }
+}

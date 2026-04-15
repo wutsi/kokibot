@@ -5,13 +5,19 @@ import kotlin.test.assertEquals
 
 class DurationUtilTest {
     @Test
+    fun `days 3d`() {
+        val millis = DurationUtil.days("3d")
+        assertEquals(3, millis)
+    }
+
+    @Test
     fun `millis 1d`() {
         val millis = DurationUtil.millis("1d")
         assertEquals(86400000L, millis)
     }
 
     @Test
-    fun `millis 2d`() {
+    fun `millis 3d`() {
         val millis = DurationUtil.millis("3d")
         assertEquals(259200000L, millis)
     }
@@ -26,6 +32,12 @@ class DurationUtilTest {
     fun `millis 30m`() {
         val millis = DurationUtil.millis("30m")
         assertEquals(1800000L, millis)
+    }
+
+    @Test
+    fun `millis 30s`() {
+        val millis = DurationUtil.millis("30S")
+        assertEquals(30000L, millis)
     }
 
     @Test

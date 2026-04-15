@@ -214,7 +214,7 @@ class Assistant {
     }
 
     private fun buildSystemInstructions(): String? {
-        val file = File(context.home, "AGENT.md")
+        val file = File(context.home, "ASSISTANT.md")
         val base = if (file.exists()) {
             file.readText()
         } else {

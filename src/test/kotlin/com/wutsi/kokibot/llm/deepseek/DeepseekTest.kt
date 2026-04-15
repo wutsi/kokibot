@@ -19,7 +19,7 @@ import java.io.File
 import kotlin.test.assertEquals
 
 class DeepseekTest {
-    val deepseek = Deepseek()
+    private val llm = Deepseek()
     private val config = mapOf(
         "api_key" to "ds-000001",
         "model" to "deepseek-chat",
@@ -38,20 +38,20 @@ class DeepseekTest {
 
     @Test
     fun id() {
-        assertEquals("llm:deepseek", deepseek.id())
+        assertEquals("llm:deepseek", llm.id())
     }
 
     @Test
     fun init() {
-        deepseek.init(config, context)
+        llm.init(config, context)
 
-        assertEquals("ds-000001", deepseek.client.apiKey)
-        assertEquals("deepseek-chat", deepseek.client.model)
-        assertEquals(true, deepseek.client.thinking)
-        assertEquals(1000, deepseek.client.maxTokens)
-        assertEquals(.7, deepseek.client.temperature)
-        assertEquals(30000, deepseek.client.readTimeoutMillis)
-        assertEquals(10000, deepseek.client.connectTimeoutMillis)
+        assertEquals("ds-000001", llm.client.apiKey)
+        assertEquals("deepseek-chat", llm.client.model)
+        assertEquals(true, llm.client.thinking)
+        assertEquals(1000, llm.client.maxTokens)
+        assertEquals(.7, llm.client.temperature)
+        assertEquals(30000, llm.client.readTimeoutMillis)
+        assertEquals(10000, llm.client.connectTimeoutMillis)
     }
 
     @Test
@@ -59,7 +59,7 @@ class DeepseekTest {
         val config = mapOf(
             "model" to "deepseek-chat",
         )
-        assertThrows<ConfigurationException> { deepseek.init(config, context) }
+        assertThrows<ConfigurationException> { llm.init(config, context) }
     }
 
     @Test
@@ -67,7 +67,7 @@ class DeepseekTest {
         val config = mapOf(
             "api_key" to "ds-000001",
         )
-        assertThrows<ConfigurationException> { deepseek.init(config, context) }
+        assertThrows<ConfigurationException> { llm.init(config, context) }
     }
 
     @Test
@@ -76,9 +76,9 @@ class DeepseekTest {
             "api_key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-chat",
         )
-        deepseek.init(config, context)
+        llm.init(config, context)
 
-        val response = deepseek.completion(
+        val response = llm.completion(
             request = LLMRequest(prompt = "What is the capital of France?"),
             emptyList(),
         )
@@ -113,9 +113,9 @@ class DeepseekTest {
             "model" to "deepseek-chat",
             "tools" to listOf("date_tool_now"),
         )
-        deepseek.init(config, context)
+        llm.init(config, context)
 
-        val response = deepseek.completion(
+        val response = llm.completion(
             request = LLMRequest(prompt = "What time is it?"),
             listOf(tool)
         )
@@ -134,11 +134,11 @@ class DeepseekTest {
             "api_key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-chat",
         )
-        deepseek.init(config, context)
+        llm.init(config, context)
 
-        val health = deepseek.health()
+        val health = llm.health()
 
-        assertEquals(deepseek.id(), health.id)
+        assertEquals(llm.id(), health.id)
         assertEquals(true, health.up)
         assertNull(health.details)
     }
@@ -149,11 +149,11 @@ class DeepseekTest {
             "api_key" to "xxxxx",
             "model" to "deepseek-chat",
         )
-        deepseek.init(config, context)
+        llm.init(config, context)
 
-        val health = deepseek.health()
+        val health = llm.health()
 
-        assertEquals(deepseek.id(), health.id)
+        assertEquals(llm.id(), health.id)
         assertEquals(false, health.up)
         assertNotNull(health.details)
     }

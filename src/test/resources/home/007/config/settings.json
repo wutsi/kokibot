@@ -21,7 +21,7 @@
     "frequency": "30m"
   },
   "memory": {
-    "window": 5,
+    "window": "3d",
     "compaction-frequency": "12h"
   },
   "mail": {

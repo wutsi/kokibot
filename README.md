@@ -81,26 +81,24 @@ Kokibot solves these challenges by providing a **production-ready framework** wi
 
 ## 🚀 Quick Start
 
-### Step 1: Clone the Repository
+### Step 1: Install Kokibot (macOS & Linux)
+
+Run the following command in your terminal:
 
 ```bash
-git clone https://github.com/wutsi/kokibot.git
-cd kokibot
+curl -fsSL https://github.com/wutsi/kokibot/releases/latest/download/install.sh | bash
 ```
 
-### Step 2: Build the Project
+This will automatically download and install Kokibot as a background service using the appropriate method for your
+platform (`launchd` for macOS, `systemd` for Linux).
 
-```bash
-mvn clean install
-```
-
-### Step 3: Setup Configuration
+### Step 2: Setup Configuration
 
 Create your configuration directory and settings file:
 
 ```bash
-mkdir -p ~/kokibot/config
-cat > ~/kokibot/config/settings.json << 'EOF'
+mkdir -p ~/.kokibot/config
+cat > ~/.kokibot/config/settings.json << 'EOF'
 {
   "assistant": {
     "max-iterations": 10
@@ -124,7 +122,7 @@ cat > ~/kokibot/config/settings.json << 'EOF'
 EOF
 ```
 
-### Step 4: Run the Application
+### Step 3: Set Environment Variables
 
 Set your environment variables (choose one LLM provider):
 
@@ -133,7 +131,6 @@ Set your environment variables (choose one LLM provider):
 ```bash
 export DEEPSEEK_API_KEY="your-deepseek-api-key"
 export TELEGRAM_TOKEN="your-telegram-token"
-mvn spring-boot:run
 ```
 
 **Using Kimi:**
@@ -141,10 +138,9 @@ mvn spring-boot:run
 ```bash
 export KIMI_API_KEY="your-kimi-api-key"
 export TELEGRAM_TOKEN="your-telegram-token"
-mvn spring-boot:run
 ```
 
-That's it! Your Kokibot instance is now running and ready to receive messages.
+Kokibot will automatically use these variables when running.
 
 ---
 

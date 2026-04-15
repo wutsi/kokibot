@@ -93,5 +93,6 @@ jobs:
                         ${{ steps.changelog.outputs.changelog }}
                     files: |
                         target/kokibot.zip
+                        install.sh
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

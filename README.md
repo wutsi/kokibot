@@ -69,7 +69,7 @@ Kokibot solves these challenges by providing a **production-ready framework** wi
 |---------------------|---------------------------------------------|
 | **Language**        | Kotlin 2.2.0, Java 17                       |
 | **Framework**       | Spring Boot 4.0.5                           |
-| **LLM Integration** | Custom REST client (Deepseek, Kimi support) |
+| **LLM Integration** | Custom REST client (Deepseek, Kimi, Gemini) |
 | **Python Engine**   | GraalVM Polyglot 25.0.2                     |
 | **Email**           | Jakarta Mail API 2.1.5                      |
 | **Messaging**       | Telegram Bots SDK 9.5.0                     |
@@ -99,23 +99,18 @@ platform (`launchd` for macOS, `systemd` for Linux).
 You must setup environment variables to enable the _brain_ of your AI assistant.
 
 ```bash
-export KOKIBOT_LLM_TYPE="your-llm-api-key"
-export KOKIBOT_LLM_API_KEY="your-llm-api-key"
-export KOKIBOT_LLM_MODEL="your-llm-model"
+export KOKIBOT_LLM_TYPE="your-llm-api-key"      // Type of LLM: deepseek, kimi, gemini
+export KOKIBOT_LLM_API_KEY="your-llm-api-key"   // LLM API Key
+export KOKIBOT_LLM_MODEL="your-llm-model"       // LLM Model
 ```
-
-The LLM supported:
-
-- Deepseek: `export KOKIBOT_LLM_TYPE=deepseek`
-- Kimi: `export KOKIBOT_LLM_TYPE=kimi`
 
 #### Setup the Channel (REQUIRED)
 
 You must setup environment variables so that you can interact with your AI assistant.
 
 ```bash
-export KOKIBOT_CHANNEL_TYPE="your-channel-type"
-export KOKIBOT_TOKEN="your-channel-token"
+export KOKIBOT_CHANNEL_TYPE="your-channel-type"   // Type of channel: telegram
+export KOKIBOT_TOKEN="your-channel-token"         // Channel token: e.g., Telegram Bot Token
 ```
 
 The channel supported are:

@@ -6,9 +6,9 @@
     "frequency": "3h"
   },
   "llm": {
-    "type": "${KOKIBOT_LLM_TYPE",
+    "type": "${KOKIBOT_LLM_TYPE}",
     "api_key": "${KOKIBOT_LLM_API_KEY}",
-    "model": "${KOKIBOT_LLM_MODEL",
+    "model": "${KOKIBOT_LLM_MODEL}",
     "max-tokens": 512
   },
   "channel": [

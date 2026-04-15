@@ -37,7 +37,7 @@ install_files() {
     # Copy files to the appropriate locations
     echo "Installing files..."
     mkdir -p "$HOME_DIR"
-    cp -Rn kokibot/home/* "$HOME_DIR/"
+    cp -Rn kokibot/home "$HOME_DIR"
     mkdir -p "$BIN_DIR"
     cp kokibot/kokibot.jar "$BIN_DIR/"
 }
@@ -58,10 +58,11 @@ install_service() {
     <key>ProgramArguments</key>
     <array>
         <string>$JAVA_EXEC</string>
-        <string>-jar</string>
-        <string>--spring.profiles.active=prod</string>
-        <string>$BIN_DIR/kokibot.jar</string>
+        <string>$JAVA_EXEC</string>
         <string>-Dserver.port=$KOKIBOT_PORT</string>
+        <string>-jar</string>
+        <string>$BIN_DIR/kokibot.jar</string>
+        <string>--spring.profiles.active=prod</string>
     </array>
     <key>RunAtLoad</key>
     <true/>

@@ -4,7 +4,8 @@
 
 ### Your Extensible AI Assistant Framework
 
-*Build production-ready AI assistants with pluggable architecture for LLM providers, communication channels, and custom tools*
+*Build production-ready AI assistants with pluggable architecture for LLM providers, communication channels, and custom
+tools*
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg?logo=openjdk)](https://openjdk.org/)
@@ -22,11 +23,15 @@
 
 ## 📖 Introduction
 
-**Kokibot** is a powerful, extensible AI assistant framework built with Kotlin and Spring Boot. It provides a pluggable architecture that makes it easy to build production-ready AI assistants capable of complex reasoning, tool execution, and multi-channel communication.
+**Kokibot** is a powerful, extensible AI assistant framework built with Kotlin and Spring Boot. It provides a pluggable
+architecture that makes it easy to build production-ready AI assistants capable of complex reasoning, tool execution,
+and multi-channel communication.
 
 ### The Problem
 
-Building AI assistants that can execute multi-step reasoning tasks, interact with external systems (email, web, databases), maintain conversation context and long-term memory, extend capabilities through modular plugins, and support multiple communication channels requires significant engineering effort and architectural planning.
+Building AI assistants that can execute multi-step reasoning tasks, interact with external systems (email, web,
+databases), maintain conversation context and long-term memory, extend capabilities through modular plugins, and support
+multiple communication channels requires significant engineering effort and architectural planning.
 
 ### The Solution
 
@@ -43,34 +48,34 @@ Kokibot solves these challenges by providing a **production-ready framework** wi
 
 ## ✨ Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Iterative Reasoning** | Multi-step reasoning loop with configurable max iterations |
-| **Tool System** | 10+ built-in tools: web search, code execution, email management, and more |
-| **Skills System** | Modular, keyword-activated extensions for domain-specific capabilities |
-| **Multiple Channels** | Telegram support with extensible architecture for additional platforms |
-| **Long-Term Memory** | Automatic conversation compaction and fact extraction |
-| **Email Integration** | Full SMTP/IMAP support for sending, reading, searching, and managing emails |
-| **Code Execution** | Safe Python and shell command execution with security restrictions |
-| **Web Capabilities** | Web search and content extraction from URLs (HTML, PDF) |
-| **Commands** | Built-in commands for system control, debugging, and health monitoring |
-| **Configuration** | Flexible JSON-based configuration with environment variable support |
+| Feature                 | Description                                                                 |
+|-------------------------|-----------------------------------------------------------------------------|
+| **Iterative Reasoning** | Multi-step reasoning loop with configurable max iterations                  |
+| **Tool System**         | 10+ built-in tools: web search, code execution, email management, and more  |
+| **Skills System**       | Modular, keyword-activated extensions for domain-specific capabilities      |
+| **Multiple Channels**   | Telegram support with extensible architecture for additional platforms      |
+| **Long-Term Memory**    | Automatic conversation compaction and fact extraction                       |
+| **Email Integration**   | Full SMTP/IMAP support for sending, reading, searching, and managing emails |
+| **Code Execution**      | Safe Python and shell command execution with security restrictions          |
+| **Web Capabilities**    | Web search and content extraction from URLs (HTML, PDF)                     |
+| **Commands**            | Built-in commands for system control, debugging, and health monitoring      |
+| **Configuration**       | Flexible JSON-based configuration with environment variable support         |
 
 ---
 
 ## 🛠 Technology Stack
 
-| Category | Technologies |
-|----------|-------------|
-| **Language** | Kotlin 2.2.0, Java 17 |
-| **Framework** | Spring Boot 4.0.5 |
+| Category            | Technologies                                |
+|---------------------|---------------------------------------------|
+| **Language**        | Kotlin 2.2.0, Java 17                       |
+| **Framework**       | Spring Boot 4.0.5                           |
 | **LLM Integration** | Custom REST client (Deepseek, Kimi support) |
-| **Python Engine** | GraalVM Polyglot 25.0.2 |
-| **Email** | Jakarta Mail API 2.1.5 |
-| **Messaging** | Telegram Bots SDK 9.5.0 |
-| **HTML Parsing** | JSoup 1.22.1 |
-| **PDF Parsing** | Apache PDFBox 3.0.6 |
-| **Testing** | JUnit 5, Mockito Kotlin, GreenMail |
+| **Python Engine**   | GraalVM Polyglot 25.0.2                     |
+| **Email**           | Jakarta Mail API 2.1.5                      |
+| **Messaging**       | Telegram Bots SDK 9.5.0                     |
+| **HTML Parsing**    | JSoup 1.22.1                                |
+| **PDF Parsing**     | Apache PDFBox 3.0.6                         |
+| **Testing**         | JUnit 5, Mockito Kotlin, GreenMail          |
 
 ---
 
@@ -112,7 +117,7 @@ cat > ~/kokibot/config/settings.json << 'EOF'
     }
   ],
   "memory": {
-    "window": 3,
+    "window": "3d",
     "compaction-frequency": 6
   }
 }
@@ -124,6 +129,7 @@ EOF
 Set your environment variables (choose one LLM provider):
 
 **Using Deepseek:**
+
 ```bash
 export DEEPSEEK_API_KEY="your-deepseek-api-key"
 export TELEGRAM_TOKEN="your-telegram-token"
@@ -131,6 +137,7 @@ mvn spring-boot:run
 ```
 
 **Using Kimi:**
+
 ```bash
 export KIMI_API_KEY="your-kimi-api-key"
 export TELEGRAM_TOKEN="your-telegram-token"
@@ -138,52 +145,6 @@ mvn spring-boot:run
 ```
 
 That's it! Your Kokibot instance is now running and ready to receive messages.
-
----
-
-## 📚 Documentation
-
-For detailed technical documentation, architecture guides, and implementation details, please refer to:
-
-- **[AGENT.md](AGENT.md)** - Complete architecture documentation, component overview, and development guide
-- **[docs/references/](docs/references/)** - Comprehensive reference documentation:
-  - **[assistant.md](docs/references/assistant.md)** - Assistant configuration and architecture
-  - **[tools.md](docs/references/tools.md)** - Complete tool reference and usage guide
-  - **[skills.md](docs/references/skills.md)** - Skills system documentation and examples
-  - **[commands.md](docs/references/commands.md)** - Available system commands reference
-  - **[mail.md](docs/references/mail.md)** - Email integration setup and usage
-  - **[llm.md](docs/references/llm.md)** - LLM provider configuration guide
-  - **[heartbeat.md](docs/references/heartbeat.md)** - Heartbeat monitoring system
-
----
-
-## 🗺 Roadmap
-
-### Current Version (v0.0.1-SNAPSHOT)
-
-- ✅ Core iterative reasoning engine
-- ✅ 10+ built-in tools
-- ✅ Skills system with dynamic activation
-- ✅ Telegram channel support
-- ✅ Long-term memory with automatic compaction
-- ✅ Email integration (SMTP/IMAP)
-- ✅ Deepseek and Kimi LLM provider support
-
-### Upcoming Features
-
-- 🔄 Additional LLM provider support (OpenAI, Anthropic, Gemini)
-- 🔄 Slack and Discord channel integrations
-- 🔄 Database integration tools
-- 🔄 Advanced scheduling and automation capabilities
-- 🔄 Web UI for configuration and monitoring
-- 🔄 Plugin marketplace for community-contributed skills
-
-### Future Vision
-
-- 🎯 Multi-agent collaboration
-- 🎯 Visual workflow builder
-- 🎯 Enhanced memory with semantic search
-- 🎯 Fine-tuning support for domain-specific models
 
 ---
 

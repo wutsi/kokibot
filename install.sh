@@ -4,7 +4,7 @@ KOKIBOT_VERSION="0.0.4"
 KOKIBOT_PORT=10807
 BIN_DIR="$HOME/Applications/kokibot"
 HOME_DIR="$HOME/.kokibot"
-TMP_DIR="$HOME/tmp_kokibot_install"
+TMP_DIR="$HOME/tmp/$(uuidgen)/kokibot_install"
 PLIST="$HOME/Library/LaunchAgents/com.kokibot.service.plist"
 
 check_java() {

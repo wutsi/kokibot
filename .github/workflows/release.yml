@@ -52,13 +52,22 @@ jobs:
                     echo "$CHANGELOG" >> $GITHUB_OUTPUT
                     echo "EOF" >> $GITHUB_OUTPUT
 
-            -   name: Bump Version
+            -   name: Bump Version in pom.xml
                 run: |
                     git config user.email "actions@github.com"
                     git config user.name "GitHub Actions"
                     mvn versions:set -DnewVersion=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//' | awk -F. '{$NF=$NF+1; print}' OFS=.)
                     git add pom.xml
                     git commit -m "Bump version for next development iteration"
+                    git push
+
+            -   name: Bump version in install.sh
+                run: |
+                    VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
+                    sed -i.bak "s/^KOKIBOT_VERSION=.*/KOKIBOT_VERSION=\"$VERSION\"/" install.sh
+                    rm install.sh.bak
+                    git add install.sh
+                    git commit -m "Update KOKIBOT_VERSION in install.sh to $VERSION"
                     git push
 
             -   name: Create Release ZIP

@@ -39,6 +39,15 @@ jobs:
                     VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
                     echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+            -   name: Update version in install.sh
+                run: |
+                    VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
+                    sed -i.bak "s/^KOKIBOT_VERSION=.*/KOKIBOT_VERSION=\"$VERSION\"/" install.sh
+                    rm install.sh.bak
+                    git add install.sh
+                    git commit -m "Update KOKIBOT_VERSION in install.sh to $VERSION"
+                    git push
+
             -   name: Generate Changelog
                 id: changelog
                 run: |
@@ -61,20 +70,12 @@ jobs:
                     git commit -m "Bump version for next development iteration"
                     git push
 
-            -   name: Bump version in install.sh
-                run: |
-                    VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
-                    sed -i.bak "s/^KOKIBOT_VERSION=.*/KOKIBOT_VERSION=\"$VERSION\"/" install.sh
-                    rm install.sh.bak
-                    git add install.sh
-                    git commit -m "Update KOKIBOT_VERSION in install.sh to $VERSION"
-                    git push
-
             -   name: Create Release ZIP
                 run: |
                     mkdir -p kokibot_temp
-                    cp target/*.jar kokibot_temp/
-                    cp -r install/* kokibot_temp/
+                    mkdir -p kokibot_temp/kokibot
+                    cp target/*.jar kokibot_temp/kokibot/
+                    cp -r install/* kokibot_temp/kokibot/
                     cd kokibot_temp
                     zip -r ../target/kokibot.zip .
                     cd ..

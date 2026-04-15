@@ -1,6 +1,6 @@
 #!/bin/sh
 
-KOKIBOT_VERSION="0.0.5"
+KOKIBOT_VERSION="0.0.4"
 KOKIBOT_PORT=10807
 BIN_DIR="$HOME/Applications/kokibot"
 HOME_DIR="$HOME/.kokibot"
@@ -21,19 +21,21 @@ check_java() {
     fi
 }
 
-setup_workspace() {
+install_files() {
+    # Create temporary directory for download and extraction
     mkdir -p "$TMP_DIR"
     cd "$TMP_DIR" || exit 1
-}
 
-download_kokibot() {
+    # Download the latest release of Kokibot
     echo "Downloading Kokibot v$KOKIBOT_VERSION..."
-    curl -LO "https://github.com/wutsi/kokibot/releases/download/v$KOKIBOT_VERSION/kokibot.zip"
-}
+    curl -L "https://github.com/wutsi/kokibot/releases/download/v$KOKIBOT_VERSION/kokibot.zip" --output kokibot.zip  || exit 1
 
-install_files() {
+    # Unzip
+    echo "Unpacking..."
     unzip -q kokibot.zip
 
+    # Copy files to the appropriate locations
+    echo "Installing files..."
     mkdir -p "$HOME_DIR"
     cp -Rn kokibot/home/* "$HOME_DIR/"
     mkdir -p "$BIN_DIR"
@@ -115,10 +117,9 @@ cleanup() {
 
 main() {
     check_java
-    setup_workspace
-    download_kokibot
     install_files
-    cleanup
+    #install_service
+    #cleanup
 }
 
 main

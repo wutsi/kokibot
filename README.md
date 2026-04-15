@@ -92,55 +92,51 @@ curl -fsSL https://github.com/wutsi/kokibot/releases/latest/download/install.sh 
 This will automatically download and install Kokibot as a background service using the appropriate method for your
 platform (`launchd` for macOS, `systemd` for Linux).
 
-### Step 2: Setup Configuration
+### Step 2: Set Environment Variables
 
-Create your configuration directory and settings file:
+#### Setup the LLM (REQUIRED)
 
-```bash
-mkdir -p ~/.kokibot/config
-cat > ~/.kokibot/config/settings.json << 'EOF'
-{
-  "assistant": {
-    "max-iterations": 10
-  },
-  "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
-    "model": "deepseek-chat"
-  },
-  "channels": [
-    {
-      "type": "telegram",
-      "token": "${TELEGRAM_TOKEN}"
-    }
-  ],
-  "memory": {
-    "window": "3d",
-    "compaction-frequency": 6
-  }
-}
-EOF
-```
-
-### Step 3: Set Environment Variables
-
-Set your environment variables (choose one LLM provider):
-
-**Using Deepseek:**
+You must setup environment variables to enable the _brain_ of your AI assistant.
 
 ```bash
-export DEEPSEEK_API_KEY="your-deepseek-api-key"
-export TELEGRAM_TOKEN="your-telegram-token"
+export KOKIBOT_LLM_TYPE="your-llm-api-key"
+export KOKIBOT_LLM_API_KEY="your-llm-api-key"
+export KOKIBOT_LLM_MODEL="your-llm-model"
 ```
 
-**Using Kimi:**
+The LLM supported:
+
+- Deepseek: `export KOKIBOT_LLM_TYPE=deepseek`
+- Kimi: `export KOKIBOT_LLM_TYPE=kimi`
+
+#### Setup the Channel (REQUIRED)
+
+You must setup environment variables so that you can interact with your AI assistant.
 
 ```bash
-export KIMI_API_KEY="your-kimi-api-key"
-export TELEGRAM_TOKEN="your-telegram-token"
+export KOKIBOT_CHANNEL_TYPE="your-channel-type"
+export KOKIBOT_TOKEN="your-channel-token"
 ```
 
-Kokibot will automatically use these variables when running.
+The channel supported are:
+
+- Telegram: `export KOKIBOT_CHANNEL_TYPE=telegram`
+
+### Step 3 Relaunch KokiBot
+
+#### iOS
+
+```bash
+aunchctl unload ~/Library/LaunchAgents/com.kokibot.service.plist
+launchctl load ~/Library/LaunchAgents/com.kokibot.service.plist
+```
+
+#### Linux
+
+```bash
+systemctl --user stop kokibot.service
+systemctl --user start kokibot.service
+```
 
 ---
 

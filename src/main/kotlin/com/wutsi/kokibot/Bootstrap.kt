@@ -7,6 +7,7 @@ import com.wutsi.kokibot.util.MapUtil
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
+import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
@@ -14,6 +15,7 @@ import java.io.File
 @Service
 class Bootstrap(
     val contextFactory: ContextFactory,
+    val env: Environment,
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Bootstrap::class.java)
@@ -26,7 +28,12 @@ class Bootstrap(
 
     @PostConstruct
     fun init() {
-        val home = System.getProperty("user.home") + "/kokibot"
+        val profiles = env.activeProfiles.joinToString(", ")
+        val home = when {
+            profiles.contains("prod") -> System.getProperty("user.home") + "/.kokibot"
+            else -> System.getProperty("user.home") + "/kokibot"
+        }
+
         init(File(home))
     }
 

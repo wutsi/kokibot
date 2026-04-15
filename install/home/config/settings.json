@@ -6,11 +6,17 @@
     "frequency": "3h"
   },
   "llm": {
-    "type": "deepseek",
-    "api_key": "${DEEPSEEK_API_KEY}",
-    "model": "deepseek-chat",
+    "type": "${KOKIBOT_LLM_TYPE",
+    "api_key": "${KOKIBOT_LLM_API_KEY}",
+    "model": "${KOKIBOT_LLM_MODEL",
     "max-tokens": 512
   },
+  "channel": [
+    {
+      "type": "${KOKIBOT_CHANNEL_TYPE}",
+      "token": "${KOKIBOT_CHANNEL_TOKEN}"
+    }
+  ],
   "memory": {
     "window": "5d",
     "compaction-frequency": "6h"

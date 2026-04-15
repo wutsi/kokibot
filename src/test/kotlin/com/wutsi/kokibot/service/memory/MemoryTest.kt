@@ -12,8 +12,6 @@ import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
-import com.wutsi.kokibot.service.memory.ChatHistory
-import com.wutsi.kokibot.service.memory.Memory
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -42,7 +40,7 @@ class MemoryTest {
         home.deleteRecursively()
 
         val config = mapOf(
-            "window" to window
+            "window" to "${window}d"
         )
         memory.init(config, context)
     }

@@ -6,6 +6,14 @@ object DurationUtil {
     val ONE_HOUR = 60 * ONE_MINUTE
     val ONE_DAY = 24 * ONE_HOUR
 
+    fun days(earliest: String, default: Long = 0): Long {
+        return millis(earliest, default * ONE_DAY) / ONE_DAY
+    }
+
+    fun seconds(earliest: String, default: Long = 0): Long {
+        return millis(earliest, default * ONE_SECOND) / ONE_SECOND
+    }
+
     fun millis(earliest: String, default: Long = 0): Long {
         try {
             return when {

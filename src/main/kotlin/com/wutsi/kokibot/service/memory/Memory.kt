@@ -21,12 +21,12 @@ import java.util.concurrent.TimeUnit
 class Memory : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Memory::class.java)
-        const val DEFAULT_WINDOW = 3
+        const val DEFAULT_WINDOW = 3L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
-    private var window: Int = DEFAULT_WINDOW
+    private var window: Long = DEFAULT_WINDOW
     private lateinit var context: Context
     private lateinit var job: ScheduledFuture<*>
 
@@ -38,12 +38,15 @@ class Memory : Resource {
      * Initialize the memory with the given configuration and context.
      *
      * The configuration can contain the following parameters:
-     * - window: the number of days to look back when compacting the memory (default: 3)
+     * - window: the number of days to look back when compacting the memory (default: 3d)
      * - compaction-frequency: the frequency to run the compaction job (ex: 1h, 30m, 1d - default: 6h)
      */
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-        this.window = MapUtil.toInt("window", config) ?: DEFAULT_WINDOW
+        this.window = MapUtil.toString("window", config)
+            ?.let { value ->
+                DurationUtil.days(value, DEFAULT_WINDOW)
+            } ?: DEFAULT_WINDOW
 
         val frequency = MapUtil.toString("compaction-frequency", config) ?: DEFAULT_COMPACTION_FREQUENCY
         job = launchJob(frequency)

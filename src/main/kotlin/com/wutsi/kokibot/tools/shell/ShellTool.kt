@@ -29,7 +29,9 @@ class ShellTool : Tool {
     )
 
     override fun init(config: Map<*, *>, context: Context) {
-        timeout = DurationUtil.millis(MapUtil.toString("timeout", config) ?: "${TIMEOUT}s") / 1000L
+        timeout = MapUtil.toString("timeout", config)?.let { value ->
+            DurationUtil.seconds(value, TIMEOUT)
+        } ?: TIMEOUT
     }
 
     override fun metadata(): ToolMetadata = ToolMetadata(

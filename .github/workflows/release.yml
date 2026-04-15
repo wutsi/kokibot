@@ -80,6 +80,6 @@ jobs:
                         ## Changes
                         ${{ steps.changelog.outputs.changelog }}
                     files: |
-                        kokibot.zip
+                        target/kokibot.zip
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

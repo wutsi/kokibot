@@ -68,6 +68,7 @@ jobs:
                     cp -r install/* kokibot_temp/
                     cd kokibot_temp
                     zip -r ../target/kokibot.zip .
+                    cp target/kokibot.zip .
                     cd ..
                     rm -rf kokibot_temp
 

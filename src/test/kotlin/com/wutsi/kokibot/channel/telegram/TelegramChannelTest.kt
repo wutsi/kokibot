@@ -137,6 +137,36 @@ class TelegramChannelTest {
     }
 
     @Test
+    fun `consume - with whitelist - accepted`() {
+        // GIVEN
+        doReturn(Message("World")).whenever(assistant).process(any())
+
+        val config = this.config + mapOf("sender-whitelist" to listOf("ray.sponsible"))
+        telegram.init(config, context)
+
+        // WHEN
+        val update = createTextUpdate("Hello", 123L)
+        telegram.consume(update)
+
+        // THEN
+        verify(assistant).process(any())
+    }
+
+    @Test
+    fun `consume - with whitelist - rejected`() {
+        // GIVEN
+        val config = this.config + mapOf("sender-whitelist" to listOf("roger.milla"))
+        telegram.init(config, context)
+
+        // WHEN
+        val update = createTextUpdate("Hello", 123L)
+        telegram.consume(update)
+
+        // THEN
+        verify(assistant, never()).process(any())
+    }
+
+    @Test
     fun `consume - should process documents`() {
         // GIVEN
         doReturn(Message("Received")).whenever(assistant).process(any())

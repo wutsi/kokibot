@@ -47,6 +47,7 @@ class TelegramChannel(
     private lateinit var botToken: String
     private lateinit var context: Context
     private lateinit var rest: RestTemplate
+    private lateinit var senderWhitelist: List<String>
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("telegram-channel"))
 
@@ -60,6 +61,9 @@ class TelegramChannel(
         app.registerBot(botToken, this)
         client = factory.createTelegramClient(botToken)
         rest = restBuilder.build(null, null)
+        senderWhitelist = MapUtil.toList("sender-whitelist", config)
+            ?.mapNotNull { entry -> entry?.toString() }
+            ?: emptyList()
         this.context = context
     }
 
@@ -86,7 +90,7 @@ class TelegramChannel(
     }
 
     override fun consume(update: Update) {
-        if (update.hasMessage()) {
+        if (update.hasMessage() && accept(update)) {
             val chatId = update.message.chatId.toString()
 
             /* Typing indicator */
@@ -132,6 +136,19 @@ class TelegramChannel(
             /* Send response */
             send(chatId, message)
         }
+    }
+
+    private fun accept(update: Update): Boolean {
+        if (update.hasMessage()) {
+            val sender = update.message.chat.userName ?: return false
+            if (senderWhitelist.isEmpty() || senderWhitelist.contains(sender)) {
+                return true
+            } else {
+                LOGGER.warn("Unauthorized sender: $sender")
+                return false
+            }
+        }
+        return false
     }
 
     private fun typing(chatId: String) {

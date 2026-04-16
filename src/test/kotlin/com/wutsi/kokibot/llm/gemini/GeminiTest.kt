@@ -13,7 +13,7 @@ class GeminiTest {
     private val context = Context(
         home = File("/target"),
         llm = mock(),
-        config = mapOf("xx" to "yy"),
+        config = mapOf("xx" to "yy")
     )
 
     @Test

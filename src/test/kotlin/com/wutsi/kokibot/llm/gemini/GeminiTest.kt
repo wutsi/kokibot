@@ -3,7 +3,6 @@ package com.wutsi.kokibot.llm.gemini
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
-import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
@@ -16,7 +15,8 @@ class GeminiTest {
         config = mapOf("xx" to "yy")
     )
 
-    @Test
+    // @Test
+    // Disabled because of rate limit and cost. Enable it for manual testing.
     fun completion() {
         val config = mapOf(
             "api_key" to System.getenv("GEMINI_API_KEY"),

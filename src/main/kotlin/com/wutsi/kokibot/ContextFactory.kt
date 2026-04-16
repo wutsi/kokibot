@@ -18,8 +18,6 @@ import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolCommand
 import com.wutsi.kokibot.tools.ToolRegistry
-import com.wutsi.kokibot.tools.date.ClockTool
-import com.wutsi.kokibot.tools.filesystem.FSRead
 import com.wutsi.kokibot.tools.mail.MailFindTool
 import com.wutsi.kokibot.tools.mail.MailListTool
 import com.wutsi.kokibot.tools.mail.MailReadTool
@@ -82,12 +80,6 @@ class ContextFactory(
 
     private fun discoverTools(): List<Tool> {
         return listOf(
-            /* date */
-            ClockTool(),
-
-            /* FileSystem */
-            FSRead(),
-
             /* Mail */
             MailListTool(),
             MailReadTool(),

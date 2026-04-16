@@ -18,7 +18,14 @@ class MailListTool : AbstractIMAPTool() {
 
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
-        description = "List the emails in the inbox.",
+        description = """
+            List the emails in the inbox. Each email includes the following details:
+            - Date: The date when the email was received.
+            - Message-ID: The unique identifier of the email.
+            - Unsubscribe-URL: The URL to unsubscribe from the mailing list extracted from message header, if available.
+            - From: The sender of the email.
+            - Subject: The subject of the email.
+        """.trimIndent(),
         parameters = listOf(
             ToolParameter(
                 name = "unread",

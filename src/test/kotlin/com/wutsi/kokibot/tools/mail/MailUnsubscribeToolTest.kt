@@ -26,13 +26,15 @@ class MailUnsubscribeToolTest {
     fun metadata() {
         val meta = tool.metadata()
         assertEquals(MailUnsubscribeTool.NAME, meta.name)
-        assertEquals(1, meta.parameters.size)
+        assertEquals(2, meta.parameters.size)
         assertEquals("url", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
+        assertEquals("method", meta.parameters[1].name)
+        assertEquals(ToolParameterType.STRING, meta.parameters[1].type)
     }
 
     @Test
-    fun exec() {
+    fun `exec - POST`() {
         // WHEN
         val result = tool.exec(arguments)
         assertEquals("Unsubscribed from $url", result)
@@ -42,6 +44,20 @@ class MailUnsubscribeToolTest {
         assertEquals(url, request.firstValue.uri().toString())
         assertEquals("POST", request.firstValue.method())
         assertEquals("application/x-www-form-urlencoded", request.firstValue.headers().map()["Content-Type"]?.first())
+        assertEquals(MailUnsubscribeTool.USER_AGENT, request.firstValue.headers().map()["User-Agent"]?.first())
+    }
+
+    @Test
+    fun `exec - GET`() {
+        // WHEN
+        val result = tool.exec(mapOf("url" to url, "method" to "GET"))
+        assertEquals("Unsubscribed from $url", result)
+
+        val request = argumentCaptor<HttpRequest>()
+        verify(http).send(request.capture(), any<HttpResponse.BodyHandler<*>>())
+        assertEquals(url, request.firstValue.uri().toString())
+        assertEquals("GET", request.firstValue.method())
+        assertEquals(null, request.firstValue.headers().map()["Content-Type"])
         assertEquals(MailUnsubscribeTool.USER_AGENT, request.firstValue.headers().map()["User-Agent"]?.first())
     }
 

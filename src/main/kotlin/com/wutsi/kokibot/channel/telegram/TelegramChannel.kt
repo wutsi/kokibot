@@ -40,6 +40,7 @@ class TelegramChannel(
         const val ID = "channel:telegram"
         const val TYPING_DELAY = 2000L
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
+        const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
 
     private lateinit var app: TelegramBotsLongPollingApplication
@@ -47,6 +48,7 @@ class TelegramChannel(
     private lateinit var botToken: String
     private lateinit var context: Context
     private lateinit var rest: RestTemplate
+    private lateinit var senderWhitelist: List<String>
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("telegram-channel"))
 
@@ -60,6 +62,9 @@ class TelegramChannel(
         app.registerBot(botToken, this)
         client = factory.createTelegramClient(botToken)
         rest = restBuilder.build(null, null)
+        senderWhitelist = MapUtil.toList("sender-whitelist", config)
+            ?.mapNotNull { entry -> entry?.toString() }
+            ?: emptyList()
         this.context = context
     }
 
@@ -88,6 +93,18 @@ class TelegramChannel(
     override fun consume(update: Update) {
         if (update.hasMessage()) {
             val chatId = update.message.chatId.toString()
+
+            /* Check sender */
+            if (!accept(update)) {
+                send(
+                    chatId,
+                    Message(
+                        text = ERROR_UNAUTHORIZED_MESSAGE,
+                    ),
+                    true,
+                )
+                return
+            }
 
             /* Typing indicator */
             val job = scope.launch {
@@ -142,6 +159,19 @@ class TelegramChannel(
         }
         send(message.userId, message, false)
         return true
+    }
+
+    private fun accept(update: Update): Boolean {
+        if (update.hasMessage()) {
+            val sender = update.message.chat.userName ?: return false
+            if (senderWhitelist.isEmpty() || senderWhitelist.contains(sender)) {
+                return true
+            } else {
+                LOGGER.warn("Unauthorized sender: $sender")
+                return false
+            }
+        }
+        return false
     }
 
     private fun typing(chatId: String) {

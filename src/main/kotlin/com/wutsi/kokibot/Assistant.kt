@@ -166,7 +166,7 @@ class Assistant {
                 Message(
                     userId = userId,
                     channelId = channelId,
-                    text = content + "...",
+                    text = "$content...",
                 )
             )
         } catch (ex: Exception) {

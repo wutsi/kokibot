@@ -24,7 +24,7 @@ class ContextTest {
         config = emptyMap<String, String>(),
         llm = mock(),
         toolRegistry = mock(),
-        channelFactory = mock(),
+        channelRegistry = mock(),
         chatHistory = mock(),
         commandRegistry = mock(),
         skillRegistry = mock(),
@@ -35,7 +35,7 @@ class ContextTest {
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
     private val memoryConfig = mapOf("window" to 1)
-    private val channelConfig = mapOf("type" to "foo")
+    private val channelConfig = listOf(mapOf("type" to "foo"))
     private val smtpConfig = mapOf("smtp" to "foo")
     private val imapConfig = mapOf("imap" to "foo")
     private val config = mapOf(
@@ -55,7 +55,7 @@ class ContextTest {
     @BeforeEach
     fun setUp() {
         doReturn(Health(id = "-", up = true)).whenever(channel).health()
-        doReturn(channel).whenever(context.channelFactory).create(any(), any())
+        doReturn(listOf(channel)).whenever(context.channelRegistry).all()
 
         doReturn(Health(id = "-", up = true)).whenever(context.imap).health()
         doReturn(Health(id = "-", up = true)).whenever(context.llm).health()
@@ -92,27 +92,7 @@ class ContextTest {
         verify(context.skillRegistry).init(context)
         verify(context.smtp).init(smtpConfig, context)
         verify(context.imap).init(imapConfig, context)
-        verify(channel).init(channelConfig, context)
-    }
-
-    @Test
-    fun `init - channel missing type`() {
-        doThrow(RuntimeException()).whenever(context.channelFactory).create(any(), any())
-
-        context.init(assistant, config)
-    }
-
-    @Test
-    fun `init - channel initiatilization error`() {
-        val cfg = mapOf(
-            "channels" to listOf(
-                emptyMap<String, Any>()
-            )
-        )
-
-        context.init(assistant, cfg)
-
-        verify(context.channelFactory, never()).create(any(), any())
+        verify(context.channelRegistry).init(config, context, assistant)
     }
 
     @Test

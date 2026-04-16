@@ -15,6 +15,7 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.util.RestBuilder
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
@@ -32,7 +33,7 @@ import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.chat.Chat
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
-import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class TelegramChannelTest {
@@ -127,8 +128,9 @@ class TelegramChannelTest {
         verify(assistant).process(prompt.capture())
         assertEquals("Hello", prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
-        assertEquals("ray.sponsible@telegram", prompt.firstValue.userId)
-        assertEquals(emptyList(), prompt.firstValue.filePaths)
+        assertEquals("123", prompt.firstValue.userId)
+        assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)
+        assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -150,6 +152,11 @@ class TelegramChannelTest {
 
         // THEN
         verify(assistant).process(any())
+
+        val sendMessage = argumentCaptor<SendMessage>()
+        verify(client).execute(sendMessage.capture())
+        assertEquals("World", sendMessage.firstValue.text)
+        assertEquals("123", sendMessage.firstValue.chatId)
     }
 
     @Test
@@ -164,6 +171,11 @@ class TelegramChannelTest {
 
         // THEN
         verify(assistant, never()).process(any())
+
+        val sendMessage = argumentCaptor<SendMessage>()
+        verify(client).execute(sendMessage.capture())
+        assertEquals(TelegramChannel.ERROR_UNAUTHORIZED_MESSAGE, sendMessage.firstValue.text)
+        assertEquals("123", sendMessage.firstValue.chatId)
     }
 
     @Test
@@ -228,6 +240,54 @@ class TelegramChannelTest {
 
         // THEN
         verify(assistant, never()).process(any())
+        verify(client, never()).execute(any<SendMessage>())
+    }
+
+    @Test
+    fun send() {
+        val message = Message(
+            userId = "123",
+            channelId = TelegramChannel.ID,
+            text = "Hello"
+        )
+        telegram.init(config, context)
+        val result = telegram.send(message)
+
+        assertTrue(result)
+
+        val sendMessage = argumentCaptor<SendMessage>()
+        verify(client).execute(sendMessage.capture())
+        assertEquals("Hello", sendMessage.firstValue.text)
+        assertEquals("123", sendMessage.firstValue.chatId)
+    }
+
+    @Test
+    fun `send - no userId`() {
+        val message = Message(
+            userId = null,
+            channelId = TelegramChannel.ID,
+            text = "Hello"
+        )
+        telegram.init(config, context)
+        val result = telegram.send(message)
+
+        assertFalse(result)
+
+        verify(client, never()).execute(any<SendMessage>())
+    }
+
+    @Test
+    fun `send - bad ID`() {
+        val message = Message(
+            userId = "123",
+            channelId = "xxx",
+            text = "Hello"
+        )
+        telegram.init(config, context)
+        val result = telegram.send(message)
+
+        assertFalse(result)
+
         verify(client, never()).execute(any<SendMessage>())
     }
 

@@ -40,6 +40,7 @@ class TelegramChannel(
         const val ID = "channel:telegram"
         const val TYPING_DELAY = 2000L
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
+        const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
 
     private lateinit var app: TelegramBotsLongPollingApplication
@@ -90,8 +91,20 @@ class TelegramChannel(
     }
 
     override fun consume(update: Update) {
-        if (update.hasMessage() && accept(update)) {
+        if (update.hasMessage()) {
             val chatId = update.message.chatId.toString()
+
+            /* Check sender */
+            if (!accept(update)) {
+                send(
+                    chatId,
+                    Message(
+                        text = ERROR_UNAUTHORIZED_MESSAGE,
+                    ),
+                    true,
+                )
+                return
+            }
 
             /* Typing indicator */
             val job = scope.launch {
@@ -103,7 +116,7 @@ class TelegramChannel(
             }
 
             /* Process message */
-            val userId = "${update.message.chat.userName}@telegram"
+            val userId = update.message.chat.id.toString()
             val message = try {
                 if (update.message.hasText()) {
                     assistant.process(
@@ -111,6 +124,7 @@ class TelegramChannel(
                             text = update.message.text,
                             role = Role.USER,
                             userId = userId,
+                            channelId = id(),
                         )
                     )
                 } else if (update.message.hasDocument()) {
@@ -120,6 +134,7 @@ class TelegramChannel(
                             text = "File received: ${update.message.document.fileName}. Do not process this document, just return the message `File received`",
                             role = Role.USER,
                             userId = userId,
+                            channelId = id(),
                             filePaths = listOf(file.absolutePath)
                         )
                     )
@@ -134,8 +149,16 @@ class TelegramChannel(
             }
 
             /* Send response */
-            send(chatId, message)
+            send(chatId, message, true)
         }
+    }
+
+    override fun send(message: Message): Boolean {
+        if (message.userId == null || message.channelId != id()) {
+            return false
+        }
+        send(message.userId, message, false)
+        return true
     }
 
     private fun accept(update: Update): Boolean {
@@ -159,7 +182,7 @@ class TelegramChannel(
         client.execute(action)
     }
 
-    private fun send(chatId: String, message: Message) {
+    private fun send(chatId: String, message: Message, notification: Boolean) {
         val html = MarkdownToTelegramHTML.convert(message.text)
         println(message.text)
         println()
@@ -168,6 +191,7 @@ class TelegramChannel(
             .chatId(chatId)
             .text(html)
             .parseMode(ParseMode.HTML)
+            .disableNotification(!notification)
             .build()
         client.execute(sendMessage)
     }

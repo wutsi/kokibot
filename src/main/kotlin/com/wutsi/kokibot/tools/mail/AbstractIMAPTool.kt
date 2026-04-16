@@ -11,8 +11,8 @@ import jakarta.mail.internet.MimeMessage
 
 abstract class AbstractIMAPTool : Tool {
     companion object {
-        const val LIMIT = 50
-        const val MAX_LIMIT = 200
+        const val LIMIT = 20
+        const val MAX_LIMIT = 100
     }
 
     private lateinit var context: Context

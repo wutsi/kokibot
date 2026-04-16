@@ -2,6 +2,7 @@ package com.wutsi.kokibot
 
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.channel.ChannelFactory
+import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
@@ -26,7 +27,7 @@ class Context(
     val chatHistory: ChatHistory = ChatHistory(),
     val skillRegistry: SkillRegistry = SkillRegistry(SkillParser()),
     val commandRegistry: CommandRegistry = CommandRegistry(),
-    val channelFactory: ChannelFactory = ChannelFactory(),
+    val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
     val memory: Memory = Memory(),
     val smtp: SMTP = SMTP(),
     val imap: IMAP = IMAP(),
@@ -40,11 +41,10 @@ class Context(
 
     fun destroy() {
         resources().forEach { resource -> resource.destroy() }
-        channels.clear()
     }
 
     fun init(assistant: Assistant, config: Map<*, *>) {
-        initChannels(assistant, config)
+        initChannels(config, assistant)
         initSkills()
         initTools()
         initLLM(config)
@@ -66,30 +66,12 @@ class Context(
         return channels +
             skillRegistry.all() +
             toolRegistry.all() +
+            channelRegistry.all() +
             listOf(llm, imap, smtp, chatHistory, memory)
     }
 
-    private fun initChannels(agent: Assistant, config: Map<*, *>) {
-        val root = MapUtil.toList("channels", config)
-        root?.forEach { node ->
-            if (node is Map<*, *>) {
-                initChannel(agent, node)
-            }
-        }
-    }
-
-    private fun initChannel(agent: Assistant, config: Map<*, *>) {
-        try {
-            val type = config["type"]?.toString()
-                ?: throw ConfigurationException("channel type is required")
-
-            LOGGER.info("Channel: $type")
-            val channel = channelFactory.create(type, agent)
-            channel.init(config, this)
-            channels.add(channel)
-        } catch (ex: Exception) {
-            LOGGER.warn("Failed to initialize the channel - ${ex.message}")
-        }
+    private fun initChannels(config: Map<*, *>, assistant: Assistant) {
+        channelRegistry.init(config, this, assistant)
     }
 
     private fun initLLM(config: Map<*, *>) {

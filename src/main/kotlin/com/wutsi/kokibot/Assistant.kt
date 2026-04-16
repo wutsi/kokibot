@@ -73,7 +73,7 @@ class Assistant {
                 )
             } else {
                 val response = ask(prompt, memory, tools)
-                if (decide(response, memory, tools)) {
+                if (decide(prompt, response, memory, tools)) {
                     return Message(
                         text = response.choices.first().content,
                         role = Role.ASSISTANT,
@@ -108,29 +108,40 @@ class Assistant {
         return skills
     }
 
-    private fun decide(response: LLMResponse, memory: MutableList<String>, tools: Map<String, Tool>): Boolean {
+    private fun decide(
+        query: Message,
+        response: LLMResponse,
+        memory: MutableList<String>,
+        tools: Map<String, Tool>
+    ): Boolean {
         // Tool calls
         val choiceCalls = response.choices.filter { choice -> choice.toolCalls.isNotEmpty() }
         if (choiceCalls.isNotEmpty()) {
             LOGGER.debug("FUNCTION CALLS")
-            choiceCalls.forEach { choice -> exec(choice, memory, tools) }
+            choiceCalls.forEach { choice -> exec(choice, memory, tools, query) }
             return false
         } else {
             return true
         }
     }
 
-    private fun exec(choice: LLMResponseChoice, memory: MutableList<String>, tools: Map<String, Tool>) {
+    private fun exec(choice: LLMResponseChoice, memory: MutableList<String>, tools: Map<String, Tool>, query: Message) {
         LOGGER.debug(choice.content)
 
-        choice.toolCalls.forEach {
-            exec(choice.content, it, memory, tools)
+        choice.toolCalls.forEach { call ->
+            exec(choice.content, call, memory, tools, query)
         }
     }
 
-    private fun exec(content: String, call: LLMToolCall, memory: MutableList<String>, tools: Map<String, Tool>) {
+    private fun exec(
+        content: String,
+        call: LLMToolCall,
+        memory: MutableList<String>,
+        tools: Map<String, Tool>,
+        query: Message
+    ) {
         LOGGER.debug("Tool execution: name={} - arguments={}", call.name, call.arguments)
-
+        reply(content, query)
         val tool = tools[call.name]
         if (tool == null) {
             memory.add("Tool `${call.name}` is not available!")
@@ -141,6 +152,26 @@ class Assistant {
 
         memory.add(content)
         memory.add("Calling the tool `${call.name}` returned the following result: $result")
+    }
+
+    private fun reply(content: String, query: Message) {
+        if (content.isEmpty()) {
+            return
+        }
+
+        try {
+            val channelId = query.channelId ?: return
+            val userId = query.userId ?: return
+            context.channelRegistry.get(channelId).send(
+                Message(
+                    userId = userId,
+                    channelId = channelId,
+                    text = "$content...",
+                )
+            )
+        } catch (ex: Exception) {
+            LOGGER.warn("Unable to send message to user ${query.userId} in channel ${query.channelId}", ex)
+        }
     }
 
     private fun getCommand(query: Message): Command? {

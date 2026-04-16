@@ -5,7 +5,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.wutsi.kokibot.channel.ChannelFactory
+import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
@@ -20,14 +20,14 @@ import java.io.File
 import kotlin.test.assertEquals
 
 class ContextFactoryTest {
-    private val channelFactory = mock<ChannelFactory>()
+    private val channelRegistry = mock<ChannelRegistry>()
     private val llmFactory = mock<LLMFactory>()
     private val toolRegistry = mock<ToolRegistry>()
     private val skillRegistry = mock<SkillRegistry>()
     private val commandRegistry = mock<CommandRegistry>()
     private val jsonMapper = JsonMapper()
     private val factory =
-        ContextFactory(channelFactory, toolRegistry, llmFactory, commandRegistry, skillRegistry, jsonMapper)
+        ContextFactory(toolRegistry, channelRegistry, llmFactory, commandRegistry, skillRegistry, jsonMapper)
 
     @Test
     fun create() {

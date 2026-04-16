@@ -29,15 +29,26 @@ class MailUnsubscribeTool(private var http: HttpClient = HttpClient.newHttpClien
                 type = ToolParameterType.STRING,
                 required = true
             ),
+            ToolParameter(
+                name = "method",
+                description = """
+                    Unsubscription method (default: POST).
+                    Use GET when unsubscription has to be done manually (for URLs extracted from email body).
+                    When you have unsubscribe URL from header and body, prioritize the one from header and use POST method.
+                """.trimIndent(),
+                type = ToolParameterType.STRING,
+                required = true
+            ),
         )
     )
 
     override fun exec(arguments: Map<*, *>): String {
         val url = arguments["url"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: url")
+        val method = arguments["method"]?.toString()
 
         try {
-            unsubscribe(url)
+            unsubscribe(url, method)
             return "Unsubscribed from $url"
         } catch (ex: Exception) {
             LOGGER.error("Failed to unsubscribe from $url", ex)
@@ -45,13 +56,21 @@ class MailUnsubscribeTool(private var http: HttpClient = HttpClient.newHttpClien
         }
     }
 
-    private fun unsubscribe(url: String) {
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("User-Agent", USER_AGENT)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .build()
+    private fun unsubscribe(url: String, method: String?) {
+        val request = if (method?.equals("GET", false) == true) {
+            HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("User-Agent", USER_AGENT)
+                .GET()
+                .build()
+        } else {
+            HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("User-Agent", USER_AGENT)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(""))
+                .build()
+        }
 
         http.send(request, HttpResponse.BodyHandlers.ofString())
     }

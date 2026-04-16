@@ -1,6 +1,6 @@
 package com.wutsi.kokibot
 
-import com.wutsi.kokibot.channel.ChannelFactory
+import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.command.HealthCommand
@@ -37,8 +37,8 @@ import java.io.File
 
 @Service
 class ContextFactory(
-    private val channelFactory: ChannelFactory,
     private val toolRegistry: ToolRegistry,
+    private val channelRegistry: ChannelRegistry,
     private val llmFactory: LLMFactory,
     private val commandRegistry: CommandRegistry,
     private val skillRegistry: SkillRegistry,
@@ -60,7 +60,7 @@ class ContextFactory(
             home = home,
             llm = createLLM(config),
             toolRegistry = toolRegistry,
-            channelFactory = channelFactory,
+            channelRegistry = channelRegistry,
             commandRegistry = commandRegistry,
             skillRegistry = skillRegistry,
             chatHistory = ChatHistory(),

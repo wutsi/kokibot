@@ -31,7 +31,6 @@ class NullLLMTest {
         assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
         assertEquals(NullLLM.Companion.MESSAGE, choices[0].content)
         assertEquals(true, choices[0].toolCalls.isEmpty())
-
     }
 
     @Test

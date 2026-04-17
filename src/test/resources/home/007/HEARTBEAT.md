@@ -1,2 +1,1 @@
-Hi
-
+This is the heartbeat job

@@ -14,18 +14,7 @@
     <name>kokibot</name>
     <description>kokibot</description>
     <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
+
     <properties>
         <jacoco.threshold.line>0.93</jacoco.threshold.line>
         <jacoco.threshold.class>0.93</jacoco.threshold.class>

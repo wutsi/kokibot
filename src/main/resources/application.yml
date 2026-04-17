@@ -44,7 +44,7 @@ management:
 logging:
     level:
         root: INFO
-        com.wutsi.kokibot.Assistant: DEBUG
+        com.wutsi.kokibot: DEBUG
 
     pattern:
         console: "%d Type=%level Logger=%c Thread=%thread %m%n"

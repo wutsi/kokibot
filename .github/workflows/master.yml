@@ -32,12 +32,6 @@ jobs:
                     mvn validate
                     mvn install
 
-            -   name: Upload app bundle
-                uses: actions/upload-artifact@v7
-                with:
-                    name: appbundle
-                    path: target/*.jar
-
             -   name: Upload JaCoCo Report
                 uses: actions/upload-artifact@v7
                 with:

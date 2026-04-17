@@ -48,6 +48,23 @@ install_service() {
     OS=$(uname)
     if [ "$OS" = "Darwin" ]; then
         # macOS launchd
+        cat > "$BIN_DIR/start_service.sh" <<EOF
+#!/bin/zsh
+# Source your profile to get all exports and paths
+PROFILES=("$HOME/.zprofile" "$HOME/.zshrc" "$HOME/.profile")
+
+# Loop through and source them if they exist
+for profile in $PROFILES; do
+    if [ -f "$profile" ]; then
+        source "$profile"
+    fi
+done
+
+$JAVA_EXEC -Dserver.port=$KOKIBOT_PORT -jar $BIN_DIR/kokibot.jar
+EOF
+
+        chmod +x "$BIN_DIR/start_service.sh"
+
         cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -57,22 +74,18 @@ install_service() {
     <string>com.kokibot.service</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$JAVA_EXEC</string>
-        <string>-Dserver.port=$KOKIBOT_PORT</string>
-        <string>-jar</string>
-        <string>$BIN_DIR/kokibot.jar</string>
-        <string>--spring.profiles.active=prod</string>
+        <string>/bin/zsh</string>
+        <string>-c</string>
+        <string>$BIN_DIR/start_service.sh</string>
     </array>
     <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
     <true/>
     <key>WorkingDirectory</key>
     <string>$BIN_DIR</string>
     <key>StandardOutPath</key>
-    <string>$HOME/.kokibot/kokibot.log</string>
+    <string>$HOME/.kokibot/logs/kokibot.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/.kokibot/kokibot.err</string>
+    <string>$HOME/.kokibot/logs/kokibot.err</string>
 </dict>
 </plist>
 EOF

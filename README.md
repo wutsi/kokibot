@@ -45,7 +45,11 @@ platform (`launchd` for macOS, `systemd` for Linux).
 
 ### Step 2: Set Environment Variables
 
-#### Setup the LLM (REQUIRED)
+When you install kokibot the first time, it runs with a default configuration that does not have any LLM or channel
+configured.
+So you need to set environment variables to configure the LLM and channel you want to use and restart the service.
+
+#### Step 2.1: Configure the LLM
 
 You must setup environment variables to enable the _brain_ of your AI assistant.
 
@@ -55,7 +59,7 @@ export KOKIBOT_LLM_API_KEY="your-llm-api-key"   // LLM API Key
 export KOKIBOT_LLM_MODEL="your-llm-model"       // LLM Model
 ```
 
-#### Setup the Channel (REQUIRED)
+#### Step 2.2: Configure the Channel
 
 You must setup environment variables so that you can interact with your AI assistant.
 
@@ -63,10 +67,6 @@ You must setup environment variables so that you can interact with your AI assis
 export KOKIBOT_CHANNEL_TYPE="your-channel-type"   // Type of channel: telegram
 export KOKIBOT_TOKEN="your-channel-token"         // Channel token: e.g., Telegram Bot Token
 ```
-
-The channel supported are:
-
-- Telegram: `export KOKIBOT_CHANNEL_TYPE=telegram`
 
 ### Step 3 Relaunch KokiBot
 

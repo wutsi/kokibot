@@ -37,15 +37,14 @@ class SkillCommand : Command {
         try {
             val skill = context.skillRegistry.get(name)
             val meta = skill.metadata
-            val tools = meta.tools.joinToString(separator = "\n") { tool -> "- `${tool.name}`" }
-            val requiredBin = meta.requiredBins.joinToString(separator = ", ") { bin -> "`$bin`" }.ifEmpty { "None" }
+            val requiredBin =
+                meta.requiredBinaries.joinToString(separator = ", ") { bin -> "`$bin`" }.ifEmpty { "None" }
             val requiredEnv = meta.requiredEnv.joinToString(separator = ", ") { env -> "`$env`" }.ifEmpty { "None" }
 
             return "*Skill:* ${sanitize(meta.name)}\n\n" +
                 "*Description:*\n${sanitize(meta.description)}\n\n" +
                 "*Required Bin:* $requiredBin\n\n" +
-                "*Required Env:* $requiredEnv\n\n" +
-                "*Tools:*\n$tools"
+                "*Required Env:* $requiredEnv"
         } catch (ex: Exception) {
             LOGGER.warn("Unexpected error", ex)
             return "Skill not found: `$name`"

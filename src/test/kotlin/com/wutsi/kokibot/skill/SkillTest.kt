@@ -2,9 +2,6 @@ package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.BootstrapTest
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.tools.ToolMetadata
-import com.wutsi.kokibot.tools.ToolParameter
-import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
@@ -22,41 +19,9 @@ class SkillTest {
     private val skill = Skill(
         metadata = SkillMetadata(
             name = "land-title-verifier",
-            tools = listOf(
-                ToolMetadata(
-                    name = "check_title",
-                    description = "Verify land title information",
-                    parameters = listOf(
-                        ToolParameter(
-                            name = "title_number",
-                            description = "The unique ID of the land title (e.g., \"1234/LIT\")",
-                            required = true,
-                            type = ToolParameterType.STRING,
-                        ),
-                        ToolParameter(
-                            name = "region",
-                            description = "The administrative region, such as \"Littoral\", \"Centre\", or \"Ouest\".",
-                            required = true,
-                            type = ToolParameterType.STRING,
-                        ),
-                    )
-                ),
-                ToolMetadata(
-                    name = "get_title_history",
-                    description = "Verify land title history",
-                    parameters = listOf(
-                        ToolParameter(
-                            name = "title_number",
-                            description = "The unique ID of the land title (e.g., \"1234/LIT\")",
-                            required = true,
-                            type = ToolParameterType.STRING,
-                        ),
-                    )
-                )
-            ),
             categories = listOf("real estate"),
             keywords = listOf("land title", "land ownership", "property title"),
-            requiredBins = listOf("java"),
+            requiredBinaries = listOf("java"),
             requiredEnv = listOf("PATH"),
         ),
         body = "",
@@ -68,29 +33,12 @@ class SkillTest {
     }
 
     @Test
-    fun init() {
-        skill.init(emptyMap<String, Any>(), context)
-
-        val tools = skill.getTools()
-        assertEquals(2, tools.size)
-
-        assertEquals(skill.metadata.tools[0], tools[0].metadata())
-        assertEquals(skill.metadata.tools[1], tools[1].metadata())
-    }
-
-    @Test
-    fun destroy() {
-        skill.init(emptyMap<String, Any>(), context)
-        skill.destroy()
-    }
-
-    @Test
     fun health() {
         skill.init(emptyMap<String, Any>(), context)
         val health = skill.health()
 
         assertEquals(skill.id(), health.id)
-        assertEquals(2, health.children.size)
+        assertEquals(0, health.children.size)
         assertEquals(true, health.up)
         assertNull(health.details)
     }
@@ -109,82 +57,36 @@ class SkillTest {
     }
 
     @Test
-    fun `health - missing bin`() {
+    fun activate() {
+        skill.init(emptyMap<String, Any>(), context)
+
+        val result = skill.activate()
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `activate - no dependencies`() {
         val xskill = Skill(
-            metadata = skill.metadata.copy(requiredBins = listOf("__missin_bin__")),
+            metadata = skill.metadata.copy(requiredEnv = emptyList()),
             body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
-        val health = xskill.health()
+        val result = xskill.activate()
 
-        assertEquals(false, health.up)
-        assertNotNull(health.details)
+        assertTrue(result)
     }
 
     @Test
-    fun `health - missing tool script`() {
-        val xskill = Skill(
-            metadata = skill.metadata.copy(
-                tools = listOf(
-                    ToolMetadata(
-                        name = "missing_script",
-                        description = "Verify land title information",
-                    )
-                )
-            ),
-            body = "",
-        )
-        xskill.init(emptyMap<String, Any>(), context)
-        val health = xskill.health()
-
-        assertEquals(false, health.up)
-        assertNotNull(health.details)
-    }
-
-    @Test
-    fun `canActivate - matches by name`() {
-        skill.init(emptyMap<String, Any>(), context)
-        assertTrue(skill.canActivate("I to perform use the land-title-verifier skill"))
-    }
-
-    @Test
-    fun `canActivate - matches by keywords`() {
-        skill.init(emptyMap<String, Any>(), context)
-        assertTrue(skill.canActivate("I want to check a land title"))
-    }
-
-    @Test
-    fun `canActivate - matches by category`() {
-        skill.init(emptyMap<String, Any>(), context)
-        assertTrue(skill.canActivate("I to perform real ESTATE ownership verification"))
-    }
-
-    @Test
-    fun `canActivate - no matches`() {
-        skill.init(emptyMap<String, Any>(), context)
-        assertFalse(skill.canActivate("Hello :-)"))
-    }
-
-    @Test
-    fun `canActivate - missing env`() {
+    fun `activate - missing env`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredEnv = listOf("__MISSING_ENV__")),
             body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
+        val result = xskill.activate()
 
-        assertFalse(xskill.canActivate("I to perform use the land-title-verifier skill"))
-    }
-
-    @Test
-    fun `canActivate - missing bin`() {
-        val xskill = Skill(
-            metadata = skill.metadata.copy(requiredBins = listOf("__missing_bin__")),
-            body = "",
-        )
-        xskill.init(emptyMap<String, Any>(), context)
-
-        assertFalse(xskill.canActivate("I to perform use the land-title-verifier skill"))
+        assertFalse(result)
     }
 
     private fun getResourceFile(path: String): File {

@@ -3,7 +3,6 @@ package com.wutsi.kokibot.llm.none
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
-import com.wutsi.kokibot.llm.NullLLM
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import kotlin.test.assertEquals

@@ -29,7 +29,7 @@ object ShellUtil {
         }
     }
 
-    fun exec(command: String, timeoutSeconds: Long = 60, directory: File?): String {
+    fun exec(command: String, directory: File?, timeoutSeconds: Long = 60): String {
         val builder = ProcessBuilder("sh", "-c", command)
         if (directory != null) {
             builder.directory(directory)

@@ -8,7 +8,6 @@ import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.skill.Skill
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
@@ -87,25 +86,13 @@ class Assistant {
     private fun ask(query: Message, memory: MutableList<String>, tools: MutableMap<String, Tool>): LLMResponse {
         LOGGER.debug("LLM chat: ${query.text}")
 
-        val skills = activateSkills(query, tools)
-        LOGGER.debug("Skills activated: {}", skills.map { it.metadata.name })
-
-        val tools = context.toolRegistry.all() + skills.flatMap { skill -> skill.getTools() }
-
-        val prompt = buildPrompt(query, memory, skills)
+        val tools = context.toolRegistry.all()
+        val prompt = buildPrompt(query, memory)
         val systemInstructions = buildSystemInstructions()
         return context.llm.completion(
             request = LLMRequest(prompt, systemInstructions),
             tools,
         )
-    }
-
-    private fun activateSkills(query: Message, tools: MutableMap<String, Tool>): List<Skill> {
-        val skills = context.skillRegistry.all().filter { skill -> skill.canActivate(query.text) }
-        skills.flatMap { skill -> skill.getTools() }.forEach { tool ->
-            tools[tool.metadata().name] = tool
-        }
-        return skills
     }
 
     private fun decide(
@@ -210,7 +197,7 @@ class Assistant {
         return command.exec(input, context)
     }
 
-    private fun buildPrompt(prompt: Message, memory: List<String>, skills: List<Skill>): String {
+    private fun buildPrompt(prompt: Message, memory: List<String>): String {
         val sb = StringBuilder()
         sb.append("Query: ${prompt.text}")
 
@@ -231,15 +218,6 @@ class Assistant {
         if (memory.isNotEmpty()) {
             sb.append("\n\n# Previous reasoning steps and observations")
             memory.forEach { line -> sb.append("$line\n\n") }
-        }
-
-        if (skills.isNotEmpty()) {
-            sb.append("\n\n# Skills\n")
-            sb.append("Here are the details of each skill in markdown format\n")
-            skills.forEach { skill ->
-                sb.append("\n\n$## ${skill.metadata.name}\n")
-                sb.append("```markdown\n${skill.body}\n```\n")
-            }
         }
         return sb.toString()
     }

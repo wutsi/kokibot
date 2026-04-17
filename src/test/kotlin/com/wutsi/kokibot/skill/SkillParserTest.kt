@@ -2,7 +2,6 @@ package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.BootstrapTest
 import com.wutsi.kokibot.exception.ConfigurationException
-import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -33,29 +32,16 @@ class SkillParserTest {
         )
         assertEquals(
             listOf("java", "mvn"),
-            meta.requiredBins
+            meta.requiredBinaries
         )
         assertEquals(
             listOf("REGISTRY_API_KEY", "DB_URL"),
             meta.requiredEnv
         )
-
-        assertEquals(2, meta.tools.size)
-
-        assertEquals("check_title", meta.tools[0].name)
-        assertEquals(2, meta.tools[0].parameters.size)
-        assertEquals("title_number", meta.tools[0].parameters[0].name)
-        assertEquals(ToolParameterType.STRING, meta.tools[0].parameters[0].type)
-        assertEquals(true, meta.tools[0].parameters[0].required)
-        assertEquals("region", meta.tools[0].parameters[1].name)
-        assertEquals(ToolParameterType.STRING, meta.tools[1].parameters[0].type)
-        assertEquals(false, meta.tools[0].parameters[1].required)
-
-        assertEquals("get_title_history", meta.tools[1].name)
-        assertEquals(1, meta.tools[1].parameters.size)
-        assertEquals("title_number", meta.tools[1].parameters[0].name)
-        assertEquals(ToolParameterType.STRING, meta.tools[1].parameters[0].type)
-        assertEquals(true, meta.tools[1].parameters[0].required)
+        assertEquals(
+            listOf("echo \"hello\""),
+            meta.requiredSetup
+        )
 
         assertEquals(
             """

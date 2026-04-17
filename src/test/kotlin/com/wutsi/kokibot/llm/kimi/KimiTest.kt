@@ -33,7 +33,7 @@ class KimiTest {
         val choices = response.choices
         assertEquals(1, choices.size)
         assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
-        assertEquals(true, choices[0].content?.contains("Paris"))
+        assertEquals(true, choices[0].content.contains("Paris"))
         assertEquals(true, choices[0].toolCalls.isEmpty())
     }
 }

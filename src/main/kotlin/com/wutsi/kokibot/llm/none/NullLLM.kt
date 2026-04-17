@@ -1,7 +1,12 @@
-package com.wutsi.kokibot.llm
+package com.wutsi.kokibot.llm.none
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
+import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.llm.LLMFinishReason
+import com.wutsi.kokibot.llm.LLMRequest
+import com.wutsi.kokibot.llm.LLMResponse
+import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.tools.Tool
 
 class NullLLM : LLM {

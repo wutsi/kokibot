@@ -74,6 +74,7 @@ jobs:
                     mkdir -p kokibot_temp/kokibot
                     cp target/*.jar kokibot_temp/kokibot/
                     cp -R install/home/* kokibot_temp/kokibot/
+                    cp -R skills/ kokibot_temp/kokibot/
                     cd kokibot_temp
                     zip -r ../target/kokibot.zip .
                     cd ..

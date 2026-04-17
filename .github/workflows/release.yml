@@ -48,7 +48,7 @@ jobs:
                     rm install.sh.bak
                     git add install.sh
                     git commit -m "Update KOKIBOT_VERSION in install.sh to $VERSION"
-                    git push
+                    git push origin HEAD:master
 
             -   name: Generate Changelog
                 id: changelog
@@ -70,7 +70,7 @@ jobs:
                     mvn versions:set -DnewVersion=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//' | awk -F. '{$NF=$NF+1; print}' OFS=.)
                     git add pom.xml
                     git commit -m "Bump version for next development iteration"
-                    git push
+                    git push origin HEAD:master
 
             -   name: Create Release ZIP
                 run: |

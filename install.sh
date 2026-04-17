@@ -58,7 +58,6 @@ install_service() {
     <key>ProgramArguments</key>
     <array>
         <string>$JAVA_EXEC</string>
-        <string>$JAVA_EXEC</string>
         <string>-Dserver.port=$KOKIBOT_PORT</string>
         <string>-jar</string>
         <string>$BIN_DIR/kokibot.jar</string>

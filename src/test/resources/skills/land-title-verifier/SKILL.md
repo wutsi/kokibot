@@ -2,8 +2,14 @@
 name: land-title-verifier
 description: Validates land titles against the Cameroon digital registry to prevent fraud and verify ownership.
 requires:
-    bins: [ "java", "mvn" ]
-    env: [ "REGISTRY_API_KEY", "DB_URL" ]
+    binaries:
+        - java
+        - mvn
+    env:
+        - REGISTRY_API_KEY
+        - DB_URL
+    setup:
+        - echo "hello"
 metadata:
     keywords: [ "land title", "property verification", "Cameroon", "Titre Foncier", "fraud detection" ]
     categories: [ "real estate", "legal", "verification" ]

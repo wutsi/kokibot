@@ -20,5 +20,22 @@
   "memory": {
     "window": "5d",
     "compaction-frequency": "6h"
+  },
+  "mail": {
+    "imap": {
+      "username": "herve.tchepannou@gmail.com",
+      "password": "${KOKIBOT_GOOGLE_APP_PASSWORD}",
+      "host": "imap.gmail.com",
+      "port": 993,
+      "use-ssl": true
+    },
+    "smtp": {
+      "from": "herve.tchepannou@gmail.com",
+      "username": "herve.tchepannou@gmail.com",
+      "password": "${KOKIBOT_GOOGLE_APP_PASSWORD}",
+      "host": "smtp.gmail.com",
+      "use-tls": true,
+      "port": 587
+    }
   }
 }

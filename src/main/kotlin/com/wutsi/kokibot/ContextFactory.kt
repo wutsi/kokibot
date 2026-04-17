@@ -24,6 +24,7 @@ import com.wutsi.kokibot.tools.mail.MailSendTool
 import com.wutsi.kokibot.tools.mail.MailUnsubscribeTool
 import com.wutsi.kokibot.tools.python.PythonTool
 import com.wutsi.kokibot.tools.shell.ShellTool
+import com.wutsi.kokibot.tools.skill.SkillActivationTool
 import com.wutsi.kokibot.tools.web.WebFetchTool
 import com.wutsi.kokibot.tools.web.WebSearchTool
 import com.wutsi.kokibot.util.MapUtil
@@ -78,6 +79,8 @@ class ContextFactory(
 
     private fun discoverTools(): List<Tool> {
         return listOf(
+            SkillActivationTool(),
+
             /* Mail */
             MailListTool(),
             MailReadTool(),

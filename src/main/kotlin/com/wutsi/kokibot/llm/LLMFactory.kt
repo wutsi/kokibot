@@ -3,6 +3,7 @@ package com.wutsi.kokibot.llm
 import com.wutsi.kokibot.llm.deepseek.Deepseek
 import com.wutsi.kokibot.llm.gemini.Gemini
 import com.wutsi.kokibot.llm.kimi.Kimi
+import com.wutsi.kokibot.llm.none.NullLLM
 import org.springframework.stereotype.Service
 
 @Service

@@ -8,7 +8,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.SkillNotFoundException
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.tools.ToolMetadata
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -53,12 +52,8 @@ class SkillCommandTest {
             metadata = SkillMetadata(
                 name = "skill1",
                 description = "description of skill1",
-                requiredBins = listOf("bin1", "bin2"),
+                requiredBinaries = listOf("bin1", "bin2"),
                 requiredEnv = listOf("env1", "env2"),
-                tools = listOf(
-                    ToolMetadata(name = "tool1", description = "description of tool1"),
-                    ToolMetadata(name = "tool2", description = "description of tool2"),
-                )
             ),
             body = "",
         )
@@ -76,10 +71,6 @@ class SkillCommandTest {
                 *Required Bin:* `bin1`, `bin2`
 
                 *Required Env:* `env1`, `env2`
-
-                *Tools:*
-                - `tool1`
-                - `tool2`
             """.trimIndent(),
             result
         )

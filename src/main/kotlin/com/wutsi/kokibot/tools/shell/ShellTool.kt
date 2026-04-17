@@ -64,7 +64,7 @@ class ShellTool : Tool {
             return ERROR_FORBIDDEN
         }
 
-        return ShellUtil.exec(command, timeout, null)
+        return ShellUtil.exec(command, null, timeout)
     }
 
     private fun isForbidden(command: String): Boolean {

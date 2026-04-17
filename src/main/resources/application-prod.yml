@@ -1,4 +1,4 @@
 logging:
     level:
         root: INFO
-        com.wutsi.kokibot: INFO
+#        com.wutsi.kokibot: INFO

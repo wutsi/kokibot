@@ -34,10 +34,18 @@ install_files() {
     echo "Unpacking..."
     unzip -q kokibot.zip
 
-    # Copy files to the appropriate locations
+    # Backup current configuration
+    cp -R "$HOME_DIR/config" "$TMP_DIR/config_backup" 2>/dev/null || true
+
+    # Install files
     echo "Installing files..."
     mkdir -p "$HOME_DIR"
-    cp -Rn kokibot/* "$HOME_DIR"
+    cp -R kokibot/* "$HOME_DIR"
+
+    # Restore configuration
+    cp -R "$TMP_DIR/config_backup" "$HOME_DIR/config" 2>/dev/null || true
+
+    # Binaries
     mkdir -p "$BIN_DIR"
     mv "$HOME_DIR/kokibot.jar" "$BIN_DIR/"
     mv "$HOME_DIR/uninstall.sh" "$BIN_DIR/"

@@ -3,9 +3,9 @@ package com.wutsi.kokibot.skill
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Resource
-import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
+import java.io.File
 
 class Skill(val metadata: SkillMetadata, val body: String) : Resource {
     companion object {
@@ -13,7 +13,6 @@ class Skill(val metadata: SkillMetadata, val body: String) : Resource {
     }
 
     private lateinit var context: Context
-    private lateinit var tools: List<Tool>
 
     override fun id(): String {
         return "skill:" + metadata.name
@@ -21,49 +20,46 @@ class Skill(val metadata: SkillMetadata, val body: String) : Resource {
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-
-        this.tools = metadata.tools.map { meta -> SkillTool(this, meta) }
-        this.tools.forEach { tool ->
-            LOGGER.info("....Skill tool: ${tool.metadata().name}")
-            tool.init(emptyMap<String, Any>(), context)
-        }
-    }
-
-    override fun destroy() {
-        this.tools.forEach { tool -> tool.destroy() }
     }
 
     override fun health(): Health {
-        val children = tools.map { tool -> tool.health() }
-
-        val missingEnv = metadata.requiredEnv.filter { env -> System.getenv(env) == null }
-            .map { env -> "- Environment variable `$env` is required but not set!" }
-
-        val missingBin = metadata.requiredBins.filter { bin -> !ShellUtil.exists(bin) }
-            .map { bin -> "- Binary `$bin` is required but not found in PATH!" }
-
-        val details = missingEnv +
-            missingBin +
-            children.filter { health -> !health.up }.map { health -> "- ${health.details}" }
-
+        val missingEnv = missingEnv().ifEmpty { null }
         return Health(
             id = id(),
-            children = children,
-            up = children.all { child -> child.up } && missingEnv.isEmpty() && missingBin.isEmpty(),
-            details = details.joinToString("\n").ifEmpty { null }
+            up = missingEnv == null,
+            details = missingEnv?.let { envs ->
+                "Environment variable(s) is required but not set: ${envs.joinToString(",")}"
+            }
         )
     }
 
-    fun getTools() = tools
+    private fun missingBinaries(): List<String> {
+        return metadata.requiredBinaries.filter { bin -> !ShellUtil.exists(bin) }
+    }
 
-    /**
-     * Check if the skill can be activated based on the input string and its metadata.
-     */
-    fun canActivate(input: String): Boolean {
-        val found = input.contains(metadata.name, ignoreCase = true) ||
-            metadata.keywords.any { keyword -> input.contains(keyword, ignoreCase = true) } ||
-            metadata.categories.any { keyword -> input.contains(keyword, ignoreCase = true) }
+    private fun missingEnv(): List<String> {
+        return metadata.requiredEnv.filter { env -> System.getenv(env) == null }
+    }
 
-        return found && health().up
+    fun activate(): Boolean {
+        LOGGER.info("Activating Skill: ${metadata.name}")
+
+        if (!canActivate()) {
+            return false
+        }
+
+        /* Install missing dependencies */
+        LOGGER.info("Setting up: ${metadata.name}")
+        val dir = File(context.home.absolutePath + "/workspace")
+        dir.mkdirs()
+        metadata.requiredSetup.forEach { cmd ->
+            val result = ShellUtil.exec(cmd, directory = dir, timeoutSeconds = 60)
+            LOGGER.debug(result)
+        }
+        return true
+    }
+
+    private fun canActivate(): Boolean {
+        return missingEnv().isEmpty()
     }
 }

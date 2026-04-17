@@ -37,7 +37,7 @@ install_files() {
     # Copy files to the appropriate locations
     echo "Installing files..."
     mkdir -p "$HOME_DIR"
-    cp -Rn kokibot/home "$HOME_DIR"
+    cp -Rn kokibot "$HOME_DIR"
     mkdir -p "$BIN_DIR"
     cp kokibot/kokibot.jar "$BIN_DIR/"
 }

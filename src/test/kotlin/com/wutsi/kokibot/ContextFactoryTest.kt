@@ -7,13 +7,12 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.ToolRegistry
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
@@ -26,8 +25,21 @@ class ContextFactoryTest {
     private val skillRegistry = mock<SkillRegistry>()
     private val commandRegistry = mock<CommandRegistry>()
     private val jsonMapper = JsonMapper()
-    private val factory =
-        ContextFactory(toolRegistry, channelRegistry, llmFactory, commandRegistry, skillRegistry, jsonMapper)
+    private val factory = ContextFactory(
+        toolRegistry,
+        channelRegistry,
+        llmFactory,
+        commandRegistry,
+        skillRegistry,
+        jsonMapper
+    )
+
+    private val llm = mock<LLM>()
+
+    @BeforeEach
+    fun setUp() {
+        doReturn(llm).whenever(llmFactory).create(any())
+    }
 
     @Test
     fun create() {
@@ -40,13 +52,12 @@ class ContextFactoryTest {
             )
         )
 
-        val llm = mock<LLM>()
-        doReturn(llm).whenever(llmFactory).create("deepseek")
-
         // WHEN
         val context = factory.create(home, config)
 
         // THEN
+        verify(llmFactory).create("deepseek")
+
         assertEquals(home, context.home)
         assertEquals(llm, context.llm)
         assertEquals(config, context.config)
@@ -70,7 +81,11 @@ class ContextFactoryTest {
         )
 
         // WHEN
-        assertThrows<ConfigurationException> { factory.create(home, config) }
+        val context = factory.create(home, config)
+
+        // THEN
+        verify(llmFactory).create("")
+        assertEquals(llm, context.llm)
     }
 
     @Test
@@ -84,7 +99,11 @@ class ContextFactoryTest {
         )
 
         // WHEN
-        assertThrows<ConfigurationException> { factory.create(home, config) }
+        val context = factory.create(home, config)
+
+        // THEN
+        verify(llmFactory).create("")
+        assertEquals(llm, context.llm)
     }
 
     @Test
@@ -99,6 +118,11 @@ class ContextFactoryTest {
         )
 
         // WHEN
-        assertThrows<ConfigurationException> { factory.create(home, config) }
+        val context = factory.create(home, config)
+
+        // THEN
+        verify(llmFactory).create("")
+        assertEquals(llm, context.llm)
+
     }
 }

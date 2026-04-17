@@ -5,7 +5,6 @@ import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.command.HelpCommand
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.service.mail.SMTP
@@ -71,8 +70,7 @@ class ContextFactory(
 
     private fun createLLM(config: Map<*, *>): LLM {
         val root = MapUtil.toMap("llm", config)
-        val type = root?.get("type")?.toString()?.ifEmpty { null }
-            ?: throw ConfigurationException("Missing configuration: llm/type")
+        val type = root?.get("type")?.toString() ?: ""
 
         LOGGER.info("LLM: $type")
         return llmFactory.create(type)

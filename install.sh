@@ -27,7 +27,7 @@ install_files() {
     cd "$TMP_DIR" || exit 1
 
     # Download the latest release of Kokibot
-    echo "Downloading Kokibot v$KOKIBOT_VERSION..."
+    echo "Downloading kokibot v$KOKIBOT_VERSION..."
     curl -L "https://github.com/wutsi/kokibot/releases/download/v$KOKIBOT_VERSION/kokibot.zip" --output kokibot.zip  || exit 1
 
     # Unzip
@@ -37,13 +37,17 @@ install_files() {
     # Copy files to the appropriate locations
     echo "Installing files..."
     mkdir -p "$HOME_DIR"
-    cp -Rn kokibot "$HOME_DIR"
+    cp -Rn kokibot/* "$HOME_DIR"
     mkdir -p "$BIN_DIR"
-    cp kokibot/kokibot.jar "$BIN_DIR/"
+    mv "$HOME_DIR/kokibot.jar" "$BIN_DIR/"
+    mv "$HOME_DIR/uninstall.sh" "$BIN_DIR/"
+    chmod +x "$BIN_DIR/uninstall.sh"
 }
 
 install_service() {
     JAVA_EXEC=$(which java)
+
+    echo "Setting up kokibot service..."
 
     OS=$(uname)
     if [ "$OS" = "Darwin" ]; then
@@ -54,13 +58,13 @@ install_service() {
 PROFILES=("$HOME/.zprofile" "$HOME/.zshrc" "$HOME/.profile")
 
 # Loop through and source them if they exist
-for profile in $PROFILES; do
-    if [ -f "$profile" ]; then
-        source "$profile"
+for profile in \$PROFILES; do
+    if [ -f "\$profile" ]; then
+        source "\$profile"
     fi
 done
 
-$JAVA_EXEC -Dserver.port=$KOKIBOT_PORT -jar $BIN_DIR/kokibot.jar
+$JAVA_EXEC -Dserver.port=$KOKIBOT_PORT -jar $BIN_DIR/kokibot.jar  --spring.profiles.active=prod
 EOF
 
         chmod +x "$BIN_DIR/start_service.sh"
@@ -91,7 +95,10 @@ EOF
 EOF
         launchctl unload "$PLIST" 2>/dev/null
         launchctl load "$PLIST"
-        echo "Kokibot service installed and started (macOS)."
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to start kokibot service"
+            exit 1
+        fi
     elif [ "$OS" = "Linux" ]; then
         # Linux systemd user service
         mkdir -p "$HOME/.config/systemd/user"
@@ -115,7 +122,10 @@ EOF
         systemctl --user stop kokibot.service 2>/dev/null
         systemctl --user enable kokibot.service
         systemctl --user start kokibot.service
-        echo "Kokibot systemd user service installed and started (Linux)."
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to start kokibot service"
+            exit 1
+        fi
     else
         echo "Unsupported OS: $OS"
         exit 1
@@ -123,9 +133,8 @@ EOF
 }
 
 cleanup() {
-    cd ~
+    cd ~ || exit 1
     rm -rf "$TMP_DIR"
-    echo "Installation complete in $HOME_DIR"
 }
 
 main() {
@@ -133,6 +142,7 @@ main() {
     install_files
     install_service
     cleanup
+    echo "kokibot installed successfully."
 }
 
 main

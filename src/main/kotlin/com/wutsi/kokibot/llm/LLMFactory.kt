@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.llm
 
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.deepseek.Deepseek
 import com.wutsi.kokibot.llm.gemini.Gemini
 import com.wutsi.kokibot.llm.kimi.Kimi
@@ -13,7 +12,7 @@ class LLMFactory {
             "deepseek" -> Deepseek()
             "kimi" -> Kimi()
             "gemini" -> Gemini()
-            else -> throw ConfigurationException("Unsupported llm type: $type")
+            else -> NullLLM()
         }
     }
 }

@@ -37,6 +37,7 @@ class TelegramChannel(
 ) : Channel(assistant), LongPollingSingleThreadUpdateConsumer {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TelegramChannel::class.java)
+
         const val ID = "channel:telegram"
         const val TYPING_DELAY = 2000L
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
@@ -184,9 +185,6 @@ class TelegramChannel(
 
     private fun send(chatId: String, message: Message, notification: Boolean) {
         val html = MarkdownToTelegramHTML.convert(message.text)
-        println(message.text)
-        println()
-        println(html)
         val sendMessage = SendMessage.builder()
             .chatId(chatId)
             .text(html)

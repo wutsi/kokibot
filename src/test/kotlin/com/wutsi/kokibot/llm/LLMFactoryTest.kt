@@ -1,12 +1,10 @@
 package com.wutsi.kokibot.llm
 
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.deepseek.Deepseek
 import com.wutsi.kokibot.llm.gemini.Gemini
 import com.wutsi.kokibot.llm.kimi.Kimi
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 class LLMFactoryTest {
     val factory = LLMFactory()
@@ -31,8 +29,7 @@ class LLMFactoryTest {
 
     @Test
     fun unsupported() {
-        assertThrows<ConfigurationException> {
-            factory.create("unknown")
-        }
+        val llm = factory.create("unknown")
+        assertTrue(llm is NullLLM)
     }
 }

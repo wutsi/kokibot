@@ -11,7 +11,7 @@
     "model": "${KOKIBOT_LLM_MODEL}",
     "max-tokens": 512
   },
-  "channel": [
+  "channels": [
     {
       "type": "${KOKIBOT_CHANNEL_TYPE}",
       "token": "${KOKIBOT_CHANNEL_TOKEN}"

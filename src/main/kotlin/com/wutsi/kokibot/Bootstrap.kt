@@ -33,7 +33,6 @@ class Bootstrap(
             profiles.contains("prod") -> System.getProperty("user.home") + "/.kokibot"
             else -> System.getProperty("user.home") + "/kokibot"
         }
-
         init(File(home))
     }
 
@@ -47,7 +46,7 @@ class Bootstrap(
     }
 
     internal fun init(home: File) {
-        LOGGER.info("Initializing form $home")
+        LOGGER.info("Initializing from $home")
 
         val config = loadConfig(File(getConfigDir(home), "settings.json"))
         this.context = contextFactory.create(home, config)

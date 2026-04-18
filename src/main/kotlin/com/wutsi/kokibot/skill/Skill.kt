@@ -5,9 +5,11 @@ import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
-import java.io.File
 
-class Skill(val metadata: SkillMetadata, val body: String) : Resource {
+class Skill(
+    val metadata: SkillMetadata,
+    val body: String
+) : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Skill::class.java)
     }
@@ -23,12 +25,26 @@ class Skill(val metadata: SkillMetadata, val body: String) : Resource {
     }
 
     override fun health(): Health {
-        val missingEnv = missingEnv().ifEmpty { null }
+        val missingEnv = missingEnv().ifEmpty { null }?.let { envs ->
+            "- Missing environment variables: ${envs.joinToString(", ")}"
+        }
+        val missingBin = missingBinaries().ifEmpty { null }?.let { bins ->
+            "- Missing binaries: ${bins.joinToString(", ")}. Refer to README.md for installation instructions."
+        }
+        val osMismatch = if (osMatches()) {
+            null
+        } else {
+            "- Expected OS: ${metadata.requiredOS}. Actual OS: ${this.getOS()}"
+        }
+        val up = missingEnv == null && missingBin == null && osMismatch == null
+
         return Health(
             id = id(),
-            up = missingEnv == null,
-            details = missingEnv?.let { envs ->
-                "Environment variable(s) is required but not set: ${envs.joinToString(",")}"
+            up = up,
+            details = if (up) {
+                null
+            } else {
+                listOfNotNull(missingEnv, missingBin, osMismatch).joinToString("\n")
             }
         )
     }
@@ -41,25 +57,39 @@ class Skill(val metadata: SkillMetadata, val body: String) : Resource {
         return metadata.requiredEnv.filter { env -> System.getenv(env) == null }
     }
 
+    private fun osMatches(): Boolean {
+        if (metadata.requiredOS.isEmpty()) {
+            return true
+        } else {
+            val os = getOS()
+            return metadata.requiredOS.find { it.equals(os, true) } != null
+        }
+    }
+
+    private fun getOS(): String {
+        return System.getProperty("os.name").lowercase()
+    }
+
     fun activate(): Boolean {
         LOGGER.info("Activating Skill: ${metadata.name}")
 
-        if (!canActivate()) {
+        /* Make sure the skill is healthy */
+        if (!health().up) {
             return false
         }
 
-        /* Install missing dependencies */
-        LOGGER.info("Setting up: ${metadata.name}")
-        val dir = File(context.home.absolutePath + "/workspace")
-        dir.mkdirs()
-        metadata.requiredSetup.forEach { cmd ->
-            val result = ShellUtil.exec(cmd, directory = dir, timeoutSeconds = 60)
-            LOGGER.debug(result)
+        /* Setup */
+        if (metadata.requiredSetup.isNotEmpty()) {
+            metadata.requiredSetup.forEach { cmd ->
+                LOGGER.debug("... setup: $cmd")
+                val result = ShellUtil.exec(cmd)
+                if (result.status != 0) {
+                    LOGGER.warn("Setup failed.\n$cmd\nError: ${result.error}")
+                    return false
+                }
+            }
         }
-        return true
-    }
 
-    private fun canActivate(): Boolean {
-        return missingEnv().isEmpty()
+        return true
     }
 }

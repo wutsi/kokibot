@@ -30,8 +30,8 @@ class SkillCommandTest {
     fun `exec list`() {
         val skill1 = mock<Skill>()
         val skill2 = mock<Skill>()
-        doReturn(SkillMetadata(name = "skill1")).whenever(skill1).metadata
-        doReturn(SkillMetadata(name = "skill2")).whenever(skill2).metadata
+        doReturn(SkillMetadata(name = "skill1", home = File("target"))).whenever(skill1).metadata
+        doReturn(SkillMetadata(name = "skill2", home = File("target"))).whenever(skill2).metadata
         doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
 
         val result = cmd.exec("", context)
@@ -54,6 +54,7 @@ class SkillCommandTest {
                 description = "description of skill1",
                 requiredBinaries = listOf("bin1", "bin2"),
                 requiredEnv = listOf("env1", "env2"),
+                home = File("target")
             ),
             body = "",
         )

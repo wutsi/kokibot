@@ -8,6 +8,9 @@ requires:
     env:
         - REGISTRY_API_KEY
         - DB_URL
+    os:
+        - linux
+        - windows
     setup:
         - echo "hello"
 metadata:

@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.util
 
-import com.wutsi.kokibot.tools.shell.ShellTool.Companion.ERROR_TIMEOUT
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -29,23 +28,41 @@ object ShellUtil {
         }
     }
 
-    fun exec(command: String, directory: File?, timeoutSeconds: Long = 60): String {
+    /**
+     * Execute a command and returns
+     */
+    fun exec(command: String, directory: File? = null, timeoutSeconds: Long = -1): ExecResult {
         val builder = ProcessBuilder("sh", "-c", command)
         if (directory != null) {
             builder.directory(directory)
         }
         val process = builder.start()
 
-        val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-        if (!finished) {
-            process.destroyForcibly()
-            return ERROR_TIMEOUT
+        if (timeoutSeconds <= 0) {
+            process.waitFor()
+        } else {
+            val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+            if (!finished) {
+                process.destroyForcibly()
+                return ExecResult(
+                    status = -1,
+                    output = process.inputStream.bufferedReader().readText(),
+                    error = process.errorStream.bufferedReader().readText(),
+                )
+            }
         }
 
-        return if (process.exitValue() == 0) {
-            process.inputStream.bufferedReader().readText()
-        } else {
-            process.errorStream.bufferedReader().readText()
-        }
+        val exitValue = process.exitValue()
+        return ExecResult(
+            status = exitValue,
+            output = process.inputStream.bufferedReader().readText().ifEmpty { null },
+            error = process.errorStream.bufferedReader().readText().ifEmpty { null },
+        )
     }
 }
+
+data class ExecResult(
+    val status: Int = 0,
+    val output: String? = null,
+    val error: String? = null,
+)

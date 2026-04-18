@@ -50,6 +50,7 @@ class SkillActivationTool : Tool {
 
             val sb = StringBuilder()
             sb.append("\n\nSkill: ${skill.metadata.name}\n")
+            sb.append("Skill Home Directory: ${skill.metadata.home.absolutePath} (All the shell commands of this skill should be executed from here)\n")
             sb.append("Here is the description of the skill in markdown format:\n")
             sb.append("```markdown\n${skill.body}\n```\n")
             return sb.toString()

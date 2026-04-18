@@ -17,10 +17,12 @@ class SkillRegistryTest {
     private val meta1 = SkillMetadata(
         name = "land-title-verifier",
         description = "Verify the land title and ownership information for a given property, providing accurate and up-to-date details to assist users in making informed decisions about real estate transactions.",
+        home = File("target"),
     )
     private val meta2 = SkillMetadata(
         name = "crm",
         description = "A CRM (Customer Relationship Management) skill that helps manage customer interactions, track sales leads, and organize customer data to improve business relationships and drive sales growth.",
+        home = File("target"),
     )
 
     @Test

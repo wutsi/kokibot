@@ -2,31 +2,12 @@
 name: pandoc
 description: |
     The universal document converter. Supports 60+ formats including Markdown,
-    MS Word (DOCX), PDF, LaTeX, HTML5, EPUB, Jupyter (IPYNB), and Typst.
+    MS Word (DOCX), PDF, LaTeX, HTML5, EPUB, Jupyter (IPYNB), etc.
     Use for format transformation, professional PDF generation, or batch document processing.
 requires:
     bins:
         - pandoc
-    setup:
-        - |
-            # Install Pandoc
-            if ! command -v pandoc &> /dev/null; then
-                if ! command -v brew &> /dev/null; then
-                    echo "Homebrew not found. Please install Homebrew or pandoc manually."
-                    exit 1
-                fi
-                echo "pandoc not found. Attempting installation..."
-                brew install pandoc
-            fi
-        - |
-            # Install Tectonic (Recommended PDF Engine)
-            if ! command -v tectonic &> /dev/null; then
-                if ! command -v brew &> /dev/null; then
-                    echo "Homebrew not found. Please install Homebrew or tectonic manually."
-                    exit 1
-                fi
-                brew install tectonic
-            fi
+        - tectonic
 ---
 
 # Pandoc: Universal Document Converter

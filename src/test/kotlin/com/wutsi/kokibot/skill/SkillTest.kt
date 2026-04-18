@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.skill
 
-import com.wutsi.kokibot.BootstrapTest
 import com.wutsi.kokibot.Context
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
@@ -13,7 +12,7 @@ import kotlin.test.assertTrue
 
 class SkillTest {
     val context = Context(
-        home = getResourceFile("/home/007"),
+        home = File("/target"),
         llm = mock()
     )
     private val skill = Skill(
@@ -23,6 +22,9 @@ class SkillTest {
             keywords = listOf("land title", "land ownership", "property title"),
             requiredBinaries = listOf("java"),
             requiredEnv = listOf("PATH"),
+            requiredOS = listOf(System.getProperty("os.name")),
+            requiredSetup = listOf("ls -la"),
+            home = File("target"),
         ),
         body = "",
     )
@@ -44,9 +46,54 @@ class SkillTest {
     }
 
     @Test
+    fun `health - no requirements`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(
+                requiredEnv = emptyList(),
+                requiredOS = emptyList(),
+                requiredBinaries = emptyList()
+            ),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+        val health = xskill.health()
+
+        assertEquals(skill.id(), health.id)
+        assertEquals(0, health.children.size)
+        assertEquals(true, health.up)
+        assertNull(health.details)
+    }
+
+    @Test
     fun `health - missing env`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredEnv = listOf("__MISSING_ENV__")),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+        val health = xskill.health()
+
+        assertEquals(false, health.up)
+        assertNotNull(health.details)
+    }
+
+    @Test
+    fun `health - missing bin`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(requiredBinaries = listOf("__javax__")),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+        val health = xskill.health()
+
+        assertEquals(false, health.up)
+        assertNotNull(health.details)
+    }
+
+    @Test
+    fun `health - os mismatch`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(requiredOS = listOf("__D@1w1n")),
             body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
@@ -61,6 +108,23 @@ class SkillTest {
         skill.init(emptyMap<String, Any>(), context)
 
         val result = skill.activate()
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `activate - no requirements`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(
+                requiredEnv = emptyList(),
+                requiredOS = emptyList(),
+                requiredSetup = emptyList(),
+                requiredBinaries = emptyList()
+            ),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+        val result = xskill.activate()
 
         assertTrue(result)
     }
@@ -89,10 +153,27 @@ class SkillTest {
         assertFalse(result)
     }
 
-    private fun getResourceFile(path: String): File {
-        val resource = BootstrapTest::class.java.getResource(path)
-            ?: throw IllegalArgumentException("Resource not found: $path")
+    @Test
+    fun `activate - missing OS`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(requiredOS = listOf("__linux__")),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+        val result = xskill.activate()
 
-        return File(resource.toURI())
+        assertFalse(result)
+    }
+
+    @Test
+    fun `activate - failed setup`() {
+        val xskill = Skill(
+            metadata = skill.metadata.copy(requiredSetup = listOf("__ls__")),
+            body = "",
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+        val result = xskill.activate()
+
+        assertFalse(result)
     }
 }

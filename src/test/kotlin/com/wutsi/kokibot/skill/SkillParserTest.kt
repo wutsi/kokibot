@@ -18,10 +18,7 @@ class SkillParserTest {
 
         val meta = result.first
         assertEquals("land-title-verifier", meta.name)
-        assertEquals(
-            listOf("real estate", "legal", "verification"),
-            meta.categories
-        )
+        assertEquals(listOf("real estate", "legal", "verification"), meta.categories)
         assertEquals(
             listOf("land title", "property verification", "Cameroon", "Titre Foncier", "fraud detection"),
             meta.keywords
@@ -30,18 +27,11 @@ class SkillParserTest {
             "Validates land titles against the Cameroon digital registry to prevent fraud and verify ownership.",
             meta.description
         )
-        assertEquals(
-            listOf("java", "mvn"),
-            meta.requiredBinaries
-        )
-        assertEquals(
-            listOf("REGISTRY_API_KEY", "DB_URL"),
-            meta.requiredEnv
-        )
-        assertEquals(
-            listOf("echo \"hello\""),
-            meta.requiredSetup
-        )
+        assertEquals(listOf("java", "mvn"), meta.requiredBinaries)
+        assertEquals(listOf("REGISTRY_API_KEY", "DB_URL"), meta.requiredEnv)
+        assertEquals(listOf("echo \"hello\""), meta.requiredSetup)
+        assertEquals(file.parentFile, meta.home)
+        assertEquals(listOf("linux", "windows"), meta.requiredOS)
 
         assertEquals(
             """

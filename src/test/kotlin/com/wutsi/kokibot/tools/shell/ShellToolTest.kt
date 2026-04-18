@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.tools.shell
 
 import com.wutsi.kokibot.tools.ToolParameterType
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
@@ -13,16 +14,33 @@ class ShellToolTest {
     fun metadata() {
         val meta = tool.metadata()
         assertEquals(ShellTool.Companion.NAME, meta.name)
-        assertEquals(1, meta.parameters.size)
+        assertEquals(2, meta.parameters.size)
 
         assertEquals("command", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
         assertTrue(meta.parameters[0].required)
+
+        assertEquals("directory", meta.parameters[1].name)
+        assertEquals(ToolParameterType.STRING, meta.parameters[1].type)
+        assertFalse(meta.parameters[1].required)
     }
 
     @Test
     fun exec() {
         val result = tool.exec(mapOf("command" to "ls -la"))
+
+//        println(result)
+        assertTrue(result.isNotEmpty())
+    }
+
+    @Test
+    fun `exec with directory`() {
+        val result = tool.exec(
+            mapOf(
+                "command" to "ls -la",
+                "directory" to System.getProperty("user.home")
+            )
+        )
 
 //        println(result)
         assertTrue(result.isNotEmpty())

@@ -25,12 +25,14 @@ class SkillActivationToolTest {
     private val meta1 = SkillMetadata(
         name = "skill1",
         description = "Description of the skill",
+        home = File("target"),
     )
     private val body1 = "This is the content of the skill1"
 
     private val meta2 = SkillMetadata(
         name = "skill2",
         description = "Description of the skill",
+        home = File("target"),
     )
     private val body2 = "This is the content of the skill2"
 

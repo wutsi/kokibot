@@ -9,6 +9,7 @@ import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
+import java.io.File
 
 class ShellTool : Tool {
     companion object {
@@ -44,27 +45,39 @@ class ShellTool : Tool {
                 type = ToolParameterType.STRING,
                 required = true
             ),
+            ToolParameter(
+                name = "directory",
+                description = "Working directory (optional)",
+                type = ToolParameterType.STRING,
+                required = false
+            ),
         )
     )
 
     override fun exec(arguments: Map<*, *>): String {
         val command = arguments["command"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: command")
+        val directory = arguments["directory"]?.toString()?.ifEmpty { null }
 
         try {
-            return exec(command)
+            return exec(command, directory)
         } catch (ex: Throwable) {
             LOGGER.warn("Command failed: $command", ex)
             return "Command failed. ${ex.message}"
         }
     }
 
-    private fun exec(command: String): String {
+    private fun exec(command: String, directory: String?): String {
         if (isForbidden(command)) {
             return ERROR_FORBIDDEN
         }
 
-        return ShellUtil.exec(command, null, timeout)
+        val result = ShellUtil.exec(command, directory?.let { File(directory) }, timeout)
+        if (result.status == 0) {
+            return result.output ?: "Success"
+        } else {
+            return result.error ?: "Error. exit code=${result.status}"
+        }
     }
 
     private fun isForbidden(command: String): Boolean {

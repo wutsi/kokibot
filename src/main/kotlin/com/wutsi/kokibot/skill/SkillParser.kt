@@ -24,6 +24,7 @@ class SkillParser {
             ?.map { it.toString() } ?: emptyList()
         val env = (requires?.get("env") as? List<*>)?.map { it.toString() } ?: emptyList()
         val setup = (requires?.get("setup") as? List<*>)?.map { it.toString() } ?: emptyList()
+        val os = (requires?.get("os") as? List<*>)?.map { it.toString() } ?: emptyList()
 
         val meta = metadataMap?.get("metadata") as? Map<*, *>
         val keywords = (meta?.get("keywords") as? List<*>)?.map { it.toString() } ?: emptyList()
@@ -34,6 +35,7 @@ class SkillParser {
 
         return Pair(
             SkillMetadata(
+                home = file.parentFile,
                 name = (metadataMap["name"]?.toString() ?: file.name).lowercase(),
                 description = metadataMap["description"]?.toString() ?: "",
                 keywords = keywords,
@@ -41,6 +43,7 @@ class SkillParser {
                 requiredBinaries = binaries,
                 requiredEnv = env,
                 requiredSetup = setup,
+                requiredOS = os,
             ),
             body.trim(),
         )

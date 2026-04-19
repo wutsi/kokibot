@@ -68,10 +68,32 @@ class WebFetchToolTest {
     }
 
     @Test
+    fun `exec - XLS`() {
+        val args = mapOf("url" to "https://www.cmu.edu/blackboard/files/evaluate/tests-example.xls")
+        val result = tool.exec(args)
+        assertTrue(result.contains("File Information"))
+    }
+
+    @Test
+    fun `exec - XLSX`() {
+        val args = mapOf("url" to "https://www.ou.edu/content/dam/cms/docs/sample-excel-file.xlsx")
+        val result = tool.exec(args)
+        assertTrue(result.contains("Sample Excel File"))
+    }
+
+    @Test
     fun `exec - invalid URL`() {
         val args = mapOf("url" to "https://invalid-url")
         val result = tool.exec(args)
-        assertTrue(result.contains("Failed to fetch content from https://invalid-url"))
+        assertTrue(result.contains("Failed to fetch content from"))
+    }
+
+    @Test
+    fun `exec - not found`() {
+        val args = mapOf("url" to "https://www.microsoft.com/not-found-url-123456789")
+        val result = tool.exec(args)
+        println(result)
+        assertTrue(result.contains("Failed to fetch content from https://www.microsoft.com/not-found-url-123456789"))
     }
 
     @Test

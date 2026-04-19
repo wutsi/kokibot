@@ -18,22 +18,22 @@ object DurationUtil {
         try {
             return when {
                 earliest.endsWith("d", ignoreCase = true) -> {
-                    val days = earliest.dropLast(1).toIntOrNull() ?: 1
+                    val days = earliest.dropLast(1).toLong()
                     days * ONE_DAY
                 }
 
                 earliest.endsWith("h", ignoreCase = true) -> {
-                    val hours = earliest.dropLast(1).toIntOrNull() ?: 1
+                    val hours = earliest.dropLast(1).toLong()
                     hours * ONE_HOUR
                 }
 
                 earliest.endsWith("m", ignoreCase = true) -> {
-                    val minutes = earliest.dropLast(1).toIntOrNull() ?: 1
+                    val minutes = earliest.dropLast(1).toLong()
                     minutes * ONE_MINUTE
                 }
 
                 earliest.endsWith("s", ignoreCase = true) -> {
-                    val seconds = earliest.dropLast(1).toIntOrNull() ?: 1
+                    val seconds = earliest.dropLast(1).toLong()
                     seconds * ONE_SECOND
                 }
 

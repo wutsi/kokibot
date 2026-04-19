@@ -69,7 +69,8 @@ class WebFetchTool(
 
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                return "Failed to fetch content: ${response.code}"
+                LOGGER.error("Failed to fetch content from: {}", url)
+                return "Failed to fetch content from $url"
             }
 
             // Download

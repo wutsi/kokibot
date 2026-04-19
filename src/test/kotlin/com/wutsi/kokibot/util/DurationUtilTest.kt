@@ -11,6 +11,24 @@ class DurationUtilTest {
     }
 
     @Test
+    fun `seconds 3d`() {
+        val millis = DurationUtil.seconds("3s")
+        assertEquals(3, millis)
+    }
+
+    @Test
+    fun malformed() {
+        val millis = DurationUtil.millis("Xs", -1)
+        assertEquals(-1, millis)
+    }
+
+    @Test
+    fun malformed2() {
+        val millis = DurationUtil.millis("XxX", -1)
+        assertEquals(-1, millis)
+    }
+
+    @Test
     fun `millis 1d`() {
         val millis = DurationUtil.millis("1d")
         assertEquals(86400000L, millis)

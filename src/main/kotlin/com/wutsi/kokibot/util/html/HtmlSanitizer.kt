@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.util.html
 
 import org.jsoup.Jsoup
-import org.jsoup.safety.Safelist
 
 class HtmlSanitizer {
     companion object {
@@ -62,6 +61,6 @@ class HtmlSanitizer {
             doc.select(".$selector").remove()
         }
 
-        return Jsoup.clean(doc.html(), Safelist.basic())
+        return html
     }
 }

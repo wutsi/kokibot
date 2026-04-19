@@ -29,8 +29,6 @@ class ContextTest {
         commandRegistry = mock(),
         skillRegistry = mock(),
         memory = mock(),
-        imap = mock(),
-        smtp = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
@@ -57,9 +55,7 @@ class ContextTest {
         doReturn(Health(id = "-", up = true)).whenever(channel).health()
         doReturn(listOf(channel)).whenever(context.channelRegistry).all()
 
-        doReturn(Health(id = "-", up = true)).whenever(context.imap).health()
         doReturn(Health(id = "-", up = true)).whenever(context.llm).health()
-        doReturn(Health(id = "-", up = true)).whenever(context.smtp).health()
         doReturn(Health(id = "-", up = true)).whenever(context.chatHistory).health()
         doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
     }
@@ -76,8 +72,6 @@ class ContextTest {
         verify(context.memory).destroy()
         verify(context.chatHistory).destroy()
         verify(channel).destroy()
-        verify(context.smtp).destroy()
-        verify(context.imap).destroy()
     }
 
     @Test
@@ -90,8 +84,6 @@ class ContextTest {
         verify(context.chatHistory).init(memoryConfig, context)
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
-        verify(context.smtp).init(smtpConfig, context)
-        verify(context.imap).init(imapConfig, context)
         verify(context.channelRegistry).init(config, context, assistant)
     }
 
@@ -112,36 +104,6 @@ class ContextTest {
     }
 
     @Test
-    fun `init - mail missing configuration`() {
-        val cfg = config - "mail"
-
-        context.init(assistant, cfg)
-
-        verify(context.smtp, never()).init(any(), any())
-        verify(context.imap, never()).init(any(), any())
-    }
-
-    @Test
-    fun `init - mail missing IMAP`() {
-        val cfg = config - "mail" + ("mail" to mapOf("smtp" to smtpConfig))
-
-        context.init(assistant, cfg)
-
-        verify(context.smtp).init(smtpConfig, context)
-        verify(context.imap, never()).init(any(), any())
-    }
-
-    @Test
-    fun `init - mail missing SMTP`() {
-        val cfg = config - "mail" + ("mail" to mapOf("imap" to imapConfig))
-
-        context.init(assistant, cfg)
-
-        verify(context.smtp, never()).init(any(), any())
-        verify(context.imap).init(imapConfig, context)
-    }
-
-    @Test
     fun health() {
         // GIVEN
         context.init(assistant, config)
@@ -151,7 +113,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(6, health.children.size)
+        assertEquals(4, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

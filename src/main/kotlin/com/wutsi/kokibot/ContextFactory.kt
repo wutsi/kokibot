@@ -7,7 +7,6 @@ import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
-import com.wutsi.kokibot.service.mail.SMTP
 import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.ClearCommand
 import com.wutsi.kokibot.service.memory.CompactCommand
@@ -58,7 +57,6 @@ class ContextFactory(
             skillRegistry = skillRegistry,
             chatHistory = ChatHistory(),
             memory = Memory(),
-            smtp = SMTP(),
             config = config,
             jsonMapper = jsonMapper,
         )

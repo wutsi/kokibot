@@ -6,8 +6,6 @@ import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.service.mail.IMAP
-import com.wutsi.kokibot.service.mail.SMTP
 import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillParser
@@ -29,8 +27,6 @@ class Context(
     val commandRegistry: CommandRegistry = CommandRegistry(),
     val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
     val memory: Memory = Memory(),
-    val smtp: SMTP = SMTP(),
-    val imap: IMAP = IMAP(),
     val jsonMapper: JsonMapper = JsonMapper(),
 ) {
     companion object {
@@ -48,7 +44,6 @@ class Context(
         initSkills()
         initTools()
         initLLM(config)
-        initMail(config)
         initMemory(config)
         initCommands()
     }
@@ -67,7 +62,7 @@ class Context(
             skillRegistry.all() +
             toolRegistry.all() +
             channelRegistry.all() +
-            listOf(llm, imap, smtp, chatHistory, memory)
+            listOf(llm, chatHistory, memory)
     }
 
     private fun initChannels(config: Map<*, *>, assistant: Assistant) {
@@ -99,31 +94,6 @@ class Context(
 
     private fun initCommands() {
         commandRegistry.init(this)
-    }
-
-    private fun initMail(config: Map<*, *>) {
-        val root = MapUtil.toMap("mail", config)
-            ?: return // No email configuration
-
-        val smtpRoot = root.let { node -> MapUtil.toMap("smtp", node) }
-        if (smtpRoot != null) {
-            LOGGER.info("Mail: SMTP")
-            try {
-                smtp.init(smtpRoot, this)
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to initialize SMTP - ${ex.message}")
-            }
-        }
-
-        val imapNode = root.let { node -> MapUtil.toMap("imap", node) }
-        if (imapNode != null) {
-            LOGGER.info("Mail: IMAP")
-            try {
-                imap.init(imapNode, this)
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to initialize IMAP - ${ex.message}")
-            }
-        }
     }
 
     private fun initSkills() {

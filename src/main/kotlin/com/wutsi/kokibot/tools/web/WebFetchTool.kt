@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.tools.web
 
+import com.wutsi.kokibot.exception.UnsupportedMimeTypeException
 import com.wutsi.kokibot.service.file.MarkdownConverter
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
@@ -54,8 +55,11 @@ class WebFetchTool(
 
         try {
             return fetch(url, maxLength ?: DEFAULT_MAX_LENGTH)
+        } catch (ex: UnsupportedMimeTypeException) {
+            LOGGER.warn("Cannot extract the content from : {}", url, ex)
+            return "Cannot extract the content from $url. Error= ${ex.message}"
         } catch (ex: Exception) {
-            LOGGER.error("Failed to fetch content from URL: {}", url, ex)
+            LOGGER.warn("Failed to fetch content from URL: {}", url, ex)
             return "Failed to fetch content from $url. Error= ${ex.message}"
         }
     }

@@ -307,7 +307,9 @@ class TelegramChannelTest {
 
     @Test
     fun `health - down`() {
-        doReturn(mapOf("ok" to false)).whenever(rest).getForObject(any<String>(), eq(Map::class.java))
+        doReturn(ResponseEntity(mapOf("ok" to "---"), HttpStatus.OK))
+            .whenever(rest)
+            .getForObject(any<String>(), eq(Map::class.java))
 
         telegram.init(config, context)
         val result = telegram.health()
@@ -319,6 +321,10 @@ class TelegramChannelTest {
 
     @Test
     fun `health - error`() {
+        doThrow(RuntimeException::class)
+            .whenever(rest)
+            .getForEntity(any<String>(), eq(Map::class.java))
+
         val result = telegram.health()
 
         assertEquals(false, result.up)

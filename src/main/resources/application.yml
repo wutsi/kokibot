@@ -10,17 +10,6 @@ spring:
             ACCEPT_CASE_INSENSITIVE_ENUMS: true
             ACCEPT_CASE_INSENSITIVE_PROPERTIES: true
 
-    task:
-        scheduling:
-            thread-name-prefix: "${koki.webapp.client-id}-job-"
-            pool:
-                size: 4
-        task:
-            executor:
-                core-pool-size: 4
-                max-pool-size: 4
-                thread-name-prefix: "${koki.webapp.client-id}-task-"
-
 
 server:
     port: 8080
@@ -40,12 +29,3 @@ management:
         web:
             exposure:
                 include: "beans,flyway,health,info,scheduledtasks,mappings"
-
-logging:
-    level:
-        root: INFO
-        com.wutsi.kokibot: DEBUG
-
-    pattern:
-        console: "%d Type=%level Logger=%c Thread=%thread %m%n"
-        file: "%d Type=%level Logger=%c Thread=%thread %m%n"

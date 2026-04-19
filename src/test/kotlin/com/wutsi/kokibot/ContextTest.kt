@@ -97,7 +97,7 @@ class ContextTest {
     }
 
     @Test
-    fun `init - LLM configuration erorr`() {
+    fun `init - bad structure`() {
         doThrow(RuntimeException()).whenever(context.llm).init(any(), any())
 
         context.init(assistant, config)

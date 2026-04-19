@@ -71,6 +71,31 @@ whenever a user provides a title number or asks for property verification.
     }
 
     @Test
+    fun minimal() {
+        val file = getResourceFile("/skills/minimal/SKILL.md")
+
+        val result = parser.parse(file)
+
+        val meta = result.first
+        assertEquals("minimal", meta.name)
+        assertEquals(emptyList<String>(), meta.categories)
+        assertEquals(emptyList<String>(), meta.keywords)
+        assertEquals("", meta.description)
+        assertEquals(emptyList<String>(), meta.requiredBinaries)
+        assertEquals(emptyList<String>(), meta.requiredEnv)
+        assertEquals(emptyList<String>(), meta.requiredSetup)
+        assertEquals(file.parentFile, meta.home)
+        assertEquals(emptyList<String>(), meta.requiredOS)
+
+        assertEquals(
+            """
+Yo
+            """.trimIndent(),
+            result.second,
+        )
+    }
+
+    @Test
     fun `parse - no header`() {
         val file = getResourceFile("/skills/no-header/SKILL.md")
 

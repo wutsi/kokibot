@@ -80,14 +80,10 @@ class TelegramChannel(
     override fun health(): Health {
         try {
             val response = rest.getForEntity("https://api.telegram.org/bot$botToken/getMe", Map::class.java).body
-            if (response?.get("ok") == true) {
-                return Health(id(), true)
-            } else {
-                return Health(id(), false, "Unhealthy")
-            }
+            return Health(id(), response?.get("ok") == true)
         } catch (ex: Exception) {
             LOGGER.warn("error during telegram channel heath", ex)
-            return Health(id(), false, ex.message ?: "Unhealthy")
+            return Health(id(), false, ex.message)
         }
     }
 

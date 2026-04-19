@@ -6,8 +6,10 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.BootstrapTest
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.exception.SkillNotFoundException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
 
@@ -94,6 +96,24 @@ class SkillRegistryTest {
     }
 
     @Test
+    fun `init - bad structure`() {
+        // GIVEN
+        val home = getResourceFile("/home/bad-structure")
+        val context = Context(
+            home = home,
+            llm = mock(),
+        )
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skills = registry.all()
+
+        assertEquals(0, skills.size)
+    }
+
+    @Test
     fun get() {
         // GIVEN
         doReturn(Pair(meta1, ""))
@@ -112,6 +132,22 @@ class SkillRegistryTest {
         // THEN
         val skill = registry.get(meta1.name)
         assertEquals(meta1, skill.metadata)
+    }
+
+    @Test
+    fun `get invalid skill`() {
+        doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
+            .whenever(parser).parse(any())
+
+        val home = getResourceFile("/home/007")
+        val context = Context(
+            home = home,
+            llm = mock(),
+        )
+        registry.init(context)
+
+        assertThrows<SkillNotFoundException> { registry.get("xxx") }
     }
 
     @Test

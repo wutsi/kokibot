@@ -36,8 +36,8 @@ class SkillParser {
         return Pair(
             SkillMetadata(
                 home = file.parentFile,
-                name = (metadataMap["name"]?.toString() ?: file.name).lowercase(),
-                description = metadataMap["description"]?.toString() ?: "",
+                name = (metadataMap?.get("name")?.toString() ?: file.parentFile.name).lowercase(),
+                description = metadataMap?.get("description")?.toString() ?: "",
                 keywords = keywords,
                 categories = categories,
                 requiredBinaries = binaries,

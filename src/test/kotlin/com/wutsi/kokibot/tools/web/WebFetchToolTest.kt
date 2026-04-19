@@ -4,6 +4,7 @@ import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
@@ -24,6 +25,19 @@ class WebFetchToolTest {
     }
 
     @Test
+    fun id() {
+        assertEquals("tool:web_fetch", tool.id())
+    }
+
+    @Test
+    fun health() {
+        val health = tool.health()
+        assertTrue(health.up)
+        assertEquals(tool.id(), health.id)
+        assertNull(health.details)
+    }
+
+    @Test
     fun exec() {
         val args = mapOf("url" to "https://evendo.com/locations/cameroon/yaounde/odza")
         val result = tool.exec(args)
@@ -40,9 +54,9 @@ class WebFetchToolTest {
     @Test
     fun `exec JSON`() {
         val args =
-            mapOf("url" to "https://gist.githubusercontent.com/gcollazo/884a489a50aec7b53765405f40c6fbd1/raw/49d1568c34090587ac82e80612a9c350108b62c5/sample.json")
+            mapOf("url" to "https://raw.githubusercontent.com/wutsi/kokibot/refs/heads/master/renovate.json")
         val result = tool.exec(args)
-//        println(result)
+        assertTrue(result.contains("config:base"))
     }
 
     @Test
@@ -79,6 +93,23 @@ class WebFetchToolTest {
         val args = mapOf("url" to "https://www.ou.edu/content/dam/cms/docs/sample-excel-file.xlsx")
         val result = tool.exec(args)
         assertTrue(result.contains("Sample Excel File"))
+    }
+
+    @Test
+    fun `exec - XML`() {
+        val args = mapOf("url" to "https://raw.githubusercontent.com/wutsi/kokibot/refs/heads/master/pom.xml")
+        val result = tool.exec(args)
+        assertTrue(result.contains("<artifactId>kokibot</artifactId>"))
+    }
+
+    @Test
+    fun `exec - Binary`() {
+        val args = mapOf("url" to "https://github.com/wutsi/kokibot/releases/download/v0.0.14/kokibot.zip")
+        val result = tool.exec(args)
+        assertEquals(
+            "Cannot extract the content from https://github.com/wutsi/kokibot/releases/download/v0.0.14/kokibot.zip. Error= application/octet-stream",
+            result
+        )
     }
 
     @Test

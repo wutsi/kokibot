@@ -24,6 +24,9 @@
         <root level="DEBUG">
             <appender-ref ref="CONSOLE"/>
         </root>
+        <logger name="com.wutsi.kokibot" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
     </springProfile>
 
     <springProfile name="prod">

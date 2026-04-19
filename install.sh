@@ -21,6 +21,15 @@ check_java() {
     fi
 }
 
+installing_dependencies(){
+    # pandoc
+    if ! command -v pandoc >/dev/null 2>&1; then
+        echo "Installing pandoc..."
+        brew install pandoc
+    fi
+}
+
+
 install_files() {
     # Create temporary directory for download and extraction
     mkdir -p "$TMP_DIR"
@@ -148,6 +157,7 @@ cleanup() {
 main() {
     check_java
     install_files
+    installing_dependencies
     install_service
     cleanup
     echo "kokibot installed successfully."

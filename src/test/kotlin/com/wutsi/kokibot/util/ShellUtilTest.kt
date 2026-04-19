@@ -34,4 +34,24 @@ class ShellUtilTest {
         assertNull(result.output)
         assertNotNull(result.error)
     }
+
+    @Test
+    fun `exec - not timed out`() {
+        val result = ShellUtil.exec("which java", timeoutSeconds = 50)
+        println(result.output)
+
+        assertEquals(0, result.status)
+        assertNotNull(result.output)
+        assertNull(result.error)
+    }
+
+    @Test
+    fun `exec - timed out`() {
+        val result = ShellUtil.exec("find / -name x0x0x0x", timeoutSeconds = 1)
+        println(result.output)
+
+        assertEquals(-1, result.status)
+        assertNull(result.output)
+        assertNull(result.error)
+    }
 }

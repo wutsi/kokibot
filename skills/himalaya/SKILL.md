@@ -19,45 +19,6 @@ backends.
 - `references/configuration.md` (config file setup + IMAP/SMTP authentication)
 - `references/message-composition.md` (MML syntax for composing emails)
 
-## Prerequisites
-
-1. Himalaya CLI installed (`himalaya --version` to verify)
-2. A configuration file at `~/.config/himalaya/config.toml`
-3. IMAP/SMTP credentials configured (password stored securely)
-
-## Configuration Setup
-
-Run the interactive wizard to set up an account:
-
-```bash
-himalaya account configure
-```
-
-Or create `~/.config/himalaya/config.toml` manually:
-
-```toml
-[accounts.personal]
-email = "you@example.com"
-display-name = "Your Name"
-default = true
-
-backend.type = "imap"
-backend.host = "imap.example.com"
-backend.port = 993
-backend.encryption.type = "tls"
-backend.login = "you@example.com"
-backend.auth.type = "password"
-backend.auth.cmd = "pass show email/imap"  # or use keyring
-
-message.send.backend.type = "smtp"
-message.send.backend.host = "smtp.example.com"
-message.send.backend.port = 587
-message.send.backend.encryption.type = "start-tls"
-message.send.backend.login = "you@example.com"
-message.send.backend.auth.type = "password"
-message.send.backend.auth.cmd = "pass show email/smtp"
-```
-
 ## Common Operations
 
 ### List Folders
@@ -149,7 +110,7 @@ EOF
 Or with headers flag:
 
 ```bash
-himalaya message write -H "To:recipient@example.com" -H "Subject:Test" "Message body here"
+himalaya message write -s -H "To:recipient@example.com" -H "Subject:Test" "Message body here"
 ```
 
 ### Move/Copy Emails
@@ -243,3 +204,4 @@ RUST_LOG=trace RUST_BACKTRACE=1 himalaya envelope list
 - Message IDs are relative to the current folder; re-list after folder changes.
 - For composing rich emails with attachments, use MML syntax (see `references/message-composition.md`).
 - Store passwords securely using `pass`, system keyring, or a command that outputs the password.
+- To send, reply or forward emails, never use interactive mode in scripts; instead, use templates or MML for automation.

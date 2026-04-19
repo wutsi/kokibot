@@ -66,7 +66,7 @@ class ContextFactoryTest {
         assertEquals(jsonMapper, context.jsonMapper)
         assertEquals(skillRegistry, context.skillRegistry)
 
-        verify(toolRegistry, times(10)).register(any())
+        verify(toolRegistry, times(5)).register(any())
     }
 
     @Test

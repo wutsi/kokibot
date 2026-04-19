@@ -1,8 +1,7 @@
 ---
 name: pandoc
 description: |
-    The universal document converter. Supports 60+ formats including Markdown,
-    MS Word (DOCX), PDF, LaTeX, HTML5, EPUB, Jupyter (IPYNB), etc.
+    The universal document converter. Supports multiple formats including Markdown, MS Word (DOCX), PDF, LaTeX, HTML5, EPUB, Jupyter (IPYNB), etc.
     Use for format transformation, professional PDF generation, or batch document processing.
 requires:
     bins:
@@ -10,29 +9,76 @@ requires:
         - tectonic
 ---
 
-# Pandoc: Universal Document Converter
+# Pandoc Document Conversion
 
-Pandoc is the industry standard for converting files from one markup format into another.
+Pandoc is a universal document converter that can convert between a wide variety of markup and document formats.
 
-## Supported Formats
+## Supported Input Formats
 
-### Input Formats (Reading)
+Pandoc can read from **57 markup and document formats**:
 
-- **Markdown:** Pandoc, GitHub-Flavored (GFM), CommonMark, PHP Markdown Extra, MultiMarkdown.
-- **Word Processors:** DOCX, ODT, RTF.
-- **Web/Data:** HTML, XML, CSV, JSON, Jupyter Notebook (IPYNB).
-- **Technical:** LaTeX, BibTeX, BibLaTeX, CSL, Typst, reStructuredText (RST), AsciiDoc.
-- **Ebooks:** EPUB.
-- **Wiki:** MediaWiki, DokuWiki, Jira, Textile.
+### Markup Languages
 
-### Output Formats (Writing)
+- **Markdown**: CommonMark, GitHub-Flavored Markdown (GFM), Markdown variants (Pandoc, MultiMarkdown, PHP Markdown
+  Extra, strict)
+- **Lightweight markup**: AsciiDoc, Creole, Djot, DokuWiki, MediaWiki, Muse, Org mode, reStructuredText, Textile,
+  TikiWiki, TWiki, VimWiki, XWiki
+- **Web**: HTML, Jira/Confluence wiki markup
+- **Technical**: LaTeX, Haddock markup, Typst
 
-- **Documents:** DOCX, ODT, RTF, PDF (via PDF engine).
-- **Web:** HTML5, XHTML, Reveal.js (Slides).
-- **Markdown:** All variants listed in inputs.
-- **Technical/Professional:** LaTeX, Typst, Man pages, InDesign (ICML).
-- **Ebooks:** EPUB (v2 and v3), FB2.
-- **Wiki:** MediaWiki, DokuWiki, Jira, Vimwiki.
+### Document Formats
+
+- **Microsoft Office**: DOCX (Word), PPTX (PowerPoint)
+- **OpenDocument**: ODT (text document)
+- **eBooks**: EPUB, FictionBook2
+- **Academic/Technical**: DocBook, JATS XML, BITS XML
+
+### Data & Bibliography Formats
+
+- **Bibliographies**: BibTeX, BibLaTeX, CSL JSON, EndNote XML, RIS
+- **Data**: CSV, TSV, JSON (native AST), XML (native AST)
+
+### Other
+
+- Perl POD, custom Lua readers
+
+## Supported Output Formats
+
+Pandoc can write to **76+ formats**:
+
+### Web & Display
+
+- **HTML**: HTML5, HTML4, XHTML
+- **Terminal**: ANSI (for terminal viewing)
+- **Presentations**: reveal.js, Slidy, Slideous, DZSlides, S5
+
+### Markup Languages
+
+- **Markdown**: CommonMark, GitHub-Flavored Markdown (GFM), Markdown variants, Djot
+- **Lightweight markup**: AsciiDoc, DokuWiki, Haddock, MediaWiki, Muse, Org mode, reStructuredText, Textile, XWiki,
+  ZimWiki
+- **Technical**: LaTeX, Typst, Vimdoc
+- **Other**: BBCode variants, Jira wiki markup
+
+### Document Formats
+
+- **Microsoft Office**: DOCX (Word), PPTX (PowerPoint)
+- **OpenDocument**: ODT (text document)
+- **eBooks**: EPUB (v2/v3), FictionBook2
+- **PDF**: via LaTeX or Groff engines
+- **Presentations**: Beamer (LaTeX-based)
+
+### Academic & Technical
+
+- DocBook, JATS (multiple tag sets), TEI Simple, Texinfo, InDesign ICML
+
+### Bibliography Formats
+
+- BibTeX, BibLaTeX, CSL JSON
+
+### Other
+
+- Plain text, custom Lua writers
 
 ## Basic Usage
 

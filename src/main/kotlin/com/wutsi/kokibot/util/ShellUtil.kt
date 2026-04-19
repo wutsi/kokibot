@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.util
 
 import java.io.File
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 object ShellUtil {
@@ -46,8 +47,8 @@ object ShellUtil {
                 process.destroyForcibly()
                 return ExecResult(
                     status = -1,
-                    output = process.inputStream.bufferedReader().readText(),
-                    error = process.errorStream.bufferedReader().readText(),
+                    output = toString(process.inputStream),
+                    error = toString(process.errorStream),
                 )
             }
         }
@@ -55,9 +56,17 @@ object ShellUtil {
         val exitValue = process.exitValue()
         return ExecResult(
             status = exitValue,
-            output = process.inputStream.bufferedReader().readText().ifEmpty { null },
-            error = process.errorStream.bufferedReader().readText().ifEmpty { null },
+            output = toString(process.inputStream),
+            error = toString(process.errorStream),
         )
+    }
+
+    private fun toString(stream: InputStream): String? {
+        return try {
+            stream.bufferedReader().readText().ifEmpty { null }
+        } catch (ex: Exception) {
+            null
+        }
     }
 }
 

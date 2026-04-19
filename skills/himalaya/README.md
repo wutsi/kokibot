@@ -17,4 +17,4 @@ brew install himalaya
 ### Configuration
 
 Refer to this [link](https://github.com/pimalaya/himalaya#configuration) to configure your email accounts and set up
-authentication.
+authentication.`

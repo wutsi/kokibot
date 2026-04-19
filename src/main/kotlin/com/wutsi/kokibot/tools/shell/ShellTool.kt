@@ -1,12 +1,9 @@
 package com.wutsi.kokibot.tools.shell
 
-import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.util.DurationUtil
-import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -15,12 +12,9 @@ class ShellTool : Tool {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ShellTool::class.java)
         const val ERROR_FORBIDDEN = "Forbidden! You are not allowed to run this command for security reasons."
-        const val ERROR_TIMEOUT = "Error: Execution timed out."
         const val NAME = "shell"
-        const val TIMEOUT = 5L
     }
 
-    private var timeout: Long = TIMEOUT
     private val forbiddenPatterns = listOf(
         "sudo",
         "rm -rf",
@@ -28,12 +22,6 @@ class ShellTool : Tool {
         "chown",
         "> /etc/"
     )
-
-    override fun init(config: Map<*, *>, context: Context) {
-        timeout = MapUtil.toString("timeout", config)?.let { value ->
-            DurationUtil.seconds(value, TIMEOUT)
-        } ?: TIMEOUT
-    }
 
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
@@ -72,10 +60,11 @@ class ShellTool : Tool {
             return ERROR_FORBIDDEN
         }
 
-        val result = ShellUtil.exec(command, directory?.let { File(directory) }, timeout)
+        val result = ShellUtil.exec(command, directory?.let { File(directory) })
         if (result.status == 0) {
             return result.output ?: "Success"
         } else {
+            LOGGER.error("Command failed: $command\n${result.error}")
             return result.error ?: "Error. exit code=${result.status}"
         }
     }

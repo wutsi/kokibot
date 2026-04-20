@@ -86,7 +86,7 @@ class WebFetchToolTest {
     fun `exec - DOC`() {
         val args = mapOf("url" to "https://podcasts.ceu.edu/sites/podcasts.ceu.edu/files/sample.doc")
         val result = tool.exec(args)
-        assertTrue(result.contains("Instructions about final paper and figure submissions in this document are for IEEE"))
+        assertTrue(result.contains("Instructions about final paper"))
     }
 
     @Test

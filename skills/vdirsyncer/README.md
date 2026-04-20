@@ -4,7 +4,7 @@
 local filesystem.
 
 [![](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/pimutils/vdirsyncer)
-[![](https://img.shields.io/badge/python-green.svg?logo=python)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.x-blue.svg?logo=phython)](https://python.org)
 
 ## What This Skill Provides
 
@@ -29,7 +29,14 @@ brew install vdirsyncer
 
 ### Configuration
 
-Create the file `~/.config/vdirsyncer/config` and configure it with:
+#### Step1: Create configuration file
+
+```markdown
+mkdir -p `~/.config/vdirsyncer/`
+touch `~/.config/vdirsyncer/config`
+```
+
+#### Step2: Edit configuration
 
 - Status path in: `~/.cache/vdirsyncer/status/`
 - Local contacts storage: `~/.local/contacts/`
@@ -42,6 +49,8 @@ Create the file `~/.config/vdirsyncer/config` and configure it with:
     - Store password securely using `password.fetch` with a command that outputs the password (e.g., `printenv` to read
       from an environment variable).
 
+The configuration will look like this:
+
 ```
 [general]
 status_path = "~/.cache/vdirsyncer/status/"
@@ -53,7 +62,7 @@ collections = ["from a", "from b"]
 
 [storage contacts_local]
 type = "filesystem"
-path = "~/.local/share/contacts/"
+path = "~/.local/share/contacts/personal"
 fileext = ".vcf"
 
 [storage contacts_remote]
@@ -61,4 +70,19 @@ type = "carddav"
 url = "<remote-url>"
 username = "<remote-username>"
 password.fetch = ["command", "printenv", "VDIRSYNCHER_ICLOUD_PASSWORD"]
+```
+
+#### Step2: Initialize the local storage
+
+1. Discover remove collections (calendars or address books) and create corresponding local folders:
+
+```bash
+vdirsyncer discover
+```
+
+2. Sync data from remote to local for the first time:
+   **Sync**
+
+```bash
+vdirsyncer sync
 ```

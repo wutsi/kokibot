@@ -33,8 +33,6 @@ Synchronize all accounts between remote servers and local storage:
 vdirsyncer sync
 ```
 
-- *Strategy:* Use `conflict_resolution = "from a"` or `"from b"` in the pair config if total automation is required.
-
 ### Health Check
 
 Validating the configuration and connectivity without moving data.

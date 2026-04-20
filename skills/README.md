@@ -10,8 +10,9 @@ This directory contains the code for the skills of the bot.
   without opening a web browser.
 - [vdirsyncer](vdirsyncer): Command-line tool for synchronizing calendars and address books between a variety of servers
   and the local filesystem.
+- [hhard](khard): Command-line contact manager that works with vdirsyncer to manage contacts stored in CardDAV servers.
+  Provides powerful search and modification capabilities for contacts.
 - Khal: See https://github.com/pimutils/khal
-- Khard: See https://github.com/lucc/khard
 - todoman: See https://github.com/pimutils/todoman
 
 ## File Conversion
@@ -24,7 +25,7 @@ This directory contains the code for the skills of the bot.
 
 ## Office Suite
 
-- dox/docx
+- doc/docx
 - xls/xlsx
 - ppt/pptx
 - pdf

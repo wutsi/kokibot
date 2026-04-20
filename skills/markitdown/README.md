@@ -1,9 +1,9 @@
-# Skill: MarkItDown
+# Skill: markitdown
 
 Convert files and office documents to Markdown.
 
 [![](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/microsoft/markitdown)
-[![](https://img.shields.io/badge/python-green.svg?logo=python)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.x-blue.svg?logo=phython)](https://python.org)
 
 ## What This Skill Provides
 

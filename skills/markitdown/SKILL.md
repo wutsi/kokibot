@@ -1,13 +1,13 @@
 ---
 name: markitdown
-description: OpenClaw agent skill for converting documents to Markdown. Documentation and utilities for Microsoft's MarkItDown library. Supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML, YouTube.
+description: Agent skill for converting documents to Markdown. Documentation and utilities for Microsoft's MarkItDown library. Supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML, YouTube.
 requires:
     bins:
         - python3
         - markitdown
 ---
 
-# MarkItDown
+# Skill: markItDown
 
 Documentation and utilities for converting documents to Markdown using
 Microsoft's [MarkItDown](https://github.com/microsoft/markitdown) library.

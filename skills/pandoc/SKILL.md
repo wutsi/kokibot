@@ -9,7 +9,7 @@ requires:
         - tectonic
 ---
 
-# Pandoc Document Conversion
+# Skill: pandoc
 
 Pandoc is a universal document converter that can convert between a wide variety of markup and document formats.
 

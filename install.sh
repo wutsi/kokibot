@@ -22,6 +22,12 @@ check_java() {
 }
 
 installing_dependencies(){
+    # python3
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "Installing Python 3..."
+        brew install python
+    fi
+
     # pipx
     if ! command -v pipx >/dev/null 2>&1; then
         echo "Installing pipx..."
@@ -39,6 +45,12 @@ installing_dependencies(){
     if ! command -v pandoc >/dev/null 2>&1; then
         echo "Installing markitdown..."
         pipx install pandoc
+    fi
+
+    # khard
+    if ! command -v khard >/dev/null 2>&1; then
+        echo "Installing khard..."
+        pipx install khard
     fi
 }
 

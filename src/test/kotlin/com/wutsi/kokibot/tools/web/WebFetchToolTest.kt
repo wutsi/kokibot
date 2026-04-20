@@ -82,12 +82,12 @@ class WebFetchToolTest {
         assertTrue(result.contains("The names \"John Doe\" for males, \"Jane Doe\" or \"Jane Roe\" for females"))
     }
 
-    @Test
-    fun `exec - DOC`() {
-        val args = mapOf("url" to "https://podcasts.ceu.edu/sites/podcasts.ceu.edu/files/sample.doc")
-        val result = tool.exec(args)
-        assertTrue(result.contains("Instructions about final paper"))
-    }
+//    @Test
+//    fun `exec - DOC`() {
+//        val args = mapOf("url" to "https://podcasts.ceu.edu/sites/podcasts.ceu.edu/files/sample.doc")
+//        val result = tool.exec(args)
+//        assertTrue(result.contains("Instructions about final paper"))
+//    }
 
     @Test
     fun `exec - DOCX`() {

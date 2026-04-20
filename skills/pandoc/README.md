@@ -7,7 +7,10 @@ Jupyter (IPYNB), etc.
 
 ## Setup
 
-In order to use this skill, you need to have `pandoc` installed, and `tectonic` installed for PDF conversions.
+In order to use this skill, you need to have `pandoc` and `tectonic` installed.
+
+`tectonic` is used by Pandoc as PDF engine when converting to PDF.
+It provides a modern, self-contained LaTeX environment that simplifies PDF generation.
 
 ### Install Pandoc
 

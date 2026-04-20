@@ -8,10 +8,14 @@ This directory contains the code for the skills of the bot.
 
 ## Personal Information Management
 
-## Communication
+## PIM (Personal Information Management)
 
 - [himalaya](himalaya): Command-line email client for managing emails from various providers (Gmail, Outlook, etc.)
   without opening a web browser.
+- vdirsyncer: See https://github.com/pimutils/vdirsyncer
+- Khal: See https://github.com/pimutils/khal
+- Khard: See https://github.com/lucc/khard
+- todoman: See https://github.com/pimutils/todoman
 
 ## File Conversion
 
@@ -19,13 +23,14 @@ This directory contains the code for the skills of the bot.
   Latex etc.)
 - [markitdown](markitdown): Convert HTML to Markdown with a single command. Preserves formatting and structure for easy
   editing.
--
+- tesseract-ocr
 
 ## Office Suite
 
-- dox
+- dox/docx
+- xls/xlsx
+- ppt/pptx
 - pdf
-- xls
 
 ## Coding
 

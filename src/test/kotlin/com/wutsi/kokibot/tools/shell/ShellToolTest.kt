@@ -75,30 +75,30 @@ class ShellToolTest {
     @Test
     fun `exec - forbidden sudo`() {
         val result = tool.exec(mapOf("command" to "sudo ls -la"))
-        assertEquals(ShellTool.ERROR_FORBIDDEN, result)
+        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
     }
 
     @Test
     fun `exec - forbidden rm`() {
         val result = tool.exec(mapOf("command" to "rm -rf /tmp/test.txt"))
-        assertEquals(ShellTool.ERROR_FORBIDDEN, result)
+        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
     }
 
     @Test
     fun `exec - forbidden chmod`() {
         val result = tool.exec(mapOf("command" to "chmod +x /tmp/test.txt"))
-        assertEquals(ShellTool.ERROR_FORBIDDEN, result)
+        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
     }
 
     @Test
     fun `exec - forbidden chmown`() {
         val result = tool.exec(mapOf("command" to "chown foo:bar /tmp/test.txt"))
-        assertEquals(ShellTool.ERROR_FORBIDDEN, result)
+        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
     }
 
     @Test
     fun `exec - forbidden to etc`() {
         val result = tool.exec(mapOf("command" to "ls -la > /etc/test.txt"))
-        assertEquals(ShellTool.ERROR_FORBIDDEN, result)
+        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
     }
 }

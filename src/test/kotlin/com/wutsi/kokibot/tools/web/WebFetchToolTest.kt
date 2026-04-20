@@ -1,15 +1,29 @@
 package com.wutsi.kokibot.tools.web
 
+import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.mock
+import java.io.File
 import kotlin.test.assertEquals
 
 class WebFetchToolTest {
     val tool = WebFetchTool()
+    val context = Context(
+        home = File("target/test-data/web-fetch-tool"),
+        llm = mock(),
+    )
+
+    @BeforeEach
+    fun setUp() {
+        tool.init(mapOf("foo" to "bar"), context)
+        context.fileService.init(mapOf("foo" to "bar"), context)
+    }
 
     @Test
     fun metadata() {
@@ -48,7 +62,8 @@ class WebFetchToolTest {
     fun `exec PDF`() {
         val args = mapOf("url" to "https://www.amicaall.org/publications/profiles/Profil_municipal%20Soa_finalise.pdf")
         val result = tool.exec(args)
-        assertTrue(result.contains("La prise en charge des personnes infectées est limitée au counselling"))
+        println(result)
+        assertTrue(result.contains("Collège d’enseignement secondaire"))
     }
 
     @Test
@@ -103,13 +118,10 @@ class WebFetchToolTest {
     }
 
     @Test
-    fun `exec - Binary`() {
+    fun `exec - Zip`() {
         val args = mapOf("url" to "https://github.com/wutsi/kokibot/releases/download/v0.0.14/kokibot.zip")
         val result = tool.exec(args)
-        assertEquals(
-            "Cannot extract the content from https://github.com/wutsi/kokibot/releases/download/v0.0.14/kokibot.zip. Error= application/octet-stream",
-            result
-        )
+        assertTrue(result.contains("File: kokibot/HEARTBEAT.md"))
     }
 
     @Test

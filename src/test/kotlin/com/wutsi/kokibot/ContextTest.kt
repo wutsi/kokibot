@@ -29,6 +29,7 @@ class ContextTest {
         commandRegistry = mock(),
         skillRegistry = mock(),
         memory = mock(),
+        fileService = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
@@ -58,6 +59,7 @@ class ContextTest {
         doReturn(Health(id = "-", up = true)).whenever(context.llm).health()
         doReturn(Health(id = "-", up = true)).whenever(context.chatHistory).health()
         doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
     }
 
     @Test
@@ -71,6 +73,7 @@ class ContextTest {
         verify(context.llm).destroy()
         verify(context.memory).destroy()
         verify(context.chatHistory).destroy()
+        verify(context.fileService).destroy()
         verify(channel).destroy()
     }
 
@@ -85,6 +88,7 @@ class ContextTest {
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
         verify(context.channelRegistry).init(config, context, assistant)
+        verify(context.fileService).init(emptyMap<String, Any>(), context)
     }
 
     @Test
@@ -113,7 +117,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(4, health.children.size)
+        assertEquals(5, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

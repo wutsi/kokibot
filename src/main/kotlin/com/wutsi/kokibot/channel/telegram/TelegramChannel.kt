@@ -24,11 +24,10 @@ import org.telegram.telegrambots.meta.api.methods.ActionType
 import org.telegram.telegrambots.meta.api.methods.ParseMode
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.objects.Document
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
-import java.time.LocalDate
-import java.util.UUID
 
 class TelegramChannel(
     assistant: Assistant,
@@ -125,7 +124,7 @@ class TelegramChannel(
                         )
                     )
                 } else if (update.message.hasDocument()) {
-                    val file = download(update.message.document.fileId)
+                    val file = download(update.message.document)
                     assistant.process(
                         Message(
                             text = "File received: ${update.message.document.fileName}. Do not process this document, just return the message `File received`",
@@ -190,8 +189,8 @@ class TelegramChannel(
         client.execute(sendMessage)
     }
 
-    private fun download(fileId: String): File {
-        val fileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=$fileId"
+    private fun download(doc: Document): File {
+        val fileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=${doc.fileId}"
         val response = rest.getForEntity(fileUrl, Map::class.java).body!!
         val path = MapUtil.toMap("result", response)?.get("file_path")?.toString()
             ?: throw IllegalStateException("file_path not found")
@@ -200,10 +199,6 @@ class TelegramChannel(
         val contentUrl = "https://api.telegram.org/file/bot$botToken$xpath"
         val content = rest.getForEntity(contentUrl, ByteArray::class.java).body!!
 
-        val now = LocalDate.now()
-        val file = File(context.home.absolutePath + "/workspace/telegram/files/$now/${UUID.randomUUID()}/$path")
-        file.parentFile.mkdirs()
-        file.writeBytes(content)
-        return file
+        return context.fileService.create(doc.fileName, content)
     }
 }

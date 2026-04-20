@@ -59,6 +59,9 @@ class WebSearchTool : Tool {
                 sb.append("  - Snippet: ").append(snippet).append("\n\n")
             }
         }
-        return sb.toString()
+
+        return "BEGIN WEB SEARCH RESULT - query=$query\n\n" +
+            sb.toString() +
+            "\n\nEND WEB SEARCH RESULT"
     }
 }

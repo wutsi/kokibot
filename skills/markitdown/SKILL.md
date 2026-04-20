@@ -1,41 +1,30 @@
 ---
 name: markitdown
-description: |
-    Convert files and office documents to Markdown.
-    Supports PDF, DOCX, PPTX, XLSX, images (with OCR), audio (with transcription), HTML, CSV, JSON, XML, ZIP, YouTube URLs, EPubs and more.
+description: OpenClaw agent skill for converting documents to Markdown. Documentation and utilities for Microsoft's MarkItDown library. Supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML, YouTube.
 requires:
-    bin:
-        - markitdown
+    bins:
         - python3
-metadata:
-    github: https://github.com/microsoft/markitdown
+        - markitdown
 ---
 
-# Skill: MarkItDown
+# MarkItDown
 
-MarkItDown is a Python tool developed by Microsoft for converting various file formats to Markdown. It's particularly
-useful for converting documents into LLM-friendly text format, as Markdown is token-efficient and well-understood by
-modern language models.
+Documentation and utilities for converting documents to Markdown using
+Microsoft's [MarkItDown](https://github.com/microsoft/markitdown) library.
 
-## Key Benefits
-
-- Convert documents to clean, structured Markdown
-- Token-efficient format for LLM processing
-- Supports 15+ file formats
-- Optional AI-enhanced image descriptions
-- OCR for images and scanned documents
-- Speech transcription for audio files
+> **Note:** This skill provides documentation and a batch script. The actual conversion is done by the `markitdown`
+> CLI/library installed via pip.
 
 ## When to Use
 
 **Use markitdown for:**
 
-- Fetching documentation (README, API docs)
-- Converting web pages to markdown
-- Document analysis (PDFs, Word, PowerPoint)
-- YouTube transcripts
-- Image text extraction (OCR)
-- Audio transcription
+- 📄 Fetching documentation (README, API docs)
+- 🌐 Converting web pages to markdown
+- 📝 Document analysis (PDFs, Word, PowerPoint)
+- 🎬 YouTube transcripts
+- 🖼️ Image text extraction (OCR)
+- 🎤 Audio transcription
 
 ## Quick Start
 
@@ -49,33 +38,16 @@ markitdown https://example.com/docs -o docs.md
 
 ## Supported Formats
 
-- PDF
-- DOCX
-- PPTX
-- XLSX
-- HTML
-- CSV
-- Audio (MP3, WAV, etc.)
-- Images (with OCR)
-- YouTube URLs
-- EPubs
-- ZIP archives (extract and convert contents)
-- JSON
-- XML
-
-## Installation
-
-The skill requires Microsoft's `markitdown` CLI:
-
-```bash
-pip install 'markitdown[all]'
-```
-
-Or install specific formats only:
-
-```bash
-pip install 'markitdown[pdf,docx,pptx]'
-```
+| Format       | Features                   |
+|--------------|----------------------------|
+| PDF          | Text extraction, structure |
+| Word (.docx) | Headings, lists, tables    |
+| PowerPoint   | Slides, text               |
+| Excel        | Tables, sheets             |
+| Images       | OCR + EXIF metadata        |
+| Audio        | Speech transcription       |
+| HTML         | Structure preservation     |
+| YouTube      | Video transcription        |
 
 ## Common Patterns
 
@@ -91,6 +63,18 @@ markitdown https://github.com/user/repo/blob/main/README.md -o readme.md
 markitdown document.pdf -o document.md
 ```
 
+### Batch Convert
+
+```bash
+# Using included script
+python scripts/batch_convert.py docs/*.pdf -o markdown/ -v
+
+# Or shell loop
+for file in docs/*.pdf; do
+  markitdown "$file" -o "${file%.pdf}.md"
+done
+```
+
 ## Python API
 
 ```python
@@ -101,20 +85,16 @@ result = md.convert("document.pdf")
 print(result.text_content)
 ```
 
-## Troubleshooting
+## What This Skill Provides
 
-### "markitdown not found"
+| Component                  | Source                  |
+|----------------------------|-------------------------|
+| `markitdown` CLI           | Microsoft's pip package |
+| `markitdown` Python API    | Microsoft's pip package |
+| `scripts/batch_convert.py` | This skill (utility)    |
+| Documentation              | This skill              |
 
-```bash
-pip install 'markitdown[all]'
-```
+## See Also
 
-### OCR Not Working
-
-```bash
-# Ubuntu/Debian
-sudo apt-get install tesseract-ocr
-
-# macOS
-brew install tesseract
-```
+- [USAGE-GUIDE.md](USAGE-GUIDE.md) - Detailed examples
+- [reference.md](reference.md) - Full API reference

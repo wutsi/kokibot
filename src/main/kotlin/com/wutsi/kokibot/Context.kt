@@ -6,6 +6,7 @@ import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillParser
@@ -22,11 +23,12 @@ class Context(
 
     val config: Map<*, *> = emptyMap<String, String>(),
     val toolRegistry: ToolRegistry = ToolRegistry(),
-    val chatHistory: ChatHistory = ChatHistory(),
     val skillRegistry: SkillRegistry = SkillRegistry(SkillParser()),
     val commandRegistry: CommandRegistry = CommandRegistry(),
     val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
     val memory: Memory = Memory(),
+    val chatHistory: ChatHistory = ChatHistory(),
+    val fileService: FileService = FileService(),
     val jsonMapper: JsonMapper = JsonMapper(),
 ) {
     companion object {
@@ -46,6 +48,7 @@ class Context(
         initLLM(config)
         initMemory(config)
         initCommands()
+        initFileService()
     }
 
     fun health(): Health {
@@ -62,7 +65,7 @@ class Context(
             skillRegistry.all() +
             toolRegistry.all() +
             channelRegistry.all() +
-            listOf(llm, chatHistory, memory)
+            listOf(llm, chatHistory, memory, fileService)
     }
 
     private fun initChannels(config: Map<*, *>, assistant: Assistant) {
@@ -98,5 +101,9 @@ class Context(
 
     private fun initSkills() {
         skillRegistry.init(this)
+    }
+
+    private fun initFileService() {
+        fileService.init(emptyMap<String, Any>(), this)
     }
 }

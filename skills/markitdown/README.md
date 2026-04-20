@@ -2,21 +2,61 @@
 
 Convert files and office documents to Markdown.
 
-[![](https://github.com/microsoft/markitdown)](https://github.com/jgm/pandoc)
-[![](https://img.shields.io/badge/python-green.svg?logo=python)](https://nodejs.org/)
+[![](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/microsoft/markitdown)
+[![](https://img.shields.io/badge/python-green.svg?logo=python)](https://www.python.org/)
+
+## What This Skill Is
+
+This skill provides:
+
+- ✅ Documentation for using MarkItDown
+- ✅ A batch conversion script (`scripts/batch_convert.py`)
+- ✅ Usage examples and API reference
+
+The actual document conversion is done by Microsoft's `markitdown` CLI, installed separately via pip.
 
 ## Setup
 
-In order to use this skill, you need to have `pandoc` installed, and `tectonic` installed for PDF conversions.
+Convert files and office documents to Markdown.
+Supports PDF, DOCX, PPTX, XLSX, images (with OCR), audio (with transcription), HTML, CSV, JSON, XML, ZIP, YouTube URLs,
+EPubs and more.
 
 ### Install Pandoc
 
 ``` bash
 # Install with all features
-pip3 install 'markitdown[all]'
-
-# Or from source
-git clone https://github.com/microsoft/markitdown.git
-cd markitdown
-pip install -e 'packages/markitdown[all]'
+pipx install 'markitdown[all]'
 ```
+
+## Quick Start
+
+```bash
+# Convert PDF
+markitdown document.pdf -o output.md
+
+# Fetch web docs
+markitdown https://example.com/docs -o docs.md
+
+# Batch convert
+python ~/.openclaw/skills/markitdown/scripts/batch_convert.py docs/*.pdf -o markdown/
+```
+
+## Supported Formats
+
+| Format       | Features                |
+|--------------|-------------------------|
+| PDF          | Text extraction         |
+| Word (.docx) | Headings, lists, tables |
+| PowerPoint   | Slides, text            |
+| Excel        | Tables, sheets          |
+| Images       | OCR + metadata          |
+| Audio        | Speech transcription    |
+| HTML         | Structure preservation  |
+| YouTube      | Video transcription     |
+
+## Documentation
+
+- [SKILL.md](SKILL.md) - Main documentation
+- [USAGE-GUIDE.md](USAGE-GUIDE.md) - Detailed examples
+- [reference.md](reference.md) - Full API reference
+- [POST_INSTALL.md](POST_INSTALL.md) - Setup guide

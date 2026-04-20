@@ -111,8 +111,8 @@ class AssistantTest {
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
         assertEquals(
-            "You are a system agent designed to assist users with various tasks.\n",
-            req.firstValue.systemInstructions
+            true,
+            req.firstValue.systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
         )
 
         verify(chatHistory).append(prompt, result)
@@ -158,7 +158,10 @@ class AssistantTest {
         val req = argumentCaptor<LLMRequest>()
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
-        assertEquals(null, req.firstValue.systemInstructions)
+        assertEquals(
+            false,
+            req.firstValue.systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
+        )
 
         verify(chatHistory).append(prompt, result)
     }

@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.tools.web
 
+import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.UnsupportedMimeTypeException
 import com.wutsi.kokibot.service.file.MarkdownConverter
 import com.wutsi.kokibot.tools.Tool
@@ -13,9 +14,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
 
-class WebFetchTool(
-    private val converter: MarkdownConverter = MarkdownConverter(),
-) : Tool {
+class WebFetchTool : Tool {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebFetchTool::class.java)
 
@@ -23,6 +22,13 @@ class WebFetchTool(
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
         const val NAME = "web_fetch"
         const val DEFAULT_MAX_LENGTH = 100_000
+    }
+
+    private lateinit var context: Context
+
+    override fun init(config: Map<*, *>, context: Context) {
+        super.init(config, context)
+        this.context = context
     }
 
     override fun metadata(): ToolMetadata = ToolMetadata(
@@ -54,7 +60,10 @@ class WebFetchTool(
         val maxLength = MapUtil.toInt("max_length", arguments)
 
         try {
-            return fetch(url, maxLength ?: DEFAULT_MAX_LENGTH)
+            val content = fetch(url, maxLength ?: DEFAULT_MAX_LENGTH)
+            return "BEGIN URL CONTENT - $url\n\n" +
+                content +
+                "\n\nEND URL CONTENT"
         } catch (ex: UnsupportedMimeTypeException) {
             LOGGER.warn("Cannot extract the content from : {}", url, ex)
             return "Cannot extract the content from $url. Error= ${ex.message}"
@@ -82,6 +91,7 @@ class WebFetchTool(
             val file = download(url, response, contentType)
 
             // Extract text
+            val converter = MarkdownConverter(fileService = context.fileService)
             return converter.convert(file, contentType).take(maxLength)
         }
     }
@@ -100,7 +110,7 @@ class WebFetchTool(
             else -> "bin" // Default fallback
         }
 
-        val file = File.createTempFile("web_fetch_", ".$extension")
+        val file = context.fileService.createTempFile("web_fetch_", ".$extension")
         response.body.byteStream().use { input ->
             FileOutputStream(file).use { output ->
                 input.copyTo(output)

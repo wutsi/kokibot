@@ -47,7 +47,8 @@ class TelegramChannelTest {
     private val config = mapOf("token" to botToken)
     private val context = Context(
         home = File("target/test-data/telegram"),
-        llm = mock()
+        llm = mock(),
+        fileService = mock(),
     )
     private val telegram = TelegramChannel(assistant, factory, restBuilder)
 
@@ -183,7 +184,7 @@ class TelegramChannelTest {
         // GIVEN
         doReturn(Message("Received")).whenever(assistant).process(any())
 
-        val update = createDocumentUpdate(123L, fileId = "21093209")
+        val update = createDocumentUpdate(123L, fileId = "21093209", "foo.pdf")
         doReturn(ResponseEntity(mapOf("result" to mapOf("file_path" to "/files/1.pdf")), HttpStatus.OK))
             .whenever(rest)
             .getForEntity(any<String>(), eq(Map::class.java))
@@ -191,6 +192,9 @@ class TelegramChannelTest {
         doReturn(ResponseEntity("Hello world".toByteArray(), HttpStatus.OK))
             .whenever(rest)
             .getForEntity(any<String>(), eq(ByteArray::class.java))
+
+        val file = File("/target/test-data/telegram/files/1.pdf")
+        doReturn(file).whenever(context.fileService).create(any(), any<ByteArray>())
 
         // WHEN
         telegram.init(config, context)
@@ -205,10 +209,9 @@ class TelegramChannelTest {
         assertNotNull(prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals(1, prompt.firstValue.filePaths.size)
+        assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
 
-        val file = File(prompt.firstValue.filePaths[0])
-        assertTrue(file.exists())
-        assertEquals("Hello world", file.readText())
+        verify(context.fileService).create("foo.pdf", "Hello world".toByteArray())
     }
 
     @Test
@@ -332,7 +335,7 @@ class TelegramChannelTest {
         assertEquals(0, result.children.size)
     }
 
-    private fun createDocumentUpdate(chatId: Long, fileId: String): Update {
+    private fun createDocumentUpdate(chatId: Long, fileId: String, fileName: String): Update {
         val chat = Chat(chatId, "")
         chat.userName = "ray.sponsible"
         chat.firstName = "Ray"
@@ -340,6 +343,7 @@ class TelegramChannelTest {
 
         val document = Document()
         document.fileId = fileId
+        document.fileName = fileName
 
         val update = Update()
         val message = org.telegram.telegrambots.meta.api.objects.message.Message()

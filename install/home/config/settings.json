@@ -1,6 +1,7 @@
 {
   "assistant": {
-    "max-iterations": 30
+    "max-iterations": 30,
+    "access-workspace-only": true
   },
   "heartbeat": {
     "frequency": "3h"

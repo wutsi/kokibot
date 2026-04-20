@@ -48,7 +48,7 @@ class ShellTool : Tool {
         val directory = arguments["directory"]?.toString()?.ifEmpty { null }
 
         try {
-            return exec(command, directory)
+            return "Running command: $command\n" + exec(command, directory)
         } catch (ex: Throwable) {
             LOGGER.warn("Command failed: $command", ex)
             return "Command failed. ${ex.message}"

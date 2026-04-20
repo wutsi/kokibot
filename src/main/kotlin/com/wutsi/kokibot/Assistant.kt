@@ -22,11 +22,20 @@ class Assistant {
     }
 
     private var maxIterations: Int = MAX_ITERATIONS
+    private var accessWorkspaceOnly: Boolean = true
     private lateinit var context: Context
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: MAX_ITERATIONS
+        accessWorkspaceOnly = MapUtil.toBoolean("access-workspace-only", config) ?: true
         this.context = context
+
+        // Create temporary directory if it does not exist
+        val tmp = File("${context.home.absolutePath}/workspace/tmp")
+        if (!tmp.exists()) {
+            LOGGER.info("Creating temporary directory: $tmp")
+            tmp.mkdirs()
+        }
     }
 
     fun destroy() {
@@ -223,13 +232,25 @@ class Assistant {
     }
 
     private fun buildSystemInstructions(): String? {
+        val identity = loadIdentify()
+        val skills = describeSkills()
+        val security = buildSecurityInstructions()
+
+        return listOfNotNull(identity, skills, security)
+            .joinToString("\n\n")
+            .ifEmpty { null }
+    }
+
+    private fun loadIdentify(): String? {
         val file = File(context.home, "ASSISTANT.md")
-        val base = if (file.exists()) {
+        return if (file.exists()) {
             file.readText()
         } else {
             ""
         }
+    }
 
+    private fun describeSkills(): String? {
         val skills = context.skillRegistry
             .all()
             .filter { skill -> skill.health().up }
@@ -238,11 +259,31 @@ class Assistant {
                     "- `${skill.metadata.name}`: ${skill.metadata.description}",
                 ).joinToString("\n")
             }
+            .ifEmpty { null }
 
-        if (skills.isNotEmpty()) {
-            return base + "\n# Available skills\n" + skills.joinToString("\n\n")
+        return skills?.let { "\n# Available skills\n$skills" }
+    }
+
+    private fun buildSecurityInstructions(): String {
+        val workspace = if (accessWorkspaceOnly) {
+            """
+                For security reasons, you can only access files and execute commands within the workspace directory.
+                The workspace directory is located at `${context.home}/workspace`.
+                NEVER attempt to use ../ to escape this directory
+            """.trimIndent()
         } else {
-            return base.ifEmpty { null }
+            """
+                You have access to the entire file system and can execute any command.
+            """.trimIndent()
         }
+
+        return """
+            # Security instructions
+            $workspace
+
+            Use `${context.home}/workspace/tmp/<UUID>` as a temporary directory if you need to create temporary files,
+            where <UUID> is a unique identifier generated using the `uuidgen` command.
+            Example: `${context.home}/workspace/tmp/70030408-7347-4853-B672-23C3D242E4FB/foo.pdf`
+            """.trimIndent()
     }
 }

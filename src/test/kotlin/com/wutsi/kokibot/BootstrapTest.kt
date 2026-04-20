@@ -15,10 +15,12 @@ class BootstrapTest {
     private val env = mock<Environment>()
     private val bootstrap = Bootstrap(contextFactory, env)
 
+    private val home = File("target/test-data/bootstrap")
     private val context = mock<Context>()
 
     @BeforeEach
     fun setup() {
+        doReturn(home).whenever(context).home
         doReturn(Health(id = "-")).whenever(context).health()
         doReturn(context).whenever(contextFactory).create(any(), any())
         doReturn(arrayOf("local")).whenever(env).activeProfiles

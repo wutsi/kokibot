@@ -5,9 +5,7 @@ Convert files and office documents to Markdown.
 [![](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/microsoft/markitdown)
 [![](https://img.shields.io/badge/python-green.svg?logo=python)](https://www.python.org/)
 
-## What This Skill Is
-
-This skill provides:
+## What This Skill Provides
 
 - ✅ Documentation for using MarkItDown
 - ✅ A batch conversion script (`scripts/batch_convert.py`)

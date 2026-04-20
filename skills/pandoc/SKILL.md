@@ -85,7 +85,7 @@ Pandoc can write to **76+ formats**:
 The fundamental structure of a `pandoc` command is:
 
 ```bash
-pandoc [options] [input-file]…
+pandoc [options] [input-file]
 ```
 
 ### Simple Conversion

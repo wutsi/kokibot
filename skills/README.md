@@ -4,15 +4,12 @@ This directory contains the code for the skills of the bot.
 
 # Skill List
 
-## Web
-
-## Personal Information Management
-
 ## PIM (Personal Information Management)
 
 - [himalaya](himalaya): Command-line email client for managing emails from various providers (Gmail, Outlook, etc.)
   without opening a web browser.
-- vdirsyncer: See https://github.com/pimutils/vdirsyncer
+- [vdirsyncer](vdirsyncer): Command-line tool for synchronizing calendars and address books between a variety of servers
+  and the local filesystem.
 - Khal: See https://github.com/pimutils/khal
 - Khard: See https://github.com/lucc/khard
 - todoman: See https://github.com/pimutils/todoman

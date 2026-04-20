@@ -22,13 +22,25 @@ check_java() {
 }
 
 installing_dependencies(){
+    # pipx
+    if ! command -v pipx >/dev/null 2>&1; then
+        echo "Installing pipx..."
+        brew install pipx
+        pipx ensurepath
+    fi
+
     # pandoc
     if ! command -v pandoc >/dev/null 2>&1; then
         echo "Installing pandoc..."
         brew install pandoc
     fi
-}
 
+    # markitdown
+    if ! command -v pandoc >/dev/null 2>&1; then
+        echo "Installing markitdown..."
+        pipx install pandoc
+    fi
+}
 
 install_files() {
     # Create temporary directory for download and extraction

@@ -34,7 +34,64 @@ and multi-channel communication.
 
 ## Quick Start
 
-### Step 1: Install Kokibot (macOS & Linux)
+### Step 0: Prerequisites
+
+#### brew
+
+Kokibot uses Homebrew to manage dependencies and installation on macOS and Linux.
+To install Homebrew, run the following command in your terminal:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+#### Java
+
+Kokibot is built with Java, so you need to have it installed to run the service.
+You can install Java using Homebrew:
+
+```bash
+brew install openjdk
+```
+
+**NOTE:** Kokibot requires Java 17 or higher.
+
+#### Python
+
+Some tools and integrations may require Python.
+You can install Python using Homebrew:
+
+```bash
+brew install python
+```
+
+##### pipx
+
+Kokibot uses `pipx` to manage Python dependencies for tools.
+You can install `pipx` using Homebrew:
+
+```bash
+brew install pipx
+pipx ensurepath
+```
+
+After installing `pipx`, you may need to restart your terminal or run `source ~/.bashrc` (or `source ~/.zshrc` or or
+`source ~/.zprofile`) to update your PATH.
+
+### Step 1: Set Environment Variables
+
+Setup the following environment variables:
+
+```bash
+export KOKIBOT_LLM_TYPE="your-llm-api-key"        // Type of LLM: deepseek, kimi, gemini
+export KOKIBOT_LLM_API_KEY="your-llm-api-key"     // LLM API Key
+export KOKIBOT_LLM_MODEL="your-llm-model"         // LLM Model
+
+export KOKIBOT_CHANNEL_TYPE="your-channel-type"   // Type of channel: telegram
+export KOKIBOT_TOKEN="your-channel-token"         // Channel token: e.g., Telegram Bot Token
+```
+
+### Step 2: Install Kokibot (macOS & Linux)
 
 Run the following command in your terminal:
 
@@ -42,49 +99,13 @@ Run the following command in your terminal:
 curl -fsSL https://github.com/wutsi/kokibot/releases/latest/download/install.sh | bash
 ```
 
-This will automatically download and install Kokibot as a background service using the appropriate method for your
-platform (`launchd` for macOS, `systemd` for Linux).
+This will automatically
 
-### Step 2: Set Environment Variables
-
-When you install kokibot the first time, it runs with a default configuration that does not have any LLM or channel
-configured.
-So you need to set environment variables to configure the LLM and channel you want to use and restart the service.
-
-#### Step 2.1: Configure the LLM
-
-You must setup environment variables to enable the _brain_ of your AI assistant.
-
-```bash
-export KOKIBOT_LLM_TYPE="your-llm-api-key"      // Type of LLM: deepseek, kimi, gemini
-export KOKIBOT_LLM_API_KEY="your-llm-api-key"   // LLM API Key
-export KOKIBOT_LLM_MODEL="your-llm-model"       // LLM Model
-```
-
-#### Step 2.2: Configure the Channel
-
-You must setup environment variables so that you can interact with your AI assistant.
-
-```bash
-export KOKIBOT_CHANNEL_TYPE="your-channel-type"   // Type of channel: telegram
-export KOKIBOT_TOKEN="your-channel-token"         // Channel token: e.g., Telegram Bot Token
-```
-
-### Step 3 Relaunch KokiBot
-
-#### iOS
-
-```bash
-launchctl unload ~/Library/LaunchAgents/com.kokibot.service.plist
-launchctl load ~/Library/LaunchAgents/com.kokibot.service.plist
-```
-
-#### Linux
-
-```bash
-systemctl --user stop kokibot.service
-systemctl --user start kokibot.service
-```
+- Download the installation files
+- Install kokibot
+    - The binaries will be installed to `~/Application/kokikob`
+    - The configuration, logs and data will be stored in `~/.kokibot`
+- Run it a background service  (with `launchd` for macOS, `systemd` for Linux).
 
 ---
 

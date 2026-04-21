@@ -27,6 +27,11 @@ check_python() {
         echo "Error: Python is not installed. Please install Python manually (Python 3)"
         exit 1
     fi
+
+    if ! command -v pipx >/dev/null 2>&1; then
+        echo "Error: pipx is not installed. Please install pipx manually"
+        exit 1
+    fi
 }
 
 installing_dependencies(){
@@ -51,17 +56,6 @@ installing_dependencies(){
             exit 1
         fi
     fi
-
-    # pipx
-    if ! command -v pipx >/dev/null 2>&1; then
-        echo "Installing pipx..."
-        brew install pipx
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install pipx with brew."
-            exit 1
-        fi
-    fi
-    pipx ensurepath
 
     # markitdown
     if ! command -v markitdown >/dev/null 2>&1; then

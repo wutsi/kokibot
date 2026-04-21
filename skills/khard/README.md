@@ -20,8 +20,8 @@ brew install khard
 #### Step1: Create configuration file
 
 ```markdown
-mkdir -p `~/.config/khard/`
-touch `~/.config/khard/khard.conf`
+mkdir -p ~/.config/khard/
+touch ~/.config/khard/khard.conf
 ```
 
 #### Step2: Edit configuration

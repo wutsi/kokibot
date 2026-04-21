@@ -31,6 +31,7 @@ check_python() {
 
 installing_dependencies(){
     echo "INSTALLING DEPENDENCIES"
+
     # pandoc
     if ! command -v pandoc >/dev/null 2>&1; then
         echo "Installing pandoc..."
@@ -58,12 +59,32 @@ installing_dependencies(){
         pipx install markitdown
     fi
 
+    # vdirsyncer
+    if ! command -v vdirsyncer >/dev/null 2>&1; then
+        echo "Installing vdirsyncer..."
+        brew install himalaya
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install vdirsyncer with brew."
+            exit 1
+        fi
+    fi
+
     # khard
     if ! command -v khard >/dev/null 2>&1; then
         echo "Installing khard..."
         brew install khard
         if [ $? -ne 0 ]; then
             echo "Error: Failed to install khard with brew."
+            exit 1
+        fi
+    fi
+
+    # himalaya
+    if ! command -v khard >/dev/null 2>&1; then
+        echo "Installing himalaya..."
+        brew install himalaya
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install himalaya with brew."
             exit 1
         fi
     fi

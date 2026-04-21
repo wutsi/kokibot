@@ -42,6 +42,16 @@ installing_dependencies(){
         fi
     fi
 
+    # pandoc
+    if ! command -v tectonic >/dev/null 2>&1; then
+        echo "Installing tectonic..."
+        brew install tectonic
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install tectonic with brew."
+            exit 1
+        fi
+    fi
+
     # pipx
     if ! command -v pipx >/dev/null 2>&1; then
         echo "Installing pipx..."
@@ -50,13 +60,17 @@ installing_dependencies(){
             echo "Error: Failed to install pipx with brew."
             exit 1
         fi
-        pipx ensurepath
     fi
+    pipx ensurepath
 
     # markitdown
     if ! command -v markitdown >/dev/null 2>&1; then
         echo "Installing markitdown..."
         pipx install markitdown
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install markitdown with pipx."
+            exit 1
+        fi
     fi
 
     # vdirsyncer
@@ -162,16 +176,27 @@ EOF
     <string>com.kokibot.service</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/zsh</string>
-        <string>-c</string>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>-m</string>
         <string>$BIN_DIR/start_service.sh</string>
     </array>
+
     <key>RunAtLoad</key>
     <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
     <key>WorkingDirectory</key>
     <string>$BIN_DIR</string>
+
     <key>StandardOutPath</key>
     <string>$HOME/.kokibot/logs/kokibot.log</string>
+
     <key>StandardErrorPath</key>
     <string>$HOME/.kokibot/logs/kokibot.err</string>
 </dict>

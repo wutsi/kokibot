@@ -42,6 +42,7 @@ class Assistant {
     }
 
     fun process(prompt: Message): Message {
+        val now = System.currentTimeMillis()
         val response = try {
             doProcess(prompt)
         } catch (e: TooManyIterationException) {
@@ -52,7 +53,8 @@ class Assistant {
             Message(FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
         }
 
-        LOGGER.debug("answer: ${response.text}")
+        val elapsedTime = (System.currentTimeMillis() - now) / 1000
+        LOGGER.info("ANSWER prompt_id=${prompt.id}\n ellapsed_time=${elapsedTime}s: ${response.text}")
         if (response.role != Role.COMMAND) {
             context.chatHistory.append(prompt, response)
         }
@@ -70,7 +72,6 @@ class Assistant {
                 throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
             }
 
-            LOGGER.debug("-- ITERATION: $iteration --------------------------------------------------------------")
             val command = getCommand(prompt)
             if (command != null) {
                 val result = exec(prompt, command)
@@ -80,7 +81,7 @@ class Assistant {
                     finishReason = FinishReason.DONE,
                 )
             } else {
-                val response = ask(prompt, memory, tools)
+                val response = ask(iteration, prompt, memory)
                 if (decide(prompt, response, memory, tools)) {
                     return Message(
                         text = response.choices.first().content,
@@ -92,11 +93,12 @@ class Assistant {
         }
     }
 
-    private fun ask(query: Message, memory: MutableList<String>, tools: MutableMap<String, Tool>): LLMResponse {
-        LOGGER.debug("LLM chat: ${query.text}")
+    private fun ask(iteration: Int, prompt: Message, memory: MutableList<String>): LLMResponse {
+        LOGGER.debug("\n\n--- Iteration $iteration -------------------")
+        LOGGER.info("$iteration - PROMPT: prompt_id=${prompt.id}  user=${prompt.userId}@${prompt.channelId}\n${prompt.text}")
 
         val tools = context.toolRegistry.all()
-        val prompt = buildPrompt(query, memory)
+        val prompt = buildPrompt(prompt, memory)
         val systemInstructions = buildSystemInstructions()
         return context.llm.completion(
             request = LLMRequest(prompt, systemInstructions),
@@ -113,7 +115,6 @@ class Assistant {
         // Tool calls
         val choiceCalls = response.choices.filter { choice -> choice.toolCalls.isNotEmpty() }
         if (choiceCalls.isNotEmpty()) {
-            LOGGER.debug("FUNCTION CALLS")
             choiceCalls.forEach { choice -> exec(choice, memory, tools, query) }
             return false
         } else {
@@ -122,8 +123,6 @@ class Assistant {
     }
 
     private fun exec(choice: LLMResponseChoice, memory: MutableList<String>, tools: Map<String, Tool>, query: Message) {
-        LOGGER.debug(choice.content)
-
         choice.toolCalls.forEach { call ->
             exec(choice.content, call, memory, tools, query)
         }
@@ -136,7 +135,9 @@ class Assistant {
         tools: Map<String, Tool>,
         query: Message
     ) {
-        LOGGER.debug("Tool execution: name={} - arguments={}", call.name, call.arguments)
+        LOGGER.info(">>> $content")
+        LOGGER.info(">>> Tool execution: name=$${call.name}, arguments=${call.arguments}")
+
         reply(content, query)
         val tool = tools[call.name]
         if (tool == null) {
@@ -145,9 +146,14 @@ class Assistant {
         }
 
         val result = tool.exec(call.arguments)
+        if (result.length > 200) {
+            LOGGER.info(result.take(200) + "...")
+        } else {
+            LOGGER.info(result)
+        }
 
         memory.add(content)
-        memory.add("Calling the tool `${call.name}` returned the following result: $result")
+        memory.add("Calling the tool `${call.name}` returned the following result:\n$result")
     }
 
     private fun reply(content: String, query: Message) {
@@ -202,7 +208,7 @@ class Assistant {
             text.substring(name.length).trim()
         }
 
-        LOGGER.debug("Command execution: name={} - input={}", name, input)
+        LOGGER.info("Command execution: name={} - input={}", name, input)
         return command.exec(input, context)
     }
 

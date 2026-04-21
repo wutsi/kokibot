@@ -5,11 +5,12 @@ KOKIBOT_PORT=10807
 BIN_DIR="$HOME/Applications/kokibot"
 HOME_DIR="$HOME/.kokibot"
 TMP_DIR="$HOME/tmp/kokibot-installer/$(uuidgen)"
-PLIST="$HOME/Library/LaunchAgents/com.kokibot.service.plist"
+PLIST_DIR="$HOME/Library/LaunchAgents"
+PLIST="$PLIST_DIR/com.kokibot.service.plist"
 
 check_java() {
     if ! command -v java >/dev/null 2>&1; then
-        echo "Error: Java is not installed. Please install Java 17 or newer."
+        echo "Error: Java is not installed. Please install Java manually (Java 17 or newer)."
         exit 1
     fi
 
@@ -21,27 +22,56 @@ check_java() {
     fi
 }
 
+check_python() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "Error: Python is not installed. Please install Python manually (Python 3)"
+        exit 1
+    fi
+}
+
 installing_dependencies(){
+    echo "INSTALLING DEPENDENCIES"
     # pandoc
     if ! command -v pandoc >/dev/null 2>&1; then
         echo "Installing pandoc..."
         brew install pandoc
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install pandoc with brew."
+            exit 1
+        fi
+    fi
+
+    # pipx
+    if ! command -v pipx >/dev/null 2>&1; then
+        echo "Installing pipx..."
+        brew install pipx
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install pipx with brew."
+            exit 1
+        fi
+        pipx ensurepath
     fi
 
     # markitdown
-    if ! command -v pandoc >/dev/null 2>&1; then
+    if ! command -v markitdown >/dev/null 2>&1; then
         echo "Installing markitdown..."
-        pipx install pandoc
+        pipx install markitdown
     fi
 
     # khard
     if ! command -v khard >/dev/null 2>&1; then
         echo "Installing khard..."
-        pipx install khard
+        brew install khard
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install khard with brew."
+            exit 1
+        fi
     fi
 }
 
 install_files() {
+    echo "INSTALLING FILES"
+
     # Create temporary directory for download and extraction
     mkdir -p "$TMP_DIR"
     cd "$TMP_DIR" || exit 1
@@ -73,6 +103,7 @@ install_files() {
 }
 
 install_service() {
+    echo "INSTALLING SERVICE"
     JAVA_EXEC=$(which java)
 
     echo "Setting up kokibot service..."
@@ -97,6 +128,9 @@ EOF
 
         chmod +x "$BIN_DIR/start_service.sh"
 
+        if [ ! -d "$PLIST_DIR" ]; then
+          mkdir -p "$PLIST_DIR"
+        fi
         cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -167,6 +201,7 @@ cleanup() {
 
 main() {
     check_java
+    check_python
     install_files
     installing_dependencies
     install_service

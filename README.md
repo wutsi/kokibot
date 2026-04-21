@@ -75,7 +75,7 @@ export KOKIBOT_TOKEN="your-channel-token"         // Channel token: e.g., Telegr
 #### iOS
 
 ```bash
-aunchctl unload ~/Library/LaunchAgents/com.kokibot.service.plist
+launchctl unload ~/Library/LaunchAgents/com.kokibot.service.plist
 launchctl load ~/Library/LaunchAgents/com.kokibot.service.plist
 ```
 

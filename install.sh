@@ -62,7 +62,7 @@ installing_dependencies(){
     # vdirsyncer
     if ! command -v vdirsyncer >/dev/null 2>&1; then
         echo "Installing vdirsyncer..."
-        brew install himalaya
+        brew install vdirsyncer
         if [ $? -ne 0 ]; then
             echo "Error: Failed to install vdirsyncer with brew."
             exit 1
@@ -125,6 +125,7 @@ install_files() {
 
 install_service() {
     echo "INSTALLING SERVICE"
+
     JAVA_EXEC=$(which java)
 
     echo "Setting up kokibot service..."
@@ -221,13 +222,14 @@ cleanup() {
 }
 
 main() {
+    echo "Installing kokibot v$KOKIBOT_VERSION"
     check_java
     check_python
     install_files
     installing_dependencies
     install_service
     cleanup
-    echo "kokibot installed successfully."
+    echo "kokibot v$KOKIBOT_VERSION installed successfully."
 }
 
 main

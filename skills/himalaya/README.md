@@ -16,5 +16,11 @@ brew install himalaya
 
 ### Configuration
 
-Refer to this [link](https://github.com/pimalaya/himalaya#configuration) to configure your email accounts and set up
-authentication.`
+After the installation complete, run the following command and follow the instruction to configure you email accounts:
+
+```bash
+himalaya
+```
+
+Learn more about configuration of Himalaya in their
+official [documentation]((https://github.com/pimalaya/himalaya#configuration).

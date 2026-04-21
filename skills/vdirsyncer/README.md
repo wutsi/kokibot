@@ -32,8 +32,8 @@ brew install vdirsyncer
 #### Step1: Create configuration file
 
 ```markdown
-mkdir -p `~/.config/vdirsyncer/`
-touch `~/.config/vdirsyncer/config`
+mkdir -p ~/.config/vdirsyncer/
+touch ~/.config/vdirsyncer/config
 ```
 
 #### Step2: Edit configuration

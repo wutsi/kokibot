@@ -29,7 +29,7 @@ class Skill(
             "- Missing environment variables: ${envs.joinToString(", ")}"
         }
         val missingBin = missingBinaries().ifEmpty { null }?.let { bins ->
-            "- Missing binaries: ${bins.joinToString(", ")}. Refer to README.md for installation instructions."
+            "- Missing binaries: ${bins.joinToString(", ")}. Please install them and restart the bot."
         }
         val osMismatch = if (osMatches()) {
             null

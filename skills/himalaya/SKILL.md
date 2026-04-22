@@ -14,12 +14,16 @@ requires:
 Himalaya is a CLI email client that lets you manage emails from the terminal using IMAP, SMTP, Notmuch, or Sendmail
 backends.
 
+---
+
 ## References
 
 - `references/configuration.md` (config file setup + IMAP/SMTP authentication)
 - `references/message-composition.md` (MML syntax for composing emails)
 
-## Common Operations
+---
+
+## Usage Guide
 
 ### List Folders
 
@@ -147,7 +151,7 @@ Remove flag:
 himalaya flag remove 42 --flag seen
 ```
 
-## Multiple Accounts
+### Multiple Accounts
 
 List accounts:
 
@@ -161,7 +165,7 @@ Use a specific account:
 himalaya --account work envelope list
 ```
 
-## Attachments
+### Attachments
 
 Save attachments from a message:
 
@@ -175,7 +179,7 @@ Save to specific directory:
 himalaya attachment download 42 --dir ~/Downloads
 ```
 
-## Output Formats
+### Output Formats
 
 Most commands support `--output` for structured output:
 
@@ -184,7 +188,7 @@ himalaya envelope list --output json
 himalaya envelope list --output plain
 ```
 
-## Debugging
+### Debugging
 
 Enable debug logging:
 
@@ -198,10 +202,33 @@ Full trace with backtrace:
 RUST_LOG=trace RUST_BACKTRACE=1 himalaya envelope list
 ```
 
-## Tips
+### Tips
 
 - Use `himalaya --help` or `himalaya <command> --help` for detailed usage.
 - Message IDs are relative to the current folder; re-list after folder changes.
 - For composing rich emails with attachments, use MML syntax (see `references/message-composition.md`).
 - Store passwords securely using `pass`, system keyring, or a command that outputs the password.
 - To send, reply or forward emails, never use interactive mode in scripts; instead, use templates or MML for automation.
+
+---
+
+## Installation Guide
+
+#### Step1: Install
+
+``` bash
+brew install himalaya
+```
+
+#### Step2: Configura
+
+After the installation complete, run the following command and follow the instructions to configure you email accounts:
+
+```bash
+himalaya
+```
+
+**IMPORTANT:**
+
+- For more details about `himalaya` configuration, refer [here](https://github.com/pimalaya/himalaya#configuration)
+

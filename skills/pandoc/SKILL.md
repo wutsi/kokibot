@@ -13,6 +13,8 @@ requires:
 
 Pandoc is a universal document converter that can convert between a wide variety of markup and document formats.
 
+---
+
 ## Supported Input Formats
 
 Pandoc can read from **57 markup and document formats**:
@@ -41,6 +43,8 @@ Pandoc can read from **57 markup and document formats**:
 ### Other
 
 - Perl POD, custom Lua readers
+
+---
 
 ## Supported Output Formats
 
@@ -80,7 +84,9 @@ Pandoc can write to **76+ formats**:
 
 - Plain text, custom Lua writers
 
-## Basic Usage
+---
+
+## Usage Guide
 
 The fundamental structure of a `pandoc` command is:
 
@@ -113,6 +119,8 @@ flag.
 ```bash
 pandoc -s -o output.html input.md
 ```
+
+---
 
 ## Advanced Examples
 
@@ -179,3 +187,17 @@ pandoc --shift-heading-level-by=1 ...
 ```
 
 This enhanced documentation provides a more robust foundation for using `pandoc`.
+
+---
+
+## Installation Guide
+
+In order to use this skill, you need to have `pandoc` and `tectonic` installed.
+
+`tectonic` is used by Pandoc as PDF engine when converting to PDF. It provides a modern, self-contained LaTeX
+environment that simplifies PDF generation.
+
+``` bash
+brew install pandoc
+brew install tectonic
+```

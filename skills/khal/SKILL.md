@@ -15,7 +15,9 @@ This skill allows the agent to search, read, create, and modify events in the lo
 khal CLI utility.
 It is optimized for non-interactive execution.
 
-## Usages
+---
+
+## Usage Guide
 
 ### View Events
 
@@ -80,6 +82,8 @@ khal list --format "{uid} | {title} | {calendar}" today
 Placeholders: `{title}`, `{description}`, `{start}`, `{end}`, `{start-date}`, `{start-time}`, `{end-date}`,
 `{end-time}`, `{location}`, `{calendar}`, `{uid}`
 
+---
+
 ## Rules & Contraints
 
 - **Absolute Paths:** Never use `~` or `$HOME` in scripts.
@@ -89,3 +93,40 @@ Placeholders: `{title}`, `{description}`, `{start}`, `{end}`, `{start-date}`, `{
 - **Syncing:** Always run `vdirsyncer sync` after any modification to ensure changes propagate to iCloud/iPhone.
 - **Conflict Prevention:** Before editing, always run `vdirsyncer sync` to ensure the local file is the latest version
   from the server.
+
+---
+
+## Installation Guide
+
+### Installation
+
+```bash
+brew install khal
+```
+
+### Configuration
+
+#### Step1: Create configuration file
+
+```markdown
+mkdir -p ~/.config/khal/
+touch ~/.config/khal/khal.conf
+```
+
+#### Step2: Edit configuration
+
+The configuration will look like this:
+
+```
+[calendars]
+
+  [[home]]
+    path = ~/.local/share/calendar/events/home
+
+```
+
+**IMPORTANT:**
+
+- `path` configured in `~/.config/khal/khal.conf` should point to the local directory where `vdirsyncer` syncs your
+  events.
+- For more details about `khal` configuration, refer [here](https://khal.readthedocs.io/en/latest/configure.html)

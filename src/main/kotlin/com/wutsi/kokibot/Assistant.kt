@@ -22,12 +22,10 @@ class Assistant {
     }
 
     private var maxIterations: Int = MAX_ITERATIONS
-    private var accessWorkspaceOnly: Boolean = true
     private lateinit var context: Context
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: MAX_ITERATIONS
-        accessWorkspaceOnly = MapUtil.toBoolean("access-workspace-only", config) ?: true
         this.context = context
 
         // Create temporary directory if it does not exist

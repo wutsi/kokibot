@@ -1,7 +1,6 @@
 package com.wutsi.kokibot
 
 import com.wutsi.kokibot.channel.Channel
-import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.util.MapUtil
 import jakarta.annotation.PostConstruct
@@ -63,9 +62,6 @@ class Bootstrap(
             MapUtil.toMap("heartbeat", config) ?: emptyMap<String, Any>(),
             context,
         )
-
-        LOGGER.info("Checking health...")
-        LOGGER.info(HealthCommand().exec("", context))
 
         LOGGER.info("Initialization completed")
     }

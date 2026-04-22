@@ -10,7 +10,6 @@ import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -19,6 +18,7 @@ import org.springframework.http.MediaTypeFactory
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
 import java.util.Base64
+import java.util.UUID
 
 /**
  * This is the client for the Deepseek API.
@@ -36,8 +36,10 @@ open class DeepseekClient(
 ) {
     companion object {
         const val COMPLETION_ENDPOINT = "/chat/completions"
+        val EMPTY_MAP = emptyMap<String, Any>()
     }
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
     private val rest = restBuilder.build(readTimeoutMillis, connectTimeoutMillis)
     private val jsonMapper = JsonMapper()
     private val textExtractorFactory = TextExtractorFactory()
@@ -53,16 +55,15 @@ open class DeepseekClient(
         headers.setContentType(MediaType.APPLICATION_JSON)
         headers.set("Authorization", "Bearer $apiKey")
 
-        val xbody = body.filter { entry -> entry.value != null }
-        val entity = HttpEntity(xbody, headers)
+        val entity = HttpEntity(body, headers)
         val resp = rest.postForEntity(
             getBaseUrl() + COMPLETION_ENDPOINT,
             entity,
             Map::class.java
-        ).body!!
+        ).body
+            ?: throw IllegalStateException("No response from LLM")
 
-        val response = toLLMResponse(resp)
-        return response
+        return toLLMResponse(resp)
     }
 
     private fun toDeepseekRequest(request: LLMRequest, tools: List<Tool>): Map<*, *> {
@@ -103,39 +104,43 @@ open class DeepseekClient(
                 )
             }.ifEmpty { null },
             "parallel_tool_calls" to true
-        )
+        ).filter { entry -> entry.value != null }
     }
 
     private fun toLLMResponse(resp: Map<*, *>): LLMResponse {
-        val choices = resp["choices"]!! as List<*>
+        val choices = (resp["choices"]
+            ?: throw IllegalStateException("No choices in the response")) as List<*>
+
         return LLMResponse(
-            id = MapUtil.toString("id", resp)!!,
-            choices = choices.map { choice ->
-                val message = (choice as Map<*, *>)["message"] as Map<*, *>
-                val toolCalls = message["tool_calls"] as List<*>?
+            id = MapUtil.toString("id", resp) ?: UUID.randomUUID().toString(),
+            choices = choices.mapNotNull { choice ->
+                val message = MapUtil.toMap("message", (choice as Map<*, *>))
+                val toolCalls = message?.get("tool_calls") as List<*>?
                 val finishReason = MapUtil.toString("finish_reason", choice)
+
                 LLMResponseChoice(
-                    index = MapUtil.toInt("index", choice)!!,
+                    index = MapUtil.toInt("index", choice) ?: 0,
                     finishReason = finishReason?.let { reason -> LLMFinishReason.valueOf(reason.uppercase()) },
+                    content = message?.let { MapUtil.toString("content", message) },
+                    reasoningContent = message?.let { MapUtil.toString("reasoning_content", message) },
 
-                    content = MapUtil.toString("content", message)!!,
-                    reasoningContent = MapUtil.toString("reasoning_content", message),
+                    toolCalls = toolCalls?.mapNotNull { call ->
+                        val function = MapUtil.toMap("function", (call as Map<*, *>))
+                        val arguments = function?.let { MapUtil.toString("arguments", function) }
 
-                    toolCalls = toolCalls?.map { call ->
-                        val function = (call as Map<*, *>)["function"] as Map<*, *>
-                        val arguments = MapUtil.toString("arguments", function)
-
-                        LLMToolCall(
-                            name = MapUtil.toString("name", function)!!,
-                            arguments = arguments?.let { args ->
-                                try {
-                                    jsonMapper.readValue(args, Map::class.java)
-                                } catch (ex: Exception) {
-                                    getLogger().warn("Failed to parse tool call arguments. arguments=$args", ex)
-                                    emptyMap<String, Any>()
-                                }
-                            } ?: emptyMap<String, Any>()
-                        )
+                        function?.let {
+                            LLMToolCall(
+                                name = MapUtil.toString("name", function) ?: "__invalid_function__",
+                                arguments = arguments?.let { args ->
+                                    try {
+                                        jsonMapper.readValue(args, Map::class.java)
+                                    } catch (ex: Exception) {
+                                        logger.warn("Failed to parse tool call arguments. arguments=$args", ex)
+                                        EMPTY_MAP
+                                    }
+                                } ?: EMPTY_MAP
+                            )
+                        }
                     } ?: emptyList(),
                 )
             }
@@ -154,40 +159,42 @@ open class DeepseekClient(
             listOf(
                 mapOf(
                     "role" to "user",
-                    "content" to request.prompt
-                )
-            ) +
-                request.files.map { file ->
-                    try {
-                        val mimeType = getMimeType(file)
-                        val content = extractContent(file, mimeType)
+                    "content" to listOf(
                         mapOf(
-                            "role" to "user",
-                            "content" to if (mimeType.startsWith("image/")) {
-                                mapOf(
-                                    "type" to "image_url",
-                                    "url" to content,
-                                )
-                            } else {
+                            "type" to "text",
+                            "text" to request.prompt
+                        )
+                    ) +
+                        request.files.map { file ->
+                            try {
+                                val mimeType = getMimeType(file)
+                                val content = extractContent(file, mimeType)
+                                if (mimeType.startsWith("image/")) {
+                                    mapOf(
+                                        "type" to "image_url",
+                                        "image_url" to mapOf("url" to content),
+                                    )
+                                } else {
+                                    mapOf(
+                                        "type" to "text",
+                                        "text" to content,
+                                    )
+                                }
+                            } catch (_: UnsupportedMimeTypeException) {
                                 mapOf(
                                     "type" to "text",
-                                    "text" to content,
+                                    "text" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
+                                )
+                            } catch (ex: Exception) {
+                                logger.warn("Failed to extract the content of file ${file.name}", ex)
+                                mapOf(
+                                    "type" to "text",
+                                    "text" to "Failed to extract the content of file ${file.absolutePath}. The file will be ignored. Error: ${ex.message}"
                                 )
                             }
-                        )
-                    } catch (_: UnsupportedMimeTypeException) {
-                        mapOf(
-                            "role" to "user",
-                            "content" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
-                        )
-                    } catch (ex: Exception) {
-                        getLogger().warn("Failed to extract the content of file ${file.name}", ex)
-                        mapOf(
-                            "role" to "user",
-                            "content" to "Failed to extract the content of file ${file.absolutePath}. The file will be ignored. Error: ${ex.message}"
-                        )
-                    }
-                }
+                        }
+                )
+            )
         }
     }
 
@@ -209,9 +216,5 @@ open class DeepseekClient(
         return MediaTypeFactory.getMediaType(file.name)
             .map { it.toString() }
             .orElse("application/octet-stream")
-    }
-
-    private fun getLogger(): Logger {
-        return LoggerFactory.getLogger(this::class.java)
     }
 }

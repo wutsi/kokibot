@@ -82,7 +82,7 @@ class Assistant {
                 val response = ask(iteration, prompt, memory)
                 if (decide(prompt, response, memory, tools)) {
                     return Message(
-                        text = response.choices.first().content,
+                        text = response.choices.first().content ?: "",
                         role = Role.ASSISTANT,
                         finishReason = FinishReason.DONE,
                     )
@@ -127,16 +127,18 @@ class Assistant {
     }
 
     private fun exec(
-        content: String,
+        content: String?,
         call: LLMToolCall,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
         query: Message
     ) {
-        LOGGER.info(">>> $content")
+        content?.let { LOGGER.info(">>> $content") }
         LOGGER.info(">>> Tool execution: name=$${call.name}, arguments=${call.arguments}")
 
-        reply(content, query)
+        if (content != null) {
+            reply(content, query)
+        }
         val tool = tools[call.name]
         if (tool == null) {
             memory.add("Tool `${call.name}` is not available!")
@@ -150,7 +152,9 @@ class Assistant {
             LOGGER.info(result)
         }
 
-        memory.add(content)
+        if (content != null) {
+            memory.add(content)
+        }
         memory.add("Calling the tool `${call.name}` returned the following result:\n$result")
     }
 

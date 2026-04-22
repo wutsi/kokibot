@@ -87,7 +87,7 @@ class DeepseekTest {
         val choices = response.choices
         assertEquals(1, choices.size)
         assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
-        assertEquals(true, choices[0].content.contains("Paris"))
+        assertEquals(true, choices[0].content?.contains("Paris"))
         assertEquals(true, choices[0].toolCalls.isEmpty())
     }
 
@@ -126,6 +126,32 @@ class DeepseekTest {
         assertEquals(1, choices[0].toolCalls.size)
         assertEquals(meta.name, choices[0].toolCalls[0].name)
         assertEquals(mapOf("location" to "Paris"), choices[0].toolCalls[0].arguments)
+    }
+
+    @Test
+    fun `completion with PDF file`() {
+        val config = mapOf(
+            "api_key" to System.getenv("DEEPSEEK_API_KEY"),
+            "model" to "deepseek-chat",
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(
+                prompt = "Can you summarize thie text?",
+                files = listOf(
+                    File(this::class.java.getResource("/file/RL-1.pdf")!!.file)
+                )
+            ),
+            tools = emptyList()
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(0, choices[0].toolCalls.size)
+        assertEquals(false, choices[0].content.isNullOrEmpty())
+        println(choices[0].content)
     }
 
     @Test

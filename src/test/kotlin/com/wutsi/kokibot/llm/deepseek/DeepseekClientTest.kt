@@ -20,7 +20,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
 import java.io.File
-import kotlin.test.assertTrue
 
 class DeepseekClientTest {
     companion object {
@@ -172,16 +171,17 @@ class DeepseekClientTest {
                 ),
                 mapOf(
                     "role" to "user",
-                    "content" to "Hi sir"
-                ),
-                mapOf(
-                    "role" to "user",
-                    "content" to mapOf(
-                        "type" to "text",
-                        "text" to "Content of TXT file\n"
+                    "content" to listOf(
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Hi sir"
+                        ),
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Content of TXT file\n"
+                        )
                     )
-                )
-
+                ),
             ),
             body["messages"]
         )
@@ -217,16 +217,17 @@ class DeepseekClientTest {
                 ),
                 mapOf(
                     "role" to "user",
-                    "content" to "Hi sir"
-                ),
-                mapOf(
-                    "role" to "user",
-                    "content" to mapOf(
-                        "type" to "text",
-                        "text" to "{\n  \"foo\": 2\n}\n"
+                    "content" to listOf(
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Hi sir"
+                        ),
+                        mapOf(
+                            "type" to "text",
+                            "text" to "{\n  \"foo\": 2\n}\n"
+                        )
                     )
-                )
-
+                ),
             ),
             body["messages"]
         )
@@ -262,13 +263,15 @@ class DeepseekClientTest {
                 ),
                 mapOf(
                     "role" to "user",
-                    "content" to "Hi sir"
-                ),
-                mapOf(
-                    "role" to "user",
-                    "content" to mapOf(
-                        "type" to "text",
-                        "text" to "Sample doc file\r"
+                    "content" to listOf(
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Hi sir"
+                        ),
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Sample doc file\r"
+                        )
                     )
                 )
             ),
@@ -299,14 +302,21 @@ class DeepseekClientTest {
 
         val body = req.firstValue.body as Map<*, *>
         val messages = MapUtil.toList("messages", body) as List<Map<String, Any>>
-        assertEquals(3, messages.size)
+        assertEquals(2, messages.size)
 
-        val message = messages[2]
+        val message = messages[1]
         assertEquals("user", message["role"])
 
-        val content = MapUtil.toMap("content", message)
-        assertEquals("image_url", content?.get("type"))
-        assertTrue(content?.get("url").toString().startsWith("data:image/jpeg;base64,"))
+        val content = MapUtil.toList("content", message)
+        val item = content?.get(1) as? Map<String, Any>
+        assertEquals("image_url", item?.get("type"))
+        assertEquals(
+            true,
+            (item?.get("image_url") as Map<String, Any>)
+                ?.get("url")
+                .toString()
+                .startsWith("data:image/jpeg;base64,")
+        )
     }
 
     @Test
@@ -338,12 +348,17 @@ class DeepseekClientTest {
                 ),
                 mapOf(
                     "role" to "user",
-                    "content" to "Hi sir"
+                    "content" to listOf(
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Hi sir"
+                        ),
+                        mapOf(
+                            "type" to "text",
+                            "text" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
+                        )
+                    ),
                 ),
-                mapOf(
-                    "role" to "user",
-                    "content" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
-                )
             ),
             body["messages"]
         )
@@ -379,12 +394,17 @@ class DeepseekClientTest {
                 ),
                 mapOf(
                     "role" to "user",
-                    "content" to "Hi sir"
+                    "content" to listOf(
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Hi sir"
+                        ),
+                        mapOf(
+                            "type" to "text",
+                            "text" to "Failed to extract the content of file /path/to/non-existing-file.txt. The file will be ignored. Error: /path/to/non-existing-file.txt (No such file or directory)"
+                        ),
+                    )
                 ),
-                mapOf(
-                    "role" to "user",
-                    "content" to "Failed to extract the content of file /path/to/non-existing-file.txt. The file will be ignored. Error: /path/to/non-existing-file.txt (No such file or directory)"
-                )
             ),
             body["messages"]
         )

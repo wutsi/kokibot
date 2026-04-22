@@ -271,25 +271,9 @@ class Assistant {
     }
 
     private fun buildSecurityInstructions(): String {
-        val workspace = if (accessWorkspaceOnly) {
-            """
-                For security reasons, you can only access files and execute commands within the workspace directory.
-                The workspace directory is located at `${context.home}/workspace`.
-                NEVER attempt to use ../ to escape this directory
-            """.trimIndent()
-        } else {
-            """
-                You have access to the entire file system and can execute any command.
-            """.trimIndent()
-        }
-
-        return """
-            # Security instructions
-            $workspace
-
-            Use `${context.home}/workspace/tmp/<UUID>` as a temporary directory if you need to create temporary files,
-            where <UUID> is a unique identifier generated using the `uuidgen` command.
-            Example: `${context.home}/workspace/tmp/70030408-7347-4853-B672-23C3D242E4FB/foo.pdf`
-            """.trimIndent()
+        return this::class.java.getResourceAsStream("/SECURITY.md")!!
+            .bufferedReader()
+            .readText()
+            .replace("{{HOME}}", context.home.absolutePath)
     }
 }

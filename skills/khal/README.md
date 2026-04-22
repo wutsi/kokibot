@@ -32,9 +32,6 @@ The configuration will look like this:
 [calendars]
 
   [[home]]
-    path = ~/.local/share/calendar/events
-    color = dark green
-    priority = 20
-
+    path = ~/.local/share/calendar/events/home
 
 ```

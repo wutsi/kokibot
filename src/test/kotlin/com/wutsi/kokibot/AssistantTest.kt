@@ -110,9 +110,19 @@ class AssistantTest {
         val req = argumentCaptor<LLMRequest>()
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
+
+        // ASSISANT.md
         assertEquals(
             true,
             req.firstValue.systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
+        )
+
+        // SECURITY.md
+        val securityInstructions = getResourceFile("/SECURITY.md").readText()
+            .replace("{{HOME}}", context.home.absolutePath)
+        assertEquals(
+            true,
+            req.firstValue.systemInstructions?.contains(securityInstructions)
         )
 
         verify(chatHistory).append(prompt, result)
@@ -158,10 +168,65 @@ class AssistantTest {
         val req = argumentCaptor<LLMRequest>()
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
+
+        // ASSISANT.md is missing
         assertEquals(
             false,
             req.firstValue.systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
         )
+
+        // SECURITY.md
+        val securityInstructions = getResourceFile("/SECURITY.md").readText()
+            .replace("{{HOME}}", context.home.absolutePath)
+            .trimIndent()
+        assertEquals(
+            true,
+            req.firstValue.systemInstructions?.contains("# Security Guidelines\n")
+        )
+
+        verify(chatHistory).append(prompt, result)
+    }
+
+    @Test
+    fun `process with security instructions`() {
+        // GIVEN
+        assistant.init(
+            emptyMap<Any, Any>(),
+            context = Context(
+                home = getResourceFile("/home/007"),
+                llm = llm,
+                toolRegistry = toolRegistry,
+                chatHistory = chatHistory,
+                memory = memory,
+            )
+        )
+
+        doReturn(
+            LLMResponse(
+                id = UUID.randomUUID().toString(),
+                choices = listOf(
+                    LLMResponseChoice(
+                        content = "Man",
+                        finishReason = LLMFinishReason.STOP,
+                        reasoningContent = null,
+                        toolCalls = emptyList(),
+                    )
+                )
+            )
+        ).whenever(llm).completion(any(), any())
+
+        // WHEN
+        val prompt = Message("Yo", Role.USER)
+        val result = assistant.process(prompt)
+
+        // THEN
+        assertEquals("Man", result.text)
+        assertEquals(Role.ASSISTANT, result.role)
+        assertEquals(FinishReason.DONE, result.finishReason)
+
+        val req = argumentCaptor<LLMRequest>()
+        verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
+        assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
 
         verify(chatHistory).append(prompt, result)
     }

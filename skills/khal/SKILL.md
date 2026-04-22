@@ -80,7 +80,7 @@ khal list --format "{uid} | {title} | {calendar}" today
 Placeholders: `{title}`, `{description}`, `{start}`, `{end}`, `{start-date}`, `{start-time}`, `{end-date}`,
 `{end-time}`, `{location}`, `{calendar}`, `{uid}`
 
-## Rules & Contrints
+## Rules & Contraints
 
 - **Absolute Paths:** Never use `~` or `$HOME` in scripts.
 - **Folding:** Ensure `.ics` files maintain the 75-octet line folding standard (automatic when using `ics` library).

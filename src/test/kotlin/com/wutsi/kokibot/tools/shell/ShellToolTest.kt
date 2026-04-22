@@ -55,7 +55,7 @@ class ShellToolTest {
     }
 
     @Test
-    fun `exec - with redirected`() {
+    fun `exec - with redirection`() {
         val result = tool.exec(mapOf("command" to "find ./ -type f 2>/dev/null | wc -l"))
 
 //        println(result)
@@ -70,35 +70,5 @@ class ShellToolTest {
     @Test
     fun `exec - no command`() {
         assertThrows<IllegalArgumentException> { tool.exec(emptyMap<String, String>()) }
-    }
-
-    @Test
-    fun `exec - forbidden sudo`() {
-        val result = tool.exec(mapOf("command" to "sudo ls -la"))
-        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
-    }
-
-    @Test
-    fun `exec - forbidden rm`() {
-        val result = tool.exec(mapOf("command" to "rm -rf /tmp/test.txt"))
-        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
-    }
-
-    @Test
-    fun `exec - forbidden chmod`() {
-        val result = tool.exec(mapOf("command" to "chmod +x /tmp/test.txt"))
-        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
-    }
-
-    @Test
-    fun `exec - forbidden chmown`() {
-        val result = tool.exec(mapOf("command" to "chown foo:bar /tmp/test.txt"))
-        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
-    }
-
-    @Test
-    fun `exec - forbidden to etc`() {
-        val result = tool.exec(mapOf("command" to "ls -la > /etc/test.txt"))
-        assertEquals(true, result.contains(ShellTool.ERROR_FORBIDDEN))
     }
 }

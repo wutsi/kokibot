@@ -13,9 +13,7 @@ This directory contains the code for the skills of the bot.
 - [hhard](khard): Command-line contact manager that works with vdirsyncer to manage contacts stored in CardDAV servers.
   Provides powerful search and modification capabilities for contacts.
 - [khal](khal): Command-line calendar application that works with vdirsyncer to manage events stored in CalDAV servers.
-  Allows you to
-  view, create, and modify calendar events directly from the terminal.
-- todoman: See https://github.com/pimutils/todoman
+  Allows you to view, create, and modify calendar events directly from the terminal.
 
 ## File Conversion
 

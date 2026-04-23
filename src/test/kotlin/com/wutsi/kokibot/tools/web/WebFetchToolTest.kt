@@ -120,9 +120,13 @@ class WebFetchToolTest {
 
     @Test
     fun `exec - Zip`() {
+        // kokibot.zip is ~115 MB, which exceeds the 50 MB MAX_FILE_SIZE limit
         val args = mapOf("url" to "https://github.com/wutsi/kokibot/releases/download/v0.0.14/kokibot.zip")
         val result = tool.exec(args)
-        assertTrue(result.contains("File: kokibot/HEARTBEAT.md"))
+        assertTrue(
+            result.contains("exceeds maximum allowed size"),
+            "Expected size-limit rejection but got: $result"
+        )
     }
 
     @Test

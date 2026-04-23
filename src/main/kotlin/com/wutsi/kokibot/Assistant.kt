@@ -16,16 +16,16 @@ import java.io.File
 class Assistant {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
-        private const val MAX_ITERATIONS = 10
+        private const val DEFAULT_ITERATIONS = 10
         const val TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
         const val FAILURE = "Oups, an unexpected error occurred while processing the query."
     }
 
-    private var maxIterations: Int = MAX_ITERATIONS
+    private var maxIterations: Int = DEFAULT_ITERATIONS
     private lateinit var context: Context
 
     fun init(config: Map<*, *>, context: Context) {
-        maxIterations = MapUtil.toInt("max-iterations", config) ?: MAX_ITERATIONS
+        maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         this.context = context
 
         // Create temporary directory if it does not exist
@@ -184,7 +184,7 @@ class Assistant {
             return null
         }
 
-        val name = text.split(" ")[0]
+        val name = text.split(" ").firstOrNull() ?: return null
         try {
             return context.commandRegistry.get(name)
         } catch (ex: CommandNotFoundException) {

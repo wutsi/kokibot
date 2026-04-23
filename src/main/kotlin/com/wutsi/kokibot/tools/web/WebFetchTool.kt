@@ -15,6 +15,8 @@ import java.io.File
 import java.io.FileOutputStream
 
 class WebFetchTool : Tool {
+    private class FileTooLargeException(message: String) : RuntimeException(message)
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebFetchTool::class.java)
 
@@ -23,6 +25,7 @@ class WebFetchTool : Tool {
         const val NAME = "web_fetch"
         const val DEFAULT_MAX_LENGTH = 100_000
         const val BUFFER_SIZE = 100 * 1024 // 100K
+        const val MAX_FILE_SIZE = 50L * 1024 * 1024 // 50MB
     }
 
     private lateinit var context: Context
@@ -68,6 +71,9 @@ class WebFetchTool : Tool {
         } catch (ex: UnsupportedMimeTypeException) {
             LOGGER.warn("Cannot extract the content from : {}", url, ex)
             return "Cannot extract the content from $url. Error= ${ex.message}"
+        } catch (ex: FileTooLargeException) {
+            LOGGER.warn("File too large from URL: {}", url, ex)
+            return "Cannot fetch $url. ${ex.message}"
         } catch (ex: Exception) {
             LOGGER.warn("Failed to fetch content from URL: {}", url, ex)
             return "Failed to fetch content from $url. Error= ${ex.message}"
@@ -89,6 +95,14 @@ class WebFetchTool : Tool {
             if (!response.isSuccessful) {
                 LOGGER.error("Failed to fetch content from: {}", url)
                 return "Failed to fetch content from $url"
+            }
+
+            // Reject up-front if the server advertises a content length larger than MAX_FILE_SIZE
+            val contentLength = response.header("Content-Length")?.toLongOrNull()
+            if (contentLength != null && contentLength > MAX_FILE_SIZE) {
+                throw FileTooLargeException(
+                    "File size ($contentLength bytes) exceeds maximum allowed size ($MAX_FILE_SIZE bytes)"
+                )
             }
 
             // Download
@@ -116,10 +130,27 @@ class WebFetchTool : Tool {
         }
 
         val file = context.fileService.createTempFile("web_fetch_", ".$extension")
-        response.body.byteStream().use { input ->
-            FileOutputStream(file).use { output ->
-                input.copyTo(output, BUFFER_SIZE)
+        try {
+            response.body.byteStream().use { input ->
+                FileOutputStream(file).use { output ->
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    var total = 0L
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read == -1) break
+                        total += read
+                        if (total > MAX_FILE_SIZE) {
+                            throw FileTooLargeException(
+                                "File size exceeds maximum allowed size (${MAX_FILE_SIZE / (1024 * 1024)} MB)"
+                            )
+                        }
+                        output.write(buffer, 0, read)
+                    }
+                }
             }
+        } catch (ex: FileTooLargeException) {
+            file.delete()
+            throw ex
         }
         LOGGER.debug("{} downloaded to {}. Size={}", url, file.absolutePath, file.length())
         return file

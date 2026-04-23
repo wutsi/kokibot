@@ -123,6 +123,15 @@ The configuration will look like this:
   [[home]]
     path = ~/.local/share/calendar/events/home
 
+[default]
+default_calendar = home
+
+[locale]
+timeformat = %H:%M
+dateformat = %Y-%m-%d
+longdateformat = %Y-%m-%d
+datetimeformat = %Y-%m-%d %H:%M
+longdatetimeformat = %Y-%m-%d %H:%M
 ```
 
 **IMPORTANT:**

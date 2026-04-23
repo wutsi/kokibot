@@ -71,4 +71,43 @@ class ShellToolTest {
     fun `exec - no command`() {
         assertThrows<IllegalArgumentException> { tool.exec(emptyMap<String, String>()) }
     }
+
+    @Test
+    fun `exec - forbidden commands`() {
+        val forbiddenCommands = listOf(
+            // Direct forbidden commands
+            "rm -rf /",
+            "rm -fr /tmp",
+            "rm --recursive /tmp",
+            "mkfs /dev/sda1",
+            "mke2fs /dev/sda1",
+            "dd if=/dev/zero of=/dev/sda",
+            "mv /foo /bar",
+            "chmod 777 /etc/passwd",
+            "chown root:root /etc/passwd",
+            "sudo reboot",
+            "echo test > /etc/passwd",
+            "echo test >> /dev/sda",
+            "echo test > /boot/grub.cfg",
+            // Bypass attempts
+            "echo hello; rm -rf /data", // semicolon bypass
+            "rm    -rf    /data", // extra spaces
+            "echo \$(rm -rf /data)", // command substitution
+            "echo `chmod 777 /etc/passwd`", // backtick substitution
+            "ls | rm -rf /tmp", // pipe chain
+            "true && rm -rf /tmp", // && chain
+            "false || sudo reboot", // || chain
+            "ls & rm -rf /tmp", // background chain
+            "/bin/rm -rf /tmp", // absolute executable path
+            "FOO=bar sudo ls", // env-var prefix
+        )
+        forbiddenCommands.forEach { cmd ->
+            val result = tool.exec(mapOf("command" to cmd))
+            assertEquals(
+                "Running command: $cmd\n${ShellTool.ERROR_FORBIDDEN}",
+                result,
+                "Failed for command: $cmd"
+            )
+        }
+    }
 }

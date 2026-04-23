@@ -5,6 +5,10 @@ import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.graalvm.polyglot.Context
+import org.graalvm.polyglot.EnvironmentAccess
+import org.graalvm.polyglot.HostAccess
+import org.graalvm.polyglot.PolyglotAccess
+import org.graalvm.polyglot.io.IOAccess
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
@@ -47,9 +51,21 @@ class PythonTool : Tool {
         try {
             val os = FileOutputStream(file)
             os.use {
-                val py = Context.newBuilder("python")
+                val py = Context.newBuilder(LANGUAGE_ID)
                     .option("engine.WarnInterpreterOnly", "false")
-                    .allowAllAccess(true)
+                    // Filesystem: ALLOWED — full host I/O so Python code can read/write files
+                    .allowIO(IOAccess.ALL)
+                    // Network: DENIED — no host interop means no Java sockets exposed to Python
+                    .allowHostAccess(HostAccess.NONE)
+                    .allowPolyglotAccess(PolyglotAccess.NONE)
+                    // System commands: DENIED — block subprocess.* / os.system / os.exec*
+                    .allowCreateProcess(false)
+                    .allowCreateThread(false)
+                    // JVM internals: DENIED — no host class lookup, no class loading, no native calls
+                    .allowHostClassLoading(false)
+                    .allowHostClassLookup { _ -> false }
+                    .allowNativeAccess(false)
+                    .allowEnvironmentAccess(EnvironmentAccess.NONE)
                     .out(os)
                     .err(os)
                     .build()

@@ -115,7 +115,7 @@ open class DeepseekClient(
             id = MapUtil.toString("id", resp) ?: UUID.randomUUID().toString(),
             choices = choices.mapNotNull { choice ->
                 val message = MapUtil.toMap("message", (choice as Map<*, *>))
-                val toolCalls = message?.get("tool_calls") as List<*>?
+                val toolCalls = message?.get("tool_calls") as? List<*>?
                 val finishReason = MapUtil.toString("finish_reason", choice)
 
                 LLMResponseChoice(

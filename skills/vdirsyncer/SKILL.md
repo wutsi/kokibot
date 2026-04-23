@@ -115,25 +115,6 @@ url = "https://caldav.icloud.com/"
 username = "<remote-username>@mac.com"
 password.fetch = ["command", "printenv", "VDIRSYNCHER_ICLOUD_PASSWORD"]
 item_types = ["VEVENT"]
-
-# --- REMINDERS ---
-[pair my_reminders]
-a = "reminders_local"
-b = "reminders_remote"
-collections = ["from a", "from b"]
-
-[storage reminders_local]
-type = "filesystem"
-path = "~/.local/share/calendar/todos"
-fileext = ".ics"
-
-[storage reminders_remote]
-type = "caldav"
-url = "https://caldav.icloud.com/"
-username = "<remote-username>@mac.com"
-password.fetch = ["command", "printenv", "VDIRSYNCHER_ICLOUD_PASSWORD"]
-item_types = ["VTODO"]
-
 ```
 
 - For more details about `vdirsync` configuration, refer [here](https://vdirsyncer.pimutils.org/en/stable/config.html)

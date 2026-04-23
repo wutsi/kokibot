@@ -13,6 +13,9 @@ iterative reasoning with tool calls to answer user queries.
 ### Build & Test
 
 ```bash
+# Fix all linting issues before building
+ktlint -F
+
 # Full build with tests
 mvn clean install
 

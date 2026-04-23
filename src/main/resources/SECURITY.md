@@ -42,3 +42,18 @@ Here are the security guidelines and restrictions you must ALWAYS follow when ex
         - `ssh`
         - `iptables`
 
+---
+
+## Python Code Execution Restrictions
+
+When executing Python code, you must adhere to the following security restrictions to prevent unauthorized access and
+potential harm to the system:
+
+- Access to filesystem: ALLOWED — full host I/O so Python code can read/write files
+- Network access: DENIED — no host interop means no Java sockets exposed to Python
+- System commands: DENIED — block subprocess.* / os.system / os.exec*
+- JVM internals: DENIED — no host class lookup, no class loading, no native calls, no reflection, no access to Java
+  internals
+- Polyglot access: DENIED — no access to other languages or polyglot APIs
+- Environment variables: DENIED — no access to host environment variables from Python code
+- Threading and multiprocessing: DENIED — no ability to create threads or subprocesses from Python code

@@ -4,7 +4,6 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.service.memory.ChatHistory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -14,6 +13,9 @@ import org.mockito.Mockito.mock
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
 import java.time.LocalDate
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
 
 class ChatHistoryTest {
@@ -161,5 +163,40 @@ class ChatHistoryTest {
 
         assertEquals(history.id(), health.id)
         assertTrue(health.up)
+    }
+
+    @Test
+    fun `concurrent appends do not lose messages or corrupt history`() {
+        // GIVEN
+        val threads = 16
+        val perThread = 25
+        val executor = Executors.newFixedThreadPool(threads)
+        val start = CountDownLatch(1)
+        val done = CountDownLatch(threads)
+
+        // WHEN
+        repeat(threads) { t ->
+            executor.submit {
+                try {
+                    start.await()
+                    repeat(perThread) { i ->
+                        val prompt = Message("p-$t-$i", Role.USER)
+                        val response = Message("r-$t-$i", Role.ASSISTANT)
+                        history.append(prompt, response)
+                    }
+                } finally {
+                    done.countDown()
+                }
+            }
+        }
+        start.countDown()
+        assertTrue(done.await(30, TimeUnit.SECONDS), "concurrent appends timed out")
+        executor.shutdown()
+
+        // THEN — file is parseable JSON and contains every message
+        val json = history.get()
+        assertNotNull(json)
+        val messages = jsonMapper.readValue(json, Array<Message>::class.java)
+        assertEquals(threads * perThread * 2, messages.size)
     }
 }

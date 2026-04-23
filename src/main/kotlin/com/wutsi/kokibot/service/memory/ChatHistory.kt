@@ -6,15 +6,25 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
 import tools.jackson.core.type.TypeReference
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * This is the short term memory of the assistant, which is used to store the chat history of the current day.
  * The conversation history is stored into workspace/memory/history/YYYY-MM-DD.json.
+ *
+ * Thread-safety: all read/write operations are guarded by a [ReentrantReadWriteLock]. Concurrent
+ * readers are allowed, but writers (`append`, `clear`) are serialized. File writes are atomic
+ * (write to a temp file, then move with `ATOMIC_MOVE`) to prevent partial/corrupted reads.
  */
 class ChatHistory : Resource {
     private lateinit var context: Context
+    private val lock = ReentrantReadWriteLock()
 
     fun append(prompt: Message, response: Message) {
         return append(prompt, response, LocalDate.now())
@@ -32,20 +42,20 @@ class ChatHistory : Resource {
         return Health(id = id(), up = true)
     }
 
-    internal fun append(prompt: Message, response: Message, date: LocalDate) {
+    internal fun append(prompt: Message, response: Message, date: LocalDate) = lock.write {
         val history = load(date).toMutableList()
         history.add(prompt)
         history.add(response)
 
         val json = toString(history)
-        getFile(date).writeText(json)
+        atomicWrite(getFile(date), json)
     }
 
     /**
      * Return the content of the history file, or null if the file does not exist.
      * The history is returned as JSON string, and can be parsed by the caller if needed.
      */
-    fun get(): String? {
+    fun get(): String? = lock.read {
         val file = getFile(LocalDate.now())
         if (!file.exists()) {
             return null
@@ -54,14 +64,14 @@ class ChatHistory : Resource {
         }
     }
 
-    fun clear() {
+    fun clear() = lock.write {
         val file = getFile(LocalDate.now())
         if (file.exists()) {
             file.delete()
         }
     }
 
-    fun merge(from: LocalDate, to: LocalDate): String? {
+    fun merge(from: LocalDate, to: LocalDate): String? = lock.read {
         val history = mutableListOf<Message>()
         var date = from
         while (!date.isAfter(to)) {
@@ -86,6 +96,21 @@ class ChatHistory : Resource {
         } else {
             val json = file.readText()
             return context.jsonMapper.readValue(json, object : TypeReference<List<Message>>() {})
+        }
+    }
+
+    private fun atomicWrite(target: File, content: String) {
+        val targetPath = target.toPath()
+        val tmp = Files.createTempFile(targetPath.parent, target.name, ".tmp")
+        try {
+            Files.writeString(tmp, content)
+            try {
+                Files.move(tmp, targetPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(tmp, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            Files.deleteIfExists(tmp)
         }
     }
 

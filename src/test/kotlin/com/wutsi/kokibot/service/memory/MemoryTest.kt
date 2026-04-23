@@ -20,6 +20,9 @@ import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito.mock
 import java.io.File
 import java.time.LocalDate
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 class MemoryTest {
@@ -152,5 +155,40 @@ class MemoryTest {
         val health = memory.health()
         assertEquals(memory.id(), health.id)
         assertTrue(health.up)
+    }
+
+    @Test
+    fun `concurrent compact calls are serialized and produce a consistent file`() {
+        // GIVEN
+        doReturn("M1\nM2\nM3").whenever(chatHistory).merge(any(), any())
+        val response = LLMResponse(
+            choices = listOf(LLMResponseChoice(content = "Fact1\nFact2\nFact3"))
+        )
+        doReturn(response).whenever(llm).completion(any(), any())
+
+        val threads = 8
+        val executor = Executors.newFixedThreadPool(threads)
+        val start = CountDownLatch(1)
+        val done = CountDownLatch(threads)
+
+        // WHEN
+        repeat(threads) {
+            executor.submit {
+                try {
+                    start.await()
+                    memory.compact()
+                } finally {
+                    done.countDown()
+                }
+            }
+        }
+        start.countDown()
+        assertTrue(done.await(30, TimeUnit.SECONDS), "concurrent compact timed out")
+        executor.shutdown()
+
+        // THEN — final file content is the LLM response, not partial / interleaved
+        val file = File(home.absolutePath + "/workspace/memory/MEMORY.md")
+        assertTrue(file.exists())
+        assertEquals("Fact1\nFact2\nFact3", file.readText())
     }
 }

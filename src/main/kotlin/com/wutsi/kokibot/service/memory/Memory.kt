@@ -8,24 +8,35 @@ import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.LocalDate
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * This is the long term memory of the assistant, which is used to store facts and information that can be used to answer questions.
  * It's build by compacting the chat history, and extracting facts and information that can be used to answer questions.
  * The long term memory is stored into workspace/memory/MEMORY.md
+ *
+ * Thread-safety: `compact()` and `get()` are serialized by a [ReentrantLock] so that
+ * concurrent invocations (scheduler tick + `/compact` command) cannot interleave their
+ * read-modify-write of `MEMORY.md`. The underlying chat history reads are additionally
+ * guarded by [ChatHistory]'s own lock. File writes are atomic (temp file + atomic move).
  */
 class Memory : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Memory::class.java)
         const val DEFAULT_WINDOW = 3L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
+        private const val SHUTDOWN_TIMEOUT_SECONDS = 30L
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
+    private val lock = ReentrantLock()
     private var window: Long = DEFAULT_WINDOW
     private lateinit var context: Context
     private lateinit var job: ScheduledFuture<*>
@@ -54,13 +65,23 @@ class Memory : Resource {
 
     override fun destroy() {
         job.cancel(false)
+        scheduler.shutdown()
+        try {
+            if (!scheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                LOGGER.warn("Memory scheduler did not terminate within ${SHUTDOWN_TIMEOUT_SECONDS}s; forcing shutdown")
+                scheduler.shutdownNow()
+            }
+        } catch (e: InterruptedException) {
+            scheduler.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     override fun health(): Health {
         return Health(id = id(), up = true)
     }
 
-    fun get(): String? {
+    fun get(): String? = lock.withLock {
         val file = getFile()
         if (!file.exists()) {
             return null
@@ -69,15 +90,14 @@ class Memory : Resource {
         }
     }
 
-    fun compact() {
+    fun compact() = lock.withLock {
         /* Compacting the memory */
         val to = LocalDate.now()
         val from = to.minusDays(window.toLong())
         val merged = context.chatHistory.merge(from, to)
         val compacted = merged?.let { compact(merged) }
         if (compacted != null) {
-            val file = getFile()
-            file.writeText(compacted)
+            atomicWrite(getFile(), compacted)
         }
     }
 
@@ -103,6 +123,21 @@ class Memory : Resource {
 
         val response = context.llm.completion(LLMRequest(prompt = prompt), emptyList())
         return response.choices.firstOrNull()?.content ?: ""
+    }
+
+    private fun atomicWrite(target: File, content: String) {
+        val targetPath = target.toPath()
+        val tmp = Files.createTempFile(targetPath.parent, target.name, ".tmp")
+        try {
+            Files.writeString(tmp, content)
+            try {
+                Files.move(tmp, targetPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(tmp, targetPath, StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            Files.deleteIfExists(tmp)
+        }
     }
 
     private fun getFile(): File {

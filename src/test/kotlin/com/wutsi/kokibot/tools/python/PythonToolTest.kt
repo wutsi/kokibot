@@ -1,13 +1,26 @@
 package com.wutsi.kokibot.tools.python
 
+import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.tools.ToolParameterType
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.mock
+import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PythonToolTest {
     private val tool = PythonTool()
+    private val context = Context(
+        home = File("/tmp"),
+        llm = mock(),
+    )
+
+    @BeforeEach
+    fun init() {
+        tool.init(emptyMap<String, Any>(), context)
+    }
 
     @Test
     fun metadata() {

@@ -55,6 +55,7 @@ class WebFetchToolTest {
     fun exec() {
         val args = mapOf("url" to "https://evendo.com/locations/cameroon/yaounde/odza")
         val result = tool.exec(args)
+        println(result)
         assertTrue(result.contains("Odza: A Tranquil Retreat in the Bustling Heart of Yaoundé"))
     }
 
@@ -125,10 +126,17 @@ class WebFetchToolTest {
     }
 
     @Test
-    fun `exec - invalid URL`() {
+    fun `exec - content not found`() {
         val args = mapOf("url" to "https://invalid-url")
         val result = tool.exec(args)
         assertTrue(result.contains("Failed to fetch content from"))
+    }
+
+    @Test
+    fun `exec - invalid URL`() {
+        val args = mapOf("url" to "ftp://google.com")
+        val result = tool.exec(args)
+        assertTrue(result.contains("Invalid URL:"))
     }
 
     @Test

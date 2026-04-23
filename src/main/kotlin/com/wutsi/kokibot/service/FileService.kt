@@ -34,20 +34,26 @@ class FileService : Resource {
     }
 
     fun createTempFile(fileName: String, extension: String): File {
-        val dir = getTempDir()
+        val dir = File(getTempDir(), UUID.randomUUID().toString())
         dir.mkdirs()
-        return File(dir, "$fileName.$extension")
+        return File(dir, "$fileName.${extension.removePrefix(".")}")
     }
 
     private fun getFileDirectory(): File {
         val now = LocalDate.now()
-        val path =
-            "${context.home.absolutePath}/workspace/files/${now.year}/${now.month.value}/${now.dayOfMonth}/${UUID.randomUUID()}"
+        val path = "${getFilesDir()}/${now.year}/${now.month.value}/${now.dayOfMonth}/${UUID.randomUUID()}"
         return File(path)
     }
 
-    private fun getTempDir(): File {
-        val path = "${context.home.absolutePath}/workspace/tmp/${UUID.randomUUID()}"
-        return File(path)
+    fun getTempDir(): File {
+        return File(getWorkspaceDir(), "/tmp")
+    }
+
+    fun getFilesDir(): File {
+        return File(getWorkspaceDir(), "/files")
+    }
+
+    fun getWorkspaceDir(): File {
+        return File("${context.home.absolutePath}/workspace")
     }
 }

@@ -82,7 +82,7 @@ class Assistant {
                 val response = ask(iteration, prompt, memory)
                 if (decide(prompt, response, memory, tools)) {
                     return Message(
-                        text = response.choices.first().content ?: "",
+                        text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                         role = Role.ASSISTANT,
                         finishReason = FinishReason.DONE,
                     )
@@ -141,7 +141,7 @@ class Assistant {
         }
         val tool = tools[call.name]
         if (tool == null) {
-            memory.add("Tool `${call.name}` is not available!")
+            memory.add("Calling the tool `${call.name}` failed because it's not available!")
             return
         }
 

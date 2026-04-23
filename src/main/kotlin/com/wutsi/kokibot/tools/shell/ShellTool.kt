@@ -11,8 +11,23 @@ import java.io.File
 class ShellTool : Tool {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ShellTool::class.java)
+        const val ERROR_FORBIDDEN = "Forbidden! You are not allowed to run this command for security reasons."
         const val NAME = "shell"
     }
+
+    private val forbiddenPatterns = listOf(
+        "rm -rf",
+        "mkfs",
+        "mke2fs",
+        "dd if=/dev/zero of=/dev/sda",
+        "mv /", // covers mv /... /dev/null
+        "chmod",
+        "chown",
+        "sudo",
+        "> /etc/",
+        "> /dev/",
+        "> /boot/"
+    )
 
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
@@ -47,6 +62,10 @@ class ShellTool : Tool {
     }
 
     private fun exec(command: String, directory: String?): String {
+        if (isForbidden(command)) {
+            return ERROR_FORBIDDEN
+        }
+
         val result = ShellUtil.exec(command, directory?.let { File(directory) })
         if (result.status == 0) {
             return result.output ?: "Success"
@@ -54,5 +73,9 @@ class ShellTool : Tool {
             LOGGER.error("Command failed: $command\n${result.error}")
             return result.error ?: "Error. exit code=${result.status}"
         }
+    }
+
+    private fun isForbidden(command: String): Boolean {
+        return forbiddenPatterns.any { command.contains(it) }
     }
 }

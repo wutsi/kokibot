@@ -22,6 +22,7 @@ class WebFetchTool : Tool {
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
         const val NAME = "web_fetch"
         const val DEFAULT_MAX_LENGTH = 100_000
+        const val BUFFER_SIZE = 100 * 1024 // 100K
     }
 
     private lateinit var context: Context
@@ -74,6 +75,10 @@ class WebFetchTool : Tool {
     }
 
     private fun fetch(url: String, maxLength: Int): String {
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            return "Invalid URL: $url"
+        }
+
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -113,7 +118,7 @@ class WebFetchTool : Tool {
         val file = context.fileService.createTempFile("web_fetch_", ".$extension")
         response.body.byteStream().use { input ->
             FileOutputStream(file).use { output ->
-                input.copyTo(output)
+                input.copyTo(output, BUFFER_SIZE)
             }
         }
         LOGGER.debug("{} downloaded to {}. Size={}", url, file.absolutePath, file.length())

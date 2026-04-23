@@ -3,9 +3,12 @@ package com.wutsi.kokibot.util
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
 
 object ShellUtil {
     private val isWindows = System.getProperty("os.name").lowercase().contains("win")
+    private val DEFAULT_TIMEOUT = 300L
+    private val MAX_TIMEOUT = 3600L
 
     /**
      * Checks if a command exists in the system PATH.
@@ -39,18 +42,15 @@ object ShellUtil {
         }
         val process = builder.start()
 
-        if (timeoutSeconds <= 0) {
-            process.waitFor()
-        } else {
-            val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-            if (!finished) {
-                process.destroyForcibly()
-                return ExecResult(
-                    status = -1,
-                    output = toString(process.inputStream),
-                    error = toString(process.errorStream),
-                )
-            }
+        val timeout = min(MAX_TIMEOUT, if (timeoutSeconds < 0) DEFAULT_TIMEOUT else timeoutSeconds)
+        val finished = process.waitFor(timeout, TimeUnit.SECONDS)
+        if (!finished) {
+            process.destroyForcibly()
+            return ExecResult(
+                status = -1,
+                output = toString(process.inputStream),
+                error = toString(process.errorStream),
+            )
         }
 
         val exitValue = process.exitValue()

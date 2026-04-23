@@ -26,11 +26,14 @@ class PythonToolTest {
     fun metadata() {
         val meta = tool.metadata()
         assertEquals(PythonTool.NAME, meta.name)
-        assertEquals(1, meta.parameters.size)
+        assertEquals(2, meta.parameters.size)
 
         assertEquals("code", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
         assertTrue(meta.parameters[0].required)
+
+        assertEquals("timeout", meta.parameters[1].name)
+        assertEquals(ToolParameterType.INTEGER, meta.parameters[1].type)
     }
 
     @Test
@@ -103,5 +106,23 @@ class PythonToolTest {
     @Test
     fun `exec - no code`() {
         assertThrows<IllegalArgumentException> { tool.exec(emptyMap<String, String>()) }
+    }
+
+    @Test
+    fun `exec - timeout`() {
+        val started = System.currentTimeMillis()
+        val result = tool.exec(
+            mapOf(
+                "code" to "while True:\n    pass\n",
+                "timeout" to "1",
+            )
+        )
+        val elapsedMs = System.currentTimeMillis() - started
+
+        assertTrue(
+            result.startsWith("Error executing Python code: execution timed out after 1 seconds"),
+            "Unexpected result: $result"
+        )
+        assertTrue(elapsedMs < 10_000, "Execution did not terminate promptly: ${elapsedMs}ms")
     }
 }

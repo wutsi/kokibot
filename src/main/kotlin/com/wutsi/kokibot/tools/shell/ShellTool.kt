@@ -4,6 +4,7 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
+import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -13,6 +14,9 @@ class ShellTool : Tool {
         private val LOGGER = LoggerFactory.getLogger(ShellTool::class.java)
         const val ERROR_FORBIDDEN = "Forbidden! You are not allowed to run this command for security reasons."
         const val NAME = "shell"
+        const val DEFAULT_TIMEOUT_SECONDS = 300L
+        const val MAX_TIMEOUT_SECONDS = 3600L
+        const val MIN_TIMEOUT_SECONDS = 1L
     }
 
     // Forbidden executables (matched as command tokens, not substrings)
@@ -58,6 +62,18 @@ class ShellTool : Tool {
                 type = ToolParameterType.STRING,
                 required = false
             ),
+            ToolParameter(
+                name = "timeout",
+                description = """
+                Optional timeout in seconds (default: 300, max: 3600).
+                 - For atomic tool calculation, it should up to 60s (The default value if not provided).
+                 - For complex code execution, it can be up to 300s.
+                 - For long-running code, it can be up to 1800s (30min).
+                 - If the code execution exceeds the timeout, it will be terminated and an error message will be returned.
+                """.trimIndent(),
+                type = ToolParameterType.STRING,
+                required = false
+            ),
         )
     )
 
@@ -65,27 +81,34 @@ class ShellTool : Tool {
         val command = arguments["command"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: command")
         val directory = arguments["directory"]?.toString()?.ifEmpty { null }
+        val timeout = (MapUtil.toLong("timeout", arguments) ?: DEFAULT_TIMEOUT_SECONDS)
+            .coerceIn(MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS)
 
         try {
-            return "Running command: $command\n" + exec(command, directory)
+            return "Running command: $command\n" + exec(command, directory, timeout)
         } catch (ex: Throwable) {
             LOGGER.warn("Command failed: $command", ex)
             return "Command failed. ${ex.message}"
         }
     }
 
-    private fun exec(command: String, directory: String?): String {
+    private fun exec(command: String, directory: String?, timeoutSeconds: Long): String {
         if (isForbidden(command)) {
             return ERROR_FORBIDDEN
         }
 
-        val result = ShellUtil.exec(command, directory?.let { File(directory) })
+        val result = ShellUtil.exec(command, directory?.let { File(directory) }, timeoutSeconds)
         if (result.status == 0) {
             return result.output ?: "Success"
-        } else {
-            LOGGER.error("Command failed: $command\n${result.error}")
-            return result.error ?: "Error. exit code=${result.status}"
         }
+        // ShellUtil returns status=-1 specifically when the process was killed for exceeding the timeout
+        if (result.status == -1) {
+            LOGGER.warn("Command timed out after ${timeoutSeconds}s: $command")
+            val partial = listOfNotNull(result.output, result.error).joinToString("\n").ifBlank { "" }
+            return "Error: command timed out after $timeoutSeconds seconds and was terminated.\n$partial".trimEnd()
+        }
+        LOGGER.error("Command failed: $command\n${result.error}")
+        return result.error ?: "Error. exit code=${result.status}"
     }
 
     /**

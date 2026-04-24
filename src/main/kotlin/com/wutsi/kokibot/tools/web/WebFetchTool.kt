@@ -51,7 +51,7 @@ class WebFetchTool : Tool {
             ),
             ToolParameter(
                 name = "max_length",
-                description = "Maximum length of the returned content (optional)",
+                description = "Maximum length of document fetched (optional)",
                 type = ToolParameterType.INTEGER,
                 required = false,
             ),

@@ -23,7 +23,7 @@
 
         <flexmark.version>0.64.8</flexmark.version>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
-        <graalvm.version>25.0.2</graalvm.version>
+        <graalvm.version>25.0.3</graalvm.version>
         <graalvm-python-embeded.version>25.0.2</graalvm-python-embeded.version>
         <java.version>17</java.version>
         <jansi.version>2.4.3</jansi.version>

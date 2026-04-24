@@ -121,6 +121,7 @@ class Assistant {
     }
 
     private fun exec(choice: LLMResponseChoice, memory: MutableList<String>, tools: Map<String, Tool>, query: Message) {
+        LOGGER.info(">>> ${choice.toolCalls.size} call(s) to execute")
         choice.toolCalls.forEach { call ->
             exec(choice.content, call, memory, tools, query)
         }
@@ -134,7 +135,7 @@ class Assistant {
         query: Message
     ) {
         content?.let { LOGGER.info(">>> $content") }
-        LOGGER.info(">>> Tool execution: name=$${call.name}, arguments=${call.arguments}")
+        LOGGER.info(">>> Tool execution: name=${call.name}, arguments=${call.arguments}")
 
         if (content != null) {
             reply(content, query)
@@ -145,7 +146,12 @@ class Assistant {
             return
         }
 
-        val result = tool.exec(call.arguments)
+        val result = try {
+            tool.exec(call.arguments)
+        } catch (e: Exception) {
+            LOGGER.warn("Error while executing tool `${call.name}` with arguments ${call.arguments}", e)
+            "Error while executing tool `${call.name}`. Error=${e.message}"
+        }
         if (result.length > 200) {
             LOGGER.info(result.take(200) + "...")
         } else {

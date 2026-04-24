@@ -23,9 +23,9 @@ class WebFetchTool : Tool {
         const val USER_AGENT =
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
         const val NAME = "web_fetch"
-        const val DEFAULT_MAX_LENGTH = 100_000
-        const val BUFFER_SIZE = 100 * 1024 // 100K
-        const val MAX_FILE_SIZE = 50L * 1024 * 1024 // 50MB
+        const val DEFAULT_MAX_LENGTH = 10 * 1024 * 1024 // 10MB
+        const val BUFFER_SIZE = 1024 * 1024 // 1M
+        const val MAX_FILE_SIZE = 100L * 1024 * 1024 // 100MB
     }
 
     private lateinit var context: Context

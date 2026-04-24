@@ -357,7 +357,7 @@ class AssistantTest {
     }
 
     @Test
-    fun `process with Tool error`() {
+    fun `process with Tool error - ignore error`() {
         // GIVEN
         doReturn(
             LLMResponse(
@@ -397,9 +397,9 @@ class AssistantTest {
         val result = assistant.process(prompt)
 
         // THEN
-        assertEquals(Assistant.FAILURE + ". Error: Failed", result.text)
+        assertEquals("The capital of Cameroon is Yaounde", result.text)
         assertEquals(Role.ASSISTANT, result.role)
-        assertEquals(FinishReason.FAILURE, result.finishReason)
+        assertEquals(FinishReason.DONE, result.finishReason)
 
         verify(chatHistory).append(prompt, result)
     }

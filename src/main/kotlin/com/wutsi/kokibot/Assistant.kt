@@ -39,10 +39,10 @@ class Assistant {
     fun destroy() {
     }
 
-    fun process(prompt: Message): Message {
+    fun process(prompt: Message, interactive: Boolean = true): Message {
         val now = System.currentTimeMillis()
         val response = try {
-            doProcess(prompt)
+            doProcess(prompt, interactive)
         } catch (e: TooManyIterationException) {
             LOGGER.error("Too many iterations!", e)
             Message(TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
@@ -59,7 +59,7 @@ class Assistant {
         return response
     }
 
-    private fun doProcess(prompt: Message): Message {
+    private fun doProcess(prompt: Message, interactive: Boolean): Message {
         var iteration = 0
         val memory = mutableListOf<String>()
         val tools = mutableMapOf<String, Tool>()
@@ -80,7 +80,7 @@ class Assistant {
                 )
             } else {
                 val response = ask(iteration, prompt, memory)
-                if (decide(prompt, response, memory, tools)) {
+                if (decide(prompt, response, memory, tools, interactive)) {
                     return Message(
                         text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                         role = Role.ASSISTANT,
@@ -108,22 +108,29 @@ class Assistant {
         query: Message,
         response: LLMResponse,
         memory: MutableList<String>,
-        tools: Map<String, Tool>
+        tools: Map<String, Tool>,
+        interactive: Boolean
     ): Boolean {
         // Tool calls
         val choiceCalls = response.choices.filter { choice -> choice.toolCalls.isNotEmpty() }
         if (choiceCalls.isNotEmpty()) {
-            choiceCalls.forEach { choice -> exec(choice, memory, tools, query) }
+            choiceCalls.forEach { choice -> exec(choice, memory, tools, query, interactive) }
             return false
         } else {
             return true
         }
     }
 
-    private fun exec(choice: LLMResponseChoice, memory: MutableList<String>, tools: Map<String, Tool>, query: Message) {
+    private fun exec(
+        choice: LLMResponseChoice,
+        memory: MutableList<String>,
+        tools: Map<String, Tool>,
+        query: Message,
+        interactive: Boolean
+    ) {
         LOGGER.info(">>> ${choice.toolCalls.size} call(s) to execute")
         choice.toolCalls.forEach { call ->
-            exec(choice.content, call, memory, tools, query)
+            exec(choice.content, call, memory, tools, query, interactive)
         }
     }
 
@@ -132,12 +139,13 @@ class Assistant {
         call: LLMToolCall,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
-        query: Message
+        query: Message,
+        interactive: Boolean,
     ) {
         content?.let { LOGGER.info(">>> $content") }
         LOGGER.info(">>> Tool execution: name=${call.name}, arguments=${call.arguments}")
 
-        if (content != null) {
+        if (content != null && interactive) {
             reply(content, query)
         }
         val tool = tools[call.name]
@@ -150,10 +158,10 @@ class Assistant {
             tool.exec(call.arguments)
         } catch (e: Exception) {
             LOGGER.warn("Error while executing tool `${call.name}` with arguments ${call.arguments}", e)
-            "Error while executing tool `${call.name}`. Error=${e.message}"
+            "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
         }
         if (result.length > 200) {
-            LOGGER.info(result.take(200) + "...")
+            LOGGER.info(result.take(100) + "...")
         } else {
             LOGGER.info(result)
         }

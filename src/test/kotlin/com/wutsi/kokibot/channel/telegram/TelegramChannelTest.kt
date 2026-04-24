@@ -118,7 +118,7 @@ class TelegramChannelTest {
         doAnswer {
             Thread.sleep(2 * TelegramChannel.TYPING_DELAY)
             Message("World")
-        }.whenever(assistant).process(any())
+        }.whenever(assistant).process(any(), any())
 
         // WHEN
         val update = createTextUpdate("Hello", 123L)
@@ -126,7 +126,7 @@ class TelegramChannelTest {
 
         // THEN
         val prompt = argumentCaptor<Message>()
-        verify(assistant).process(prompt.capture())
+        verify(assistant).process(prompt.capture(), eq(true))
         assertEquals("Hello", prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("123", prompt.firstValue.userId)
@@ -142,7 +142,7 @@ class TelegramChannelTest {
     @Test
     fun `consume - with whitelist - accepted`() {
         // GIVEN
-        doReturn(Message("World")).whenever(assistant).process(any())
+        doReturn(Message("World")).whenever(assistant).process(any(), any())
 
         val config = this.config + mapOf("sender-whitelist" to listOf("ray.sponsible"))
         telegram.init(config, context)
@@ -152,7 +152,7 @@ class TelegramChannelTest {
         telegram.consume(update)
 
         // THEN
-        verify(assistant).process(any())
+        verify(assistant).process(any(), eq(true))
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -171,7 +171,7 @@ class TelegramChannelTest {
         telegram.consume(update)
 
         // THEN
-        verify(assistant, never()).process(any())
+        verify(assistant, never()).process(any(), any())
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -182,7 +182,7 @@ class TelegramChannelTest {
     @Test
     fun `consume - should process documents`() {
         // GIVEN
-        doReturn(Message("Received")).whenever(assistant).process(any())
+        doReturn(Message("Received")).whenever(assistant).process(any(), any())
 
         val update = createDocumentUpdate(123L, fileId = "21093209", "foo.pdf")
         doReturn(ResponseEntity(mapOf("result" to mapOf("file_path" to "/files/1.pdf")), HttpStatus.OK))
@@ -205,7 +205,7 @@ class TelegramChannelTest {
         verify(rest).getForEntity("https://api.telegram.org/file/bot$botToken/files/1.pdf", ByteArray::class.java)
 
         val prompt = argumentCaptor<Message>()
-        verify(assistant).process(prompt.capture())
+        verify(assistant).process(prompt.capture(), eq(true))
         assertNotNull(prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals(1, prompt.firstValue.filePaths.size)
@@ -224,7 +224,7 @@ class TelegramChannelTest {
         telegram.consume(update)
 
         // THEN
-        verify(assistant, never()).process(any())
+        verify(assistant, never()).process(any(), any())
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -242,7 +242,7 @@ class TelegramChannelTest {
         telegram.consume(update)
 
         // THEN
-        verify(assistant, never()).process(any())
+        verify(assistant, never()).process(any(), any())
         verify(client, never()).execute(any<SendMessage>())
     }
 

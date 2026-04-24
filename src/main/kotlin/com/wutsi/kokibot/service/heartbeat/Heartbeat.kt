@@ -61,7 +61,8 @@ class Heartbeat(private val assistant: Assistant) : Resource {
                     userId = id(),
                     text = query,
                     role = Role.SYSTEM,
-                )
+                ),
+                interactive = false,
             )
         }
     }

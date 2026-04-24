@@ -23,9 +23,10 @@ class WebFetchTool : Tool {
         const val USER_AGENT =
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
         const val NAME = "web_fetch"
-        const val DEFAULT_MAX_LENGTH = 10 * 1024 * 1024 // 10MB
         const val BUFFER_SIZE = 1024 * 1024 // 1M
-        const val MAX_FILE_SIZE = 100L * 1024 * 1024 // 100MB
+        const val DEFAULT_MAX_LENGTH = 1 * 1024 * 1024 // 1MB
+        const val MIN_FILE_SIZE = 25 * 1024 // 25K
+        const val MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
     }
 
     private lateinit var context: Context
@@ -61,10 +62,11 @@ class WebFetchTool : Tool {
         val url = arguments["url"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: url")
 
-        val maxLength = MapUtil.toInt("max_length", arguments)
+        val maxLength = (MapUtil.toInt("max_length", arguments) ?: DEFAULT_MAX_LENGTH)
+            .coerceIn(MIN_FILE_SIZE, MAX_FILE_SIZE)
 
         try {
-            val content = fetch(url, maxLength ?: DEFAULT_MAX_LENGTH)
+            val content = fetch(url, maxLength)
             return "BEGIN URL CONTENT - $url\n\n" +
                 content +
                 "\n\nEND URL CONTENT"

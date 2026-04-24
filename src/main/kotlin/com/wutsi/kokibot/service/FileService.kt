@@ -3,6 +3,7 @@ package com.wutsi.kokibot.service
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Resource
+import org.apache.commons.io.FilenameUtils
 import java.io.File
 import java.time.LocalDate
 import java.util.UUID
@@ -27,21 +28,29 @@ class FileService : Resource {
     }
 
     fun create(filename: String, content: ByteArray): File {
-        val file = File(getFileDirectory(), filename)
-        file.parentFile.mkdirs()
+        val dir = getFileDirectory()
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+
+        val basename = FilenameUtils.getBaseName(filename)
+        val extension = FilenameUtils.getExtension(filename) ?: ""
+        val file = File(dir, "${basename}_${UUID.randomUUID()}${if (extension.isNotEmpty()) ".$extension" else ""}")
         file.writeBytes(content)
         return file
     }
 
     fun createTempFile(fileName: String, extension: String): File {
-        val dir = File(getTempDir(), UUID.randomUUID().toString())
-        dir.mkdirs()
-        return File(dir, "$fileName.${extension.removePrefix(".")}")
+        val dir = getTempDir()
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return File(dir, "${fileName}_${UUID.randomUUID()}.${extension.removePrefix(".")}")
     }
 
     private fun getFileDirectory(): File {
         val now = LocalDate.now()
-        val path = "${getFilesDir()}/${now.year}/${now.month.value}/${now.dayOfMonth}/${UUID.randomUUID()}"
+        val path = "${getFilesDir()}/${now.year}/${now.month.value}/${now.dayOfMonth}"
         return File(path)
     }
 

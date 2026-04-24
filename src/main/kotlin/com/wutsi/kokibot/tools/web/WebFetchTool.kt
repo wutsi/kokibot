@@ -129,7 +129,7 @@ class WebFetchTool : Tool {
             else -> "bin" // Default fallback
         }
 
-        val file = context.fileService.createTempFile("web_fetch_", ".$extension")
+        val file = context.fileService.createTempFile("web_fetch", ".$extension")
         try {
             response.body.byteStream().use { input ->
                 FileOutputStream(file).use { output ->

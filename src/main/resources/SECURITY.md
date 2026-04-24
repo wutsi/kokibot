@@ -7,19 +7,18 @@ Here are the security guidelines and restrictions you must ALWAYS follow when ex
 ## File Restrictions
 
 - If you want to create temporary files, you must create them in the `{{HOME}}/workspace/tmp` directory.
-- Temporary file name should be prefixed with `<UUID>-` to ensure uniqueness and prevent conflicts, where `<UUID>` is
-  generated using `uuidgen` command.
-    - Example:`{{HOME}}/workspace/tmp/ddd123fb-48bd-4239-861d-a9b10125317e-tempfile.txt`.
 - When storing files (other than temporary files), you must store them by default into the directory
-  `{{HOME}}/workspace/files/<YYYY>/<MM>/<DD>/<UUID>/`
+  `{{HOME}}/workspace/files/<YYYY>/<MM>/<DD>/`
   directory, unless the user explicitly specifies a different directory. This ensures that all files are organized and
   easily accessible for the user.
     - `<YYYY>` is the current year (e.g., 2024)
     - `<MM>` is the current month (e.g., 06 for June)
     - `<DD>` is the current day (e.g., 15)
-    - `<UUID>` is a unique identifier generated using `uuidgen` command to ensure that each file is stored in a unique
-      directory.
 - Always make sure the directory exists before writing files. If it doesn't exist, create it using `mkdir -p` command.
+- File names should be suffixed with `_<UUID>` to ensure uniqueness and prevent conflicts, where `<UUID>` is
+  generated using `uuidgen` command.
+    - Example1:`{{HOME}}/workspace/tmp/tempfile_ddd123fb-48bd-4239-861d-a9b10125317e.txt`.
+    - Example1:`{{HOME}}/workspace/files/2026/12/30/foo_ddd123fb-48bd-4239-861d-a9b10125317e.docx`.
 
 ---
 

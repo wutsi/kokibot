@@ -4,7 +4,7 @@
   },
   "llm": {
     "type": "deepseek",
-    "api_key": "${DEEPSEEK_API_KEY}",
+    "api-key": "${DEEPSEEK_API_KEY}",
     "model": "deepseek-chat",
     "temperature": 0.7,
     "read-timeout-millis": 30000,

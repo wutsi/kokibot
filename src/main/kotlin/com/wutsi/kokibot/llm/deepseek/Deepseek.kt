@@ -32,7 +32,7 @@ open class Deepseek : LLM {
     /**
      * Initialize the Deepseek client with the given configuration and context.
      * The configuration can contain the following parameters:
-     * - api_key: the API key for Deepseek (required)
+     * - api-key: the API key for Deepseek (required)
      * - model: the model to use for generation. Values: deepseek-chat, deepseek-reasoner (required)
      * - thinking: whether to enable thinking mode
      * - max-tokens: the maximum number of tokens to generate
@@ -41,7 +41,7 @@ open class Deepseek : LLM {
      * - connect-timeout-millis: the connect timeout in milliseconds (default: 5000)
      */
     override fun init(config: Map<*, *>, context: Context) {
-        val apiKey = config["api_key"] as String? ?: throw ConfigurationException("api_key is required")
+        val apiKey = config["api-key"] as String? ?: throw ConfigurationException("api-key is required")
         val model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
         this.context = context

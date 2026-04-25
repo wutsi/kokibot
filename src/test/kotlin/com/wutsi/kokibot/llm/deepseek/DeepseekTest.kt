@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 class DeepseekTest {
     private val llm = Deepseek()
     private val config = mapOf(
-        "api_key" to "ds-000001",
+        "api-key" to "ds-000001",
         "model" to "deepseek-chat",
         "thinking" to true,
         "max-tokens" to 1000,
@@ -65,7 +65,7 @@ class DeepseekTest {
     @Test
     fun `init - no model`() {
         val config = mapOf(
-            "api_key" to "ds-000001",
+            "api-key" to "ds-000001",
         )
         assertThrows<ConfigurationException> { llm.init(config, context) }
     }
@@ -73,7 +73,7 @@ class DeepseekTest {
     @Test
     fun completion() {
         val config = mapOf(
-            "api_key" to System.getenv("DEEPSEEK_API_KEY"),
+            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-chat",
         )
         llm.init(config, context)
@@ -109,7 +109,7 @@ class DeepseekTest {
         doReturn(meta).whenever(tool).metadata()
 
         val config = mapOf(
-            "api_key" to System.getenv("DEEPSEEK_API_KEY"),
+            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-chat",
             "tools" to listOf("date_tool_now"),
         )
@@ -131,7 +131,7 @@ class DeepseekTest {
     @Test
     fun `completion with PDF file`() {
         val config = mapOf(
-            "api_key" to System.getenv("DEEPSEEK_API_KEY"),
+            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-chat",
         )
         llm.init(config, context)
@@ -157,7 +157,7 @@ class DeepseekTest {
     @Test
     fun `health - up`() {
         val config = mapOf(
-            "api_key" to System.getenv("DEEPSEEK_API_KEY"),
+            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-chat",
         )
         llm.init(config, context)
@@ -172,7 +172,7 @@ class DeepseekTest {
     @Test
     fun `health - down`() {
         val config = mapOf(
-            "api_key" to "xxxxx",
+            "api-key" to "xxxxx",
             "model" to "deepseek-chat",
         )
         llm.init(config, context)

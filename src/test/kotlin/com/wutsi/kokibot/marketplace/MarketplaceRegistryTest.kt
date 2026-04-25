@@ -16,15 +16,15 @@ class MarketplaceRegistryTest {
         "marketplaces" to listOf(
             mapOf(
                 "name" to "obsidian",
-                "repo_url" to "https://github.com/kepano/obsidian-skills",
+                "repo-url" to "https://github.com/kepano/obsidian-skills",
             ),
             mapOf(
                 "name" to "anthropics",
-                "repo_url" to "https://github.com/anthropics/skills",
+                "repo-url" to "https://github.com/anthropics/skills",
             ),
             mapOf(
                 "name" to "x1x",
-                "repo_url" to "https://github.com/x1x/skills-not-found.git",
+                "repo-url" to "https://github.com/x1x/skills-not-found.git",
             ),
         )
     )
@@ -47,11 +47,11 @@ class MarketplaceRegistryTest {
             "marketplaces" to listOf(
                 mapOf(
                     "name" to "obsidian",
-                    "repo_url" to "https://github.com/kepano/obsidian-skills",
+                    "repo-url" to "https://github.com/kepano/obsidian-skills",
                 ),
                 mapOf(
                     "name" to "anthropics",
-                    "repo_url" to "https://github.com/anthropics/skills",
+                    "repo-url" to "https://github.com/anthropics/skills",
                 ),
                 mapOf(
                     "name" to "x1X",

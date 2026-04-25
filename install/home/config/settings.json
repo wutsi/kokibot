@@ -7,7 +7,7 @@
   },
   "llm": {
     "type": "${KOKIBOT_LLM_TYPE}",
-    "api_key": "${KOKIBOT_LLM_API_KEY}",
+    "api-key": "${KOKIBOT_LLM_API_KEY}",
     "model": "${KOKIBOT_LLM_MODEL}",
     "max-tokens": 10240
   },
@@ -24,11 +24,11 @@
   "marketplaces": [
     {
       "name": "obsidian",
-      "repo_url": "https://github.com/kepano/obsidian-skills.git"
+      "repo-url": "https://github.com/kepano/obsidian-skills.git"
     },
     {
       "name": "anthropics",
-      "repo_url": "https://github.com/anthropics/skills.git",
+      "repo-url": "https://github.com/anthropics/skills.git",
       "skill_whitelist": [
         "pdf",
         "docx",

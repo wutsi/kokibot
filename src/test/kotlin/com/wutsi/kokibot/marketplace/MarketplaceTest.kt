@@ -41,7 +41,7 @@ class MarketplaceTest {
 
         val config = mapOf(
             "name" to "obsidian",
-            "repo_url" to "https://github.com/kepano/obsidian-skills"
+            "repo-url" to "https://github.com/kepano/obsidian-skills"
         )
         marketplace.init(config, context)
         val skills = marketplace.getSkills()
@@ -71,8 +71,8 @@ class MarketplaceTest {
 
         val config = mapOf(
             "name" to "obsidian",
-            "repo_url" to "https://github.com/kepano/obsidian-skills",
-            "skill_whitelist" to listOf("land-title-verifier")
+            "repo-url" to "https://github.com/kepano/obsidian-skills",
+            "skill-whitelist" to listOf("land-title-verifier")
         )
         marketplace.init(config, context)
         val skills = marketplace.getSkills()
@@ -89,7 +89,7 @@ class MarketplaceTest {
     }
 
     @Test
-    fun `init - no repo_url`() {
+    fun `init - no repo-url`() {
         val config = mapOf(
             "name" to "obsidian",
         )
@@ -100,7 +100,7 @@ class MarketplaceTest {
     @Test
     fun `init - no name`() {
         val config = mapOf(
-            "repo_url" to "https://github.com/kepano/obsidian-skills"
+            "repo-url" to "https://github.com/kepano/obsidian-skills"
         )
 
         assertThrows<ConfigurationException> { marketplace.init(config, context) }

@@ -19,7 +19,7 @@ class KimiTest {
     @Test
     fun completion() {
         val config = mapOf(
-            "api_key" to System.getenv("KIMI_API_KEY"),
+            "api-key" to System.getenv("KIMI_API_KEY"),
             "model" to "kimi-k2.5",
         )
         llm.init(config, context)
@@ -40,7 +40,7 @@ class KimiTest {
     @Test
     fun `completion with image file`() {
         val config = mapOf(
-            "api_key" to System.getenv("KIMI_API_KEY"),
+            "api-key" to System.getenv("KIMI_API_KEY"),
             "model" to "kimi-k2.5",
         )
         llm.init(config, context)

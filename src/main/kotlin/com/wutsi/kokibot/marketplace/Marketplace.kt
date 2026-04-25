@@ -26,10 +26,10 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
         this.name = config["name"] as? String
             ?: throw ConfigurationException("Missing required config: name")
 
-        this.repoUrl = config["repo_url"] as? String
+        this.repoUrl = config["repo-url"] as? String
             ?: throw ConfigurationException("Missing required config: repo-url")
 
-        this.skillWhitelist = (config["skill_whitelist"] as? List<*>)?.mapNotNull { it?.toString()?.lowercase() }
+        this.skillWhitelist = (config["skill-whitelist"] as? List<*>)?.mapNotNull { it?.toString()?.lowercase() }
             ?: emptyList()
 
         this.context = context

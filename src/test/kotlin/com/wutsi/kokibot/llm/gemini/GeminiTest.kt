@@ -19,7 +19,7 @@ class GeminiTest {
     // Disabled because of rate limit and cost. Enable it for manual testing.
     fun completion() {
         val config = mapOf(
-            "api_key" to System.getenv("GEMINI_API_KEY"),
+            "api-key" to System.getenv("GEMINI_API_KEY"),
             "model" to "gemini-2.5-flash-lite",
         )
         llm.init(config, context)

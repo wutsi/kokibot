@@ -34,70 +34,6 @@ check_python() {
     fi
 }
 
-installing_dependencies(){
-    echo "INSTALLING DEPENDENCIES"
-
-    # pandoc
-    if ! command -v pandoc >/dev/null 2>&1; then
-        echo "Installing pandoc..."
-        brew install pandoc
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install pandoc with brew."
-            exit 1
-        fi
-    fi
-
-    # pandoc
-    if ! command -v tectonic >/dev/null 2>&1; then
-        echo "Installing tectonic..."
-        brew install tectonic
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install tectonic with brew."
-            exit 1
-        fi
-    fi
-
-    # markitdown
-    if ! command -v markitdown >/dev/null 2>&1; then
-        echo "Installing markitdown..."
-        pipx install markitdown
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install markitdown with pipx."
-            exit 1
-        fi
-    fi
-
-    # vdirsyncer
-    if ! command -v vdirsyncer >/dev/null 2>&1; then
-        echo "Installing vdirsyncer..."
-        brew install vdirsyncer
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install vdirsyncer with brew."
-            exit 1
-        fi
-    fi
-
-    # khard
-    if ! command -v khard >/dev/null 2>&1; then
-        echo "Installing khard..."
-        brew install khard
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install khard with brew."
-            exit 1
-        fi
-    fi
-
-    # himalaya
-    if ! command -v khard >/dev/null 2>&1; then
-        echo "Installing himalaya..."
-        brew install himalaya
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install himalaya with brew."
-            exit 1
-        fi
-    fi
-}
-
 install_files() {
     echo "INSTALLING FILES"
 
@@ -245,7 +181,6 @@ main() {
     check_java
     check_python
     install_files
-    installing_dependencies
     install_service
     cleanup
     echo "kokibot v$KOKIBOT_VERSION installed successfully."

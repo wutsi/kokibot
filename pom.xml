@@ -26,7 +26,7 @@
         <graalvm.version>25.0.2</graalvm.version>
         <graalvm-python-embeded.version>25.0.2</graalvm-python-embeded.version>
         <java.version>17</java.version>
-        <jansi.version>2.4.3</jansi.version>
+        <jqit.version>7.6.0.202603022253-r</jqit.version>
         <jsoup.version>1.22.2</jsoup.version>
         <kotlin.version>2.3.21</kotlin.version>
         <kotlin-jackson.version>2.21.2</kotlin-jackson.version>
@@ -86,6 +86,13 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+        </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>${jqit.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>

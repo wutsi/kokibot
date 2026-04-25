@@ -4,5 +4,10 @@ interface Resource {
     fun id(): String
     fun init(config: Map<*, *>, context: Context)
     fun destroy() {}
-    fun health(): Health
+    fun health(): Health {
+        return Health(
+            id = id(),
+            up = true,
+        )
+    }
 }

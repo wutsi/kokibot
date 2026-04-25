@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.service
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Resource
 import org.apache.commons.io.FilenameUtils
 import java.io.File
@@ -17,10 +16,6 @@ class FileService : Resource {
 
     override fun id(): String {
         return ID
-    }
-
-    override fun health(): Health {
-        return Health(id = id(), up = true)
     }
 
     override fun init(config: Map<*, *>, context: Context) {

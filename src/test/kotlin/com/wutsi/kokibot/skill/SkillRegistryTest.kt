@@ -7,6 +7,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.BootstrapTest
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.exception.SkillNotFoundException
+import com.wutsi.kokibot.marketplace.Marketplace
+import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -51,6 +53,46 @@ class SkillRegistryTest {
         assertEquals(meta1, skills[0].metadata)
 
         assertEquals(meta2, skills[1].metadata)
+    }
+
+    @Test
+    fun `init - marketplace skills`() {
+        // GIVEN
+        doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
+            .whenever(parser).parse(any())
+
+        val meta11 = SkillMetadata(
+            name = "obsidian:obsidian-cli",
+            home = File("target/obsidian-cli"),
+        )
+        val skill11 = mock<Skill>()
+        doReturn(meta11).whenever(skill11).metadata
+
+        val marketplace = mock(Marketplace::class.java)
+        doReturn("obsidian").whenever(marketplace).id()
+        doReturn(listOf(skill11)).whenever(marketplace).getSkills()
+
+        val marketplaceRegistry = mock<MarketplaceRegistry>()
+        doReturn(listOf(marketplace)).whenever(marketplaceRegistry).all()
+
+        val context = Context(
+            home = getResourceFile("/home/007"),
+            llm = mock(),
+            marketplaceRegistry = marketplaceRegistry,
+        )
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skills = registry.all()
+
+        assertEquals(3, skills.size)
+
+        assertEquals(meta1, skills[0].metadata)
+        assertEquals(meta2, skills[1].metadata)
+        assertEquals(meta11, skills[2].metadata)
     }
 
     @Test

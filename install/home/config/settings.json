@@ -20,5 +20,21 @@
   "memory": {
     "window": "5d",
     "compaction-frequency": "6h"
-  }
+  },
+  "marketplaces": [
+    {
+      "name": "obsidian",
+      "repo_url": "https://github.com/kepano/obsidian-skills.git"
+    },
+    {
+      "name": "anthropics",
+      "repo_url": "https://github.com/anthropics/skills.git",
+      "skill_whitelist": [
+        "pdf",
+        "docx",
+        "pptx",
+        "xlsx"
+      ]
+    }
+  ]
 }

@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.service.memory
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
 import tools.jackson.core.type.TypeReference
@@ -36,10 +35,6 @@ class ChatHistory : Resource {
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-    }
-
-    override fun health(): Health {
-        return Health(id = id(), up = true)
     }
 
     internal fun append(prompt: Message, response: Message, date: LocalDate) = lock.write {

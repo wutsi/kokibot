@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.service.memory
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.util.DurationUtil
@@ -75,10 +74,6 @@ class Memory : Resource {
             scheduler.shutdownNow()
             Thread.currentThread().interrupt()
         }
-    }
-
-    override fun health(): Health {
-        return Health(id = id(), up = true)
     }
 
     fun get(): String? = lock.withLock {

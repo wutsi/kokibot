@@ -7,6 +7,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.channel.Channel
+import com.wutsi.kokibot.marketplace.Marketplace
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -18,6 +19,7 @@ class ContextTest {
     val home = getResourceFile("/home/007")
 
     val channel = mock<Channel>()
+    val marketplace = mock<Marketplace>()
 
     val context = Context(
         home = getResourceFile("/home/007"),
@@ -28,6 +30,7 @@ class ContextTest {
         chatHistory = mock(),
         commandRegistry = mock(),
         skillRegistry = mock(),
+        marketplaceRegistry = mock(),
         memory = mock(),
         fileService = mock(),
     )
@@ -53,6 +56,9 @@ class ContextTest {
 
     @BeforeEach
     fun setUp() {
+        doReturn(Health(id = "-", up = true)).whenever(marketplace).health()
+        doReturn(listOf(marketplace)).whenever(context.marketplaceRegistry).all()
+
         doReturn(Health(id = "-", up = true)).whenever(channel).health()
         doReturn(listOf(channel)).whenever(context.channelRegistry).all()
 
@@ -117,7 +123,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(5, health.children.size)
+        assertEquals(6, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

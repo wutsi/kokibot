@@ -6,6 +6,7 @@ import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.Memory
@@ -26,6 +27,7 @@ class Context(
     val skillRegistry: SkillRegistry = SkillRegistry(SkillParser()),
     val commandRegistry: CommandRegistry = CommandRegistry(),
     val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
+    val marketplaceRegistry: MarketplaceRegistry = MarketplaceRegistry(),
     val memory: Memory = Memory(),
     val chatHistory: ChatHistory = ChatHistory(),
     val fileService: FileService = FileService(),
@@ -43,6 +45,7 @@ class Context(
 
     fun init(assistant: Assistant, config: Map<*, *>) {
         initChannels(config, assistant)
+        initMarketplaces(config) // IMPORTANT: Before initSkills() because some skills may depend on marketplaces.
         initSkills()
         initTools()
         initLLM(config)
@@ -65,11 +68,16 @@ class Context(
             skillRegistry.all() +
             toolRegistry.all() +
             channelRegistry.all() +
+            marketplaceRegistry.all() +
             listOf(llm, chatHistory, memory, fileService)
     }
 
     private fun initChannels(config: Map<*, *>, assistant: Assistant) {
         channelRegistry.init(config, this, assistant)
+    }
+
+    private fun initMarketplaces(config: Map<*, *>) {
+        marketplaceRegistry.init(config, this)
     }
 
     private fun initLLM(config: Map<*, *>) {

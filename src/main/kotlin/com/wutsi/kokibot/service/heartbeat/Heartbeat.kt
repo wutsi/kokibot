@@ -2,7 +2,6 @@ package com.wutsi.kokibot.service.heartbeat
 
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.Role
@@ -28,10 +27,6 @@ class Heartbeat(private val assistant: Assistant) : Resource {
 
     override fun id(): String {
         return ID
-    }
-
-    override fun health(): Health {
-        return Health(id = id(), up = true)
     }
 
     override fun init(config: Map<*, *>, context: Context) {

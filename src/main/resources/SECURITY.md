@@ -64,3 +64,10 @@ potential harm to the system:
 - Polyglot access: DENIED — no access to other languages or polyglot APIs
 - Environment variables: DENIED — no access to host environment variables from Python code
 - Threading and multiprocessing: DENIED — no ability to create threads or subprocesses from Python code
+
+---
+
+## Other Restrictions
+
+- Never update your own code or configuration.
+- Never relaunch or restart yourself.

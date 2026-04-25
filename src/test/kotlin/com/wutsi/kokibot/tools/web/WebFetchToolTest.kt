@@ -56,7 +56,9 @@ class WebFetchToolTest {
         val args = mapOf("url" to "https://evendo.com/locations/cameroon/yaounde/odza")
         val result = tool.exec(args)
         println(result)
-        assertTrue(result.contains("Odza: A Tranquil Retreat in the Bustling Heart of Yaoundé"))
+        assertTrue(result.contains("Title: Odza: A Tranquil Retreat in the Bustling Heart of Yaoundé"))
+        assertTrue(result.contains("Odza is a charming neighborhood nestled in the southern part of Yaoundé, Cameroon. "))
+        assertTrue(result.contains("Image: https://media.evendo.com/locations-resized/NeighbourhoodDetails//12656514-2423-4575-8850-6ac2286232cf"))
     }
 
     @Test

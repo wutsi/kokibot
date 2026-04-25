@@ -10,6 +10,7 @@ import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.util.MapUtil
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.jsoup.Jsoup
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
@@ -113,7 +114,7 @@ class WebFetchTool : Tool {
 
             // Extract text
             val converter = MarkdownConverter(fileService = context.fileService)
-            return converter.convert(file, contentType).take(maxLength)
+            return extractMetadata(file) + converter.convert(file, contentType).take(maxLength)
         }
     }
 
@@ -156,5 +157,23 @@ class WebFetchTool : Tool {
         }
         LOGGER.debug("{} downloaded to {}. Size={}", url, file.absolutePath, file.length())
         return file
+    }
+
+    private fun extractMetadata(file: File): String {
+        if (!file.name.endsWith(".html")) {
+            return ""
+        }
+
+        try {
+            val doc = Jsoup.parse(file, "UTF-8")
+            val title = doc.title()
+            val image = doc.selectFirst("meta[property=og:image]")
+                ?.attr("content")
+                ?: "N/A"
+
+            return "Title: $title\nImage: $image\n\n"
+        } catch (ex: Exception) {
+            return ""
+        }
     }
 }

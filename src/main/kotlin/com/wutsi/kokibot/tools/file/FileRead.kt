@@ -4,8 +4,7 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.web.WebFetchTool.Companion.DEFAULT_MAX_LENGTH
-import com.wutsi.kokibot.util.MapUtil
+import com.wutsi.kokibot.tools.web.WebFetchTool.Companion.MAX_FILE_SIZE
 
 class FileRead : Tool {
     companion object {
@@ -29,22 +28,15 @@ class FileRead : Tool {
                 type = ToolParameterType.STRING,
                 required = true
             ),
-            ToolParameter(
-                name = "max_length",
-                description = "Maximum length of the returned content (optional)",
-                type = ToolParameterType.INTEGER,
-                required = false,
-            ),
         )
     )
 
     override fun exec(arguments: Map<*, *>): String {
         val path = arguments["path"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: path")
-        val maxLength = MapUtil.toInt("max_length", arguments)
 
         return try {
-            read(path, maxLength ?: DEFAULT_MAX_LENGTH)
+            read(path, MAX_FILE_SIZE)
         } catch (ex: Throwable) {
             "Failed to read file. Error=${ex.message}"
         }

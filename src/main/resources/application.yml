@@ -1,16 +1,3 @@
-spring:
-    jackson:
-        default-property-inclusion: non_null
-        use-jackson2-defaults: true
-        deserialization:
-            FAIL_ON_UNKNOWN_PROPERTIES: false
-            FAIL_ON_NULL_FOR_PRIMITIVES: false
-            ACCEPT_EMPTY_STRING_AS_NULL_OBJECT: true
-        mapper:
-            ACCEPT_CASE_INSENSITIVE_ENUMS: true
-            ACCEPT_CASE_INSENSITIVE_PROPERTIES: true
-
-
 server:
     port: 8080
     compression:

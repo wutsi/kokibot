@@ -33,6 +33,7 @@ open class DeepseekClient(
     val readTimeoutMillis: Long? = null,
     val connectTimeoutMillis: Long? = null,
     val restBuilder: RestBuilder = RestBuilder(),
+    val jsonMapper: JsonMapper = JsonMapper(),
 ) {
     companion object {
         const val COMPLETION_ENDPOINT = "/chat/completions"
@@ -41,7 +42,6 @@ open class DeepseekClient(
 
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val rest = restBuilder.build(readTimeoutMillis, connectTimeoutMillis)
-    private val jsonMapper = JsonMapper()
     private val textExtractorFactory = TextExtractorFactory()
 
     protected open fun getBaseUrl(): String {

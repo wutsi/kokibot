@@ -23,6 +23,7 @@ open class Deepseek : LLM {
     }
 
     internal lateinit var client: DeepseekClient
+    private lateinit var context: Context
 
     override fun id(): String {
         return "llm:deepseek"
@@ -43,7 +44,8 @@ open class Deepseek : LLM {
         val apiKey = config["api_key"] as String? ?: throw ConfigurationException("api_key is required")
         val model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
-        client = createClient(apiKey, model, config)
+        this.context = context
+        this.client = createClient(apiKey, model, config)
     }
 
     override fun health(): Health {
@@ -68,6 +70,7 @@ open class Deepseek : LLM {
             temperature = MapUtil.toDouble("temperature", config),
             readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,
             connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
+            jsonMapper = context.jsonMapper,
         )
     }
 }

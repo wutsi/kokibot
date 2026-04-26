@@ -2,8 +2,7 @@ package com.wutsi.kokibot
 
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
-import com.wutsi.kokibot.exception.CommandNotFoundException
-import com.wutsi.kokibot.exception.TooManyIterationException
+import com.wutsi.kokibot.command.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
@@ -276,7 +275,7 @@ class Assistant {
         val skills = context.skillRegistry
             .all()
             .filter { skill -> skill.health().up }
-            .map { skill ->
+            .joinToString("\n") { skill ->
                 listOfNotNull(
                     "- `${skill.metadata.name}`: ${skill.metadata.description}",
                 ).joinToString("\n")

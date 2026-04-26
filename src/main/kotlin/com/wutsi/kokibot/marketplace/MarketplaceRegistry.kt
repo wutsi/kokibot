@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.marketplace
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.MarketplaceNotFoundException
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

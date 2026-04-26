@@ -1,6 +1,6 @@
 package com.wutsi.kokibot.skill
 
-import com.wutsi.kokibot.exception.ConfigurationException
+import com.wutsi.kokibot.ConfigurationException
 import org.springframework.stereotype.Service
 import org.yaml.snakeyaml.Yaml
 import java.io.File

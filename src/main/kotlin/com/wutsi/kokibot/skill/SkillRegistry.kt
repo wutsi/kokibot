@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.SkillNotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File

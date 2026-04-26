@@ -7,8 +7,8 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.ChannelNotFoundException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

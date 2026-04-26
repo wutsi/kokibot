@@ -50,6 +50,7 @@ install_files() {
     unzip -q kokibot.zip
 
     # Backup current configuration
+    mkdir -p "$TMP_DIR/backup"
     cp -R "$HOME_DIR/config" "$TMP_DIR/backup" 2>/dev/null || true
     cp "$HOME_DIR/ASSISTANT.md" "$TMP_DIR/backup" 2>/dev/null || true
     cp "$HOME_DIR/HEARTBEAT.md" "$TMP_DIR/backup" 2>/dev/null || true

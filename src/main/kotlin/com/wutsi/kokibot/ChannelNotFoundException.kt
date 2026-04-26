@@ -1,3 +1,3 @@
-package com.wutsi.kokibot.exception
+package com.wutsi.kokibot
 
 class ChannelNotFoundException(message: String) : RuntimeException(message)

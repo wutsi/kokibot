@@ -6,7 +6,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.BootstrapTest
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.SkillNotFoundException
 import com.wutsi.kokibot.marketplace.Marketplace
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import org.junit.jupiter.api.Assertions.assertEquals

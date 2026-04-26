@@ -1,7 +1,7 @@
 package com.wutsi.kokibot.tools.web
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.UnsupportedMimeTypeException
+import com.wutsi.kokibot.service.UnsupportedMimeTypeException
 import com.wutsi.kokibot.service.file.MarkdownConverter
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata

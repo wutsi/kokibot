@@ -4,7 +4,6 @@ import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.channel.ChannelFactory
 import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.service.FileService

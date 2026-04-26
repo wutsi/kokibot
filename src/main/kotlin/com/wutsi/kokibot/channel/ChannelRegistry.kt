@@ -1,9 +1,9 @@
 package com.wutsi.kokibot.channel
 
 import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.ChannelNotFoundException
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.ChannelNotFoundException
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

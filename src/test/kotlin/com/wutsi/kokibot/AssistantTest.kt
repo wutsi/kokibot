@@ -11,8 +11,8 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
+import com.wutsi.kokibot.command.CommandNotFoundException
 import com.wutsi.kokibot.command.CommandRegistry
-import com.wutsi.kokibot.exception.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest

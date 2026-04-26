@@ -18,6 +18,7 @@ import com.wutsi.kokibot.tools.ToolCommand
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.tools.file.FileRead
 import com.wutsi.kokibot.tools.file.FileWrite
+import com.wutsi.kokibot.tools.messaging.SendMessageTool
 import com.wutsi.kokibot.tools.python.PythonTool
 import com.wutsi.kokibot.tools.shell.ShellTool
 import com.wutsi.kokibot.tools.skill.SkillActivationTool
@@ -78,6 +79,8 @@ class ContextFactory(
             FileWrite(),
 
             PythonTool(),
+
+            SendMessageTool(),
 
             ShellTool(),
 

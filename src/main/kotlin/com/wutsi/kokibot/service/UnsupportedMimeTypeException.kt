@@ -1,3 +1,3 @@
-package com.wutsi.kokibot.exception
+package com.wutsi.kokibot.service
 
 class UnsupportedMimeTypeException(message: String) : RuntimeException(message)

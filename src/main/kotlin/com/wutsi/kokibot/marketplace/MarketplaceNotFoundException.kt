@@ -1,3 +1,3 @@
-package com.wutsi.kokibot.exception
+package com.wutsi.kokibot.marketplace
 
 class MarketplaceNotFoundException(message: String) : RuntimeException(message)

@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.service.file
 
-import com.wutsi.kokibot.exception.UnsupportedMimeTypeException
-import com.wutsi.kokibot.service.file.TextExtractorFactory
+import com.wutsi.kokibot.service.UnsupportedMimeTypeException
 import com.wutsi.kokibot.service.file.extractor.DOCTextExtractor
 import com.wutsi.kokibot.service.file.extractor.DOCXTextExtractor
 import com.wutsi.kokibot.service.file.extractor.PDFTextExtractor

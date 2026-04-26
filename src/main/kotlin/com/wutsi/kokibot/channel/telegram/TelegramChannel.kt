@@ -1,12 +1,12 @@
 package com.wutsi.kokibot.channel.telegram
 
 import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
 import kotlinx.coroutines.CoroutineName
@@ -23,8 +23,10 @@ import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateC
 import org.telegram.telegrambots.meta.api.methods.ActionType
 import org.telegram.telegrambots.meta.api.methods.ParseMode
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Document
+import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
@@ -187,6 +189,24 @@ class TelegramChannel(
             .disableNotification(!notification)
             .build()
         client.execute(sendMessage)
+
+        message.filePaths.forEach { path ->
+            try {
+                LOGGER.info("Sending $path to $chatId")
+                sendFile(chatId, path)
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to send file $path to chat $chatId", ex)
+            }
+        }
+    }
+
+    private fun sendFile(chatId: String, path: String) {
+        val file = File(path)
+        val sendDocument = SendDocument.builder()
+            .chatId(chatId)
+            .document(InputFile(file, file.name))
+            .build()
+        client.execute(sendDocument)
     }
 
     private fun download(doc: Document): File {

@@ -2,8 +2,8 @@ package com.wutsi.kokibot.llm.deepseek
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.tools.Tool

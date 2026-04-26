@@ -1,7 +1,7 @@
 package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.BootstrapTest
-import com.wutsi.kokibot.exception.ConfigurationException
+import com.wutsi.kokibot.ConfigurationException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

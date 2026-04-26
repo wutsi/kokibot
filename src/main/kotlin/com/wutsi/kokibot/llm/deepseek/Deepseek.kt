@@ -1,8 +1,8 @@
 package com.wutsi.kokibot.llm.deepseek
 
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse

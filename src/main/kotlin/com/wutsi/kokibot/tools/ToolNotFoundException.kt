@@ -1,3 +1,3 @@
-package com.wutsi.kokibot.exception
+package com.wutsi.kokibot.tools
 
 class ToolNotFoundException(message: String) : RuntimeException(message)

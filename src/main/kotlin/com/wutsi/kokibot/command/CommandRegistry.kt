@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.command
 
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.CommandNotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 

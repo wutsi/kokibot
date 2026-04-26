@@ -2,7 +2,6 @@ package com.wutsi.kokibot.service
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Resource
-import org.apache.commons.io.FilenameUtils
 import java.io.File
 import java.time.LocalDate
 import java.util.UUID
@@ -28,9 +27,7 @@ class FileService : Resource {
             dir.mkdirs()
         }
 
-        val basename = FilenameUtils.getBaseName(filename)
-        val extension = FilenameUtils.getExtension(filename) ?: ""
-        val file = File(dir, "${basename}_${UUID.randomUUID()}${if (extension.isNotEmpty()) ".$extension" else ""}")
+        val file = File(dir, filename)
         file.writeBytes(content)
         return file
     }
@@ -45,7 +42,7 @@ class FileService : Resource {
 
     private fun getFileDirectory(): File {
         val now = LocalDate.now()
-        val path = "${getFilesDir()}/${now.year}/${now.month.value}/${now.dayOfMonth}"
+        val path = "${getFilesDir()}/${now.year}/${now.month.value}/${now.dayOfMonth}/${UUID.randomUUID()}"
         return File(path)
     }
 

@@ -6,7 +6,6 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
-import com.wutsi.kokibot.exception.ToolNotFoundException
 import com.wutsi.kokibot.llm.LLM
 import org.junit.jupiter.api.Test
 import java.io.File

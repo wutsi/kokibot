@@ -1,8 +1,8 @@
 package com.wutsi.kokibot.channel
 
 import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.channel.telegram.TelegramChannel
-import com.wutsi.kokibot.exception.ConfigurationException
 import org.springframework.stereotype.Service
 
 @Service

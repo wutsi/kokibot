@@ -1,8 +1,8 @@
 package com.wutsi.kokibot.marketplace
 
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Resource
-import com.wutsi.kokibot.exception.ConfigurationException
 import com.wutsi.kokibot.skill.Skill
 import com.wutsi.kokibot.skill.SkillParser
 import java.io.File

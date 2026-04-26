@@ -36,47 +36,9 @@ and multi-channel communication.
 
 ### Step 0: Prerequisites
 
-#### brew
-
-Kokibot uses Homebrew to manage dependencies and installation on macOS and Linux.
-To install Homebrew, run the following command in your terminal:
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-#### Java
-
-Kokibot is built with Java, so you need to have it installed to run the service.
-You can install Java using Homebrew:
-
-```bash
-brew install openjdk
-```
-
-**NOTE:** Kokibot requires Java 17 or higher.
-
-#### Python
-
-Some tools and integrations may require Python.
-You can install Python using Homebrew:
-
-```bash
-brew install python
-```
-
-##### pipx
-
-Kokibot uses `pipx` to manage Python dependencies for tools.
-You can install `pipx` using Homebrew:
-
-```bash
-brew install pipx
-pipx ensurepath
-```
-
-After installing `pipx`, you may need to restart your terminal or run `source ~/.bashrc` (or `source ~/.zshrc` or or
-`source ~/.zprofile`) to update your PATH.
+- Homebrew (for macOS and Linux)
+- Java 17 or higher
+- Python 3.x (optional, for tools that require Python)
 
 ### Step 1: Set Environment Variables
 
@@ -111,7 +73,15 @@ This will automatically
 
 ## Documentation
 
-TODO
+### Supported LLM Providers
+
+- Deepseek v3, v4
+- Kimi
+- Gemini
+
+### Supported Communication Channels
+
+- Telegram
 
 ---
 

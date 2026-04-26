@@ -35,6 +35,7 @@ installing_dependencies(){
     if ! command -v pipx >/dev/null 2>&1; then
         echo "Installing pipx..."
         brew install pipx
+        pipx ensurepath
     fi
 
     # pandoc

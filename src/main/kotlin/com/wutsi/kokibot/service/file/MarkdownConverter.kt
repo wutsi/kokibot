@@ -15,18 +15,26 @@ class MarkdownConverter(
 
     fun convert(file: File, contentType: String): String {
         val md = when {
-            contentType.startsWith("text/html") -> markitdown(file) ?: pandoc(file)
+            supportsMarkitdown(contentType) -> markitdown(file) ?: pandoc(file)
 
             contentType.startsWith("text/") -> file.readText()
-
             contentType.startsWith("application/json") -> file.readText()
-
-            contentType.startsWith("application/pdf") -> markitdown(file) ?: pandoc(file)
 
             else -> markitdown(file) ?: pandoc(file)
         }
 
         return md ?: default(file, contentType)
+    }
+
+    fun supportsMarkitdown(contentType: String): Boolean {
+        return contentType.startsWith("text/html") ||
+            contentType.startsWith("text/csv") ||
+            contentType.startsWith("application/pdf") ||
+            contentType.startsWith("application/zip") ||
+            contentType.startsWith("application/epub+zip") ||
+            contentType.startsWith("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
+            contentType.startsWith("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
+            contentType.startsWith("application/vnd.openxmlformats-officedocument.presentationml.presentation")
     }
 
     private fun pandoc(file: File): String? {

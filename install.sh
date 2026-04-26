@@ -22,15 +22,37 @@ check_java() {
     fi
 }
 
-check_python() {
+installing_dependencies(){
+    echo "INSTALLING DEPENDENCIES"
+
+    # Python
     if ! command -v python3 >/dev/null 2>&1; then
-        echo "Error: Python is not installed. Please install Python manually (Python 3)"
-        exit 1
+        echo "Installing python..."
+        brew install python
     fi
 
+    # pipx
     if ! command -v pipx >/dev/null 2>&1; then
-        echo "Error: pipx is not installed. Please install pipx manually"
-        exit 1
+        echo "Installing pipx..."
+        brew install pipx
+    fi
+
+    # pandoc
+    if ! command -v pandoc >/dev/null 2>&1; then
+        echo "Installing pandoc..."
+        brew install pandoc
+    fi
+
+    # pandoc
+    if ! command -v tectonic >/dev/null 2>&1; then
+        echo "Installing tectonic..."
+        brew install tectonic
+    fi
+
+    # markitdown
+    if ! command -v markitdown >/dev/null 2>&1; then
+        echo "Installing markitdown..."
+        pipx install markitdown
     fi
 }
 
@@ -185,6 +207,7 @@ main() {
     echo "Installing kokibot v$KOKIBOT_VERSION"
     check_java
     check_python
+    installing_dependencies
     install_files
     install_service
     cleanup

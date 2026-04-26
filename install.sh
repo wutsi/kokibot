@@ -50,7 +50,9 @@ install_files() {
     unzip -q kokibot.zip
 
     # Backup current configuration
-    cp -R "$HOME_DIR/config" "$TMP_DIR/config_backup" 2>/dev/null || true
+    cp -R "$HOME_DIR/config" "$TMP_DIR/backup" 2>/dev/null || true
+    cp "$HOME_DIR/ASSISTANT.md" "$TMP_DIR/backup" 2>/dev/null || true
+    cp "$HOME_DIR/HEARTBEAT.md" "$TMP_DIR/backup" 2>/dev/null || true
 
     # Install files
     echo "Installing files..."
@@ -58,7 +60,9 @@ install_files() {
     cp -R kokibot/* "$HOME_DIR"
 
     # Restore configuration
-    cp -R "$TMP_DIR/config_backup" "$HOME_DIR/config" 2>/dev/null || true
+    cp -R "$TMP_DIR/backup/config" "$HOME_DIR/config" 2>/dev/null || true
+    cp -R "$TMP_DIR/backup/ASSISTANT.md" "$HOME_DIR" 2>/dev/null || true
+    cp -R "$TMP_DIR/backup/HEARTBEAT.md" "$HOME_DIR" 2>/dev/null || true
 
     # Binaries
     mkdir -p "$BIN_DIR"

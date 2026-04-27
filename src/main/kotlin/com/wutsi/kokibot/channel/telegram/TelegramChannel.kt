@@ -123,9 +123,14 @@ class TelegramChannel(
 
             val message = try {
                 if (update.message.hasText()) {
+                    // Update the text to prevent tables and grids, which are not well supported in Telegram.
+                    // Instead, we will ask the assistant to format the response as a nested bulleted list.
+                    val text = update.message.text.trim() +
+                        "\nPresent all data as a nested bulleted list instead of a table. Avoid all grid or tabular layouts"
+
                     assistant.process(
                         Message(
-                            text = update.message.text,
+                            text = text,
                             role = Role.USER,
                             userId = userId,
                             channelId = id(),

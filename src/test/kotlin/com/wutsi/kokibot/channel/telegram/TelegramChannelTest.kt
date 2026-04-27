@@ -130,7 +130,7 @@ class TelegramChannelTest {
         // THEN
         val prompt = argumentCaptor<Message>()
         verify(assistant).process(prompt.capture(), anyOrNull())
-        assertEquals("Hello", prompt.firstValue.text)
+        assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("123", prompt.firstValue.userId)
         assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)

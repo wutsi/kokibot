@@ -88,7 +88,7 @@ class Memory : Resource {
     fun compact() = lock.withLock {
         /* Compacting the memory */
         val to = LocalDate.now()
-        val from = to.minusDays(window.toLong())
+        val from = to.minusDays(window)
         val merged = context.chatHistory.merge(from, to)
         val compacted = merged?.let { compact(merged) }
         if (compacted != null) {

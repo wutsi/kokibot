@@ -9,7 +9,8 @@
     "type": "${KOKIBOT_LLM_TYPE}",
     "api-key": "${KOKIBOT_LLM_API_KEY}",
     "model": "${KOKIBOT_LLM_MODEL}",
-    "max-tokens": 10240
+    "max-tokens": 8192,
+    "stream": true
   },
   "channels": [
     {

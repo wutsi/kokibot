@@ -22,7 +22,7 @@ class DeepseekTest {
     private val llm = Deepseek()
     private val config = mapOf(
         "api-key" to "ds-000001",
-        "model" to "deepseek-chat",
+        "model" to "deepseek-v4-flash",
         "thinking" to true,
         "max-tokens" to 1000,
         "temperature" to 0.7,
@@ -46,7 +46,7 @@ class DeepseekTest {
         llm.init(config, context)
 
         assertEquals("ds-000001", llm.client.apiKey)
-        assertEquals("deepseek-chat", llm.client.model)
+        assertEquals("deepseek-v4-flash", llm.client.model)
         assertEquals(true, llm.client.thinking)
         assertEquals(1000, llm.client.maxTokens)
         assertEquals(.7, llm.client.temperature)
@@ -57,7 +57,7 @@ class DeepseekTest {
     @Test
     fun `init - no api key`() {
         val config = mapOf(
-            "model" to "deepseek-chat",
+            "model" to "deepseek-v4-flash",
         )
         assertThrows<ConfigurationException> { llm.init(config, context) }
     }
@@ -74,7 +74,7 @@ class DeepseekTest {
     fun completion() {
         val config = mapOf(
             "api-key" to System.getenv("DEEPSEEK_API_KEY"),
-            "model" to "deepseek-chat",
+            "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)
 
@@ -110,7 +110,7 @@ class DeepseekTest {
 
         val config = mapOf(
             "api-key" to System.getenv("DEEPSEEK_API_KEY"),
-            "model" to "deepseek-chat",
+            "model" to "deepseek-v4-flash",
             "tools" to listOf("date_tool_now"),
         )
         llm.init(config, context)
@@ -132,7 +132,7 @@ class DeepseekTest {
     fun `completion with PDF file`() {
         val config = mapOf(
             "api-key" to System.getenv("DEEPSEEK_API_KEY"),
-            "model" to "deepseek-chat",
+            "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)
 
@@ -155,10 +155,34 @@ class DeepseekTest {
     }
 
     @Test
+    fun `completion with streaming`() {
+        val config = mapOf(
+            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
+            "model" to "deepseek-v4-flash",
+        )
+        llm.init(config, context)
+
+        val response = llm.completionStream(
+            request = LLMRequest(prompt = "What is the capital of France?"),
+            emptyList(),
+            onChunk = { chunk ->
+                println("Chunk: " + chunk.delta)
+            }
+        )
+        // println(response)
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(true, choices[0].content?.contains("Paris"))
+        assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    @Test
     fun `health - up`() {
         val config = mapOf(
             "api-key" to System.getenv("DEEPSEEK_API_KEY"),
-            "model" to "deepseek-chat",
+            "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)
 
@@ -173,7 +197,7 @@ class DeepseekTest {
     fun `health - down`() {
         val config = mapOf(
             "api-key" to "xxxxx",
-            "model" to "deepseek-chat",
+            "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)
 

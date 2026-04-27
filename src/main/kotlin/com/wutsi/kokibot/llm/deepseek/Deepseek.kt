@@ -6,8 +6,10 @@ import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
+import com.wutsi.kokibot.llm.LLMStreamChunk
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
+import org.slf4j.LoggerFactory
 
 /**
  * This is the implementation of the Deepseek LLM.
@@ -18,12 +20,14 @@ import com.wutsi.kokibot.util.MapUtil
  */
 open class Deepseek : LLM {
     companion object {
-        val CONNECT_TIMEOUT_MILLIS = 5000L
-        val READ_TIMEOUT_MILLIS = 60000L
+        private val LOGGER = LoggerFactory.getLogger(Deepseek::class.java)
+        const val CONNECT_TIMEOUT_MILLIS = 5000L
+        const val READ_TIMEOUT_MILLIS = 60000L
     }
 
-    internal lateinit var client: DeepseekClient
     private lateinit var context: Context
+    internal lateinit var client: DeepseekClient
+    internal var streamingEnabled: Boolean = false
 
     override fun id(): String {
         return "llm:deepseek"
@@ -45,7 +49,12 @@ open class Deepseek : LLM {
         val model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
         this.context = context
+        this.streamingEnabled = MapUtil.toBoolean("streaming", config) ?: false
         this.client = createClient(apiKey, model, config)
+
+        LOGGER.info("LLM: " + config["type"])
+        LOGGER.info(" model: $model")
+        LOGGER.info(" streaming: $streamingEnabled")
     }
 
     override fun health(): Health {
@@ -59,6 +68,18 @@ open class Deepseek : LLM {
 
     override fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
         return client.completion(request, tools)
+    }
+
+    override fun supportsStreaming(): Boolean {
+        return streamingEnabled
+    }
+
+    override fun completionStream(
+        request: LLMRequest,
+        tools: List<Tool>,
+        onChunk: (LLMStreamChunk) -> Unit,
+    ): LLMResponse {
+        return client.completionStream(request, tools, onChunk)
     }
 
     protected open fun createClient(apiKey: String, model: String, config: Map<*, *>): DeepseekClient {

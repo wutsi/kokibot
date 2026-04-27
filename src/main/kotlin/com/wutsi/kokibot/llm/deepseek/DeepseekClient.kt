@@ -4,7 +4,9 @@ import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
+import com.wutsi.kokibot.llm.LLMStreamChunk
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.llm.LLMToolCallDelta
 import com.wutsi.kokibot.service.UnsupportedMimeTypeException
 import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.Tool
@@ -36,8 +38,8 @@ open class DeepseekClient(
     val jsonMapper: JsonMapper = JsonMapper(),
 ) {
     companion object {
+        private val EMPTY_MAP = emptyMap<String, Any>()
         const val COMPLETION_ENDPOINT = "/chat/completions"
-        val EMPTY_MAP = emptyMap<String, Any>()
     }
 
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -45,7 +47,7 @@ open class DeepseekClient(
     private val textExtractorFactory = TextExtractorFactory()
 
     protected open fun getBaseUrl(): String {
-        return "https://api.deepseek.com/v1"
+        return "https://api.deepseek.com"
     }
 
     fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
@@ -64,6 +66,132 @@ open class DeepseekClient(
             ?: throw IllegalStateException("No response from LLM")
 
         return toLLMResponse(resp)
+    }
+
+    /**
+     * Streaming completion using SSE (Server-Sent Events).
+     * Uses RestTemplate.execute() for low-level stream access.
+     */
+    fun completionStream(
+        request: LLMRequest,
+        tools: List<Tool>,
+        onChunk: (LLMStreamChunk) -> Unit,
+    ): LLMResponse {
+        val body = toDeepseekRequest(request, tools)
+        val streamBody = body.toMutableMap().apply {
+            put("stream", true)
+        }
+
+        val headers = HttpHeaders()
+        headers.setContentType(MediaType.APPLICATION_JSON)
+        headers.set("Authorization", "Bearer $apiKey")
+        headers.setAccept(listOf(MediaType.TEXT_EVENT_STREAM))
+
+        return rest.execute(
+            getBaseUrl() + COMPLETION_ENDPOINT,
+            org.springframework.http.HttpMethod.POST,
+            { clientRequest ->
+                clientRequest.headers.putAll(headers)
+                clientRequest.body.write(
+                    jsonMapper.writeValueAsBytes(streamBody)
+                )
+            },
+            { clientResponse ->
+                parseSSEStream(clientResponse.body, onChunk)
+            }
+        ) ?: throw IllegalStateException("No response from streaming LLM")
+    }
+
+    /**
+     * Parses Server-Sent Events stream from LLM API.
+     *
+     * SSE Format:
+     * data: {"choices":[{"delta":{"content":"Hello"}}]}
+     *
+     * data: {"choices":[{"delta":{"content":" world"}}]}
+     *
+     * data: [DONE]
+     */
+    private fun parseSSEStream(
+        inputStream: java.io.InputStream,
+        onChunk: (LLMStreamChunk) -> Unit,
+    ): LLMResponse {
+        val reader = inputStream.bufferedReader()
+        val accumulator = StreamResponseAccumulator(jsonMapper)
+
+        try {
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                when {
+                    line?.startsWith("data: ") == true -> {
+                        val data = line.substring(6).trim()
+
+                        if (data == "[DONE]") {
+                            break
+                        }
+
+                        try {
+                            val jsonChunk = jsonMapper.readValue(data, Map::class.java)
+                            val chunk = parseStreamChunk(jsonChunk)
+                            onChunk(chunk)
+                            accumulator.add(chunk)
+                        } catch (ex: Exception) {
+                            logger.warn("Failed to parse stream chunk: $data", ex)
+                        }
+                    }
+
+                    else -> {
+                    }
+                }
+            }
+        } finally {
+            reader.close()
+        }
+
+        return accumulator.toResponse()
+    }
+
+    /**
+     * Parses a single SSE chunk into LLMStreamChunk.
+     * Handles both content deltas and reasoning deltas (DeepSeek V4).
+     */
+    private fun parseStreamChunk(jsonChunk: Map<*, *>): LLMStreamChunk {
+        val choices = jsonChunk["choices"] as? List<*> ?: emptyList<Any>()
+        val firstChoice = choices.firstOrNull() as? Map<*, *>
+        val delta = firstChoice?.get("delta") as? Map<*, *>
+
+        return LLMStreamChunk(
+            delta = delta?.get("content") as? String,
+            reasoningDelta = delta?.get("reasoning_content") as? String,
+            toolCallDelta = parseToolCallDeltaFromDelta(delta),
+            finishReason = (firstChoice?.get("finish_reason") as? String)
+                ?.let { LLMFinishReason.valueOf(it.uppercase()) },
+            isDone = firstChoice?.get("finish_reason") != null
+        )
+    }
+
+    /**
+     * Parses a partial tool call from a streaming delta.
+     *
+     * In OpenAI-compatible streaming, tool calls arrive across multiple chunks:
+     *  - First chunk: `index`, `id`, `function.name`
+     *  - Subsequent chunks: only `function.arguments` fragments (raw JSON text)
+     *
+     * Fragments are not necessarily valid JSON on their own and MUST be
+     * concatenated by [LLMToolCallDelta.index] before parsing. The actual
+     * parsing happens in [StreamResponseAccumulator].
+     */
+    private fun parseToolCallDeltaFromDelta(delta: Map<*, *>?): LLMToolCallDelta? {
+        val toolCalls = delta?.get("tool_calls") as? List<*> ?: return null
+        val firstCall = toolCalls.firstOrNull() as? Map<*, *> ?: return null
+        val function = firstCall["function"] as? Map<*, *>
+
+        return LLMToolCallDelta(
+            index = (firstCall["index"] as? Number)?.toInt() ?: 0,
+            id = firstCall["id"] as? String,
+            name = function?.get("name") as? String,
+            argumentsFragment = function?.get("arguments") as? String,
+        )
     }
 
     private fun toDeepseekRequest(request: LLMRequest, tools: List<Tool>): Map<*, *> {

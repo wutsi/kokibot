@@ -6,24 +6,38 @@ import com.vladsch.flexmark.util.data.MutableDataSet
 
 object MarkdownToTelegramHTML {
     private val options = MutableDataSet().apply {
-        // Basic configuration to keep HTML clean
         set(HtmlRenderer.SOFT_BREAK, "<br/>")
     }
 
     private val parser = Parser.builder(options).build()
     private val renderer = HtmlRenderer.builder(options).build()
 
-    fun convert(markdown: String): String {
-        // 1. Parse Markdown to Document
-        val document = parser.parse(markdown)
+    // Matches a GFM-style table: a header row, a separator row, then 0+ body rows.
+    private val tableRegex = Regex(
+        pattern = "(?m)^[ \\t]*\\|.*\\|[ \\t]*\\R" + // header row
+            "[ \\t]*\\|[\\s:|-]+\\|[ \\t]*\\R" + // separator row
+            "(?:[ \\t]*\\|.*\\|[ \\t]*(?:\\R|\\z))*" // body rows
+    )
 
-        // 2. Render to HTML
+    fun convert(markdown: String): String {
+        // 1. Extract tables and replace with placeholders BEFORE parsing.
+        val tables = mutableListOf<String>()
+        val prepared = tableRegex.replace(markdown) { match ->
+            val idx = tables.size
+            tables += match.value.trimEnd()
+            "\n\n@@TABLE_$idx@@\n\n"
+        }
+
+        // 2. Parse Markdown to Document
+        val document = parser.parse(prepared)
+
+        // 3. Render to HTML
         val html = renderer.render(document)
 
-        // 3. Telegram specific cleanup
+        // 4. Telegram specific cleanup
         // Telegram doesn't support <div>, <p>, <ol>, <ul>, <h1>..<h6>, <hr/>  tags.
         // It only likes <b>, <i>, <code>, <a>, and <s>.
-        return html
+        var result = html
             .replace("<p>", "")
             .replace("<br/>", "\n")
             .replace("<br />", "\n")
@@ -58,5 +72,11 @@ object MarkdownToTelegramHTML {
             .replace("</strike>", "</s>")
             .replace(Regex("\\R+"), "\n") // Should be the last!
             .trim()
+
+        // 5. Restore tables wrapped in <pre>...</pre>
+        tables.forEachIndexed { idx, table ->
+            result = result.replace("@@TABLE_$idx@@", "<pre>\n$table\n</pre>")
+        }
+        return result.trim()
     }
 }

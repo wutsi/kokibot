@@ -7,6 +7,7 @@ import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
+import com.wutsi.kokibot.llm.LLMStreamChunk
 import com.wutsi.kokibot.tools.Tool
 
 class NullLLM : LLM {
@@ -31,6 +32,14 @@ class NullLLM : LLM {
                 )
             ),
         )
+    }
+
+    override fun completionStream(
+        request: LLMRequest,
+        tools: List<Tool>,
+        onChunk: (LLMStreamChunk) -> Unit,
+    ): LLMResponse {
+        return completion(request, tools)
     }
 
     override fun health(): Health {

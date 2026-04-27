@@ -25,6 +25,7 @@ import org.telegram.telegrambots.meta.api.methods.ParseMode
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText
 import org.telegram.telegrambots.meta.api.objects.Document
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Update
@@ -41,6 +42,7 @@ class TelegramChannel(
 
         const val ID = "channel:telegram"
         const val TYPING_DELAY = 2000L
+        const val MAX_LENGTH = 4096
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
@@ -105,7 +107,7 @@ class TelegramChannel(
             }
 
             /* Typing indicator */
-            val job = scope.launch {
+            val typingJob = scope.launch {
                 while (true) {
                     ensureActive()
                     typing(chatId)
@@ -113,8 +115,12 @@ class TelegramChannel(
                 }
             }
 
-            /* Process message */
+            /* Process message with streaming */
             val userId = update.message.chat.id.toString()
+            var streamMessageId: Int? = null
+            val streamBuffer = StringBuilder()
+            var lastUpdateTime = System.currentTimeMillis()
+
             val message = try {
                 if (update.message.hasText()) {
                     assistant.process(
@@ -123,7 +129,20 @@ class TelegramChannel(
                             role = Role.USER,
                             userId = userId,
                             channelId = id(),
-                        )
+                        ),
+                        streamCallback = { delta ->
+                            streamBuffer.append(delta)
+                            val now = System.currentTimeMillis()
+
+                            if ((streamBuffer.length % 50 == 0 || now - lastUpdateTime > 500) && streamBuffer.isNotEmpty()) {
+                                streamMessageId = sendOrUpdateMessage(
+                                    chatId,
+                                    streamBuffer.toString().takeLast(MAX_LENGTH),
+                                    streamMessageId
+                                )
+                                lastUpdateTime = now
+                            }
+                        }
                     )
                 } else if (update.message.hasDocument()) {
                     val file = download(update.message.document)
@@ -143,10 +162,10 @@ class TelegramChannel(
                     )
                 }
             } finally {
-                job.cancel()
+                typingJob.cancel()
             }
 
-            /* Send response */
+            /* Send final message (or update last streamed message) */
             send(chatId, message, true)
         }
     }
@@ -184,7 +203,7 @@ class TelegramChannel(
         val html = MarkdownToTelegramHTML.convert(message.text)
         val sendMessage = SendMessage.builder()
             .chatId(chatId)
-            .text(html)
+            .text(html.take(MAX_LENGTH))
             .parseMode(ParseMode.HTML)
             .disableNotification(!notification)
             .build()
@@ -207,6 +226,52 @@ class TelegramChannel(
             .document(InputFile(file, file.name))
             .build()
         client.execute(sendDocument)
+    }
+
+    /**
+     * Sends a new message or updates an existing one (for streaming).
+     * Telegram supports editing messages, so we can update the same message incrementally.
+     *
+     * @return Message ID of the sent/updated message
+     */
+    private fun sendOrUpdateMessage(
+        chatId: String,
+        text: String,
+        messageId: Int?,
+    ): Int {
+        val html = MarkdownToTelegramHTML.convert(text)
+
+        if (messageId == null) {
+            val sendMessage = SendMessage.builder()
+                .chatId(chatId)
+                .text(html)
+                .parseMode(ParseMode.HTML)
+                .disableNotification(true)
+                .build()
+            val sent = client.execute(sendMessage)
+            return sent.messageId
+        } else {
+            try {
+                val editMessage = EditMessageText.builder()
+                    .chatId(chatId)
+                    .messageId(messageId)
+                    .text(html)
+                    .parseMode(ParseMode.HTML)
+                    .build()
+                client.execute(editMessage)
+                return messageId
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to edit message $messageId, sending new message", ex)
+                val sendMessage = SendMessage.builder()
+                    .chatId(chatId)
+                    .text(html)
+                    .parseMode(ParseMode.HTML)
+                    .disableNotification(false)
+                    .build()
+                val sent = client.execute(sendMessage)
+                return sent.messageId
+            }
+        }
     }
 
     private fun download(doc: Document): File {

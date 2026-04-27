@@ -85,7 +85,7 @@ class DeepseekClientTest {
         doReturn(ResponseEntity(dsContentResponse, HttpStatus.OK))
             .whenever(rest)
             .postForEntity(
-                eq("https://api.deepseek.com/v1/chat/completions"),
+                eq("https://api.deepseek.com/chat/completions"),
                 any<HttpEntity<*>>(),
                 eq(Map::class.java)
             )
@@ -112,7 +112,7 @@ class DeepseekClientTest {
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -157,7 +157,7 @@ class DeepseekClientTest {
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -203,7 +203,7 @@ class DeepseekClientTest {
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -249,7 +249,7 @@ class DeepseekClientTest {
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -295,7 +295,7 @@ class DeepseekClientTest {
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -334,7 +334,7 @@ class DeepseekClientTest {
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -380,7 +380,7 @@ class DeepseekClientTest {
         // THEN
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -430,7 +430,7 @@ class DeepseekClientTest {
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -462,7 +462,7 @@ class DeepseekClientTest {
         doReturn(ResponseEntity(dsContentResponse, HttpStatus.OK))
             .whenever(rest)
             .postForEntity(
-                eq("https://api.deepseek.com/v1/chat/completions"),
+                eq("https://api.deepseek.com/chat/completions"),
                 any<HttpEntity<*>>(),
                 eq(Map::class.java)
             )
@@ -485,7 +485,7 @@ class DeepseekClientTest {
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )
@@ -507,7 +507,7 @@ class DeepseekClientTest {
         doReturn(ResponseEntity(dsToolCallResponse, HttpStatus.OK))
             .whenever(rest)
             .postForEntity(
-                eq("https://api.deepseek.com/v1/chat/completions"),
+                eq("https://api.deepseek.com/chat/completions"),
                 any<HttpEntity<*>>(),
                 eq(Map::class.java)
             )
@@ -531,7 +531,7 @@ class DeepseekClientTest {
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(
-            eq("https://api.deepseek.com/v1/chat/completions"),
+            eq("https://api.deepseek.com/chat/completions"),
             req.capture(),
             eq(Map::class.java)
         )

@@ -75,4 +75,73 @@ class MarkdownToTelegramHTMLTest {
             MarkdownToTelegramHTML.convert("**bold** and *italic*")
         )
     }
+
+    @Test
+    fun `wraps table in pre block`() {
+        val md = """
+            Hello
+
+            | Name | Age |
+            |------|-----|
+            | Joe  | 30  |
+            | Ann  | 25  |
+
+            Bye
+        """.trimIndent()
+
+        val result = MarkdownToTelegramHTML.convert(md)
+
+        assertEquals(
+            """
+                Hello
+                <pre>
+                | Name | Age |
+                |------|-----|
+                | Joe  | 30  |
+                | Ann  | 25  |
+                </pre>
+                Bye
+            """.trimIndent(),
+            result,
+        )
+    }
+
+    @Test
+    fun `handles multiple tables`() {
+        val md = """
+            | A | B |
+            |---|---|
+            | 1 | 2 |
+
+            text
+
+            | X | Y |
+            |---|---|
+            | 9 | 8 |
+        """.trimIndent()
+
+        val result = MarkdownToTelegramHTML.convert(md)
+
+        assertEquals(
+            """
+            <pre>
+            | A | B |
+            |---|---|
+            | 1 | 2 |
+            </pre>
+            text
+            <pre>
+            | X | Y |
+            |---|---|
+            | 9 | 8 |
+            </pre>
+            """.trimIndent(),
+            result,
+        )
+    }
+
+    @Test
+    fun `returns empty string for empty input`() {
+        kotlin.test.assertEquals("", MarkdownToTelegramHTML.convert(""))
+    }
 }

@@ -38,10 +38,13 @@ class Assistant {
     fun destroy() {
     }
 
-    fun process(prompt: Message, interactive: Boolean = true): Message {
+    fun process(
+        prompt: Message,
+        streamCallback: ((String) -> Unit)? = null,
+    ): Message {
         val now = System.currentTimeMillis()
         val response = try {
-            doProcess(prompt, interactive)
+            doProcess(prompt, streamCallback)
         } catch (e: TooManyIterationException) {
             LOGGER.error("Too many iterations!", e)
             Message(TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
@@ -58,7 +61,10 @@ class Assistant {
         return response
     }
 
-    private fun doProcess(prompt: Message, interactive: Boolean): Message {
+    private fun doProcess(
+        prompt: Message,
+        streamCallback: ((String) -> Unit)?,
+    ): Message {
         var iteration = 0
         val memory = mutableListOf<String>()
         val tools = mutableMapOf<String, Tool>()
@@ -78,8 +84,8 @@ class Assistant {
                     finishReason = FinishReason.DONE,
                 )
             } else {
-                val response = ask(iteration, prompt, memory)
-                if (decide(prompt, response, memory, tools, interactive)) {
+                val response = ask(iteration, prompt, memory, streamCallback)
+                if (decide(response, memory, tools)) {
                     return Message(
                         text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                         role = Role.ASSISTANT,
@@ -90,30 +96,50 @@ class Assistant {
         }
     }
 
-    private fun ask(iteration: Int, prompt: Message, memory: MutableList<String>): LLMResponse {
+    private fun ask(
+        iteration: Int,
+        prompt: Message,
+        memory: MutableList<String>,
+        streamCallback: ((String) -> Unit)?,
+    ): LLMResponse {
         LOGGER.debug("\n\n--- Iteration $iteration -------------------")
         LOGGER.info("$iteration - PROMPT: prompt_id=${prompt.id}  user=${prompt.userId}@${prompt.channelId}\n${prompt.text}")
 
         val tools = context.toolRegistry.all()
-        val prompt = buildPrompt(prompt, memory)
+        val promptText = buildPrompt(prompt, memory)
         val systemInstructions = buildSystemInstructions()
-        return context.llm.completion(
-            request = LLMRequest(prompt, systemInstructions),
-            tools,
-        )
+
+        val streamingEnabled = context.llm.supportsStreaming()
+
+        return if (streamingEnabled && streamCallback != null) {
+            LOGGER.info("Using streaming mode")
+            context.llm.completionStream(
+                request = LLMRequest(promptText, systemInstructions),
+                tools = tools,
+                onChunk = { chunk ->
+                    chunk.reasoningDelta?.let { delta ->
+                        streamCallback(delta)
+                    }
+                }
+            )
+        } else {
+            LOGGER.info("Using non-streaming mode")
+            context.llm.completion(
+                request = LLMRequest(promptText, systemInstructions),
+                tools
+            )
+        }
     }
 
     private fun decide(
-        query: Message,
         response: LLMResponse,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
-        interactive: Boolean
     ): Boolean {
         // Tool calls
         val choiceCalls = response.choices.filter { choice -> choice.toolCalls.isNotEmpty() }
         if (choiceCalls.isNotEmpty()) {
-            choiceCalls.forEach { choice -> exec(choice, memory, tools, query, interactive) }
+            choiceCalls.forEach { choice -> exec(choice, memory, tools) }
             return false
         } else {
             return true
@@ -124,12 +150,10 @@ class Assistant {
         choice: LLMResponseChoice,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
-        query: Message,
-        interactive: Boolean
     ) {
         LOGGER.info(">>> ${choice.toolCalls.size} call(s) to execute")
         choice.toolCalls.forEach { call ->
-            exec(choice.content, call, memory, tools, query, interactive)
+            exec(choice.content, call, memory, tools)
         }
     }
 
@@ -138,15 +162,10 @@ class Assistant {
         call: LLMToolCall,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
-        query: Message,
-        interactive: Boolean,
     ) {
         content?.let { LOGGER.info(">>> $content") }
         LOGGER.info(">>> Tool execution: name=${call.name}, arguments=${call.arguments}")
 
-        if (content != null && interactive) {
-            reply(content, query)
-        }
         val tool = tools[call.name]
         if (tool == null) {
             memory.add("Calling the tool `${call.name}` failed because it's not available!")
@@ -169,26 +188,6 @@ class Assistant {
             memory.add(content)
         }
         memory.add("Calling the tool `${call.name}` returned the following result:\n$result")
-    }
-
-    private fun reply(content: String, query: Message) {
-        if (content.isEmpty()) {
-            return
-        }
-
-        try {
-            val channelId = query.channelId ?: return
-            val userId = query.userId ?: return
-            context.channelRegistry.get(channelId).send(
-                Message(
-                    userId = userId,
-                    channelId = channelId,
-                    text = "$content...",
-                )
-            )
-        } catch (ex: Exception) {
-            LOGGER.warn("Unable to send message to user ${query.userId} in channel ${query.channelId}", ex)
-        }
     }
 
     private fun getCommand(query: Message): Command? {

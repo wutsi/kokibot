@@ -1,9 +1,9 @@
 package com.wutsi.kokibot.service.heartbeat
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -39,13 +39,13 @@ class HeartbeatTest {
 
     @Test
     fun tick() {
-        doReturn(Message("Done")).whenever(assistant).process(any(), any())
+        doReturn(Message("Done")).whenever(assistant).process(any(), anyOrNull())
 
         heartbeat.init(mapOf("" to ""), context)
         heartbeat.tick()
 
         val msg = argumentCaptor<Message>()
-        verify(assistant).process(msg.capture(), eq(false))
+        verify(assistant).process(msg.capture(), anyOrNull())
 
         assertEquals(Role.SYSTEM, msg.firstValue.role)
         assertEquals("This is the heartbeat job\n", msg.firstValue.text)
@@ -54,7 +54,7 @@ class HeartbeatTest {
 
     @Test
     fun `tick - no HEARTBEAT file`() {
-        doReturn(Message("Done")).whenever(assistant).process(any(), any())
+        doReturn(Message("Done")).whenever(assistant).process(any(), anyOrNull())
 
         val ctx = Context(
             home = File("target/test-data/heartbeat"),
@@ -63,6 +63,6 @@ class HeartbeatTest {
         heartbeat.init(mapOf("" to ""), ctx)
         heartbeat.tick()
 
-        verify(assistant, never()).process(any(), any())
+        verify(assistant, never()).process(any(), anyOrNull())
     }
 }

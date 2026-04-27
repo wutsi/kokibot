@@ -25,7 +25,6 @@ import com.wutsi.kokibot.tools.skill.SkillActivationTool
 import com.wutsi.kokibot.tools.web.WebFetchTool
 import com.wutsi.kokibot.tools.web.WebSearchTool
 import com.wutsi.kokibot.util.MapUtil
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
@@ -39,10 +38,6 @@ class ContextFactory(
     private val skillRegistry: SkillRegistry,
     private val jsonMapper: JsonMapper,
 ) {
-    companion object {
-        private val LOGGER = LoggerFactory.getLogger(ContextFactory::class.java)
-    }
-
     fun create(home: File, config: Map<*, *>): Context {
         // Tools
         discoverTools().forEach { tool -> toolRegistry.register(tool) }
@@ -69,7 +64,6 @@ class ContextFactory(
         val root = MapUtil.toMap("llm", config)
         val type = root?.get("type")?.toString() ?: ""
 
-        LOGGER.info("LLM: $type")
         return llmFactory.create(type)
     }
 

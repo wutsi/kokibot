@@ -112,7 +112,6 @@ class Assistant {
         val streamingEnabled = context.llm.supportsStreaming()
 
         return if (streamingEnabled && streamCallback != null) {
-            LOGGER.info("Using streaming mode")
             context.llm.completionStream(
                 request = LLMRequest(promptText, systemInstructions),
                 tools = tools,

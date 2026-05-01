@@ -10,7 +10,7 @@
     "api-key": "${KOKIBOT_LLM_API_KEY}",
     "model": "${KOKIBOT_LLM_MODEL}",
     "max-tokens": 8192,
-    "stream": true
+    "streaming": true
   },
   "channels": [
     {

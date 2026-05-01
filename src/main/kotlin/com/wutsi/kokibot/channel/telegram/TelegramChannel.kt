@@ -25,6 +25,7 @@ import org.telegram.telegrambots.meta.api.methods.ParseMode
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText
 import org.telegram.telegrambots.meta.api.objects.Document
 import org.telegram.telegrambots.meta.api.objects.InputFile
@@ -43,6 +44,7 @@ class TelegramChannel(
         const val ID = "channel:telegram"
         const val TYPING_DELAY = 2000L
         const val MAX_LENGTH = 4096
+        const val STREAM_MAX_LENGTH = 100
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
@@ -125,8 +127,12 @@ class TelegramChannel(
                 if (update.message.hasText()) {
                     // Update the text to prevent tables and grids, which are not well supported in Telegram.
                     // Instead, we will ask the assistant to format the response as a nested bulleted list.
-                    val text = update.message.text.trim() +
-                        "\nPresent all data as a nested bulleted list instead of a table. Avoid all grid or tabular layouts"
+                    val text = if (update.message.isCommand) {
+                        update.message.text.trim()
+                    } else {
+                        update.message.text.trim() +
+                            "\nPresent all data as a nested bulleted list instead of a table. Avoid all grid or tabular layouts"
+                    }
 
                     assistant.process(
                         Message(
@@ -140,12 +146,24 @@ class TelegramChannel(
                             val now = System.currentTimeMillis()
 
                             if ((streamBuffer.length % 50 == 0 || now - lastUpdateTime > 500) && streamBuffer.isNotEmpty()) {
-                                streamMessageId = sendOrUpdateMessage(
-                                    chatId,
-                                    streamBuffer.toString().takeLast(MAX_LENGTH),
-                                    streamMessageId
-                                )
-                                lastUpdateTime = now
+                                val msg = streamBuffer.toString().takeLast(STREAM_MAX_LENGTH)
+                                try {
+                                    streamMessageId = sendOrUpdateMessage(
+                                        chatId,
+                                        "**Thinking...**: $msg",
+                                        streamMessageId
+                                    )
+                                    lastUpdateTime = now
+                                } catch (ex: Exception) {
+                                    LOGGER.warn(
+                                        "Failed to send or update streaming message, will retry on next update",
+                                        ex
+                                    )
+                                    if (streamMessageId != null) {
+                                        deleteMessage(chatId, streamMessageId!!)
+                                    }
+                                    streamMessageId = null // Invalidate message ID to trigger sending a new message
+                                }
                             }
                         }
                     )
@@ -171,6 +189,9 @@ class TelegramChannel(
             }
 
             /* Send final message (or update last streamed message) */
+            if (streamMessageId != null) {
+                deleteMessage(chatId, streamMessageId!!)
+            }
             send(chatId, message, true)
         }
     }
@@ -233,6 +254,18 @@ class TelegramChannel(
         client.execute(sendDocument)
     }
 
+    private fun deleteMessage(chatId: String, messageId: Int) {
+        try {
+            val deleteMessage = DeleteMessage.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .build()
+            client.execute(deleteMessage)
+        } catch (ex: Exception) {
+            LOGGER.warn("Failed to delete message $messageId in chat $chatId", ex)
+        }
+    }
+
     /**
      * Sends a new message or updates an existing one (for streaming).
      * Telegram supports editing messages, so we can update the same message incrementally.
@@ -243,7 +276,11 @@ class TelegramChannel(
         chatId: String,
         text: String,
         messageId: Int?,
-    ): Int {
+    ): Int? {
+        if (text.trim().isEmpty()) {
+            return messageId
+        }
+
         val html = MarkdownToTelegramHTML.convert(text)
 
         if (messageId == null) {
@@ -256,26 +293,14 @@ class TelegramChannel(
             val sent = client.execute(sendMessage)
             return sent.messageId
         } else {
-            try {
-                val editMessage = EditMessageText.builder()
-                    .chatId(chatId)
-                    .messageId(messageId)
-                    .text(html)
-                    .parseMode(ParseMode.HTML)
-                    .build()
-                client.execute(editMessage)
-                return messageId
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to edit message $messageId, sending new message", ex)
-                val sendMessage = SendMessage.builder()
-                    .chatId(chatId)
-                    .text(html)
-                    .parseMode(ParseMode.HTML)
-                    .disableNotification(false)
-                    .build()
-                val sent = client.execute(sendMessage)
-                return sent.messageId
-            }
+            val editMessage = EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .text(html)
+                .parseMode(ParseMode.HTML)
+                .build()
+            client.execute(editMessage)
+            return messageId
         }
     }
 

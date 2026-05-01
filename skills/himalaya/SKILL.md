@@ -4,9 +4,6 @@ description: Use himalaya to list, read, search, compose, reply, forward, and or
 requires:
     bins:
         - himalaya
-    os:
-        - linux
-        - darwin
 ---
 
 # Himalaya Email CLI

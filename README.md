@@ -65,7 +65,7 @@ This will automatically
 
 - Download the installation files
 - Install kokibot
-    - The binaries will be installed to `~/Application/kokikob`
+    - The binaries will be installed to `~/Application/kokikot`
     - The configuration, logs and data will be stored in `~/.kokibot`
 - Run it a background service  (with `launchd` for macOS, `systemd` for Linux).
 

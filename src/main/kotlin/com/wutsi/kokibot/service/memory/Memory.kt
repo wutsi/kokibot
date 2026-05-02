@@ -64,13 +64,12 @@ class Memory : Resource {
 
     override fun destroy() {
         job.cancel(false)
-        scheduler.shutdown()
         try {
             if (!scheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 LOGGER.warn("Memory scheduler did not terminate within ${SHUTDOWN_TIMEOUT_SECONDS}s; forcing shutdown")
                 scheduler.shutdownNow()
             }
-        } catch (e: InterruptedException) {
+        } catch (_: InterruptedException) {
             scheduler.shutdownNow()
             Thread.currentThread().interrupt()
         }
@@ -86,7 +85,6 @@ class Memory : Resource {
     }
 
     fun compact() = lock.withLock {
-        /* Compacting the memory */
         val to = LocalDate.now()
         val from = to.minusDays(window)
         val merged = context.chatHistory.merge(from, to)

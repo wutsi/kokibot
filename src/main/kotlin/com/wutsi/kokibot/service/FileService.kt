@@ -22,14 +22,17 @@ class FileService : Resource {
     }
 
     fun create(filename: String, content: ByteArray): File {
+        val file = createFile(filename)
+        file.writeBytes(content)
+        return file
+    }
+
+    fun createFile(filename: String): File {
         val dir = getFileDirectory()
         if (!dir.exists()) {
             dir.mkdirs()
         }
-
-        val file = File(dir, filename)
-        file.writeBytes(content)
-        return file
+        return File(dir, filename)
     }
 
     fun createTempFile(fileName: String, extension: String): File {

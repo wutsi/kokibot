@@ -25,6 +25,8 @@
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <graalvm.version>25.0.2</graalvm.version>
         <graalvm-python-embeded.version>25.0.2</graalvm-python-embeded.version>
+        <greenmail.version>2.1.8</greenmail.version>
+        <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
         <java.version>17</java.version>
         <jqit.version>7.6.0.202603022253-r</jqit.version>
         <jsoup.version>1.22.2</jsoup.version>
@@ -46,6 +48,18 @@
             <version>${kotlin-jackson.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.icegreen</groupId>
+            <artifactId>greenmail</artifactId>
+            <version>${greenmail.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>com.nhaarman.mockitokotlin2</groupId>
             <artifactId>mockito-kotlin</artifactId>
             <version>${kotlin-mockito.version}</version>
@@ -65,6 +79,13 @@
             <groupId>com.vladsch.flexmark</groupId>
             <artifactId>flexmark-ext-gfm-strikethrough</artifactId>
             <version>${flexmark.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>jakarta.mail</groupId>
+            <artifactId>jakarta.mail-api</artifactId>
+            <version>${jakarta.mail-api.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

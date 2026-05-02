@@ -33,4 +33,29 @@ class HtmlUtilTest {
 
         assertEquals(expected, HtmlUtil.toMarkdown(html))
     }
+
+    @Test
+    fun fromMarkdown() {
+        val markdown = """
+            Title
+            =====
+
+            This is a **paragraph**.
+
+            * Item 1
+            * Item 2
+        """.trimIndent()
+
+        val expected = """
+            <h1>Title</h1>
+            <p>This is a <strong>paragraph</strong>.</p>
+            <ul>
+            <li>Item 1</li>
+            <li>Item 2</li>
+            </ul>
+
+        """.trimIndent()
+
+        assertEquals(expected, HtmlUtil.fromMarkdown(markdown))
+    }
 }

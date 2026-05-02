@@ -2,6 +2,7 @@ package com.wutsi.kokibot.channel
 
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.ConfigurationException
+import com.wutsi.kokibot.channel.email.EmailChannel
 import com.wutsi.kokibot.channel.telegram.TelegramChannel
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -16,6 +17,12 @@ class ChannelFactoryTest {
     fun telegram() {
         val channel = factory.create("telegram", agent)
         assertTrue(channel is TelegramChannel)
+    }
+
+    @Test
+    fun email() {
+        val channel = factory.create("email", agent)
+        assertTrue(channel is EmailChannel)
     }
 
     @Test

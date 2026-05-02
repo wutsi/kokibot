@@ -82,6 +82,7 @@ This will automatically
 ### Supported Communication Channels
 
 - Telegram
+- Email
 
 ---
 

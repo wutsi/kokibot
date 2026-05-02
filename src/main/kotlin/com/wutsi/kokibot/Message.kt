@@ -12,4 +12,5 @@ data class Message(
     val userId: String? = null,
     val filePaths: List<String> = emptyList(),
     val id: String = UUID.randomUUID().toString(),
+    val subject: String? = null,
 )

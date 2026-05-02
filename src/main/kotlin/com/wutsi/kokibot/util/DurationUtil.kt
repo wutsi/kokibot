@@ -10,6 +10,10 @@ object DurationUtil {
         return millis(earliest, default * ONE_DAY) / ONE_DAY
     }
 
+    fun minutes(earliest: String, default: Long = 0): Long {
+        return millis(earliest, default * ONE_SECOND) / ONE_MINUTE
+    }
+
     fun seconds(earliest: String, default: Long = 0): Long {
         return millis(earliest, default * ONE_SECOND) / ONE_SECOND
     }

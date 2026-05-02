@@ -50,6 +50,10 @@ open class DeepseekClient(
         return "https://api.deepseek.com"
     }
 
+    protected open fun supportsMimeType(mimeType: String): Boolean {
+        return false
+    }
+
     fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
         val body = toDeepseekRequest(request, tools)
 
@@ -296,16 +300,35 @@ open class DeepseekClient(
                         request.files.map { file ->
                             try {
                                 val mimeType = getMimeType(file)
-                                val content = extractContent(file, mimeType)
-                                if (mimeType.startsWith("image/")) {
+                                if (mimeType.startsWith("text/") || mimeType.startsWith("application/json")) {
                                     mapOf(
-                                        "type" to "image_url",
-                                        "image_url" to mapOf("url" to content),
+                                        "type" to "text",
+                                        "text" to file.readText()
                                     )
+                                } else if (supportsMimeType(mimeType)) {
+                                    val base64Content = Base64
+                                        .getEncoder()
+                                        .encodeToString(file.readBytes())
+                                    val content = "data:$mimeType;base64,$base64Content"
+
+                                    if (mimeType.startsWith("image/")) {
+                                        mapOf(
+                                            "type" to "image_url",
+                                            "image_url" to mapOf("url" to content),
+                                        )
+                                    } else {
+                                        mapOf(
+                                            "type" to "file",
+                                            "file" to mapOf(
+                                                "filename" to file.name,
+                                                "file_data" to content,
+                                            )
+                                        )
+                                    }
                                 } else {
                                     mapOf(
                                         "type" to "text",
-                                        "text" to content,
+                                        "text" to textExtractorFactory.create(mimeType).extract(file)
                                     )
                                 }
                             } catch (_: UnsupportedMimeTypeException) {
@@ -327,9 +350,7 @@ open class DeepseekClient(
     }
 
     private fun extractContent(file: File, mimeType: String): String {
-        if (mimeType == "application/json" || mimeType.startsWith("text/")) {
-            return file.readText()
-        } else if (mimeType.startsWith("image/")) {
+        if (supportsMimeType(mimeType)) {
             val base64Content = Base64
                 .getEncoder()
                 .encodeToString(file.readBytes())

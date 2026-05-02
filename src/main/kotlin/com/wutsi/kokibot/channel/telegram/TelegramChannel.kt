@@ -27,7 +27,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText
-import org.telegram.telegrambots.meta.api.objects.Document
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.generics.TelegramClient
@@ -92,92 +91,46 @@ class TelegramChannel(
         }
     }
 
+    override fun send(message: Message): Boolean {
+        if (message.userId == null || message.channelId != id()) {
+            return false
+        }
+        send(message.userId, message, false)
+        return true
+    }
+
     override fun consume(update: Update) {
+        val chatId = update.message?.chatId?.toString() ?: return
+
+        /* Check sender */
+        if (!accept(update)) {
+            send(
+                chatId,
+                Message(
+                    text = ERROR_UNAUTHORIZED_MESSAGE,
+                ),
+                true,
+            )
+            return
+        }
+
+        /* Typing indicator */
+        val typingJob = scope.launch {
+            while (true) {
+                ensureActive()
+                typing(chatId)
+                delay(TYPING_DELAY)
+            }
+        }
+
         if (update.hasMessage()) {
-            val chatId = update.message.chatId.toString()
-
-            /* Check sender */
-            if (!accept(update)) {
-                send(
-                    chatId,
-                    Message(
-                        text = ERROR_UNAUTHORIZED_MESSAGE,
-                    ),
-                    true,
-                )
-                return
-            }
-
-            /* Typing indicator */
-            val typingJob = scope.launch {
-                while (true) {
-                    ensureActive()
-                    typing(chatId)
-                    delay(TYPING_DELAY)
-                }
-            }
-
-            /* Process message with streaming */
-            val userId = update.message.chat.id.toString()
-            var streamMessageId: Int? = null
-            val streamBuffer = StringBuilder()
-            var lastUpdateTime = System.currentTimeMillis()
-
             val message = try {
                 if (update.message.hasText()) {
-                    // Update the text to prevent tables and grids, which are not well supported in Telegram.
-                    // Instead, we will ask the assistant to format the response as a nested bulleted list.
-                    val text = if (update.message.isCommand) {
-                        update.message.text.trim()
-                    } else {
-                        update.message.text.trim() +
-                            "\nPresent all data as a nested bulleted list instead of a table. Avoid all grid or tabular layouts"
-                    }
-
-                    assistant.process(
-                        Message(
-                            text = text,
-                            role = Role.USER,
-                            userId = userId,
-                            channelId = id(),
-                        ),
-                        streamCallback = { delta ->
-                            streamBuffer.append(delta)
-                            val now = System.currentTimeMillis()
-
-                            if ((streamBuffer.length % 50 == 0 || now - lastUpdateTime > 500) && streamBuffer.isNotEmpty()) {
-                                val msg = streamBuffer.toString().takeLast(STREAM_MAX_LENGTH)
-                                try {
-                                    streamMessageId = sendOrUpdateMessage(
-                                        chatId,
-                                        "**Thinking...**: $msg",
-                                        streamMessageId
-                                    )
-                                    lastUpdateTime = now
-                                } catch (ex: Exception) {
-                                    LOGGER.warn(
-                                        "Failed to send or update streaming message, will retry on next update",
-                                        ex
-                                    )
-                                    if (streamMessageId != null) {
-                                        deleteMessage(chatId, streamMessageId!!)
-                                    }
-                                    streamMessageId = null // Invalidate message ID to trigger sending a new message
-                                }
-                            }
-                        }
-                    )
+                    consumeText(update)
                 } else if (update.message.hasDocument()) {
-                    val file = download(update.message.document)
-                    assistant.process(
-                        Message(
-                            text = "File received: ${update.message.document.fileName}. Do not process this document, just return the message `File received`",
-                            role = Role.USER,
-                            userId = userId,
-                            channelId = id(),
-                            filePaths = listOf(file.absolutePath)
-                        )
-                    )
+                    consumeDocument(update)
+                } else if (update.message.hasPhoto()) {
+                    consumePhoto(update)
                 } else {
                     Message(
                         text = ERROR_UNSUPPORTED_MESSAGE,
@@ -189,19 +142,104 @@ class TelegramChannel(
             }
 
             /* Send final message (or update last streamed message) */
-            if (streamMessageId != null) {
-                deleteMessage(chatId, streamMessageId!!)
-            }
             send(chatId, message, true)
         }
     }
 
-    override fun send(message: Message): Boolean {
-        if (message.userId == null || message.channelId != id()) {
-            return false
+    private fun consumeText(update: Update): Message {
+        val chatId = update.message.chatId.toString()
+        val userId = update.message.chat.id.toString()
+        var streamMessageId: Int? = null
+        val streamBuffer = StringBuilder()
+        var lastUpdateTime = System.currentTimeMillis()
+
+        // Update the text to prevent tables and grids, which are not well supported in Telegram.
+        // Instead, we will ask the assistant to format the response as a nested bulleted list.
+        val text = if (update.message.isCommand) {
+            update.message.text.trim()
+        } else {
+            update.message.text.trim() +
+                "\n\nPresent all data as a nested bulleted list instead of a table. Avoid all grid or tabular layouts"
         }
-        send(message.userId, message, false)
-        return true
+
+        try {
+            return assistant.process(
+                Message(
+                    text = text,
+                    role = Role.USER,
+                    userId = userId,
+                    channelId = id(),
+                ),
+                streamCallback = { delta ->
+                    streamBuffer.append(delta)
+                    val now = System.currentTimeMillis()
+
+                    if ((streamBuffer.length % 50 == 0 || now - lastUpdateTime > 500) && streamBuffer.isNotEmpty()) {
+                        val msg = streamBuffer.toString().takeLast(STREAM_MAX_LENGTH)
+                        try {
+                            streamMessageId = sendOrUpdateMessage(
+                                chatId,
+                                "**Thinking...**: $msg",
+                                streamMessageId
+                            )
+                            lastUpdateTime = now
+                        } catch (ex: Exception) {
+                            LOGGER.warn(
+                                "Failed to send or update streaming message, will retry on next update",
+                                ex
+                            )
+                            if (streamMessageId != null) {
+                                deleteMessage(chatId, streamMessageId!!)
+                            }
+                            streamMessageId = null // Invalidate message ID to trigger sending a new message
+                        }
+                    }
+                }
+            )
+        } finally {
+            if (streamMessageId != null) {
+                deleteMessage(chatId, streamMessageId!!)
+            }
+        }
+    }
+
+    private fun consumeDocument(update: Update): Message {
+        val userId = update.message.chat.id.toString()
+        val fileId = update.message.document.fileId
+        val filename = update.message.document.fileName
+        val file = download(fileId, filename)
+
+        return assistant.process(
+            Message(
+                text = "File received: $filename. Do not process this document, just return the message `File received`",
+                role = Role.USER,
+                userId = userId,
+                channelId = id(),
+                filePaths = listOf(file.absolutePath)
+            )
+        )
+    }
+
+    private fun consumePhoto(update: Update): Message {
+        // Telegram sends multiple resolutions; pick the largest
+        val largest = update.message.photo.maxByOrNull { it.fileSize ?: 0 }
+            ?: throw IllegalStateException("No photo found in message")
+
+        val userId = update.message.chat.id.toString()
+        val caption = update.message.caption?.trim()?.ifEmpty { null }
+        val filename = "photo_${largest.fileId}.jpg"
+        val file = download(largest.fileId, filename)
+
+        return assistant.process(
+            Message(
+                text = caption
+                    ?: "Image received: $filename. Do not process this document, just return the message `File received`",
+                role = Role.USER,
+                userId = userId,
+                channelId = id(),
+                filePaths = listOf(file.absolutePath),
+            ),
+        )
     }
 
     private fun accept(update: Update): Boolean {
@@ -304,8 +342,8 @@ class TelegramChannel(
         }
     }
 
-    private fun download(doc: Document): File {
-        val fileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=${doc.fileId}"
+    private fun download(fileId: String, fileName: String): File {
+        val fileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=$fileId"
         val response = rest.getForEntity(fileUrl, Map::class.java).body!!
         val path = MapUtil.toMap("result", response)?.get("file_path")?.toString()
             ?: throw IllegalStateException("file_path not found")
@@ -314,6 +352,6 @@ class TelegramChannel(
         val contentUrl = "https://api.telegram.org/file/bot$botToken$xpath"
         val content = rest.getForEntity(contentUrl, ByteArray::class.java).body!!
 
-        return context.fileService.create(doc.fileName, content)
+        return context.fileService.create(fileName, content)
     }
 }

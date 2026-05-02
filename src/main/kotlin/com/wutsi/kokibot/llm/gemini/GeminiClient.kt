@@ -29,4 +29,9 @@ class GeminiClient(
     override fun getBaseUrl(): String {
         return "https://generativelanguage.googleapis.com/v1beta/openai"
     }
+
+    override fun supportsMimeType(mimeType: String): Boolean {
+        return mimeType.startsWith("image/") ||
+            mimeType.startsWith("application/pdf")
+    }
 }

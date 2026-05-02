@@ -30,4 +30,8 @@ class KimiClient(
     override fun getBaseUrl(): String {
         return "https://api.moonshot.ai/v1"
     }
+
+    override fun supportsMimeType(mimeType: String): Boolean {
+        return mimeType.startsWith("image/")
+    }
 }

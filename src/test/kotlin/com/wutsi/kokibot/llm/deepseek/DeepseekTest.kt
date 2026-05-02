@@ -138,7 +138,7 @@ class DeepseekTest {
 
         val response = llm.completion(
             request = LLMRequest(
-                prompt = "Can you summarize thie text?",
+                prompt = "Can you summarize this text?",
                 files = listOf(
                     File(this::class.java.getResource("/file/RL-1.pdf")!!.file)
                 )

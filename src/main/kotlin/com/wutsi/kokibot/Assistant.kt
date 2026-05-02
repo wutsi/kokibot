@@ -113,7 +113,11 @@ class Assistant {
 
         return if (streamingEnabled && streamCallback != null) {
             context.llm.completionStream(
-                request = LLMRequest(promptText, systemInstructions),
+                request = LLMRequest(
+                    promptText,
+                    systemInstructions,
+                    files = prompt.filePaths.map { path -> File(path) }
+                ),
                 tools = tools,
                 onChunk = { chunk ->
                     chunk.reasoningDelta?.let { delta ->
@@ -122,9 +126,12 @@ class Assistant {
                 }
             )
         } else {
-            LOGGER.info("Using non-streaming mode")
             context.llm.completion(
-                request = LLMRequest(promptText, systemInstructions),
+                request = LLMRequest(
+                    promptText,
+                    systemInstructions,
+                    files = prompt.filePaths.map { path -> File(path) }
+                ),
                 tools
             )
         }

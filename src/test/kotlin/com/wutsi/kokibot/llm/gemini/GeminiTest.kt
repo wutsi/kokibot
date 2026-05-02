@@ -9,19 +9,18 @@ import kotlin.test.assertEquals
 
 class GeminiTest {
     private val llm = Gemini()
+    val config = mapOf(
+        "api-key" to System.getenv("GEMINI_API_KEY"),
+        "model" to "gemini-2.5-flash-lite",
+    )
     private val context = Context(
         home = File("/target"),
         llm = mock(),
         config = mapOf("xx" to "yy")
     )
 
-    // @Test
-    // Disabled because of rate limit and cost. Enable it for manual testing.
+    //    @Test
     fun completion() {
-        val config = mapOf(
-            "api-key" to System.getenv("GEMINI_API_KEY"),
-            "model" to "gemini-2.5-flash-lite",
-        )
         llm.init(config, context)
 
         val response = llm.completion(
@@ -35,5 +34,49 @@ class GeminiTest {
         assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
         assertEquals(true, choices[0].content?.contains("Paris"))
         assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    //    @Test
+    fun `completion with image file`() {
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(
+                prompt = "Can you summarize thie text?",
+                files = listOf(
+                    File(this::class.java.getResource("/file/medic.png")!!.file)
+                )
+            ),
+            tools = emptyList()
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(0, choices[0].toolCalls.size)
+        assertEquals(false, choices[0].content.isNullOrEmpty())
+        println(choices[0].content)
+    }
+
+    //    @Test
+    fun `completion with PDF file`() {
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(
+                prompt = "Can you summarize this text?",
+                files = listOf(
+                    File(this::class.java.getResource("/file/document-en.pdf")!!.file)
+                )
+            ),
+            tools = emptyList()
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(0, choices[0].toolCalls.size)
+        assertEquals(false, choices[0].content.isNullOrEmpty())
+        println(choices[0].content)
     }
 }

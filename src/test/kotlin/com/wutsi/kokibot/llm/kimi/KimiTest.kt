@@ -10,6 +10,10 @@ import kotlin.test.assertEquals
 
 class KimiTest {
     private val llm = Kimi()
+    private val config = mapOf(
+        "api-key" to System.getenv("KIMI_API_KEY"),
+        "model" to "kimi-k2.5",
+    )
     private val context = Context(
         home = File("/target"),
         llm = mock(),
@@ -18,10 +22,6 @@ class KimiTest {
 
     @Test
     fun completion() {
-        val config = mapOf(
-            "api-key" to System.getenv("KIMI_API_KEY"),
-            "model" to "kimi-k2.5",
-        )
         llm.init(config, context)
 
         val response = llm.completion(
@@ -39,10 +39,6 @@ class KimiTest {
 
     @Test
     fun `completion with image file`() {
-        val config = mapOf(
-            "api-key" to System.getenv("KIMI_API_KEY"),
-            "model" to "kimi-k2.5",
-        )
         llm.init(config, context)
 
         val response = llm.completion(

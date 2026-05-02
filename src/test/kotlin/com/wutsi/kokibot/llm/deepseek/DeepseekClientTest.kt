@@ -282,12 +282,11 @@ class DeepseekClientTest {
     @Test
     fun `completion with JPG file`() {
         // WHEN
+        val file = File(this::class.java.getResource("/deepseek/sample.jpg")!!.file)
         val request = LLMRequest(
             prompt = "Hi sir",
             systemInstructions = "You are a helpful assistant",
-            files = listOf(
-                File(this::class.java.getResource("/deepseek/sample.jpg")!!.file)
-            )
+            files = listOf(file)
         )
         val client = createClient()
         client.completion(request, emptyList())
@@ -309,13 +308,10 @@ class DeepseekClientTest {
 
         val content = MapUtil.toList("content", message)
         val item = content?.get(1) as? Map<String, Any>
-        assertEquals("image_url", item?.get("type"))
+        assertEquals("text", item?.get("type"))
         assertEquals(
             true,
-            (item?.get("image_url") as Map<String, Any>)
-                ?.get("url")
-                .toString()
-                .startsWith("data:image/jpeg;base64,")
+            item?.get("text").toString().contains("File ${file.absolutePath} has unsupported mime type")
         )
     }
 

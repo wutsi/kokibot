@@ -159,6 +159,7 @@ class DeepseekTest {
         val config = mapOf(
             "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-v4-flash",
+            "streaming" to true,
         )
         llm.init(config, context)
 
@@ -176,6 +177,47 @@ class DeepseekTest {
         assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
         assertEquals(true, choices[0].content?.contains("Paris"))
         assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    @Test
+    fun `completion with streaming AND tool call`() {
+        val meta = ToolMetadata(
+            name = "date_tool_now",
+            description = "Get the current date and time at Paris",
+            parameters = listOf(
+                ToolParameter(
+                    name = "location",
+                    type = ToolParameterType.STRING,
+                    description = "The location to get the date and time for (e.g. 'Paris', 'Cameroon'). If not provided, ignore this parameter",
+                    required = false
+                )
+            )
+        )
+        val tool = mock<Tool>()
+        doReturn(meta).whenever(tool).metadata()
+
+        val config = mapOf(
+            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
+            "model" to "deepseek-v4-flash",
+            "streaming" to true,
+            "tools" to listOf("date_tool_now"),
+        )
+        llm.init(config, context)
+
+        val response = llm.completionStream(
+            request = LLMRequest(prompt = "What time is it?"),
+            listOf(tool),
+            onChunk = { chunk ->
+                println("Chunk: " + chunk.delta)
+            }
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.TOOL_CALLS, choices[0].finishReason)
+        assertEquals(1, choices[0].toolCalls.size)
+        assertEquals(meta.name, choices[0].toolCalls[0].name)
+        assertEquals(mapOf("location" to "Paris"), choices[0].toolCalls[0].arguments)
     }
 
     @Test

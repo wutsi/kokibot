@@ -31,7 +31,7 @@ class Memory : Resource {
         private val LOGGER = LoggerFactory.getLogger(Memory::class.java)
         const val DEFAULT_WINDOW = 3L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
-        private const val SHUTDOWN_TIMEOUT_SECONDS = 30L
+        private const val SHUTDOWN_TIMEOUT_SECONDS = 15L
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()

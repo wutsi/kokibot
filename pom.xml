@@ -27,6 +27,7 @@
         <graalvm-python-embeded.version>25.0.2</graalvm-python-embeded.version>
         <greenmail.version>2.1.8</greenmail.version>
         <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
+        <jakarta.activation-api.version>2.1.4</jakarta.activation-api.version>
         <java.version>17</java.version>
         <jqit.version>7.6.0.202603022253-r</jqit.version>
         <jsoup.version>1.22.2</jsoup.version>
@@ -80,12 +81,16 @@
             <artifactId>flexmark-ext-gfm-strikethrough</artifactId>
             <version>${flexmark.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>jakarta.mail</groupId>
             <artifactId>jakarta.mail-api</artifactId>
             <version>${jakarta.mail-api.version}</version>
-            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.activation</groupId>
+            <artifactId>jakarta.activation-api</artifactId>
+            <version>${jakarta.activation-api.version}</version>
         </dependency>
 
         <dependency>
@@ -108,7 +113,6 @@
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
         </dependency>
-        <!-- Source: https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit -->
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
@@ -168,6 +172,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jackson-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

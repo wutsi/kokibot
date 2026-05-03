@@ -34,6 +34,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Document
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.chat.Chat
+import org.telegram.telegrambots.meta.api.objects.photo.PhotoSize
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
 import kotlin.test.assertFalse
@@ -218,6 +219,41 @@ class TelegramChannelTest {
     }
 
     @Test
+    fun `consume - should process photo`() {
+        // GIVEN
+        doReturn(Message("Received")).whenever(assistant).process(any(), anyOrNull())
+
+        val update = createPhotoUpdate(123L, "2222", "Analyze this...")
+        doReturn(ResponseEntity(mapOf("result" to mapOf("file_path" to "/files/1.png")), HttpStatus.OK))
+            .whenever(rest)
+            .getForEntity(any<String>(), eq(Map::class.java))
+
+        doReturn(ResponseEntity("Hello world".toByteArray(), HttpStatus.OK))
+            .whenever(rest)
+            .getForEntity(any<String>(), eq(ByteArray::class.java))
+
+        val file = File("/target/test-data/telegram/files/1.png")
+        doReturn(file).whenever(context.fileService).create(any(), any<ByteArray>())
+
+        // WHEN
+        telegram.init(config, context)
+        telegram.consume(update)
+
+        // THEN
+        verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=2222", Map::class.java)
+        verify(rest).getForEntity("https://api.telegram.org/file/bot$botToken/files/1.png", ByteArray::class.java)
+
+        val prompt = argumentCaptor<Message>()
+        verify(assistant).process(prompt.capture(), anyOrNull())
+        assertNotNull(prompt.firstValue.text)
+        assertEquals(Role.USER, prompt.firstValue.role)
+        assertEquals(1, prompt.firstValue.filePaths.size)
+        assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
+
+        verify(context.fileService).create(eq("photo_2222.jpg"), any())
+    }
+
+    @Test
     fun `consume - should ignore update without message text`() {
         // GIVEN
         telegram.init(config, context)
@@ -395,6 +431,26 @@ class TelegramChannelTest {
         val message = org.telegram.telegrambots.meta.api.objects.message.Message()
         message.chat = chat
         message.text = text
+        update.message = message
+        return update
+    }
+
+    private fun createPhotoUpdate(chatId: Long, photoId: String, text: String?): Update {
+        val chat = Chat(chatId, "")
+        chat.userName = "ray.sponsible"
+        chat.firstName = "Ray"
+        chat.lastName = "Responsible"
+
+        val update = Update()
+        val message = org.telegram.telegrambots.meta.api.objects.message.Message()
+        message.chat = chat
+        message.caption = text
+        message.photo = listOf(
+            PhotoSize().apply {
+                fileId = photoId
+                fileSize = 10000
+            },
+        )
         update.message = message
         return update
     }

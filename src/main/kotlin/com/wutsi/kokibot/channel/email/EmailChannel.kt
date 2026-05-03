@@ -38,7 +38,7 @@ class EmailChannel(
         private val LOGGER = LoggerFactory.getLogger(EmailChannel::class.java)
 
         const val ID = "channel:email"
-        const val DEFAULT_FREQUENCY_MINUTES = 15L
+        const val DEFAULT_FREQUENCY_SECONDS = 15L * 60L // 15 minutes
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
@@ -46,13 +46,14 @@ class EmailChannel(
     private lateinit var email: String
     private lateinit var username: String
     private lateinit var password: String
-    private lateinit var imapProtocol: String
     private lateinit var imapHost: String
     private lateinit var imapPort: String
-    private lateinit var imapSSL: String
+    private var imapSSL: String? = null
+    private var imapTLS: String? = null
     private lateinit var smtpHost: String
     private lateinit var smtpPort: String
-    private lateinit var smtpSSL: String
+    private var smtpSSL: String? = null
+    private var smtpTLS: String? = null
     private lateinit var senderWhitelist: List<String>
     private lateinit var job: ScheduledFuture<*>
 
@@ -70,23 +71,24 @@ class EmailChannel(
         password = config["password"] as? String
             ?: throw ConfigurationException("password is required")
 
-        imapProtocol = config["imap-protocol"] as? String ?: "imaps"
         imapHost = config["imap-host"] as? String
             ?: throw ConfigurationException("imap-host is required")
         imapPort = (config["imap-port"] as? Int)?.toString() ?: "993"
-        imapSSL = (config["imap-ssl"] as? Boolean)?.toString() ?: "true"
+        imapSSL = (config["imap-ssl"] as? Boolean)?.toString()
+        imapTLS = (config["imap-tls"] as? Boolean)?.toString()
 
         smtpHost = config["smtp-host"] as? String
             ?: throw ConfigurationException("imap-host is required")
         smtpPort = (config["smtp-port"] as? Int)?.toString() ?: "465"
-        smtpSSL = (config["smtp-ssl"] as? Boolean)?.toString() ?: "true"
+        smtpSSL = (config["smtp-ssl"] as? Boolean)?.toString()
+        smtpTLS = (config["smtp-tls"] as? Boolean)?.toString()
 
         val frequency = (config["fetch-frequency"] as? String)
-            ?.let { value -> DurationUtil.minutes(value, DEFAULT_FREQUENCY_MINUTES) }
-            ?: DEFAULT_FREQUENCY_MINUTES
+            ?.let { value -> DurationUtil.seconds(value, DEFAULT_FREQUENCY_SECONDS) }
+            ?: DEFAULT_FREQUENCY_SECONDS
 
         senderWhitelist = MapUtil.toList("sender-whitelist", config)
-            ?.mapNotNull { entry -> entry?.toString()?.lowercase() }
+            ?.map { entry -> entry.toString().lowercase() }
             ?: emptyList()
 
         job = launchJob(frequency)
@@ -111,7 +113,7 @@ class EmailChannel(
         return try {
             // IMAP
             val session = getIMAPSession()
-            val store = session.getStore(imapProtocol)
+            val store = session.getStore(getIMAPProtocol())
             store.connect(imapHost, imapPort.toInt(), username, password)
             store.close()
 
@@ -120,7 +122,7 @@ class EmailChannel(
 
             Health(id(), true)
         } catch (e: Exception) {
-            Health(id(), false, "Failed to connect to IMAP server: ${e.message}")
+            Health(id(), false, e.message)
         }
     }
 
@@ -131,14 +133,17 @@ class EmailChannel(
             channel.fetch()
         }
 
-        LOGGER.info("Scheduling email fetch every ${frequency}m")
-        return scheduler.scheduleAtFixedRate(task, frequency, frequency, TimeUnit.MINUTES)
+        val minutes = frequency / 60
+        val seconds = frequency % 60
+        LOGGER.info("Scheduling email fetch every ${minutes}m ${seconds}s")
+        return scheduler.scheduleAtFixedRate(task, frequency, frequency, TimeUnit.SECONDS)
     }
 
     internal fun fetch() {
         try {
+            val protocol = getIMAPProtocol()
             val session = getIMAPSession()
-            val store = session.getStore(imapProtocol)
+            val store = session.getStore(protocol)
             store.connect(imapHost, imapPort.toInt(), username, password)
             store.use {
                 // 3. Open the Inbox
@@ -147,12 +152,15 @@ class EmailChannel(
                 inbox.use {
                     val unseenFlagTerm = FlagTerm(Flags(Flags.Flag.SEEN), false)
                     val messages = inbox.search(unseenFlagTerm)
+                    var processed = 0
                     for (message in messages) {
-                        if (accept(message)) {
+                        if (!reject(message) && accept(message)) {
                             process(message)
                             message.setFlag(Flags.Flag.SEEN, true)
+                            processed++
                         }
                     }
+                    LOGGER.info("${messages.size} new messages, $processed processed")
                 }
             }
         } catch (e: Exception) {
@@ -160,15 +168,29 @@ class EmailChannel(
         }
     }
 
-    private fun accept(message: jakarta.mail.Message): Boolean {
-        val sender = (message.from.firstOrNull() as? InternetAddress)?.address
+    private fun getIMAPProtocol(): String {
+        return if (imapSSL.toBoolean()) "imaps" else "imap"
+    }
 
-        if (sender != null && (senderWhitelist.isEmpty() || senderWhitelist.contains(sender.lowercase()))) {
+    private fun accept(message: jakarta.mail.Message): Boolean {
+        val from = (message.from.firstOrNull() as? InternetAddress)?.address
+        if (from != null && (senderWhitelist.isEmpty() || senderWhitelist.contains(from.lowercase()))) {
             return true
         } else {
-            LOGGER.warn("Unauthorized sender: $sender")
+            LOGGER.warn("Unauthorized sender: $from")
             return false
         }
+    }
+
+    private fun reject(message: jakarta.mail.Message): Boolean {
+        val from = (message.from.firstOrNull() as? InternetAddress)?.address
+            ?: return true
+
+        return from.startsWith("noreply@") ||
+            from.startsWith("no-reply@") ||
+            from.startsWith("mailer-daemon@") ||
+            from.startsWith("bounce@") ||
+            from.contains(email)
     }
 
     private fun process(message: jakarta.mail.Message) {
@@ -261,20 +283,24 @@ class EmailChannel(
     }
 
     private fun getIMAPSession(): Session {
+        val protocol = getIMAPProtocol()
         val props = Properties().apply {
-            setProperty("mail.store.protocol", imapProtocol)
-            setProperty("mail.imaps.host", imapHost)
-            setProperty("mail.imaps.port", imapPort)
-            setProperty("mail.imaps.ssl.enable", imapSSL)
+            setProperty("mail.store.protocol", getIMAPProtocol())
+            setProperty("mail.$protocol.host", imapHost)
+            setProperty("mail.$protocol.port", imapPort)
+            imapSSL?.let { setProperty("mail.$protocol.ssl.enable", imapSSL) }
+            imapTLS?.let { setProperty("mail.$protocol.starttls.enable", imapTLS) }
         }
         return Session.getDefaultInstance(props)
     }
 
     private fun getSMTPSession(): Session {
         val props = Properties().apply {
+            setProperty("mail.smtp.auth", "true")
             setProperty("mail.smtp.host", smtpHost)
             setProperty("mail.smtp.port", smtpPort)
-            setProperty("mail.smtp.ssl.enable", smtpSSL)
+            smtpSSL?.let { setProperty("mail.smtp.ssl.enable", smtpSSL) }
+            smtpTLS?.let { setProperty("mail.smtp.starttls.enable", smtpTLS) }
         }
         return Session.getInstance(props, object : Authenticator() {
             override fun getPasswordAuthentication(): PasswordAuthentication {

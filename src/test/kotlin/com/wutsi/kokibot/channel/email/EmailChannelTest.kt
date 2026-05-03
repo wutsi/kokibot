@@ -338,6 +338,109 @@ class EmailChannelTest {
         )
         deliver(message)
 
+        // WHEN
+        channel.fetch()
+
+        // THEN
+        verify(assistant, never()).process(any(), any())
+    }
+
+    @Test
+    fun `fetch - rejected from noreply`() {
+        // GIVEN
+        val message = createTextMessage(
+            from = "noreply@gmail.com",
+            subject = "Hello World",
+            body = "Hello\n\nCan you send me my daily debriefing?",
+            markAsRead = false
+        )
+        deliver(message)
+
+        // WHEN
+        channel.fetch()
+
+        // THEN
+        verify(assistant, never()).process(any(), any())
+    }
+
+    @Test
+    fun `fetch - rejected from no-reply`() {
+        // GIVEN
+        val message = createTextMessage(
+            from = "no-reply@gmail.com",
+            subject = "Hello World",
+            body = "Hello\n\nCan you send me my daily debriefing?",
+            markAsRead = false
+        )
+        deliver(message)
+
+        // WHEN
+        channel.fetch()
+
+        // THEN
+        verify(assistant, never()).process(any(), any())
+    }
+
+    @Test
+    fun `fetch - rejected from bounce`() {
+        // GIVEN
+        val message = createTextMessage(
+            from = "bounce@gmail.com",
+            subject = "Hello World",
+            body = "Hello\n\nCan you send me my daily debriefing?",
+            markAsRead = false
+        )
+        deliver(message)
+
+        // WHEN
+        channel.fetch()
+
+        // THEN
+        verify(assistant, never()).process(any(), any())
+    }
+
+    @Test
+    fun `fetch - rejected from mailer-daemon`() {
+        // GIVEN
+        val message = createTextMessage(
+            from = "mailer-daemon@gmail.com",
+            subject = "Hello World",
+            body = "Hello\n\nCan you send me my daily debriefing?",
+            markAsRead = false
+        )
+        deliver(message)
+
+        // WHEN
+        channel.fetch()
+
+        // THEN
+        verify(assistant, never()).process(any(), any())
+    }
+
+    @Test
+    fun `fetch - email error`() {
+        // GIVEN
+        val cfg = config + mapOf("imap-host" to "invalid-host")
+        channel.init(cfg, context)
+
+        // WHEN
+        channel.fetch()
+
+        // THEN
+        verify(assistant, never()).process(any(), any())
+    }
+
+    @Test
+    fun runJob() {
+        // GIVEN
+        val message = createTextMessage(
+            from = "ray.sponsible@gmail.com",
+            subject = "Hello World",
+            body = "Hello\n\nCan you send me my daily debriefing?",
+            markAsRead = false
+        )
+        deliver(message)
+
         val response = com.wutsi.kokibot.Message(
             text = "This is your briefing...",
             subject = message.subject,
@@ -345,11 +448,19 @@ class EmailChannelTest {
         )
         doReturn(response).whenever(assistant).process(any(), any())
 
+        val cfg = config + mapOf("fetch-frequency" to "5s")
+        channel.init(cfg, context)
+
         // WHEN
+        println("Waiting for the scheduled job to run...")
+        Thread.sleep(10000) // Wait for the scheduled job to run at least once
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(assistant).process(any(), any())
+
+        val replies = greenMail.receivedMessages
+        assertEquals(2, replies.size)
     }
 
     private fun createTextMessage(

@@ -118,11 +118,9 @@ class AssistantTest {
         )
 
         // SECURITY.md
-        val securityInstructions = getResourceFile("/SECURITY.md").readText()
-            .replace("{{HOME}}", context.home.absolutePath)
         assertEquals(
             true,
-            req.firstValue.systemInstructions?.contains(securityInstructions)
+            req.firstValue.systemInstructions?.contains("Security Guidelines...")
         )
 
         verify(chatHistory).append(prompt, result)
@@ -170,19 +168,7 @@ class AssistantTest {
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
 
         // ASSISANT.md is missing
-        assertEquals(
-            false,
-            req.firstValue.systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
-        )
-
-        // SECURITY.md
-        val securityInstructions = getResourceFile("/SECURITY.md").readText()
-            .replace("{{HOME}}", context.home.absolutePath)
-            .trimIndent()
-        assertEquals(
-            true,
-            req.firstValue.systemInstructions?.contains("# Security Guidelines\n")
-        )
+        assertEquals(null, req.firstValue.systemInstructions)
 
         verify(chatHistory).append(prompt, result)
     }

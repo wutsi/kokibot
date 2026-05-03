@@ -26,13 +26,6 @@ class Assistant {
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         this.context = context
-
-        // Create temporary directory if it does not exist
-        val tmp = File("${context.home.absolutePath}/workspace/tmp")
-        if (!tmp.exists()) {
-            LOGGER.info("Creating temporary directory: $tmp")
-            tmp.mkdirs()
-        }
     }
 
     fun destroy() {
@@ -272,7 +265,7 @@ class Assistant {
         return if (file.exists()) {
             file.readText()
         } else {
-            ""
+            null
         }
     }
 
@@ -290,10 +283,13 @@ class Assistant {
         return skills?.let { "\n# Available skills\n$skills" }
     }
 
-    private fun buildSecurityInstructions(): String {
-        return this::class.java.getResourceAsStream("/SECURITY.md")!!
-            .bufferedReader()
-            .readText()
-            .replace("{{HOME}}", context.home.absolutePath)
+    private fun buildSecurityInstructions(): String? {
+        val file = File(context.home, "SECURITY.md")
+        return if (file.exists()) {
+            return file.readText()
+                .replace("{{HOME}}", context.home.absolutePath)
+        } else {
+            null
+        }
     }
 }

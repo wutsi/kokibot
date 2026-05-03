@@ -25,12 +25,18 @@
   "marketplaces": [
     {
       "name": "obsidian",
-      "repo-url": "https://github.com/kepano/obsidian-skills.git"
+      "repo-url": "https://github.com/kepano/obsidian-skills.git",
+      "skill-whitelist": [
+        "obsidian-markdown",
+        "obsidian-bases",
+        "obsidian-cli",
+        "json-canvas"
+      ]
     },
     {
       "name": "anthropics",
       "repo-url": "https://github.com/anthropics/skills.git",
-      "skill_whitelist": [
+      "skill-whitelist": [
         "pdf",
         "docx",
         "pptx",

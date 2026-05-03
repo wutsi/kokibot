@@ -9,7 +9,6 @@
     "type": "${KOKIBOT_LLM_TYPE}",
     "api-key": "${KOKIBOT_LLM_API_KEY}",
     "model": "${KOKIBOT_LLM_MODEL}",
-    "max-tokens": 8192,
     "streaming": true
   },
   "channels": [
@@ -20,7 +19,8 @@
   ],
   "memory": {
     "window": "5d",
-    "compaction-frequency": "6h"
+    "compaction-frequency": "6h",
+    "max-length": 5000
   },
   "marketplaces": [
     {

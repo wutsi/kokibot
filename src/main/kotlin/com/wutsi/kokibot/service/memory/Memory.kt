@@ -31,12 +31,14 @@ class Memory : Resource {
         private val LOGGER = LoggerFactory.getLogger(Memory::class.java)
         const val DEFAULT_WINDOW = 3L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
+        private const val DEFAULT_MAX_LENGTH = 2000
         private const val SHUTDOWN_TIMEOUT_SECONDS = 15L
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val lock = ReentrantLock()
     private var window: Long = DEFAULT_WINDOW
+    private var maxLength: Int = DEFAULT_MAX_LENGTH
     private lateinit var context: Context
     private lateinit var job: ScheduledFuture<*>
 
@@ -53,6 +55,7 @@ class Memory : Resource {
      */
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
+        this.maxLength = MapUtil.toInt("max-length", config) ?: DEFAULT_MAX_LENGTH
         this.window = MapUtil.toString("window", config)
             ?.let { value ->
                 DurationUtil.days(value, DEFAULT_WINDOW)
@@ -113,6 +116,7 @@ class Memory : Resource {
             .readText()
             .replace("{{history}}", history)
             .replace("{{memory}}", (memory ?: ""))
+            .replace("{{max_length}}", maxLength.toString())
 
         val response = context.llm.completion(LLMRequest(prompt = prompt), emptyList())
         return response.choices.firstOrNull()?.content ?: ""

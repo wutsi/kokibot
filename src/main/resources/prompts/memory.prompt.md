@@ -9,7 +9,7 @@ workspace memory files.
 - Constraint: Do not include sensitive information like passwords or specific financial account numbers. Focus on the
   logic of how I live and work.
 - Output: Please generate the full content of the long-term memory summary based on the above instructions in a maximum
-  of 3000 words.
+  of {{max_length}} characters.
 - If the conversation does not contain any new information, simply return the existing memory content without changes.
 - Do not call any tools or APIs in this step. This is purely for summarization and memory updating.
 - Just return the updated memory content in Markdown format. Do not include any explanations or commentary outside of

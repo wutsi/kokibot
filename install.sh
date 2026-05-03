@@ -153,10 +153,10 @@ EOF
     <string>$BIN_DIR</string>
 
     <key>StandardOutPath</key>
-    <string>$HOME/.kokibot/logs/kokibot.log</string>
+    <string>$HOME/.kokibot/workspace/logs/kokibot.log</string>
 
     <key>StandardErrorPath</key>
-    <string>$HOME/.kokibot/logs/kokibot.err</string>
+    <string>$HOME/.kokibot/workspace/logs/kokibot.err</string>
 </dict>
 </plist>
 EOF
@@ -178,8 +178,8 @@ Description=Kokibot Service
 Type=simple
 WorkingDirectory=$BIN_DIR
 ExecStart=$JAVA_EXEC -Dserver.port=$KOKIBOT_PORT -jar $BIN_DIR/kokibot.jar  --spring.profiles.active=prod
-StandardOutput=append:$HOME/.kokibot/kokibot.log
-StandardError=append:$HOME/.kokibot/kokibot.err
+StandardOutput=append:$HOME/.kokibot/logs/workspace/kokibot.log
+StandardError=append:$HOME/.kokibot/logs/workspace/kokibot.err
 Restart=always
 
 [Install]

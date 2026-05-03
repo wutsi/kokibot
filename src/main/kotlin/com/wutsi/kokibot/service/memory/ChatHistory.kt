@@ -110,7 +110,7 @@ class ChatHistory : Resource {
     }
 
     private fun getFile(date: LocalDate): File {
-        val dir = File(context.home.absolutePath + "/workspace/memory/history")
+        val dir = File(context.home.absolutePath + "/memory/history")
         if (!dir.exists()) {
             dir.mkdirs()
         }

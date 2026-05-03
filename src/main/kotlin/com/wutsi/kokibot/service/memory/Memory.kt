@@ -134,7 +134,7 @@ class Memory : Resource {
     }
 
     private fun getFile(): File {
-        val dir = File(File(context.home, "workspace"), "memory")
+        val dir = File(context.home, "memory")
         if (!dir.exists()) {
             dir.mkdirs()
         }

@@ -56,7 +56,7 @@ class MemoryTest {
     @Test
     fun `compact and get`() {
         // GIVEN
-        val dir = File(home.absolutePath + "/workspace/memory")
+        val dir = File(home.absolutePath + "/memory")
         dir.mkdirs()
         val ff = File(dir, "MEMORY.md")
         ff.writeText("This is the current memory")
@@ -84,7 +84,7 @@ class MemoryTest {
             LocalDate.now(),
         )
 
-        val file = File(home.absolutePath + "/workspace/memory/MEMORY.md")
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
         assertTrue(file.exists())
         assertEquals("Fact1\nFact2\nFact3", file.readText())
 
@@ -103,7 +103,7 @@ class MemoryTest {
         memory.compact()
 
         // THEN
-        val file = File(home.absolutePath + "/workspace/memory/MEMORY.md")
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
         assertTrue(file.exists())
         assertEquals("", file.readText())
 
@@ -121,7 +121,7 @@ class MemoryTest {
         // THEN
         verify(llm, never()).completion(any(), any())
 
-        val file = File(home.absolutePath + "/workspace/memory/MEMORY.md")
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
 
         assertFalse(file.exists())
         assertNull(memory.get())
@@ -138,7 +138,7 @@ class MemoryTest {
     @Test
     fun `get file`() {
         // GIVEN
-        val dir = File(home.absolutePath + "/workspace/memory")
+        val dir = File(home.absolutePath + "/memory")
         dir.mkdirs()
         val ff = File(dir, "MEMORY.md")
         ff.writeText("This is the current memory")
@@ -187,7 +187,7 @@ class MemoryTest {
         executor.shutdown()
 
         // THEN — final file content is the LLM response, not partial / interleaved
-        val file = File(home.absolutePath + "/workspace/memory/MEMORY.md")
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
         assertTrue(file.exists())
         assertEquals("Fact1\nFact2\nFact3", file.readText())
     }

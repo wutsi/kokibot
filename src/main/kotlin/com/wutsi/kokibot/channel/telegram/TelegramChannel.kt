@@ -158,8 +158,7 @@ class TelegramChannel(
         val text = if (update.message.isCommand) {
             update.message.text.trim()
         } else {
-            update.message.text.trim() +
-                "\n\nPresent all data as a nested bulleted list instead of a table. Avoid all grid or tabular layouts"
+            update.message.text.trim()
         }
 
         try {
@@ -207,11 +206,13 @@ class TelegramChannel(
         val userId = update.message.chat.id.toString()
         val fileId = update.message.document.fileId
         val filename = update.message.document.fileName
+        val caption = update.message.caption?.trim()?.ifEmpty { null }
         val file = download(fileId, filename)
 
         return assistant.process(
             Message(
-                text = "File received: $filename. Do not process this document, just return the message `File received`",
+                text = caption
+                    ?: "File received: $filename. Do not process this document, just return the message `File received`",
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),

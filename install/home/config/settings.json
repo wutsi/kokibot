@@ -9,7 +9,8 @@
     "type": "${KOKIBOT_LLM_TYPE}",
     "api-key": "${KOKIBOT_LLM_API_KEY}",
     "model": "${KOKIBOT_LLM_MODEL}",
-    "streaming": true
+    "streaming": true,
+    "temperature": 0.1
   },
   "channels": [
     {

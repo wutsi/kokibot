@@ -1,14 +1,13 @@
 ---
 name: pandoc
-description: |
-    This skill should be used when converting documents between formats (Markdown, DOCX, PDF, HTML, LaTeX, etc.) using pandoc.
-    Use for format conversion, document generation, and preparing markdown for Google Docs or other word processors.
+description: This skill should be used when converting documents between formats (Markdown, DOCX, PDF, HTML, LaTeX, etc.) using pandoc. Use for format conversion, document generation, and preparing markdown for Google Docs or other word processors.
 requires:
     bin:
         - pandoc
+        - tectonic
 ---
 
-# Pandoc Document Conversion Skill
+# Skill: pandoc
 
 Convert documents between formats using pandoc, the universal document converter.
 
@@ -51,6 +50,9 @@ Where
 # Basic conversion
 pandoc input.md -o output.docx
 
+# PDF Conversion - use `tectonic` as PDF engine.
+pandoc input.md --pdf-engine=tectonic -o output.pdf
+
 # With table of contents
 pandoc input.md --toc -o output.docx
 
@@ -59,14 +61,6 @@ pandoc input.md --reference-doc=template.docx -o output.docx
 
 # Standalone with metadata
 pandoc input.md -s --metadata title="Document Title" -o output.docx
-```
-
-### Conversion to PDF
-
-For PDF output, specify the PDF engine (e.g., `tectonic`, `pdflatex`, `xelatex`).
-
-```bash
-pandoc input.md --pdf-engine=tectonic -o output.pdf
 ```
 
 ---

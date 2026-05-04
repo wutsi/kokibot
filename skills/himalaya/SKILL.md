@@ -6,7 +6,7 @@ requires:
         - himalaya
 ---
 
-# Himalaya Email CLI
+# Skill: himalaya
 
 Himalaya is a CLI email client that lets you manage emails from the terminal using IMAP, SMTP, Notmuch, or Sendmail
 backends.

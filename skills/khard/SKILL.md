@@ -1,8 +1,6 @@
 ---
 name: khard
-description: |
-    This skill allows the agent to search, read, create, and modify contacts in the local CardDAV-synced address book using the khard CLI utility.
-    It is optimized for non-interactive execution.
+description: This skill allows the agent to search, read, create, and modify contacts in the local CardDAV-synced address book using the khard CLI utility. It is optimized for non-interactive execution.
 requires:
     bins:
         - khard

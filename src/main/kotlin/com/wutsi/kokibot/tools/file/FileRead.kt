@@ -1,25 +1,34 @@
 package com.wutsi.kokibot.tools.file
 
+import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.service.file.MarkdownConverter
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.tools.web.WebFetchTool.Companion.MAX_FILE_SIZE
+import org.springframework.http.MediaTypeFactory
 
 class FileRead : Tool {
     companion object {
         const val NAME = "file_read"
     }
 
+    private lateinit var context: Context
+
+    override fun init(config: Map<*, *>, context: Context) {
+        super.init(config, context)
+        this.context = context
+    }
+
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
         description = """
-            Read the content of a file and return it as Markdown.
-            If the file is too large, it will be truncated to the specified maximum length (if provided)."
-
-            This tool can only read text files: .txt, .md, .json, .xml, .csv, .log, .yaml, .yml, .md, .html, .htm, .css, .js, .java, .kt, .py, .go, .rb, .php etc.
-
-            For binary files, use available skills to convert them to Markdown format before reading with this tool.
+            Read the content of a file and return its text version so that it can be interpreted by LLM.
+            This tool supports:
+            - Text files (.txt, .md, .csv, etc.)
+            - PDF - Return as markdown if possible, otherwise return as text
+            - Office documents (.docx, .xlsx, .pptx, xls, doc) - Return as markdown if possible, otherwise return as text
         """.trimIndent(),
         parameters = listOf(
             ToolParameter(
@@ -35,11 +44,14 @@ class FileRead : Tool {
         val path = arguments["path"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: path")
 
-        return try {
+        val result = try {
             read(path, MAX_FILE_SIZE)
         } catch (ex: Throwable) {
             "Failed to read file. Error=${ex.message}"
         }
+        return "BEGIN FILE CONTENT: $path\n\n" +
+            result +
+            "\n\nEND FILE CONTENT: $path"
     }
 
     private fun read(path: String, maxLength: Int): String {
@@ -54,8 +66,27 @@ class FileRead : Tool {
             return "File is not readable: $path"
         }
 
-        return "BEGIN FILE CONTENT: $path\n\n" +
-            file.readText().take(maxLength) +
-            "\n\nEND FILE CONTENT"
+        val extension = file.extension.lowercase()
+        val contentType = MediaTypeFactory.getMediaType(file.name)
+            .map { it.toString() }
+            .orElse(null)
+
+        val content = when {
+            contentType == null -> if (extension in listOf("md")) {
+                file.readText()
+            } else {
+                return "Cannot read $path. Unsupported file type: $extension"
+            }
+
+            contentType.startsWith("text/") || contentType.equals("application/json") -> file.readText()
+
+            else -> try {
+                val converter = MarkdownConverter(fileService = context.fileService)
+                return converter.convert(file, contentType)
+            } catch (ex: Throwable) {
+                return "Failed to read text from $path. Error=${ex.message}"
+            }
+        }
+        return content.take(maxLength)
     }
 }

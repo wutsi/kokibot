@@ -257,12 +257,16 @@ class AssistantTest {
             """
                 Query: Yo
 
+                ---
+
                 # Long-Term Memory
                 Here are information that you have stored in your long-term memory in Markdown format:
                 ```markdown
                 $memory
                 ```
 
+
+                ---
 
                 # Conversation history
                 Here is the conversation history between you and the user in JSON format:

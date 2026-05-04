@@ -46,8 +46,12 @@ class Assistant {
             Message(FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
         }
 
-        val elapsedTime = (System.currentTimeMillis() - now) / 1000
-        LOGGER.info("ANSWER prompt_id=${prompt.id}\n ellapsed_time=${elapsedTime}s: ${response.text}")
+        LOGGER.info(
+            ".......................................\n" +
+                " FINAL ANSWER\n" +
+                " Duration: ${(System.currentTimeMillis() - now) / 1000}s\n" +
+                " Result: ${clip(response.text, 200)}"
+        )
         if (response.role != Role.COMMAND) {
             context.chatHistory.append(prompt, response)
         }
@@ -63,6 +67,9 @@ class Assistant {
         val tools = mutableMapOf<String, Tool>()
         context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
 
+        LOGGER.debug("\n\n------------------------------------------------------------")
+        LOGGER.info("$iteration - prompt_id=${prompt.id}  user=${prompt.userId}@${prompt.channelId}\n${prompt.text}")
+
         while (true) {
             if (iteration++ > maxIterations) {
                 throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
@@ -70,7 +77,7 @@ class Assistant {
 
             val command = getCommand(prompt)
             if (command != null) {
-                val result = exec(prompt, command)
+                val result = exec(iteration, prompt, command)
                 return Message(
                     text = result,
                     role = Role.COMMAND,
@@ -78,7 +85,7 @@ class Assistant {
                 )
             } else {
                 val response = ask(iteration, prompt, memory, streamCallback)
-                if (decide(response, memory, tools)) {
+                if (decide(iteration, response, memory, tools)) {
                     return Message(
                         text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                         role = Role.ASSISTANT,
@@ -95,14 +102,19 @@ class Assistant {
         memory: MutableList<String>,
         streamCallback: ((String) -> Unit)?,
     ): LLMResponse {
-        LOGGER.debug("\n\n--- Iteration $iteration -------------------")
-        LOGGER.info("$iteration - PROMPT: prompt_id=${prompt.id}  user=${prompt.userId}@${prompt.channelId}\n${prompt.text}")
-
         val tools = context.toolRegistry.all()
         val promptText = buildPrompt(prompt, memory)
         val systemInstructions = buildSystemInstructions()
-
         val streamingEnabled = context.llm.supportsStreaming()
+
+        LOGGER.info(
+            ".......................................\n" +
+                "$iteration - Asking LLM with the following prompt:\n" +
+                " Files: ${prompt.filePaths}\n" +
+                " Query: ${clip(prompt.text, 200)}\n" +
+                " Memory: ${memory.size} items\n" +
+                " Tools: ${tools.size} available"
+        )
 
         return if (streamingEnabled && streamCallback != null) {
             context.llm.completionStream(
@@ -131,6 +143,7 @@ class Assistant {
     }
 
     private fun decide(
+        iteration: Int,
         response: LLMResponse,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
@@ -138,7 +151,7 @@ class Assistant {
         // Tool calls
         val choiceCalls = response.choices.filter { choice -> choice.toolCalls.isNotEmpty() }
         if (choiceCalls.isNotEmpty()) {
-            choiceCalls.forEach { choice -> exec(choice, memory, tools) }
+            choiceCalls.forEach { choice -> exec(iteration, choice, memory, tools) }
             return false
         } else {
             return true
@@ -146,47 +159,56 @@ class Assistant {
     }
 
     private fun exec(
+        iteration: Int,
         choice: LLMResponseChoice,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ) {
-        LOGGER.info(">>> ${choice.toolCalls.size} call(s) to execute")
         choice.toolCalls.forEach { call ->
-            exec(choice.content, call, memory, tools)
+            exec(iteration, choice.content, call, memory, tools)
         }
     }
 
     private fun exec(
+        iteration: Int,
         content: String?,
         call: LLMToolCall,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ) {
-        content?.let { LOGGER.info(">>> $content") }
-        LOGGER.info(">>> Tool execution: name=${call.name}, arguments=${call.arguments}")
+        LOGGER.info(
+            ".......................................\n" +
+                (content?.let { clip(content, 200) + "\n" } ?: "") +
+                "$iteration - TOOL: ${call.name}\n" +
+                " Arguments:\n" +
+                call.arguments.map { " - " + clip(it.toString(), 200) }.joinToString("\n")
+        )
 
         val tool = tools[call.name]
         if (tool == null) {
-            memory.add("Calling the tool `${call.name}` failed because it's not available!")
+            memory.add("The tool `${call.name}` is not available!")
             return
         }
 
         val result = try {
             tool.exec(call.arguments)
         } catch (e: Exception) {
-            LOGGER.warn("Error while executing tool `${call.name}` with arguments ${call.arguments}", e)
+            LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
             "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
         }
-        if (result.length > 200) {
-            LOGGER.info(result.take(100) + "...")
-        } else {
-            LOGGER.info(result)
-        }
 
-        if (content != null) {
-            memory.add(content)
+//        if (content != null) {
+//            memory.add(content)
+//        }
+        memory.add(result)
+    }
+
+    private fun clip(text: String, n: Int): String {
+        return if (text.length > n) {
+            text.take(n) + "..."
+        } else {
+            text
         }
-        memory.add("Calling the tool `${call.name}` returned the following result:\n$result")
     }
 
     private fun getCommand(query: Message): Command? {
@@ -212,7 +234,7 @@ class Assistant {
         }
     }
 
-    private fun exec(query: Message, command: Command): String {
+    private fun exec(iteration: Int, query: Message, command: Command): String {
         val text = query.text.trim()
         val name = command.metadata().name
         val input = if (text.equals(name, ignoreCase = true)) {
@@ -221,7 +243,7 @@ class Assistant {
             text.substring(name.length).trim()
         }
 
-        LOGGER.info("Command execution: name={} - input={}", name, input)
+        LOGGER.info("$iteration - COMMAND: {} {}", name, input)
         return command.exec(input, context)
     }
 
@@ -229,24 +251,31 @@ class Assistant {
         val sb = StringBuilder()
         sb.append("Query: ${prompt.text}")
 
+        // Long-term memory
         val longTermMemory = context.memory.get()
         if (longTermMemory != null) {
-            sb.append("\n\n# Long-Term Memory\n")
+            sb.append("\n\n---\n\n")
+            sb.append("# Long-Term Memory\n")
             sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
             sb.append("```markdown\n$longTermMemory\n```\n")
         }
 
+        // Short-term memory (conversation history)
         val shortTermMemory = context.chatHistory.get()
         if (shortTermMemory != null) {
-            sb.append("\n\n# Conversation history\n")
+            sb.append("\n\n---\n\n")
+            sb.append("# Conversation history\n")
             sb.append("Here is the conversation history between you and the user in JSON format:\n")
             sb.append("```json\n$shortTermMemory\n```\n")
         }
 
+        // Reasoning steps and observations
         if (memory.isNotEmpty()) {
-            sb.append("\n\n# Previous reasoning steps and observations")
+            sb.append("\n\n---\n\n")
+            sb.append("# Previous reasoning steps and observations\n")
             memory.forEach { line -> sb.append("$line\n\n") }
         }
+
         return sb.toString()
     }
 
@@ -275,12 +304,14 @@ class Assistant {
             .filter { skill -> skill.health().up }
             .joinToString("\n") { skill ->
                 listOfNotNull(
-                    "- `${skill.metadata.name}`: ${skill.metadata.description}",
+                    "- Skill: `${skill.metadata.name}`\n" +
+                        "    - Description: ${skill.metadata.description}\n" +
+                        "    - Home Directory: ${skill.metadata.home}"
                 ).joinToString("\n")
             }
             .ifEmpty { null }
 
-        return skills?.let { "\n# Available skills\n$skills" }
+        return skills?.let { "\n\n---\n\n# Available skills\n$skills" }
     }
 
     private fun buildSecurityInstructions(): String? {

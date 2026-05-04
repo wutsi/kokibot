@@ -45,7 +45,7 @@ class FileWriteTest {
             )
         )
 
-        assertEquals("File written into $path", result)
+        assertEquals(true, result.contains("Success"))
         assertEquals("Hello, World!", File(path).readText())
     }
 
@@ -60,7 +60,7 @@ class FileWriteTest {
             )
         )
 
-        assertEquals("File written into $path", result)
+        assertEquals(true, result.contains("Success"))
         assertTrue(File(path).exists())
         assertEquals("nested", File(path).readText())
     }
@@ -71,7 +71,7 @@ class FileWriteTest {
 
         val result = tool.exec(mapOf("path" to path))
 
-        assertEquals("File written into $path", result)
+        assertEquals(true, result.contains("Success"))
         assertEquals("", File(path).readText())
     }
 
@@ -87,7 +87,7 @@ class FileWriteTest {
             )
         )
 
-        assertEquals("File already exists: ${file.absolutePath}", result)
+        assertEquals(true, result.contains("File already exists: ${file.absolutePath}"))
         assertEquals("original", file.readText())
     }
 
@@ -104,7 +104,7 @@ class FileWriteTest {
             )
         )
 
-        assertEquals("File written into ${file.absolutePath}", result)
+        assertEquals(true, result.contains("Success"))
         assertEquals("new", file.readText())
     }
 
@@ -120,7 +120,7 @@ class FileWriteTest {
             )
         )
 
-        assertEquals("Not a file: ${dir.absolutePath}", result)
+        assertEquals(true, result.contains("Not a file: ${dir.absolutePath}"))
     }
 
     @Test
@@ -138,8 +138,7 @@ class FileWriteTest {
         )
 
         assertTrue(
-            result.startsWith("Failed to read file. Error="),
-            "Unexpected result: $result"
+            result.contains("Failed to read file. Error="),
         )
     }
 

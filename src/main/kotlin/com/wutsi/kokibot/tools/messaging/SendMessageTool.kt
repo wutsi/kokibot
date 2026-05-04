@@ -22,10 +22,7 @@ class SendMessageTool : Tool {
 
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
-        description = """
-            Send a message to the user via Telegram or other channels.
-            You can specify the channel to use for sending the message.
-        """.trimIndent(),
+        description = "Send a message to the user via Telegram or other channels",
         parameters = listOf(
             ToolParameter(
                 name = "user_id",
@@ -35,7 +32,7 @@ class SendMessageTool : Tool {
             ),
             ToolParameter(
                 name = "channel_id",
-                description = "ID of the channel to user for sending the message: Ex: channel:telegram",
+                description = "ID of the channel to user for sending the message: Ex: channel:telegram, channel:email",
                 type = ToolParameterType.STRING,
                 required = true
             ),

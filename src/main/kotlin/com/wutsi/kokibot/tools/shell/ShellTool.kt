@@ -84,12 +84,13 @@ class ShellTool : Tool {
         val timeout = (MapUtil.toLong("timeout", arguments) ?: DEFAULT_TIMEOUT_SECONDS)
             .coerceIn(MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS)
 
-        try {
-            return "Running command: $command\n" + exec(command, directory, timeout)
+        val result = try {
+            exec(command, directory, timeout)
         } catch (ex: Throwable) {
             LOGGER.warn("Command failed: $command", ex)
-            return "Command failed. ${ex.message}"
+            "Failure. ${ex.message}"
         }
+        return "Running command: `$command`\n$result"
     }
 
     private fun exec(command: String, directory: String?, timeoutSeconds: Long): String {

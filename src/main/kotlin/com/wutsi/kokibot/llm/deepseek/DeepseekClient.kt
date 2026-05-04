@@ -297,15 +297,10 @@ open class DeepseekClient(
                             "text" to request.prompt
                         )
                     ) +
-                        request.files.map { file ->
+                        request.files.mapNotNull { file ->
                             try {
                                 val mimeType = getMimeType(file)
-                                if (mimeType.startsWith("text/") || mimeType.startsWith("application/json")) {
-                                    mapOf(
-                                        "type" to "text",
-                                        "text" to file.readText()
-                                    )
-                                } else if (supportsMimeType(mimeType)) {
+                                if (supportsMimeType(mimeType)) {
                                     val base64Content = Base64
                                         .getEncoder()
                                         .encodeToString(file.readBytes())
@@ -328,7 +323,7 @@ open class DeepseekClient(
                                 } else {
                                     mapOf(
                                         "type" to "text",
-                                        "text" to textExtractorFactory.create(mimeType).extract(file)
+                                        "text" to "File: ${file.absolutePath}"
                                     )
                                 }
                             } catch (_: UnsupportedMimeTypeException) {

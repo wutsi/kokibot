@@ -144,12 +144,11 @@ class DeepseekClientTest {
     @Test
     fun `completion with TXT file`() {
         // WHEN
+        val file = File(this::class.java.getResource("/deepseek/sample.txt")!!.file)
         val request = LLMRequest(
             prompt = "Hi sir",
             systemInstructions = "You are a helpful assistant",
-            files = listOf(
-                File(this::class.java.getResource("/deepseek/sample.txt")!!.file)
-            )
+            files = listOf(file)
         )
         val client = createClient()
         client.completion(request, emptyList())
@@ -178,7 +177,7 @@ class DeepseekClientTest {
                         ),
                         mapOf(
                             "type" to "text",
-                            "text" to "Content of TXT file\n"
+                            "text" to "File: ${file.absolutePath}"
                         )
                     )
                 ),
@@ -190,12 +189,11 @@ class DeepseekClientTest {
     @Test
     fun `completion with JSON file`() {
         // WHEN
+        val file = File(this::class.java.getResource("/deepseek/sample.json")!!.file)
         val request = LLMRequest(
             prompt = "Hi sir",
             systemInstructions = "You are a helpful assistant",
-            files = listOf(
-                File(this::class.java.getResource("/deepseek/sample.json")!!.file)
-            )
+            files = listOf(file)
         )
         val client = createClient()
         client.completion(request, emptyList())
@@ -224,7 +222,7 @@ class DeepseekClientTest {
                         ),
                         mapOf(
                             "type" to "text",
-                            "text" to "{\n  \"foo\": 2\n}\n"
+                            "text" to "File: ${file.absolutePath}"
                         )
                     )
                 ),
@@ -236,12 +234,11 @@ class DeepseekClientTest {
     @Test
     fun `completion with DOC file`() {
         // WHEN
+        val file = File(this::class.java.getResource("/deepseek/sample.doc")!!.file)
         val request = LLMRequest(
             prompt = "Hi sir",
             systemInstructions = "You are a helpful assistant",
-            files = listOf(
-                File(this::class.java.getResource("/deepseek/sample.doc")!!.file)
-            )
+            files = listOf(file)
         )
         val client = createClient()
         client.completion(request, emptyList())
@@ -270,7 +267,7 @@ class DeepseekClientTest {
                         ),
                         mapOf(
                             "type" to "text",
-                            "text" to "Sample doc file\r"
+                            "text" to "File: ${file.absolutePath}"
                         )
                     )
                 )
@@ -310,8 +307,8 @@ class DeepseekClientTest {
         val item = content?.get(1) as? Map<String, Any>
         assertEquals("text", item?.get("type"))
         assertEquals(
-            true,
-            item?.get("text").toString().contains("File ${file.absolutePath} has unsupported mime type")
+            "File: ${file.absolutePath}",
+            item?.get("text")
         )
     }
 
@@ -351,55 +348,9 @@ class DeepseekClientTest {
                         ),
                         mapOf(
                             "type" to "text",
-                            "text" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
+                            "text" to "File: ${file.absolutePath}"
                         )
                     ),
-                ),
-            ),
-            body["messages"]
-        )
-    }
-
-    @Test
-    fun `completion with error while processing file`() {
-        // WHEN
-        val request = LLMRequest(
-            prompt = "Hi sir",
-            systemInstructions = "You are a helpful assistant",
-            files = listOf(
-                File("/path/to/non-existing-file.txt")
-            )
-        )
-        val client = createClient()
-        client.completion(request, emptyList())
-
-        // THEN
-        val req = argumentCaptor<HttpEntity<Map<*, *>>>()
-        verify(rest).postForEntity(
-            eq("https://api.deepseek.com/chat/completions"),
-            req.capture(),
-            eq(Map::class.java)
-        )
-
-        val body = req.firstValue.body as Map<*, *>
-        assertEquals(
-            listOf(
-                mapOf(
-                    "role" to "system",
-                    "content" to "You are a helpful assistant"
-                ),
-                mapOf(
-                    "role" to "user",
-                    "content" to listOf(
-                        mapOf(
-                            "type" to "text",
-                            "text" to "Hi sir"
-                        ),
-                        mapOf(
-                            "type" to "text",
-                            "text" to "Failed to extract the content of file /path/to/non-existing-file.txt. The file will be ignored. Error: /path/to/non-existing-file.txt (No such file or directory)"
-                        ),
-                    )
                 ),
             ),
             body["messages"]

@@ -31,7 +31,7 @@ class SkillParser {
         val categories = (meta?.get("categories") as? List<*>)?.map { it.toString() } ?: emptyList()
 
         // 2. Locate the Tools Section
-        val body = parts[2]
+        val body = parts.subList(2, parts.size).joinToString("---").trim()
 
         return Pair(
             SkillMetadata(

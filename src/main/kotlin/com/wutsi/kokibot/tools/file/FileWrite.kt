@@ -14,10 +14,7 @@ class FileWrite : Tool {
 
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
-        description = """
-            Write a content into a file.
-            The content should be in text format (plain text, JSON, HTML, XML, Markdown etc.)
-        """.trimIndent(),
+        description = "Write a content into a file. The content should be in text format",
         parameters = listOf(
             ToolParameter(
                 name = "path",
@@ -49,11 +46,12 @@ class FileWrite : Tool {
         val content = MapUtil.toString("content", arguments) ?: ""
         val overwrite = MapUtil.toBoolean("overwrite", arguments) ?: false
 
-        return try {
+        val result = try {
             write(path, content, overwrite)
         } catch (ex: Throwable) {
             "Failed to read file. Error=${ex.message}"
         }
+        return "Storing content into file: $path\n$result"
     }
 
     private fun write(path: String, content: String, overwrite: Boolean): String {
@@ -69,6 +67,6 @@ class FileWrite : Tool {
             file.parentFile?.mkdirs()
         }
         file.writeText(content)
-        return "File written into $path"
+        return "Success"
     }
 }

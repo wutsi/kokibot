@@ -21,7 +21,7 @@
   "memory": {
     "window": "5d",
     "compaction-frequency": "6h",
-    "max-length": 5000
+    "max-length": 2048
   },
   "marketplaces": [
     {

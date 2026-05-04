@@ -50,7 +50,7 @@ class Assistant {
             ".......................................\n" +
                 " FINAL ANSWER\n" +
                 " Duration: ${(System.currentTimeMillis() - now) / 1000}s\n" +
-                " Result: ${clip(response.text, 200)}"
+                " Result: ${response.text}"
         )
         if (response.role != Role.COMMAND) {
             context.chatHistory.append(prompt, response)

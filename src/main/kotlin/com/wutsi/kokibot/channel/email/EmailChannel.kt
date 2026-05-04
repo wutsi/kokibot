@@ -91,6 +91,7 @@ class EmailChannel(
             ?.map { entry -> entry.toString().lowercase() }
             ?: emptyList()
 
+        // Launch the job to fetch emails periodically after initialization
         job = launchJob(frequency)
     }
 
@@ -155,9 +156,14 @@ class EmailChannel(
                     var processed = 0
                     for (message in messages) {
                         if (!reject(message) && accept(message)) {
-                            process(message)
                             message.setFlag(Flags.Flag.SEEN, true)
-                            processed++
+                            try {
+                                process(message)
+                                processed++
+                            } catch (e: Exception) {
+                                LOGGER.warn("Failed to process message", e)
+                                message.setFlag(Flags.Flag.SEEN, false) // Reset the flag to process later
+                            }
                         }
                     }
                     LOGGER.info("${messages.size} new messages, $processed processed")
@@ -200,7 +206,7 @@ class EmailChannel(
             userId = (message.from?.firstOrNull() as InternetAddress?)?.address,
             id = message.getHeader("Message-ID")?.firstOrNull() ?: UUID.randomUUID().toString(),
             subject = message.subject,
-            text = extractBodyText(message),
+            text = message.subject + "\n" + extractBodyText(message),
             filePaths = extractAttachments(message).map { file -> file.absolutePath },
         )
         val result = assistant.process(
@@ -250,36 +256,67 @@ class EmailChannel(
     }
 
     private fun extractBodyText(message: jakarta.mail.Message): String {
-        val content = message.content
+        return extractTextFromPart(message) ?: ""
+    }
+
+    private fun extractTextFromPart(part: Part): String? {
+        // Skip attachments
+        if (Part.ATTACHMENT.equals(part.disposition, ignoreCase = true)) {
+            return null
+        }
+
+        // Plain text - preferred
+        if (part.isMimeType("text/plain")) {
+            return part.content?.toString()
+        }
+
+        // HTML - convert to markdown
+        if (part.isMimeType("text/html")) {
+            return part.content?.let { HtmlUtil.toMarkdown(it.toString()) }
+        }
+
+        // Multipart - recurse
+        val content = part.content
         if (content is Multipart) {
+            val buff = StringBuilder()
             for (i in 0 until content.count) {
-                val part = content.getBodyPart(i)
-                if (part.isMimeType("text/plain")) {
-                    return part.content.toString()
-                } else if (part.isMimeType("text/html")) {
-                    return HtmlUtil.toMarkdown(part.content.toString())
+                val text = extractTextFromPart(content.getBodyPart(i))
+                if (text != null) {
+                    buff.append(text + "\n")
                 }
             }
+            return buff.toString()
         }
-        return content.toString()
+
+        return null
     }
 
     private fun extractAttachments(message: jakarta.mail.Message): List<File> {
-        val content = message.content
-        val attachments = mutableListOf<File>()
-        if (content is Multipart) {
-            for (i in 0 until content.count) {
-                val part = content.getBodyPart(i)
-                if (Part.ATTACHMENT.equals(part.disposition, ignoreCase = true) || part.fileName != null) {
-                    if (part is MimeBodyPart) {
-                        val file = context.fileService.createFile(part.fileName)
-                        part.saveFile(file)
-                        attachments.add(file)
-                    }
-                }
+        return extractAttachmentsFromPart(message)
+    }
+
+    private fun extractAttachmentsFromPart(part: Part): List<File> {
+        // Attachment
+        if (Part.ATTACHMENT.equals(part.disposition, ignoreCase = true)) {
+            if (part is MimeBodyPart) {
+                val file = context.fileService.createFile(part.fileName)
+                part.saveFile(file)
+                return listOf(file)
             }
         }
-        return attachments
+
+        // Multipart - recurse
+        val content = part.content
+        if (content is Multipart) {
+            val attachments = mutableListOf<File>()
+            for (i in 0 until content.count) {
+                val tmp = extractAttachmentsFromPart(content.getBodyPart(i))
+                attachments.addAll(tmp)
+            }
+            return attachments
+        }
+
+        return emptyList()
     }
 
     private fun getIMAPSession(): Session {

@@ -63,14 +63,16 @@ class TelegramChannel(
         this.botToken = config["token"]?.toString()
             ?: throw ConfigurationException("token is required")
 
-        app = factory.createTelegramBotsLongPollingApplication()
-        app.registerBot(botToken, this)
         client = factory.createTelegramClient(botToken)
         rest = restBuilder.build(null, null)
         senderWhitelist = MapUtil.toList("sender-whitelist", config)
             ?.mapNotNull { entry -> entry?.toString() }
             ?: emptyList()
         this.context = context
+
+        // Register the bot after initialization
+        app = factory.createTelegramBotsLongPollingApplication()
+        app.registerBot(botToken, this)
     }
 
     override fun destroy() {

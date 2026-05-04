@@ -67,15 +67,7 @@ class Memory : Resource {
 
     override fun destroy() {
         job.cancel(false)
-        try {
-            if (!scheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                LOGGER.warn("Memory scheduler did not terminate within ${SHUTDOWN_TIMEOUT_SECONDS}s; forcing shutdown")
-                scheduler.shutdownNow()
-            }
-        } catch (_: InterruptedException) {
-            scheduler.shutdownNow()
-            Thread.currentThread().interrupt()
-        }
+        scheduler.shutdownNow()
     }
 
     fun get(): String? = lock.withLock {

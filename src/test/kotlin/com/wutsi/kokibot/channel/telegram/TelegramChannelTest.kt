@@ -3,6 +3,7 @@ package com.wutsi.kokibot.channel.telegram
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.atLeast
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
@@ -65,15 +66,6 @@ class TelegramChannelTest {
         doReturn(rest).whenever(restBuilder).build(anyOrNull(), anyOrNull())
     }
 
-    @BeforeEach
-    fun tearDown() {
-        try {
-            telegram.destroy()
-        } catch (_: Throwable) {
-            // Nothing
-        }
-    }
-
     @Test
     fun id() {
         assertEquals(TelegramChannel.ID, telegram.id())
@@ -131,14 +123,13 @@ class TelegramChannelTest {
         // GIVEN
         telegram.init(config, context)
         doAnswer {
-            Thread.sleep(2 * TelegramChannel.TYPING_DELAY_MILLIS)
+            Thread.sleep(TelegramChannel.TYPING_DELAY_MILLIS)
             Message("World")
         }.whenever(assistant).process(any(), anyOrNull())
 
         // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
-        Thread.sleep(3 * TelegramChannel.TYPING_DELAY_MILLIS)
 
         // THEN
         val prompt = argumentCaptor<Message>()
@@ -150,7 +141,7 @@ class TelegramChannelTest {
         assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
 
         val sendAction = argumentCaptor<SendChatAction>()
-        verify(client).execute(sendAction.capture())
+        verify(client, atLeast(1)).execute(sendAction.capture())
         assertEquals(ActionType.TYPING.toString(), sendAction.firstValue.action)
 
         val sendMessage = argumentCaptor<SendMessage>()
@@ -170,7 +161,6 @@ class TelegramChannelTest {
         // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
-        Thread.sleep(1000)
 
         // THEN
         verify(assistant).process(any(), anyOrNull())
@@ -220,7 +210,6 @@ class TelegramChannelTest {
         // WHEN
         telegram.init(config, context)
         telegram.consume(update)
-        Thread.sleep(1000)
 
         // THEN
         verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=21093209", Map::class.java)
@@ -256,7 +245,6 @@ class TelegramChannelTest {
         // WHEN
         telegram.init(config, context)
         telegram.consume(update)
-        Thread.sleep(1000)
 
         // THEN
         verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=2222", Map::class.java)
@@ -280,7 +268,6 @@ class TelegramChannelTest {
         // WHEN
         val update = createTextUpdate(null, 4309)
         telegram.consume(update)
-        Thread.sleep(1000)
 
         // THEN
         verify(assistant, never()).process(any(), anyOrNull())

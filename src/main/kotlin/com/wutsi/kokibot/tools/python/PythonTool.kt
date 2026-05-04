@@ -29,6 +29,13 @@ class PythonTool : Tool {
         const val MIN_TIMEOUT_SECONDS = 1L
     }
 
+    private lateinit var context: com.wutsi.kokibot.Context
+
+    override fun init(config: Map<*, *>, context: com.wutsi.kokibot.Context) {
+        super.init(config, context)
+        this.context = context
+    }
+
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
         description = "Run a Python code and return the output",
@@ -111,21 +118,18 @@ class PythonTool : Tool {
     private fun createPythonContext(os: OutputStream): Context {
         return Context.newBuilder(LANGUAGE_ID)
             .option("engine.WarnInterpreterOnly", "false")
-            // Filesystem: ALLOWED — full host I/O so Python code can read/write files
             .allowIO(IOAccess.ALL)
-            // Network: DENIED — no host interop means no Java sockets exposed to Python
-            .allowHostAccess(HostAccess.NONE)
-            .allowPolyglotAccess(PolyglotAccess.NONE)
-            // System commands: DENIED — block subprocess.* / os.system / os.exec*
+            .allowHostAccess(HostAccess.NONE) // Network: DENIED — no host interop means no Java sockets exposed to Python
+            .allowPolyglotAccess(PolyglotAccess.NONE) // System commands: DENIED — block subprocess.* / os.system / os.exec*
             .allowCreateProcess(false)
-            .allowCreateThread(false)
-            // JVM internals: DENIED — no host class lookup, no class loading, no native calls
+            .allowCreateThread(false) // JVM internals: DENIED — no host class lookup, no class loading, no native calls
             .allowHostClassLoading(false)
             .allowHostClassLookup { _ -> false }
             .allowNativeAccess(false)
             .allowEnvironmentAccess(EnvironmentAccess.NONE)
             .out(os)
             .err(os)
+            .currentWorkingDirectory(File(context.home, "workspace").toPath())
             .build()
     }
 }

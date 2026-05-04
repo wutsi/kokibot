@@ -32,6 +32,7 @@ class Memory : Resource {
         const val DEFAULT_WINDOW = 3L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
         private const val DEFAULT_MAX_LENGTH = 2000
+        private val MAX_FAILURES_BEFORE_ALERT = 3
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
@@ -40,6 +41,7 @@ class Memory : Resource {
     private var maxLength: Int = DEFAULT_MAX_LENGTH
     private lateinit var context: Context
     private lateinit var job: ScheduledFuture<*>
+    private var consecutiveFailures: Int = 0
 
     override fun id(): String {
         return "service:memory"
@@ -66,7 +68,21 @@ class Memory : Resource {
 
     override fun destroy() {
         job.cancel(false)
-        scheduler.shutdownNow()
+
+        scheduler.shutdown()
+        try {
+            if (!scheduler.awaitTermination(15, TimeUnit.SECONDS)) {
+                LOGGER.warn("Scheduler didn't terminate gracefully, forcing shutdown")
+                scheduler.shutdownNow()
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    LOGGER.error("Scheduler failed to terminate")
+                }
+            }
+        } catch (_: InterruptedException) {
+            LOGGER.warn("Interrupted while waiting for scheduler shutdown")
+            scheduler.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     fun get(): String? = lock.withLock {
@@ -92,7 +108,19 @@ class Memory : Resource {
         val memory = this
         val task = Runnable {
             LOGGER.info("Running memory compaction job...")
-            memory.compact()
+            val now = System.currentTimeMillis()
+            try {
+                memory.compact()
+                consecutiveFailures = 0
+                LOGGER.info("Memory compaction completed successfully in ${(System.currentTimeMillis() - now) / 1000} s")
+            } catch (ex: Throwable) {
+                consecutiveFailures++
+                LOGGER.error("Memory compaction failed", ex)
+
+                if (consecutiveFailures > MAX_FAILURES_BEFORE_ALERT) {
+                    LOGGER.error("Memory compaction has failed $consecutiveFailures times in a row. Memory is stalled")
+                }
+            }
         }
 
         val delay = DurationUtil.millis(frequency, DurationUtil.ONE_HOUR)
@@ -102,15 +130,43 @@ class Memory : Resource {
 
     private fun compact(history: String): String {
         val memory = get()
-        val prompt = this::class.java.getResourceAsStream("/prompts/memory.prompt.md")!!
-            .bufferedReader()
-            .readText()
+        val prompt = this::class.java.getResourceAsStream("/prompts/memory.prompt.md")
+            ?.bufferedReader()
+            ?.use { it.readText() }
+            ?: throw IllegalStateException(
+                "Memory compaction prompt template not found at /prompts/memory.prompt.md. " +
+                    "This is a build configuration error."
+            )
+
+        val finalPrompt = prompt
             .replace("{{history}}", history)
             .replace("{{memory}}", (memory ?: ""))
             .replace("{{max_length}}", maxLength.toString())
 
-        val response = context.llm.completion(LLMRequest(prompt = prompt), emptyList())
-        return response.choices.firstOrNull()?.content ?: ""
+        // Retry LLM call with exponential backoff
+        val response = com.wutsi.kokibot.util.RetryConfig.llm().execute(
+            onRetry = { attempt, exception ->
+                LOGGER.warn(
+                    "Memory compaction LLM call failed (attempt $attempt): ${exception.message}. Retrying..."
+                )
+            }
+        ) {
+            context.llm.completion(LLMRequest(prompt = finalPrompt), emptyList())
+        }
+
+        val content = response.choices.firstOrNull()?.content
+            ?: throw IllegalStateException("No result from LLM")
+
+        // Validate compacted memory length
+        if (content.length > maxLength * 2) {
+            LOGGER.warn(
+                "Compacted memory exceeds recommended length: ${content.length} chars > ${maxLength * 2} chars. " +
+                    "Truncating to $maxLength chars."
+            )
+            return content.take(maxLength)
+        }
+
+        return content
     }
 
     private fun atomicWrite(target: File, content: String) {

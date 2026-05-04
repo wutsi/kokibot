@@ -5,4 +5,5 @@ enum class FinishReason {
     DONE,
     TOO_MANY_ITERATIONS,
     FAILURE,
+    TIMEOUT,
 }

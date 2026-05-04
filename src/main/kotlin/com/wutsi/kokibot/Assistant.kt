@@ -8,29 +8,51 @@ import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 class Assistant(val name: String = "") {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
         private const val DEFAULT_ITERATIONS = 10
-        const val TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
-        const val FAILURE = "Oups, an unexpected error occurred while processing the query."
+        const val DEFAULT_POOL_SIZE = 1
+        const val DEFAULT_MAX_DURATION_MINUTES = 5L
+        const val ERROR_TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
+        const val ERROR_TIMEOUT = "Oups, the request has been cancelled because it took too much time to process."
+        const val ERROR_FAILURE = "Oups, an unexpected error occurred while processing the query."
     }
 
     private var maxIterations: Int = DEFAULT_ITERATIONS
+    private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
     private lateinit var description: String
     private lateinit var context: Context
+    private lateinit var scheduler: ScheduledExecutorService
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         description = MapUtil.toString("description", config) ?: ""
+        maxDurationMinutes = MapUtil.toString("max-duraction", config)
+            ?.let { value -> DurationUtil.minutes(value, DEFAULT_MAX_DURATION_MINUTES) }
+            ?: DEFAULT_MAX_DURATION_MINUTES
+
+        val poolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_POOL_SIZE
+        scheduler = Executors.newScheduledThreadPool(poolSize)
+
         this.context = context
     }
 
     fun destroy() {
+        try {
+            scheduler.shutdown()
+        } catch (e: Exception) {
+            LOGGER.warn("Error while shutting down scheduler", e)
+        }
     }
 
     fun process(
@@ -38,22 +60,46 @@ class Assistant(val name: String = "") {
         streamCallback: ((String) -> Unit)? = null,
     ): Message {
         val now = System.currentTimeMillis()
-        val response = try {
-            doProcess(prompt, streamCallback)
-        } catch (e: TooManyIterationException) {
-            LOGGER.error("Too many iterations!", e)
-            Message(TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
-        } catch (e: Exception) {
-            LOGGER.error("Unexpected error!", e)
-            Message(FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
+
+        // Process async
+        val future = scheduler.submit<Message> {
+            doProcessAsync(prompt, streamCallback)
         }
 
+        // What for the response with timeout
+        val response = try {
+            future.get(maxDurationMinutes, TimeUnit.MINUTES)
+        } catch (_: TimeoutException) {
+            future.cancel(true)
+            Message(ERROR_TIMEOUT, Role.ASSISTANT, FinishReason.TIMEOUT)
+        } catch (e: Exception) {
+            Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
+        }
+
+        // Result
         LOGGER.info(
             "... @$name ....................................\n" +
                 " FINAL ANSWER\n" +
                 " Duration: ${(System.currentTimeMillis() - now) / 1000}s\n" +
                 " Result: ${response.text}"
         )
+        return response
+    }
+
+    private fun doProcessAsync(
+        prompt: Message,
+        streamCallback: ((String) -> Unit)? = null,
+    ): Message {
+        val response = try {
+            doProcess(prompt, streamCallback)
+        } catch (e: TooManyIterationException) {
+            LOGGER.error("Too many iterations!", e)
+            Message(ERROR_TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
+        } catch (e: Exception) {
+            LOGGER.error("Unexpected error!", e)
+            Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
+        }
+
         if (response.role != Role.COMMAND) {
             context.chatHistory.append(prompt, response)
         }

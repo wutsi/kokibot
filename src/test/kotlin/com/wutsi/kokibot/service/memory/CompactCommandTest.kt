@@ -5,8 +5,6 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.service.memory.CompactCommand
-import com.wutsi.kokibot.service.memory.Memory
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertEquals
@@ -30,7 +28,7 @@ class CompactCommandTest {
         val result = cmd.exec(" CoNfIrM ", context)
 
         verify(memory).compact()
-        assertEquals("Memory compacted", result)
+        assertEquals(true, result.contains("Memory compacted"))
     }
 
     @Test

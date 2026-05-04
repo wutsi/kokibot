@@ -3,6 +3,7 @@ package com.wutsi.kokibot.service.memory
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
 import java.time.LocalDate
@@ -100,14 +102,11 @@ class MemoryTest {
         doReturn(response).whenever(llm).completion(any(), any())
 
         // WHEN
-        memory.compact()
+        assertThrows<IllegalStateException> { memory.compact() }
 
         // THEN
         val file = File(home.absolutePath + "/memory/MEMORY.md")
-        assertTrue(file.exists())
-        assertEquals("", file.readText())
-
-        assertEquals("", memory.get())
+        assertFalse(file.exists())
     }
 
     @Test
@@ -127,6 +126,19 @@ class MemoryTest {
         assertNull(memory.get())
 
         verify(chatHistory, never()).clear()
+    }
+
+    @Test
+    fun `compact handles LLM issue`() {
+        doReturn("history").whenever(chatHistory).merge(any(), any())
+        doThrow(IllegalStateException::class)
+            .whenever(llm).completion(any(), any())
+
+        assertThrows<IllegalStateException> { memory.compact() }
+
+        // Verify memory file NOT overwritten
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
+        assertFalse(file.exists())
     }
 
     @Test
@@ -190,5 +202,81 @@ class MemoryTest {
         val file = File(home.absolutePath + "/memory/MEMORY.md")
         assertTrue(file.exists())
         assertEquals("Fact1\nFact2\nFact3", file.readText())
+    }
+
+    @Test
+    fun `compact retries on LLM timeout and eventually succeeds`() {
+        // GIVEN
+        doReturn("M1\nM2\nM3").whenever(chatHistory).merge(any(), any())
+
+        val callCount = java.util.concurrent.atomic.AtomicInteger(0)
+        whenever(llm.completion(any(), any())).thenAnswer {
+            val count = callCount.incrementAndGet()
+            if (count < 3) {
+                // First 2 attempts fail with timeout
+                throw java.net.SocketTimeoutException("Read timed out")
+            }
+            // Third attempt succeeds
+            LLMResponse(
+                choices = listOf(LLMResponseChoice(content = "Success after retry"))
+            )
+        }
+
+        // WHEN
+        memory.compact()
+
+        // THEN
+        assertEquals(3, callCount.get(), "Should have retried 2 times before success")
+
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
+        assertTrue(file.exists())
+        assertEquals("Success after retry", file.readText())
+    }
+
+    @Test
+    fun `compact fails after max retries`() {
+        // GIVEN
+        doReturn("M1\nM2\nM3").whenever(chatHistory).merge(any(), any())
+
+        val callCount = java.util.concurrent.atomic.AtomicInteger(0)
+        whenever(llm.completion(any(), any())).thenAnswer {
+            callCount.incrementAndGet()
+            throw java.net.SocketTimeoutException("Read timed out")
+        }
+
+        // WHEN / THEN
+        val ex = assertThrows<java.net.SocketTimeoutException> {
+            memory.compact()
+        }
+
+        assertEquals("Read timed out", ex.message)
+        // Should retry 4 times (LLM retry config has maxAttempts=4)
+        assertEquals(4, callCount.get())
+
+        // Memory file should NOT be created/modified
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
+        assertFalse(file.exists())
+    }
+
+    @Test
+    fun `compact truncates content exceeding max length`() {
+        // GIVEN
+        doReturn("M1\nM2\nM3").whenever(chatHistory).merge(any(), any())
+
+        val veryLongContent = "x".repeat(5000) // 5000 chars, but max is 2000
+        val response = LLMResponse(
+            choices = listOf(LLMResponseChoice(content = veryLongContent))
+        )
+        doReturn(response).whenever(llm).completion(any(), any())
+
+        // WHEN
+        memory.compact()
+
+        // THEN
+        val file = File(home.absolutePath + "/memory/MEMORY.md")
+        assertTrue(file.exists())
+        val content = file.readText()
+        assertEquals(2000, content.length, "Should be truncated to max length")
+        assertTrue(content.all { it == 'x' })
     }
 }

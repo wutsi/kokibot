@@ -40,18 +40,17 @@ class TelegramChannel(
         const val TYPING_DELAY_MILLIS = 2000L
         const val MAX_LENGTH = 4096
         const val STREAM_MAX_LENGTH = 100
-        const val DEFAULT_POOL_SIZE = 4
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
 
+    private val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(4)
     private lateinit var app: TelegramBotsLongPollingApplication
     private lateinit var client: TelegramClient
     private lateinit var botToken: String
     private lateinit var context: Context
     private lateinit var rest: RestTemplate
     private lateinit var senderWhitelist: List<String>
-    private lateinit var scheduler: ScheduledExecutorService
 
     override fun id(): String = ID
 
@@ -60,14 +59,11 @@ class TelegramChannel(
             ?: throw ConfigurationException("token is required")
 
         client = factory.createTelegramClient(botToken)
-        rest = restBuilder.build(null, null)
+        rest = restBuilder.build(30000L, 30000L)
         senderWhitelist = MapUtil.toList("sender-whitelist", config)
             ?.mapNotNull { entry -> entry?.toString() }
             ?: emptyList()
         this.context = context
-
-        val poolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_POOL_SIZE
-        scheduler = Executors.newScheduledThreadPool(poolSize)
 
         // Register the bot after initialization
         app = factory.createTelegramBotsLongPollingApplication()
@@ -79,12 +75,6 @@ class TelegramChannel(
             app.unregisterBot(botToken)
         } catch (e: Exception) {
             LOGGER.warn("Error while disconnecting from Telegram", e)
-        }
-
-        try {
-            scheduler.shutdown()
-        } catch (e: Exception) {
-            LOGGER.warn("Error while shupping down the threadpool", e)
         }
     }
 
@@ -131,9 +121,7 @@ class TelegramChannel(
 
             /* Consume the message asynchronously */
             try {
-                scheduler.execute {
-                    consume(chatId, update)
-                }
+                consume(chatId, update)
             } finally {
                 job.cancel(true)
             }

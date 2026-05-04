@@ -339,7 +339,7 @@ class AssistantTest {
         val result = assistant.process(prompt)
 
         // THEN
-        assertEquals(Assistant.FAILURE + ". Error: Failed", result.text)
+        assertEquals(Assistant.ERROR_FAILURE + ". Error: Failed", result.text)
         assertEquals(Role.ASSISTANT, result.role)
         assertEquals(FinishReason.FAILURE, result.finishReason)
 
@@ -482,7 +482,7 @@ class AssistantTest {
         val result = assistant.process(prompt)
 
         // THEN
-        assertEquals(Assistant.TOO_MANY_ITERATIONS, result.text)
+        assertEquals(Assistant.ERROR_TOO_MANY_ITERATIONS, result.text)
         assertEquals(Role.ASSISTANT, result.role)
         assertEquals(FinishReason.TOO_MANY_ITERATIONS, result.finishReason)
 

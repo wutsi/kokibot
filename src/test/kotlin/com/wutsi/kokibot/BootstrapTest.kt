@@ -7,13 +7,11 @@ import com.nhaarman.mockitokotlin2.whenever
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
-import org.springframework.core.env.Environment
 import java.io.File
 
 class BootstrapTest {
     private val contextFactory = mock<ContextFactory>()
-    private val env = mock<Environment>()
-    private val bootstrap = Bootstrap(contextFactory, env)
+    private val bootstrap = Bootstrap(contextFactory)
 
     private val home = File("target/test-data/bootstrap")
     private val context = mock<Context>()
@@ -23,7 +21,6 @@ class BootstrapTest {
         doReturn(home).whenever(context).home
         doReturn(Health(id = "-")).whenever(context).health()
         doReturn(context).whenever(contextFactory).create(any(), any())
-        doReturn(arrayOf("local")).whenever(env).activeProfiles
     }
 
     @Test

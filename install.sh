@@ -72,28 +72,19 @@ install_files() {
     echo "Unpacking..."
     unzip -q kokibot.zip
 
-    # Backup current configuration
-    mkdir -p "$TMP_DIR/backup"
-    cp -R "$HOME_DIR/config" "$TMP_DIR/backup" 2>/dev/null || true
-    cp "$HOME_DIR/ASSISTANT.md" "$TMP_DIR/backup" 2>/dev/null || true
-    cp "$HOME_DIR/HEARTBEAT.md" "$TMP_DIR/backup" 2>/dev/null || true
-    cp "$HOME_DIR/SECURITY.md" "$TMP_DIR/backup" 2>/dev/null || true
-
     # Install files
-    echo "Installing files..."
-    mkdir -p "$HOME_DIR"
-    cp -R kokibot/* "$HOME_DIR"
+    if [ ! -d "$HOME_DIR/agents" ]; then
+        mkdir -p "$HOME_DIR/agents/joe"
+        cp -R kokibot/* "$HOME_DIR/agents/joe" 2>/dev/null || true
 
-    # Restore configuration
-    cp -R "$TMP_DIR/backup/config" "$HOME_DIR" 2>/dev/null || true
-    cp -R "$TMP_DIR/backup/ASSISTANT.md" "$HOME_DIR" 2>/dev/null || true
-    cp -R "$TMP_DIR/backup/HEARTBEAT.md" "$HOME_DIR" 2>/dev/null || true
-    cp -R "$TMP_DIR/backup/SECURITY.md" "$HOME_DIR" 2>/dev/null || true
+        rm "$HOME_DIR/agents/joe/uninstall.sh" 2>/dev/null || true
+        rm "$HOME_DIR/agents/joe/kokibot.jar" 2>/dev/null || true
+    fi
 
     # Binaries
     mkdir -p "$BIN_DIR"
-    mv "$HOME_DIR/kokibot.jar" "$BIN_DIR/"
-    mv "$HOME_DIR/uninstall.sh" "$BIN_DIR/"
+    mv kokibot/kokibot.jar "$BIN_DIR/"
+    mv kokibot/uninstall.sh "$BIN_DIR/"
     chmod +x "$BIN_DIR/uninstall.sh"
 }
 
@@ -155,10 +146,10 @@ EOF
     <string>$BIN_DIR</string>
 
     <key>StandardOutPath</key>
-    <string>$HOME/.kokibot/workspace/logs/kokibot.log</string>
+    <string>$HOME/.kokibot/logs/kokibot.log</string>
 
     <key>StandardErrorPath</key>
-    <string>$HOME/.kokibot/workspace/logs/kokibot.err</string>
+    <string>$HOME/.kokibot/logs/kokibot.err</string>
 </dict>
 </plist>
 EOF
@@ -180,8 +171,8 @@ Description=Kokibot Service
 Type=simple
 WorkingDirectory=$BIN_DIR
 ExecStart=$JAVA_EXEC -Dserver.port=$KOKIBOT_PORT -jar $BIN_DIR/kokibot.jar  --spring.profiles.active=prod
-StandardOutput=append:$HOME/.kokibot/logs/workspace/kokibot.log
-StandardError=append:$HOME/.kokibot/logs/workspace/kokibot.err
+StandardOutput=append:$HOME/.kokibot/logs/kokibot.log
+StandardError=append:$HOME/.kokibot/logs/kokibot.err
 Restart=always
 
 [Install]

@@ -2,9 +2,7 @@ package com.wutsi.kokibot.command
 
 import com.wutsi.kokibot.Context
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 
-@Service
 class CommandRegistry {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(CommandRegistry::class.java)

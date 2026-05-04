@@ -77,27 +77,29 @@ This will automatically
 
 ```
 .kokibot/
-   ASSISTANT.md                         # Assistant instructions
-   SECURITY.md                          # Security guidelines and restrictions for the agent
-   HEARTBEAT.md                         # Instruction of the heartbeat task executed frequently every day (Ex: ever hour)
-   config/
-     settings.json                      # Main configuration file for kokibot
-     tools/                             # Directory containing additional tools for the agent
-        {tool-name}.json                # Tool configuration file
-     instructions/                      # Directory containing additional instructions for the agent
-   skills/
-    {skill-name}/                       # Directory for each skill
-      SKILL.md                          # Skill instructions file
-   memory/
-     MEMORY.md                          # Agent long term memory. Maintained by the agent itself
-     history/
-       {yyyy}-{MM}-{dd}.log             # Daily conversation history. Maintained by the agent itself
-   workspace/                           # Working directory
-     files/                             # Directory for files created by tools/skillsv
-     tmp/                               # Temporary directory for intermediate files
-     logs/                              # Log directory
-       kokibot.log                      # Today's log file
-       kokibot-{yyyy}-{MM}-{dd}.log     # Archive of daily log files
+   agents/
+     {agent-name}/                          # Directory for each agent
+       ASSISTANT.md                         # Assistant instructions
+       SECURITY.md                          # Security guidelines and restrictions for the agent
+       HEARTBEAT.md                         # Instruction of the heartbeat task executed frequently every day (Ex: ever hour)
+       config/
+         settings.json                      # Main configuration file for kokibot
+         instructions/                      # Directory containing additional instructions for the agent
+         tools/                             # Directory containing additional tools for the agent
+            {tool-name}.json                # Tool configuration file
+       skills/
+         {skill-name}/                      # Directory for each skill
+           SKILL.md                         # Skill instructions file
+       memory/
+         MEMORY.md                          # Agent long term memory. Maintained by the agent itself
+         history/
+           {yyyy}-{MM}-{dd}.log             # Daily conversation history. Maintained by the agent itself
+       workspace/                           # Working directory
+         files/                             # Directory for files created by tools/skillsv
+         tmp/                               # Temporary directory for intermediate files
+   logs/                                    # Log directory
+     kokibot.log                            # Today's log file
+     kokibot-{yyyy}-{MM}-{dd}.log           # Archive of daily log files
 ```
 
 ### Supported LLM Providers

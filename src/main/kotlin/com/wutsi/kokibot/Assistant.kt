@@ -12,7 +12,7 @@ import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 
-class Assistant(val id: String = "") {
+class Assistant(val name: String = "") {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
         private const val DEFAULT_ITERATIONS = 10
@@ -21,10 +21,12 @@ class Assistant(val id: String = "") {
     }
 
     private var maxIterations: Int = DEFAULT_ITERATIONS
+    private lateinit var description: String
     private lateinit var context: Context
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
+        description = MapUtil.toString("description", config) ?: ""
         this.context = context
     }
 
@@ -47,7 +49,7 @@ class Assistant(val id: String = "") {
         }
 
         LOGGER.info(
-            ".......................................\n" +
+            "... @$name ....................................\n" +
                 " FINAL ANSWER\n" +
                 " Duration: ${(System.currentTimeMillis() - now) / 1000}s\n" +
                 " Result: ${response.text}"
@@ -67,8 +69,8 @@ class Assistant(val id: String = "") {
         val tools = mutableMapOf<String, Tool>()
         context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
 
-        LOGGER.debug("\n\n------------------------------------------------------------")
-        LOGGER.info("$iteration - prompt_id=${prompt.id}  user=${prompt.userId}@${prompt.channelId}\n${prompt.text}")
+        LOGGER.debug("\n\n-- $iteration @$name ----------------------------------------------------------")
+        LOGGER.info("$iteration - agent=$name prompt_id=${prompt.id}  user=${prompt.userId}@${prompt.channelId}\n${prompt.text}")
 
         while (true) {
             if (iteration++ > maxIterations) {
@@ -108,12 +110,12 @@ class Assistant(val id: String = "") {
         val streamingEnabled = context.llm.supportsStreaming()
 
         LOGGER.info(
-            ".......................................\n" +
-                "$iteration - Asking LLM with the following prompt:\n" +
-                " Files: ${prompt.filePaths}\n" +
-                " Query: ${clip(prompt.text, 200)}\n" +
-                " Memory: ${memory.size} items\n" +
-                " Tools: ${tools.size} available"
+            "... $iteration @$name ....................................\n" +
+                "Asking LLM with the following prompt:\n" +
+                "  Files: ${prompt.filePaths}\n" +
+                "  Query: ${clip(prompt.text, 200)}\n" +
+                "  Memory: ${memory.size} items\n" +
+                "  Tools: ${tools.size} available"
         )
 
         return if (streamingEnabled && streamCallback != null) {
@@ -176,12 +178,16 @@ class Assistant(val id: String = "") {
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ) {
+        val xcontent = content?.trim()
+            ?.ifEmpty { null }
+            ?.let { clip(content, 200) + "\n" } ?: ""
         LOGGER.info(
-            ".......................................\n" +
-                (content?.let { clip(content, 200) + "\n" } ?: "") +
-                "$iteration - TOOL: ${call.name}\n" +
-                " Arguments:\n" +
-                call.arguments.map { " - " + clip(it.toString(), 200) }.joinToString("\n")
+            "... $iteration @$name ....................................\n" +
+                "${xcontent}TOOL: ${call.name}\n" +
+                "  Arguments:\n" +
+                call.arguments
+                    .map { "  - " + clip(it.toString(), 200) }
+                    .joinToString("\n")
         )
 
         val tool = tools[call.name]
@@ -196,10 +202,7 @@ class Assistant(val id: String = "") {
             LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
             "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
         }
-
-//        if (content != null) {
-//            memory.add(content)
-//        }
+        LOGGER.info(clip(result, 200))
         memory.add(result)
     }
 
@@ -293,6 +296,7 @@ class Assistant(val id: String = "") {
         val file = File(context.home, "ASSISTANT.md")
         return if (file.exists()) {
             file.readText()
+                .replace("{{assistant_name}}", name)
         } else {
             null
         }

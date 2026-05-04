@@ -24,7 +24,7 @@ import java.io.File
 class DeepseekClientTest {
     companion object {
         const val API_KEY = "sd-xxxxxxx"
-        const val MODEL = "deepseek-chat"
+        const val MODEL = "deepseek-v4-flash"
     }
 
     private val rest = mock<RestTemplate>()
@@ -120,12 +120,14 @@ class DeepseekClientTest {
         assertEquals("Bearer $API_KEY", req.firstValue.headers["Authorization"]?.firstOrNull())
 
         val body = req.firstValue.body as Map<*, *>
-        assertEquals(6, body.size)
+        assertEquals(7, body.size)
         assertEquals(MODEL, body["model"])
         assertEquals("enabled", body["thinking"])
         assertEquals(2048, body["max_tokens"])
         assertEquals(1.0, body["temperature"])
         assertEquals(true, body["parallel_tool_calls"])
+        assertEquals("enabled", body["thinking"])
+        assertEquals("max", body["reasoning_effort"])
         assertEquals(
             listOf(
                 mapOf(

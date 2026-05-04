@@ -1,5 +1,6 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.channel.ChannelFactory
 import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
@@ -31,11 +32,11 @@ import java.io.File
 
 @Service
 class ContextFactory(
-    private val toolRegistry: ToolRegistry,
-    private val channelRegistry: ChannelRegistry,
-    private val llmFactory: LLMFactory,
-    private val commandRegistry: CommandRegistry,
-    private val skillRegistry: SkillRegistry,
+    private val toolRegistry: ToolRegistry = ToolRegistry(),
+    private val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
+    private val llmFactory: LLMFactory = LLMFactory(),
+    private val commandRegistry: CommandRegistry = CommandRegistry(),
+    private val skillRegistry: SkillRegistry = SkillRegistry(),
     private val jsonMapper: JsonMapper,
 ) {
     fun create(home: File, config: Map<*, *>): Context {

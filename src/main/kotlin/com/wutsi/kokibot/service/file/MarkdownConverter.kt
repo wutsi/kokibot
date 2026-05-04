@@ -20,6 +20,8 @@ class MarkdownConverter(
             contentType.startsWith("text/") -> file.readText()
             contentType.startsWith("application/json") -> file.readText()
 
+            contentType.startsWith("application/pdf") -> pandoc(file)
+
             else -> markitdown(file) ?: pandoc(file)
         }
 
@@ -53,8 +55,7 @@ class MarkdownConverter(
 
         // Conversion
         val output = fileService.createTempFile(file.nameWithoutExtension, ".md")
-        LOGGER.debug("Converting from {} to {} with {}", file, output, tool)
-        val result = ShellUtil.exec("$tool ${file.absolutePath} -o ${output.absolutePath}")
+        val result = ShellUtil.exec("$tool \"${file.absolutePath}\" -o \"${output.absolutePath}\"")
         return if (result.status == 0) {
             output.readText()
         } else {

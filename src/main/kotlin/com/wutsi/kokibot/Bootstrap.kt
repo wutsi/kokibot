@@ -3,18 +3,15 @@ package com.wutsi.kokibot
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.util.MapUtil
-import jakarta.annotation.PostConstruct
-import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
-import org.springframework.core.env.Environment
-import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
 
-@Service
+/**
+ * Assistant bootstrap
+ */
 class Bootstrap(
     val contextFactory: ContextFactory,
-    val env: Environment,
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Bootstrap::class.java)
@@ -25,18 +22,9 @@ class Bootstrap(
     private lateinit var heartbeat: Heartbeat
     private val channels: MutableList<Channel> = mutableListOf()
 
-    @PostConstruct
-    fun init() {
-        val profiles = env.activeProfiles.joinToString(", ")
-        val home = when {
-            profiles.contains("prod") -> System.getProperty("user.home") + "/.kokibot"
-            else -> System.getProperty("user.home") + "/kokibot"
-        }
-        init(File(home))
-    }
-
-    @PreDestroy
     fun destroy() {
+        LOGGER.info("Destroying Assistant: ${assistant.name}")
+
         assistant.destroy()
         context.destroy()
         heartbeat.destroy()
@@ -44,12 +32,12 @@ class Bootstrap(
         channels.clear()
     }
 
-    internal fun init(home: File) {
-        LOGGER.info("Initializing from $home")
+    fun init(home: File) {
+        LOGGER.info("... Initializing Assistant: @${home.name} .............................................")
 
         val config = loadConfig(File(getConfigDir(home), "settings.json"))
         this.context = contextFactory.create(home, config)
-        this.assistant = Assistant()
+        this.assistant = Assistant(name = home.name)
 
         context.init(assistant, config)
         assistant.init(

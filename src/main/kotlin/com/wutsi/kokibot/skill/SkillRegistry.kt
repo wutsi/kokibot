@@ -2,11 +2,9 @@ package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.Context
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import java.io.File
 
-@Service
-class SkillRegistry(private val parser: SkillParser) {
+class SkillRegistry(private val parser: SkillParser = SkillParser()) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(SkillRegistry::class.java)
         private val EMPTY_MAP = emptyMap<String, Any>()

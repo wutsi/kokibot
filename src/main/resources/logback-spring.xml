@@ -11,9 +11,9 @@
         </encoder>
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${HOME}/.kokibot/workspace/logs/kokibot.log</file>
+        <file>${HOME}/.kokibot/logs/kokibot.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${HOME}/.kokibot/workspace/logs/kokibot.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${HOME}/.kokibot/logs/kokibot.%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
         <encoder>
             <pattern>%d %-5level [%thread] %logger - %msg%n</pattern>

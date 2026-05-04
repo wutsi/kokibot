@@ -38,7 +38,7 @@ open class Deepseek : LLM {
      * The configuration can contain the following parameters:
      * - api-key: the API key for Deepseek (required)
      * - model: the model to use for generation. Values: deepseek-chat, deepseek-reasoner (required)
-     * - thinking: whether to enable thinking mode
+     * - thinking: `true` to enable thinking mode, `false` to disable (default: false)
      * - max-tokens: the maximum number of tokens to generate
      * - temperature: the temperature to use for generation
      * - read-timeout-millis: the read timeout in milliseconds (default: 60000)

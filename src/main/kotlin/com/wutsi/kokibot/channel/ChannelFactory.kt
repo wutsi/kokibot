@@ -4,9 +4,7 @@ import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.channel.email.EmailChannel
 import com.wutsi.kokibot.channel.telegram.TelegramChannel
-import org.springframework.stereotype.Service
 
-@Service
 class ChannelFactory {
     fun create(type: String, assistant: Assistant): Channel {
         return when (type) {

@@ -1,0 +1,19 @@
+{
+  "assistant": {
+    "max-iterations": 10
+  },
+  "llm": {
+    "type": "deepseek",
+    "api-key": "${DEEPSEEK_API_KEY}",
+    "model": "deepseek-v4-pro"
+  },
+  "channels": [
+  ],
+  "heartbeat": {
+    "frequency": "1h"
+  },
+  "memory": {
+    "window": "3d",
+    "compaction-frequency": "12h"
+  }
+}

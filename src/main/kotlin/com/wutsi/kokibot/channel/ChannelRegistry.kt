@@ -6,11 +6,9 @@ import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 
-@Service
 class ChannelRegistry(
-    private val factory: ChannelFactory
+    private val factory: ChannelFactory = ChannelFactory()
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ChannelRegistry::class.java)

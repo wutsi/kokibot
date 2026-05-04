@@ -32,7 +32,6 @@ class Memory : Resource {
         const val DEFAULT_WINDOW = 3L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
         private const val DEFAULT_MAX_LENGTH = 2000
-        private const val SHUTDOWN_TIMEOUT_SECONDS = 15L
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()

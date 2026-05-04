@@ -12,7 +12,7 @@ import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 
-class Assistant {
+class Assistant(val id: String = "") {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
         private const val DEFAULT_ITERATIONS = 10

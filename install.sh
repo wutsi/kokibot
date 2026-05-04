@@ -85,7 +85,7 @@ install_files() {
     cp -R kokibot/* "$HOME_DIR"
 
     # Restore configuration
-    cp -R "$TMP_DIR/backup/config" "$HOME_DIR/config" 2>/dev/null || true
+    cp -R "$TMP_DIR/backup/config" "$HOME_DIR" 2>/dev/null || true
     cp -R "$TMP_DIR/backup/ASSISTANT.md" "$HOME_DIR" 2>/dev/null || true
     cp -R "$TMP_DIR/backup/HEARTBEAT.md" "$HOME_DIR" 2>/dev/null || true
     cp -R "$TMP_DIR/backup/SECURITY.md" "$HOME_DIR" 2>/dev/null || true

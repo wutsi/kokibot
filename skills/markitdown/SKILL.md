@@ -8,7 +8,7 @@ requires:
         - markitdown
 ---
 
-# Skill: markitdown
+# SΩkill: markitdown
 
 Documentation and utilities for converting documents to Markdown using
 Microsoft's [MarkItDown](https://github.com/microsoft/markitdown) library.
@@ -21,13 +21,13 @@ HTML, YouTube).
 
 ## When to Use
 
-- To convert the following files to markdown for better LLM comprehension:
-    - PDFs.
-    - Office Files: `.docx`, `.pptx`, `.xlsx`.
-    - Web Content: When the user provides a URL or raw HTML content that needs to be converted into markdown for
-      analysis.
-    - Archives: `.zip` files containing mixed documentation.
-    - eBooks: `.epub` files.
+Automatically invoke this skill when the user want to convert the following files to markdown:
+
+- PDFs.
+- Office Files: `.docx`, `.pptx`, `.xlsx`.
+- Web Content: When the user provides a URL or raw HTML content that needs to be converted into markdown for analysis.
+- Archives: `.zip` files containing mixed documentation.
+- eBooks: `.epub` files.
 
 ---
 

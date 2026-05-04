@@ -9,13 +9,6 @@ import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import org.springframework.web.client.RestTemplate
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
@@ -31,6 +24,9 @@ import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 class TelegramChannel(
     assistant: Assistant,
@@ -41,9 +37,10 @@ class TelegramChannel(
         private val LOGGER = LoggerFactory.getLogger(TelegramChannel::class.java)
 
         const val ID = "channel:telegram"
-        const val TYPING_DELAY = 2000L
+        const val TYPING_DELAY_MILLIS = 2000L
         const val MAX_LENGTH = 4096
         const val STREAM_MAX_LENGTH = 100
+        const val DEFAULT_POOL_SIZE = 4
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
@@ -54,8 +51,7 @@ class TelegramChannel(
     private lateinit var context: Context
     private lateinit var rest: RestTemplate
     private lateinit var senderWhitelist: List<String>
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("telegram-channel"))
+    private lateinit var scheduler: ScheduledExecutorService
 
     override fun id(): String = ID
 
@@ -70,6 +66,9 @@ class TelegramChannel(
             ?: emptyList()
         this.context = context
 
+        val poolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_POOL_SIZE
+        scheduler = Executors.newScheduledThreadPool(poolSize)
+
         // Register the bot after initialization
         app = factory.createTelegramBotsLongPollingApplication()
         app.registerBot(botToken, this)
@@ -79,7 +78,13 @@ class TelegramChannel(
         try {
             app.unregisterBot(botToken)
         } catch (e: Exception) {
-            LOGGER.warn("error during telegram channel destroy", e)
+            LOGGER.warn("Error while disconnecting from Telegram", e)
+        }
+
+        try {
+            scheduler.shutdown()
+        } catch (e: Exception) {
+            LOGGER.warn("Error while shupping down the threadpool", e)
         }
     }
 
@@ -116,36 +121,40 @@ class TelegramChannel(
             return
         }
 
-        /* Typing indicator */
-        val typingJob = scope.launch {
-            while (true) {
-                ensureActive()
-                typing(chatId)
-                delay(TYPING_DELAY)
-            }
-        }
-
+        /* Process the message */
         if (update.hasMessage()) {
-            val message = try {
-                if (update.message.hasText()) {
-                    consumeText(update)
-                } else if (update.message.hasDocument()) {
-                    consumeDocument(update)
-                } else if (update.message.hasPhoto()) {
-                    consumePhoto(update)
-                } else {
-                    Message(
-                        text = ERROR_UNSUPPORTED_MESSAGE,
-                        role = Role.SYSTEM,
-                    )
+            /* Typing indicator */
+            val task = Runnable {
+                typing(chatId)
+            }
+            val job = scheduler.scheduleAtFixedRate(task, 0, TYPING_DELAY_MILLIS, TimeUnit.MILLISECONDS)
+
+            /* Consume the message asynchronously */
+            try {
+                scheduler.execute {
+                    consume(chatId, update)
                 }
             } finally {
-                typingJob.cancel()
+                job.cancel(true)
             }
-
-            /* Send final message (or update last streamed message) */
-            send(chatId, message, true)
         }
+    }
+
+    private fun consume(chatId: String, update: Update) {
+        val message = if (update.message.hasText()) {
+            consumeText(update)
+        } else if (update.message.hasDocument()) {
+            consumeDocument(update)
+        } else if (update.message.hasPhoto()) {
+            consumePhoto(update)
+        } else {
+            Message(
+                text = ERROR_UNSUPPORTED_MESSAGE,
+                role = Role.SYSTEM,
+            )
+        }
+
+        send(chatId, message, true)
     }
 
     private fun consumeText(update: Update): Message {

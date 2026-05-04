@@ -235,7 +235,7 @@ class EmailChannel(
             setFrom(InternetAddress(email))
             setRecipients(jakarta.mail.Message.RecipientType.TO, InternetAddress.parse(message.userId))
             subject = message.subject
-            setContent(createMultipartContent(message.text))
+            setContent(createMultipartContent(message.text, message.filePaths))
             if (replyMessageId != null) {
                 setHeader("In-Reply-To", replyMessageId)
                 setHeader("References", replyMessageId)
@@ -245,13 +245,24 @@ class EmailChannel(
         Transport.send(message)
     }
 
-    private fun createMultipartContent(markdown: String): Multipart {
-        val html = HtmlUtil.fromMarkdown(markdown)
+    private fun createMultipartContent(markdown: String, attachments: List<String>): Multipart {
         val multipart = MimeMultipart()
+
+        // Body
         val body = MimeBodyPart()
+        val html = HtmlUtil.fromMarkdown(markdown)
         body.setContent(html, "text/html; charset=utf-8")
         body.setDisposition(Part.INLINE)
         multipart.addBodyPart(body)
+
+        // Attachments
+        attachments.forEach { path ->
+            val attachment = MimeBodyPart()
+            val file = File(path)
+            attachment.attachFile(file)
+            multipart.addBodyPart(attachment)
+        }
+
         return multipart
     }
 

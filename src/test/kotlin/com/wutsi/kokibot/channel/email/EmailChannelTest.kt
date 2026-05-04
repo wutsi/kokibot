@@ -122,7 +122,11 @@ class EmailChannelTest {
                 text = "This is a test message",
                 subject = "Test",
                 role = Role.ASSISTANT,
-                userId = "ray.sponsible@gmail.com"
+                userId = "ray.sponsible@gmail.com",
+                filePaths = listOf(
+                    this::class.java.getResource("/file/document-en.pdf")!!.file,
+                    this::class.java.getResource("/file/sample.docx")!!.file,
+                )
             )
         )
 
@@ -143,7 +147,7 @@ class EmailChannelTest {
         assertEquals(null, reply.getHeader("In-Reply-To")?.get(0))
         assertEquals(null, reply.getHeader("References")?.get(0))
         assertEquals(true, reply.contentType.startsWith("multipart/mixed;"))
-        assertEquals(1, bodyParts.count)
+        assertEquals(3, bodyParts.count)
         assertEquals(true, bodyParts.getBodyPart(0).content.toString().contains("This is a test message"))
     }
 

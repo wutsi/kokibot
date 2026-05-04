@@ -207,7 +207,7 @@ class EmailChannelTest {
         assertEquals(message.messageID, prompt.firstValue.id)
         assertEquals("ray.sponsible@gmail.com", prompt.firstValue.userId)
         assertEquals(EmailChannel.ID, prompt.firstValue.channelId)
-        assertEquals("Hello\n\nCan you send me my daily debriefing?", prompt.firstValue.text)
+        assertEquals("${message.subject}\nHello\n\nCan you send me my daily debriefing?", prompt.firstValue.text)
         assertEquals(message.subject, prompt.firstValue.subject)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals(0, prompt.firstValue.filePaths.size)
@@ -266,10 +266,12 @@ class EmailChannelTest {
         assertEquals(EmailChannel.ID, prompt.firstValue.channelId)
         assertEquals(
             """
+                ${message.subject}
                 Hello
                 =====
 
                 Can you send me my daily debriefing?
+
 
             """.trimIndent(),
             prompt.firstValue.text,

@@ -16,6 +16,7 @@ class Gemini : Deepseek() {
         return GeminiClient(
             apiKey = apiKey,
             model = model,
+            jsonMapper = context.jsonMapper,
             thinking = MapUtil.toBoolean("thinking", config),
             maxTokens = MapUtil.toInt("max-tokens", config),
             temperature = MapUtil.toDouble("temperature", config),

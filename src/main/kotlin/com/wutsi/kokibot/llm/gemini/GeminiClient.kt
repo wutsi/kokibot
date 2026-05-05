@@ -2,6 +2,7 @@ package com.wutsi.kokibot.llm.gemini
 
 import com.wutsi.kokibot.llm.deepseek.DeepseekClient
 import com.wutsi.kokibot.util.RestBuilder
+import tools.jackson.databind.json.JsonMapper
 
 /**
  * Implementation of the Gemini LLM client.
@@ -16,6 +17,7 @@ class GeminiClient(
     readTimeoutMillis: Long? = null,
     connectTimeoutMillis: Long? = null,
     restBuilder: RestBuilder = RestBuilder(),
+    jsonMapper: JsonMapper = JsonMapper(),
 ) : DeepseekClient(
     apiKey = apiKey,
     model = model,
@@ -24,7 +26,8 @@ class GeminiClient(
     maxTokens = maxTokens,
     readTimeoutMillis = readTimeoutMillis,
     connectTimeoutMillis = connectTimeoutMillis,
-    restBuilder = restBuilder
+    restBuilder = restBuilder,
+    jsonMapper = jsonMapper,
 ) {
     override fun getBaseUrl(): String {
         return "https://generativelanguage.googleapis.com/v1beta/openai"

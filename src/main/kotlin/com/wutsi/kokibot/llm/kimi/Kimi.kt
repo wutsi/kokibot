@@ -21,6 +21,7 @@ class Kimi : Deepseek() {
             temperature = MapUtil.toDouble("temperature", config),
             readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,
             connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
+            jsonMapper = context.jsonMapper,
         )
     }
 }

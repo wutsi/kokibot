@@ -11,6 +11,12 @@ class DurationUtilTest {
     }
 
     @Test
+    fun `minutes 3m`() {
+        val minutes = DurationUtil.minutes("3m")
+        assertEquals(3, minutes)
+    }
+
+    @Test
     fun `seconds 3d`() {
         val millis = DurationUtil.seconds("3s")
         assertEquals(3, millis)

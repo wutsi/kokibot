@@ -25,7 +25,7 @@ open class Deepseek : LLM {
         const val READ_TIMEOUT_MILLIS = 60000L
     }
 
-    private lateinit var context: Context
+    protected lateinit var context: Context
     internal lateinit var client: DeepseekClient
     internal var streamingEnabled: Boolean = false
 
@@ -86,12 +86,12 @@ open class Deepseek : LLM {
         return DeepseekClient(
             apiKey = apiKey,
             model = model,
+            jsonMapper = context.jsonMapper,
             thinking = MapUtil.toBoolean("thinking", config),
             maxTokens = MapUtil.toInt("max-tokens", config),
             temperature = MapUtil.toDouble("temperature", config),
             readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,
             connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
-            jsonMapper = context.jsonMapper,
         )
     }
 }

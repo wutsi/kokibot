@@ -98,7 +98,9 @@ class Memory : Resource {
         val to = LocalDate.now()
         val from = to.minusDays(window)
         val merged = context.chatHistory.merge(from, to)
-        val compacted = merged?.let { compact(merged) }
+        val compacted = merged?.let {
+            compact(merged)
+        }
         if (compacted != null) {
             atomicWrite(getFile(), compacted)
         }
@@ -130,43 +132,16 @@ class Memory : Resource {
 
     private fun compact(history: String): String {
         val memory = get()
-        val prompt = this::class.java.getResourceAsStream("/prompts/memory.prompt.md")
-            ?.bufferedReader()
-            ?.use { it.readText() }
-            ?: throw IllegalStateException(
-                "Memory compaction prompt template not found at /prompts/memory.prompt.md. " +
-                    "This is a build configuration error."
-            )
-
-        val finalPrompt = prompt
+        val prompt = this::class.java.getResourceAsStream("/prompts/memory.prompt.md")!!
+            .bufferedReader()
+            .readText()
             .replace("{{history}}", history)
             .replace("{{memory}}", (memory ?: ""))
             .replace("{{max_length}}", maxLength.toString())
 
-        // Retry LLM call with exponential backoff
-        val response = com.wutsi.kokibot.util.RetryConfig.llm().execute(
-            onRetry = { attempt, exception ->
-                LOGGER.warn(
-                    "Memory compaction LLM call failed (attempt $attempt): ${exception.message}. Retrying..."
-                )
-            }
-        ) {
-            context.llm.completion(LLMRequest(prompt = finalPrompt), emptyList())
-        }
-
-        val content = response.choices.firstOrNull()?.content
+        val response = context.llm.completion(LLMRequest(prompt = prompt), emptyList())
+        return response.choices.firstOrNull()?.content?.take(maxLength)
             ?: throw IllegalStateException("No result from LLM")
-
-        // Validate compacted memory length
-        if (content.length > maxLength * 2) {
-            LOGGER.warn(
-                "Compacted memory exceeds recommended length: ${content.length} chars > ${maxLength * 2} chars. " +
-                    "Truncating to $maxLength chars."
-            )
-            return content.take(maxLength)
-        }
-
-        return content
     }
 
     private fun atomicWrite(target: File, content: String) {

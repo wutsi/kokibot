@@ -2,6 +2,7 @@ package com.wutsi.kokibot.llm.kimi
 
 import com.wutsi.kokibot.llm.deepseek.DeepseekClient
 import com.wutsi.kokibot.util.RestBuilder
+import tools.jackson.databind.json.JsonMapper
 
 /**
  * Implementation of the Kimi LLM client.
@@ -17,6 +18,7 @@ class KimiClient(
     readTimeoutMillis: Long? = null,
     connectTimeoutMillis: Long? = null,
     restBuilder: RestBuilder = RestBuilder(),
+    jsonMapper: JsonMapper = JsonMapper(),
 ) : DeepseekClient(
     apiKey = apiKey,
     model = model,
@@ -25,7 +27,8 @@ class KimiClient(
     maxTokens = maxTokens,
     readTimeoutMillis = readTimeoutMillis,
     connectTimeoutMillis = connectTimeoutMillis,
-    restBuilder = restBuilder
+    restBuilder = restBuilder,
+    jsonMapper = jsonMapper,
 ) {
     override fun getBaseUrl(): String {
         return "https://api.moonshot.ai/v1"

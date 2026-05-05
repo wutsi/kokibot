@@ -97,22 +97,17 @@ class TelegramChannel(
     }
 
     override fun consume(update: Update) {
-        val chatId = update.message?.chatId?.toString() ?: return
-
-        /* Check sender */
-        if (!accept(update)) {
-            send(
-                chatId,
-                Message(
-                    text = ERROR_UNAUTHORIZED_MESSAGE,
-                ),
-                true,
-            )
-            return
-        }
-
         /* Process the message */
         if (update.hasMessage()) {
+            val message = update.message
+            val chatId = message.chatId.toString()
+
+            /* Check sender whitelist */
+            if (!accept(message)) {
+                send(chatId, Message(text = ERROR_UNAUTHORIZED_MESSAGE), true)
+                return
+            }
+
             /* Typing indicator */
             val task = Runnable {
                 typing(chatId)
@@ -240,17 +235,14 @@ class TelegramChannel(
         )
     }
 
-    private fun accept(update: Update): Boolean {
-        if (update.hasMessage()) {
-            val sender = update.message.chat.userName ?: return false
-            if (senderWhitelist.isEmpty() || senderWhitelist.contains(sender)) {
-                return true
-            } else {
-                LOGGER.warn("Unauthorized sender: $sender")
-                return false
-            }
+    private fun accept(message: org.telegram.telegrambots.meta.api.objects.message.Message): Boolean {
+        val sender = message.chat.userName ?: return false
+        if (senderWhitelist.isEmpty() || senderWhitelist.contains(sender)) {
+            return true
+        } else {
+            LOGGER.warn("Unauthorized sender: $sender")
+            return false
         }
-        return false
     }
 
     private fun typing(chatId: String) {

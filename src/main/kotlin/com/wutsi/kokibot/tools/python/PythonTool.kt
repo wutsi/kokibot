@@ -116,9 +116,14 @@ class PythonTool : Tool {
     }
 
     private fun createPythonContext(os: OutputStream): Context {
+        val dir = File(context.home, "workspace")
         return Context.newBuilder(LANGUAGE_ID)
             .option("engine.WarnInterpreterOnly", "false")
-            .allowIO(IOAccess.ALL)
+            .allowIO(
+                IOAccess.newBuilder()
+                    .fileSystem(RestrictedFileSystem(dir.toPath()))
+                    .build()
+            )
             .allowHostAccess(HostAccess.NONE) // Network: DENIED — no host interop means no Java sockets exposed to Python
             .allowPolyglotAccess(PolyglotAccess.NONE) // System commands: DENIED — block subprocess.* / os.system / os.exec*
             .allowCreateProcess(false)
@@ -128,8 +133,6 @@ class PythonTool : Tool {
             .allowNativeAccess(false)
             .allowEnvironmentAccess(EnvironmentAccess.NONE)
             .out(os)
-            .err(os)
-            .currentWorkingDirectory(File(context.home, "workspace").toPath())
             .build()
     }
 }

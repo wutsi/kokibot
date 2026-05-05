@@ -205,60 +205,6 @@ class MemoryTest {
     }
 
     @Test
-    fun `compact retries on LLM timeout and eventually succeeds`() {
-        // GIVEN
-        doReturn("M1\nM2\nM3").whenever(chatHistory).merge(any(), any())
-
-        val callCount = java.util.concurrent.atomic.AtomicInteger(0)
-        whenever(llm.completion(any(), any())).thenAnswer {
-            val count = callCount.incrementAndGet()
-            if (count < 3) {
-                // First 2 attempts fail with timeout
-                throw java.net.SocketTimeoutException("Read timed out")
-            }
-            // Third attempt succeeds
-            LLMResponse(
-                choices = listOf(LLMResponseChoice(content = "Success after retry"))
-            )
-        }
-
-        // WHEN
-        memory.compact()
-
-        // THEN
-        assertEquals(3, callCount.get(), "Should have retried 2 times before success")
-
-        val file = File(home.absolutePath + "/memory/MEMORY.md")
-        assertTrue(file.exists())
-        assertEquals("Success after retry", file.readText())
-    }
-
-    @Test
-    fun `compact fails after max retries`() {
-        // GIVEN
-        doReturn("M1\nM2\nM3").whenever(chatHistory).merge(any(), any())
-
-        val callCount = java.util.concurrent.atomic.AtomicInteger(0)
-        whenever(llm.completion(any(), any())).thenAnswer {
-            callCount.incrementAndGet()
-            throw java.net.SocketTimeoutException("Read timed out")
-        }
-
-        // WHEN / THEN
-        val ex = assertThrows<java.net.SocketTimeoutException> {
-            memory.compact()
-        }
-
-        assertEquals("Read timed out", ex.message)
-        // Should retry 4 times (LLM retry config has maxAttempts=4)
-        assertEquals(4, callCount.get())
-
-        // Memory file should NOT be created/modified
-        val file = File(home.absolutePath + "/memory/MEMORY.md")
-        assertFalse(file.exists())
-    }
-
-    @Test
     fun `compact truncates content exceeding max length`() {
         // GIVEN
         doReturn("M1\nM2\nM3").whenever(chatHistory).merge(any(), any())

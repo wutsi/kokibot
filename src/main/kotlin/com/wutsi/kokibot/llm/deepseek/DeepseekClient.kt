@@ -7,7 +7,6 @@ import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMStreamChunk
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.llm.LLMToolCallDelta
-import com.wutsi.kokibot.service.UnsupportedMimeTypeException
 import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
@@ -30,7 +29,6 @@ open class DeepseekClient(
     val apiKey: String,
     val model: String,
     val thinking: Boolean? = null,
-    val reasoning: Boolean? = null,
     val temperature: Double? = null,
     val maxTokens: Int? = null,
     val readTimeoutMillis: Long? = null,
@@ -300,61 +298,36 @@ open class DeepseekClient(
                         )
                     ) +
                         request.files.mapNotNull { file ->
-                            try {
-                                val mimeType = getMimeType(file)
-                                if (supportsMimeType(mimeType)) {
-                                    val base64Content = Base64
-                                        .getEncoder()
-                                        .encodeToString(file.readBytes())
-                                    val content = "data:$mimeType;base64,$base64Content"
+                            val mimeType = getMimeType(file)
+                            if (supportsMimeType(mimeType)) {
+                                val base64Content = Base64
+                                    .getEncoder()
+                                    .encodeToString(file.readBytes())
+                                val content = "data:$mimeType;base64,$base64Content"
 
-                                    if (mimeType.startsWith("image/")) {
-                                        mapOf(
-                                            "type" to "image_url",
-                                            "image_url" to mapOf("url" to content),
-                                        )
-                                    } else {
-                                        mapOf(
-                                            "type" to "file",
-                                            "file" to mapOf(
-                                                "filename" to file.name,
-                                                "file_data" to content,
-                                            )
-                                        )
-                                    }
+                                if (mimeType.startsWith("image/")) {
+                                    mapOf(
+                                        "type" to "image_url",
+                                        "image_url" to mapOf("url" to content),
+                                    )
                                 } else {
                                     mapOf(
-                                        "type" to "text",
-                                        "text" to "File: ${file.absolutePath}"
+                                        "type" to "file",
+                                        "file" to mapOf(
+                                            "filename" to file.name,
+                                            "file_data" to content,
+                                        )
                                     )
                                 }
-                            } catch (_: UnsupportedMimeTypeException) {
+                            } else {
                                 mapOf(
                                     "type" to "text",
-                                    "text" to "File ${file.absolutePath} has unsupported mime type. It's content cannot be read and will be ignored."
-                                )
-                            } catch (ex: Exception) {
-                                logger.warn("Failed to extract the content of file ${file.name}", ex)
-                                mapOf(
-                                    "type" to "text",
-                                    "text" to "Failed to extract the content of file ${file.absolutePath}. The file will be ignored. Error: ${ex.message}"
+                                    "text" to "File: ${file.absolutePath}"
                                 )
                             }
                         }
                 )
             )
-        }
-    }
-
-    private fun extractContent(file: File, mimeType: String): String {
-        if (supportsMimeType(mimeType)) {
-            val base64Content = Base64
-                .getEncoder()
-                .encodeToString(file.readBytes())
-            return "data:$mimeType;base64,$base64Content"
-        } else {
-            val extractor = textExtractorFactory.create(mimeType)
-            return extractor.extract(file)
         }
     }
 

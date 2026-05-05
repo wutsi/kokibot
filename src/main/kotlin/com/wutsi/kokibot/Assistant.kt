@@ -159,7 +159,7 @@ class Assistant(val name: String = "") {
             "... $iteration @$name ....................................\n" +
                 "Asking LLM with the following prompt:\n" +
                 "  Files: ${prompt.filePaths}\n" +
-                "  Query: ${clip(prompt.text, 200)}\n" +
+                "  Query: ${clip(prompt.text, 200, 1)}\n" +
                 "  Memory: ${memory.size} items\n" +
                 "  Tools: ${tools.size} available"
         )
@@ -226,13 +226,13 @@ class Assistant(val name: String = "") {
     ) {
         val xcontent = content?.trim()
             ?.ifEmpty { null }
-            ?.let { clip(content, 200) + "\n" } ?: ""
+            ?.let { clip(content, 200, 1) + "\n" } ?: ""
         LOGGER.info(
             "... $iteration @$name ....................................\n" +
                 "${xcontent}TOOL: ${call.name}\n" +
                 "  Arguments:\n" +
                 call.arguments
-                    .map { "  - " + clip(it.toString(), 200) }
+                    .map { "  - " + clip(it.toString(), 200, 1) }
                     .joinToString("\n")
         )
 
@@ -248,15 +248,22 @@ class Assistant(val name: String = "") {
             LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
             "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
         }
-        LOGGER.info(clip(result, 200))
+        LOGGER.info(clip(result, 200, 4))
         memory.add(result)
     }
 
-    private fun clip(text: String, n: Int): String {
+    private fun clip(text: String, n: Int, l: Int): String {
+        val xtext = text
+            .lines()
+            .filter { line -> line.isNotBlank() }
+            .take(l)
+            .joinToString("\n")
+            .take(n)
+            .trim()
         return if (text.length > n) {
-            text.take(n) + "..."
+            "${xtext}..."
         } else {
-            text
+            xtext
         }
     }
 

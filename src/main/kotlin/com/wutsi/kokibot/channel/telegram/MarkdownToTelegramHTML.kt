@@ -12,26 +12,8 @@ object MarkdownToTelegramHTML {
     private val parser = Parser.builder(options).build()
     private val renderer = HtmlRenderer.builder(options).build()
 
-    // Matches a GFM-style table: a header row, a separator row, then 0+ body rows.
-    private val tableRegex = Regex(
-        pattern = "(?m)^[ \\t]*\\|.*\\|[ \\t]*\\R" + // header row
-            "[ \\t]*\\|[\\s:|-]+\\|[ \\t]*\\R" + // separator row
-            "(?:[ \\t]*\\|.*\\|[ \\t]*(?:\\R|\\z))*" // body rows
-    )
-
     fun convert(markdown: String): String {
-        // 1. Extract tables and replace with placeholders BEFORE parsing.
-        val tables = mutableListOf<String>()
-        val prepared = tableRegex.replace(markdown) { match ->
-            val idx = tables.size
-            tables += match.value.trimEnd()
-            "\n\n@@TABLE_$idx@@\n\n"
-        }
-
-        // 2. Parse Markdown to Document
-        val document = parser.parse(prepared)
-
-        // 3. Render to HTML
+        val document = parser.parse(markdown)
         val html = renderer.render(document)
 
         // 4. Telegram specific cleanup
@@ -73,10 +55,6 @@ object MarkdownToTelegramHTML {
             .replace(Regex("\\R+"), "\n") // Should be the last!
             .trim()
 
-        // 5. Restore tables wrapped in <pre>...</pre>
-        tables.forEachIndexed { idx, table ->
-            result = result.replace("@@TABLE_$idx@@", "<pre>\n$table\n</pre>")
-        }
         return result.trim()
     }
 }

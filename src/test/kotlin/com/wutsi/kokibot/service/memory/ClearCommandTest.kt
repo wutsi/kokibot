@@ -5,18 +5,16 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
-import com.wutsi.kokibot.service.memory.ChatHistory
-import com.wutsi.kokibot.service.memory.ClearCommand
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertEquals
 
 class ClearCommandTest {
-    private val chatHistory = mock<ChatHistory>()
+    private val chatHistory = mock<DailyLog>()
     private val context = Context(
         home = File("/target"),
         llm = mock<LLM>(),
-        chatHistory = chatHistory,
+        dailyLog = chatHistory,
     )
     private val cmd = ClearCommand()
 

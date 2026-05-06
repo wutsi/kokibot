@@ -8,9 +8,9 @@ import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
-import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.ClearCommand
 import com.wutsi.kokibot.service.memory.CompactCommand
+import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillCommand
 import com.wutsi.kokibot.skill.SkillRegistry
@@ -55,7 +55,7 @@ class ContextFactory(
             channelRegistry = channelRegistry,
             commandRegistry = commandRegistry,
             skillRegistry = skillRegistry,
-            chatHistory = ChatHistory(),
+            dailyLog = DailyLog(),
             memory = Memory(),
             config = config,
             jsonMapper = jsonMapper,

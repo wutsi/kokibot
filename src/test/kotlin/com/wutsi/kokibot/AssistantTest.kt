@@ -5,7 +5,6 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -19,8 +18,10 @@ import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.service.memory.ChatHistory
+import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
+import com.wutsi.kokibot.skill.Skill
+import com.wutsi.kokibot.skill.SkillMetadata
 import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
@@ -38,18 +39,18 @@ class AssistantTest {
     private val tool2 = mock<Tool>()
     private val llm = mock<LLM>()
     private val toolRegistry = mock<ToolRegistry>()
-    private val chatHistory = mock<ChatHistory>()
     private val memory = mock<Memory>()
     private val commandRegistry = mock<CommandRegistry>()
     private val skillRegistry = mock<SkillRegistry>()
+    private val dailyLog = mock<DailyLog>()
     private val context = Context(
         home = home,
         llm = llm,
         toolRegistry = toolRegistry,
-        chatHistory = chatHistory,
         memory = memory,
         commandRegistry = commandRegistry,
         skillRegistry = skillRegistry,
+        dailyLog = dailyLog,
         config = emptyMap<String, String>(),
     )
     private val assistant: Assistant = Assistant()
@@ -79,6 +80,17 @@ class AssistantTest {
 
         doReturn(tool1).whenever(toolRegistry).get(any())
         doReturn(listOf(tool1, tool2)).whenever(toolRegistry).all()
+
+        val skill1 = mock<Skill>()
+        doReturn(Health(up = true, id = "xxx")).whenever(skill1).health()
+        doReturn(
+            SkillMetadata(
+                name = "skill1",
+                description = "Test skill",
+                home = File("/target"),
+            )
+        ).whenever(skill1).metadata
+        doReturn(listOf(skill1)).whenever(skillRegistry).all()
     }
 
     @Test
@@ -111,32 +123,37 @@ class AssistantTest {
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
 
-        // ASSISANT.md
+        val systemInstructions = req.firstValue.systemInstructions
         assertEquals(
             true,
-            req.firstValue.systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
+            systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
         )
-
-        // SECURITY.md
         assertEquals(
             true,
-            req.firstValue.systemInstructions?.contains("Security Guidelines...")
+            systemInstructions?.contains("# Security Guidelines")
         )
-
-        verify(chatHistory).append(prompt, result)
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Daily Log Protocol")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Available skills")
+        )
     }
 
     @Test
-    fun `process without system instruction`() {
+    fun `process without ASSISTANT_md`() {
         // GIVEN
         assistant.init(
             emptyMap<Any, Any>(),
             context = Context(
-                home = getResourceFile("/home/no-system-instruction"),
+                home = getResourceFile("/home/no-assistant-md"),
                 llm = llm,
                 toolRegistry = toolRegistry,
-                chatHistory = chatHistory,
                 memory = memory,
+                skillRegistry = skillRegistry,
+                dailyLog = dailyLog,
             )
         )
 
@@ -168,9 +185,25 @@ class AssistantTest {
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
 
         // ASSISANT.md is missing
-        assertEquals(null, req.firstValue.systemInstructions)
 
-        verify(chatHistory).append(prompt, result)
+        val systemInstructions = req.firstValue.systemInstructions
+        println(systemInstructions)
+        assertEquals(
+            false,
+            systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Security Guidelines")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Daily Log Protocol")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Available skills")
+        )
     }
 
     @Test
@@ -182,8 +215,8 @@ class AssistantTest {
                 home = getResourceFile("/home/007"),
                 llm = llm,
                 toolRegistry = toolRegistry,
-                chatHistory = chatHistory,
                 memory = memory,
+                dailyLog = dailyLog,
             )
         )
 
@@ -213,8 +246,6 @@ class AssistantTest {
         val req = argumentCaptor<LLMRequest>()
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
-
-        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -237,9 +268,8 @@ class AssistantTest {
         val memory = "- Fact1, Fact2"
         doReturn(memory).whenever(this.memory).get()
 
-        val history =
-            "[{\"text\":\"Hello\",\"role\":\"USER\",\"finishReason\":\"DONE\",\"exception\":null,\"dateTime\":\"2024-06-01T10:00:00\"}]"
-        doReturn(history).whenever(chatHistory).get()
+        val history = "This si the memory."
+        doReturn(history).whenever(context.dailyLog).get()
 
         // WHEN
         val prompt = Message("Yo", Role.USER)
@@ -277,8 +307,6 @@ class AssistantTest {
                """.trimIndent(),
             req.firstValue.prompt
         )
-
-        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -325,8 +353,6 @@ class AssistantTest {
         assertEquals(FinishReason.DONE, result.finishReason)
 
         verify(llm, times(2)).completion(any(), eq(listOf(tool1, tool2)))
-
-        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -342,8 +368,6 @@ class AssistantTest {
         assertEquals(Assistant.ERROR_FAILURE + ". Error: Failed", result.text)
         assertEquals(Role.ASSISTANT, result.role)
         assertEquals(FinishReason.FAILURE, result.finishReason)
-
-        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -390,8 +414,6 @@ class AssistantTest {
         assertEquals("The capital of Cameroon is Yaounde", result.text)
         assertEquals(Role.ASSISTANT, result.role)
         assertEquals(FinishReason.DONE, result.finishReason)
-
-        verify(chatHistory).append(prompt, result)
     }
 
     @Test
@@ -411,8 +433,6 @@ class AssistantTest {
         assertEquals(FinishReason.DONE, result.finishReason)
 
         verify(cmd).exec("Hello world", context)
-
-        verify(chatHistory, never()).append(any(), any())
     }
 
     @Test
@@ -432,8 +452,6 @@ class AssistantTest {
         assertEquals(FinishReason.DONE, result.finishReason)
 
         verify(cmd).exec("", context)
-
-        verify(chatHistory, never()).append(any(), any())
     }
 
     @Test
@@ -449,8 +467,6 @@ class AssistantTest {
         assertEquals("Invalid command: /tool.\nUse /help to get the list of available commands.", result.text)
         assertEquals(Role.COMMAND, result.role)
         assertEquals(FinishReason.DONE, result.finishReason)
-
-        verify(chatHistory, never()).append(any(), any())
     }
 
     @Test
@@ -487,8 +503,6 @@ class AssistantTest {
         assertEquals(FinishReason.TOO_MANY_ITERATIONS, result.finishReason)
 
         verify(llm, times(4)).completion(any(), eq(listOf(tool1, tool2)))
-
-        verify(chatHistory).append(prompt, result)
     }
 
     private fun getResourceFile(path: String): File {

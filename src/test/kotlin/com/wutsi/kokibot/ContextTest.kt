@@ -27,7 +27,7 @@ class ContextTest {
         llm = mock(),
         toolRegistry = mock(),
         channelRegistry = mock(),
-        chatHistory = mock(),
+        dailyLog = mock(),
         commandRegistry = mock(),
         skillRegistry = mock(),
         marketplaceRegistry = mock(),
@@ -63,7 +63,7 @@ class ContextTest {
         doReturn(listOf(channel)).whenever(context.channelRegistry).all()
 
         doReturn(Health(id = "-", up = true)).whenever(context.llm).health()
-        doReturn(Health(id = "-", up = true)).whenever(context.chatHistory).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.dailyLog).health()
         doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
         doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
     }
@@ -78,7 +78,7 @@ class ContextTest {
 
         verify(context.llm).destroy()
         verify(context.memory).destroy()
-        verify(context.chatHistory).destroy()
+        verify(context.dailyLog).destroy()
         verify(context.fileService).destroy()
         verify(channel).destroy()
     }
@@ -90,7 +90,7 @@ class ContextTest {
         verify(context.toolRegistry).init(context)
         verify(context.llm).init(llmConfig, context)
         verify(context.memory).init(memoryConfig, context)
-        verify(context.chatHistory).init(memoryConfig, context)
+        verify(context.dailyLog).init(memoryConfig, context)
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
         verify(context.channelRegistry).init(config, context, assistant)

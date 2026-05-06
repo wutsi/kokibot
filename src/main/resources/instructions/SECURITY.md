@@ -2,8 +2,6 @@
 
 Here are the security guidelines and restrictions you must ALWAYS follow when executing any request and accessing files.
 
----
-
 ## File Restrictions
 
 - The default directory for all file operations is `{{HOME}}/workspace/`.
@@ -16,8 +14,6 @@ Here are the security guidelines and restrictions you must ALWAYS follow when ex
 - Do not execute any shell command that can threaten the security or integrity of the system, such as commands that can
   delete all files, modify system settings, or access sensitive information.
 
----
-
 ## Installation Restrictions
 
 - Never install any software or dependencies. You can only execute commands that are already available in the system.
@@ -26,8 +22,6 @@ Here are the security guidelines and restrictions you must ALWAYS follow when ex
 - If a required tool is missing, provide the user with instructions on how to install it, but do not perform the
   installation yourself. For skill dependencies, you can find the installation instructions in the `SKILL.md` and relay
   them to the user.
-
----
 
 ## Other Restrictions
 

@@ -7,9 +7,6 @@ import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.time.LocalDate
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -24,14 +21,14 @@ import kotlin.concurrent.withLock
  * Thread-safety: `compact()` and `get()` are serialized by a [ReentrantLock] so that
  * concurrent invocations (scheduler tick + `/compact` command) cannot interleave their
  * read-modify-write of `MEMORY.md`. The underlying chat history reads are additionally
- * guarded by [ChatHistory]'s own lock. File writes are atomic (temp file + atomic move).
+ * guarded by [DailyLog]'s own lock. File writes are atomic (temp file + atomic move).
  */
 class Memory : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Memory::class.java)
-        const val DEFAULT_WINDOW = 3L
+        const val DEFAULT_WINDOW = 7L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
-        private const val DEFAULT_MAX_LENGTH = 2000
+        private const val DEFAULT_MAX_LENGTH = 10240
         private val MAX_FAILURES_BEFORE_ALERT = 3
     }
 
@@ -95,24 +92,22 @@ class Memory : Resource {
     }
 
     fun compact() = lock.withLock {
-        val to = LocalDate.now()
-        val from = to.minusDays(window)
-        val merged = context.chatHistory.merge(from, to)
-        val compacted = merged?.let {
-            compact(merged)
-        }
-        if (compacted != null) {
-            atomicWrite(getFile(), compacted)
-        }
+        val prompt = this::class.java.getResourceAsStream("/instructions/MEMORY.md")!!
+            .bufferedReader()
+            .readText()
+            .replace("{{HOME}}", context.home.absolutePath)
+            .replace("{{DAYS}}", window.toString())
+            .replace("{{MAX_LENGTH}}", maxLength.toString())
+
+        context.llm.completion(LLMRequest(prompt = prompt), emptyList())
     }
 
     private fun launchJob(frequency: String): ScheduledFuture<*> {
-        val memory = this
         val task = Runnable {
             LOGGER.info("Running memory compaction job...")
             val now = System.currentTimeMillis()
             try {
-                memory.compact()
+                compact()
                 consecutiveFailures = 0
                 LOGGER.info("Memory compaction completed successfully in ${(System.currentTimeMillis() - now) / 1000} s")
             } catch (ex: Throwable) {
@@ -130,40 +125,8 @@ class Memory : Resource {
         return scheduler.scheduleAtFixedRate(task, delay, delay, TimeUnit.MILLISECONDS)
     }
 
-    private fun compact(history: String): String {
-        val memory = get()
-        val prompt = this::class.java.getResourceAsStream("/prompts/memory.prompt.md")!!
-            .bufferedReader()
-            .readText()
-            .replace("{{history}}", history)
-            .replace("{{memory}}", (memory ?: ""))
-            .replace("{{max_length}}", maxLength.toString())
-
-        val response = context.llm.completion(LLMRequest(prompt = prompt), emptyList())
-        return response.choices.firstOrNull()?.content?.take(maxLength)
-            ?: throw IllegalStateException("No result from LLM")
-    }
-
-    private fun atomicWrite(target: File, content: String) {
-        val targetPath = target.toPath()
-        val tmp = Files.createTempFile(targetPath.parent, target.name, ".tmp")
-        try {
-            Files.writeString(tmp, content)
-            try {
-                Files.move(tmp, targetPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
-            } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
-                Files.move(tmp, targetPath, StandardCopyOption.REPLACE_EXISTING)
-            }
-        } finally {
-            Files.deleteIfExists(tmp)
-        }
-    }
-
     private fun getFile(): File {
         val dir = File(context.home, "memory")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
         return File(dir, "MEMORY.md")
     }
 }

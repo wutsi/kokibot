@@ -38,7 +38,7 @@ class TelegramChannel(
 
         const val ID = "channel:telegram"
         const val TYPING_DELAY_MILLIS = 2000L
-        const val MAX_LENGTH = 4096
+        const val MAX_LENGTH = 3840 // Max is 4K, but reserve some for HTML tags
         const val STREAM_MAX_LENGTH = 100
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
@@ -254,10 +254,10 @@ class TelegramChannel(
     }
 
     private fun send(chatId: String, message: Message, notification: Boolean) {
-        val html = MarkdownToTelegramHTML.convert(message.text)
+        val html = MarkdownToTelegramHTML.convert(message.text.takeLast(MAX_LENGTH))
         val sendMessage = SendMessage.builder()
             .chatId(chatId)
-            .text(html.take(MAX_LENGTH))
+            .text(html)
             .parseMode(ParseMode.HTML)
             .disableNotification(!notification)
             .build()
@@ -319,7 +319,7 @@ class TelegramChannel(
             return messageId
         }
 
-        val html = MarkdownToTelegramHTML.convert(text)
+        val html = MarkdownToTelegramHTML.convert(text.takeLast(MAX_LENGTH))
 
         if (messageId == null) {
             val sendMessage = SendMessage.builder()

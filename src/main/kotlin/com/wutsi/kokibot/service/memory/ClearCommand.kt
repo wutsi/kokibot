@@ -24,7 +24,7 @@ class ClearCommand : Command {
                 This is to avoid accidentally clearing the chat history, which cannot be undone.
             """.trimIndent()
         } else {
-            context.chatHistory.clear()
+            context.dailyLog.clear()
             return "Chat history cleared"
         }
     }

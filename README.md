@@ -80,7 +80,6 @@ This will automatically
    agents/
      {agent-name}/                          # Directory for each agent
        ASSISTANT.md                         # Assistant instructions
-       SECURITY.md                          # Security guidelines and restrictions for the agent
        HEARTBEAT.md                         # Instruction of the heartbeat task executed frequently every day (Ex: ever hour)
        config/
          settings.json                      # Main configuration file for kokibot

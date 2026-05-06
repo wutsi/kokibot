@@ -59,6 +59,11 @@ class Assistant(val name: String = "") {
         prompt: Message,
         streamCallback: ((String) -> Unit)? = null,
     ): Message {
+        LOGGER.info(
+            "prompt_id=${prompt.id} role=${prompt.role} user=${prompt.userId} channel=${prompt.channelId ?: "-"} files=${prompt.filePaths}\n" +
+                (prompt.subject?.let { subject -> "Subject: $subject\n" } ?: "") +
+                prompt.text
+        )
         val now = System.currentTimeMillis()
 
         // Process async
@@ -90,7 +95,7 @@ class Assistant(val name: String = "") {
         prompt: Message,
         streamCallback: ((String) -> Unit)? = null,
     ): Message {
-        val response = try {
+        return try {
             doProcess(prompt, streamCallback)
         } catch (e: TooManyIterationException) {
             LOGGER.error("Too many iterations!", e)
@@ -99,11 +104,6 @@ class Assistant(val name: String = "") {
             LOGGER.error("Unexpected error!", e)
             Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
         }
-
-        if (response.role != Role.COMMAND) {
-            context.chatHistory.append(prompt, response)
-        }
-        return response
     }
 
     private fun doProcess(
@@ -114,9 +114,6 @@ class Assistant(val name: String = "") {
         val memory = mutableListOf<String>()
         val tools = mutableMapOf<String, Tool>()
         context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
-
-        LOGGER.debug("\n\n-- $iteration @$name ----------------------------------------------------------")
-        LOGGER.info("$iteration - agent=$name prompt_id=${prompt.id}  user=${prompt.userId}@${prompt.channelId}\n${prompt.text}")
 
         while (true) {
             if (iteration++ > maxIterations) {
@@ -152,7 +149,13 @@ class Assistant(val name: String = "") {
     ): LLMResponse {
         val tools = context.toolRegistry.all()
         val promptText = buildPrompt(prompt, memory)
-        val systemInstructions = buildSystemInstructions()
+        val systemInstructions = listOfNotNull(
+            loadIdentify(),
+            dailyLogInstructions(),
+            skillsInstructions(),
+            securityInstructions(),
+        ).joinToString("\n\n---\n\n")
+
         val streamingEnabled = context.llm.supportsStreaming()
 
         LOGGER.info(
@@ -317,7 +320,7 @@ class Assistant(val name: String = "") {
         }
 
         // Short-term memory (conversation history)
-        val shortTermMemory = context.chatHistory.get()
+        val shortTermMemory = context.dailyLog.get()
         if (shortTermMemory != null) {
             sb.append("\n\n---\n\n")
             sb.append("# Conversation history\n")
@@ -335,16 +338,6 @@ class Assistant(val name: String = "") {
         return sb.toString()
     }
 
-    private fun buildSystemInstructions(): String? {
-        val identity = loadIdentify()
-        val skills = describeSkills()
-        val security = buildSecurityInstructions()
-
-        return listOfNotNull(identity, skills, security)
-            .joinToString("\n\n")
-            .ifEmpty { null }
-    }
-
     private fun loadIdentify(): String? {
         val file = File(context.home, "ASSISTANT.md")
         return if (file.exists()) {
@@ -355,29 +348,29 @@ class Assistant(val name: String = "") {
         }
     }
 
-    private fun describeSkills(): String? {
+    private fun skillsInstructions(): String? {
         val skills = context.skillRegistry
             .all()
             .filter { skill -> skill.health().up }
             .joinToString("\n") { skill ->
                 listOfNotNull(
-                    "- Skill: `${skill.metadata.name}`\n" +
-                        "    - Description: ${skill.metadata.description}\n" +
-                        "    - Home Directory: ${skill.metadata.home}"
-                ).joinToString("\n")
+                    "## Skill: ${skill.metadata.name}\n\n" +
+                        "**Home Directory:** ${skill.metadata.home}\n\n" +
+                        "**Description:** ${skill.metadata.description}"
+                ).joinToString("\n\n")
             }
             .ifEmpty { null }
 
-        return skills?.let { "\n\n---\n\n# Available skills\n$skills" }
+        return skills?.let { "# Available skills\n\nHere are the skills available:\n\n$skills" }
     }
 
-    private fun buildSecurityInstructions(): String? {
-        val file = File(context.home, "SECURITY.md")
-        return if (file.exists()) {
-            return file.readText()
-                .replace("{{HOME}}", context.home.absolutePath)
-        } else {
-            null
-        }
+    private fun securityInstructions(): String? {
+        return File(this::class.java.getResource("/instructions/SECURITY.md")!!.toURI()).readText()
+            .replace("{{HOME}}", context.home.absolutePath)
+    }
+
+    private fun dailyLogInstructions(): String {
+        return File(this::class.java.getResource("/instructions/DAILY_LOG.md")!!.toURI()).readText()
+            .replace("{{HOME}}", context.home.absolutePath)
     }
 }

@@ -7,7 +7,7 @@ import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.service.FileService
-import com.wutsi.kokibot.service.memory.ChatHistory
+import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillParser
 import com.wutsi.kokibot.skill.SkillRegistry
@@ -28,7 +28,7 @@ class Context(
     val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
     val marketplaceRegistry: MarketplaceRegistry = MarketplaceRegistry(),
     val memory: Memory = Memory(),
-    val chatHistory: ChatHistory = ChatHistory(),
+    val dailyLog: DailyLog = DailyLog(),
     val fileService: FileService = FileService(),
     val jsonMapper: JsonMapper = JsonMapper(),
 ) {
@@ -68,7 +68,7 @@ class Context(
             toolRegistry.all() +
             channelRegistry.all() +
             marketplaceRegistry.all() +
-            listOf(llm, chatHistory, memory, fileService)
+            listOf(llm, dailyLog, memory, fileService)
     }
 
     private fun initChannels(config: Map<*, *>, assistant: Assistant) {
@@ -94,7 +94,7 @@ class Context(
         val root = MapUtil.toMap("memory", config)
             ?: emptyMap<String, Any>()
 
-        chatHistory.init(root, this)
+        dailyLog.init(root, this)
         memory.init(root, this)
     }
 

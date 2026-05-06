@@ -320,6 +320,7 @@ class TelegramChannel(
         }
 
         val html = MarkdownToTelegramHTML.convert(text.takeLast(MAX_LENGTH))
+        println(">>>>\n$html\n<<<<")
 
         if (messageId == null) {
             val sendMessage = SendMessage.builder()

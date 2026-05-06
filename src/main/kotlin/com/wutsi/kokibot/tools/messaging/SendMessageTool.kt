@@ -1,17 +1,16 @@
 package com.wutsi.kokibot.tools.messaging
 
+import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import org.slf4j.LoggerFactory
 
 class SendMessageTool : Tool {
     companion object {
         const val NAME = "send_message"
-        private val LOGGER = LoggerFactory.getLogger(SendMessageTool::class.java)
     }
 
     private lateinit var context: Context
@@ -32,7 +31,12 @@ class SendMessageTool : Tool {
             ),
             ToolParameter(
                 name = "channel_id",
-                description = "ID of the channel to user for sending the message: Ex: channel:telegram, channel:email",
+                description = """
+                    ID of the channel to use for sending email.
+                    The channel supported are:
+                       - `telegram`: For sending message to Telegram. The `user_id` should be the Telegram user ID of the recipient in this case.
+                       - `email`: For sending email to the user. The `user_id` should be the email address of the recipient in this case.
+                """.trimIndent(),
                 type = ToolParameterType.STRING,
                 required = true
             ),
@@ -68,14 +72,15 @@ class SendMessageTool : Tool {
 
         try {
             return send(userId, channelId, message, filePaths)
+        } catch (_: ChannelNotFoundException) {
+            return "Message was not sent. The channel $channelId is not available"
         } catch (ex: Exception) {
-            LOGGER.warn("Unexpected error sending message to user $userId via channel $channelId: $message", ex)
             return "Message was not sent to user $userId via $channelId. Error=${ex.message}"
         }
     }
 
     private fun send(userId: String, channelId: String, message: String, filePaths: List<String>): String {
-        val channel = context.channelRegistry.get(channelId)
+        val channel = context.channelRegistry.get("channel:$channelId")
         channel.send(
             Message(
                 userId = userId,

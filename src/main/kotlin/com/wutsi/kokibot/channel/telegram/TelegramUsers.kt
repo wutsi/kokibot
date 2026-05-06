@@ -6,6 +6,7 @@ import java.util.Properties
 
 /**
  * A simple class to store the mapping between Telegram username and chat id.
+ * The mapping is stored into <HOME>/workspace/telegram/users.properties
  */
 class TelegramUsers {
     private val properties = Properties()
@@ -41,7 +42,7 @@ class TelegramUsers {
     }
 
     private fun getFile(): File {
-        val dir = File(context.home, "telegram")
+        val dir = File(context.home, "workspace/telegram")
         if (!dir.exists()) {
             dir.mkdirs()
         }

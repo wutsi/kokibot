@@ -26,7 +26,7 @@ class TelegramUsersTest {
         users.put("john", "123456789")
 
         assertEquals("123456789", users.get("john"))
-        val file = File(context.home, "telegram/users.properties")
+        val file = File(context.home, "workspace/telegram/users.properties")
         assertEquals(true, file.exists())
     }
 
@@ -37,7 +37,7 @@ class TelegramUsersTest {
         users.put("john", "123456789")
 
         assertEquals("123456789", users.get("john"))
-        val file = File(context.home, "telegram/users.properties")
+        val file = File(context.home, "workspace/telegram/users.properties")
         assertTrue(System.currentTimeMillis() - file.lastModified() >= 1000)
     }
 
@@ -48,7 +48,7 @@ class TelegramUsersTest {
 
     @Test
     fun `init - load data`() {
-        val file = File(context.home, "telegram/users.properties")
+        val file = File(context.home, "workspace/telegram/users.properties")
         file.writeText("john=123456789")
 
         users.init(context)

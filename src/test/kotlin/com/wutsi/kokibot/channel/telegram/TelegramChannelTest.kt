@@ -207,8 +207,8 @@ class TelegramChannelTest {
             .whenever(rest)
             .getForEntity(any<String>(), eq(ByteArray::class.java))
 
-        val file = File("/target/test-data/telegram/files/1.pdf")
-        doReturn(file).whenever(context.fileService).create(any(), any<ByteArray>())
+        val file = File(this::class.java.getResource("/file/document-en.pdf")!!.file)
+        doReturn(file).whenever(context.fileService).createTempFile(any())
 
         // WHEN
         telegram.init(config, context)
@@ -225,7 +225,7 @@ class TelegramChannelTest {
         assertEquals(1, prompt.firstValue.filePaths.size)
         assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
 
-        verify(context.fileService).create("foo.pdf", "Hello world".toByteArray())
+        verify(context.fileService).createTempFile("foo.pdf")
 
         verify(users).put("ray.sponsible", "123")
     }
@@ -245,7 +245,7 @@ class TelegramChannelTest {
             .getForEntity(any<String>(), eq(ByteArray::class.java))
 
         val file = File("/target/test-data/telegram/files/1.png")
-        doReturn(file).whenever(context.fileService).create(any(), any<ByteArray>())
+        doReturn(file).whenever(context.fileService).createTempFile(any())
 
         // WHEN
         telegram.init(config, context)
@@ -262,7 +262,7 @@ class TelegramChannelTest {
         assertEquals(1, prompt.firstValue.filePaths.size)
         assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
 
-        verify(context.fileService).create(eq("photo_2222.jpg"), any())
+        verify(context.fileService).createTempFile(eq("photo_2222.jpg"))
 
         verify(users).put("ray.sponsible", "123")
     }

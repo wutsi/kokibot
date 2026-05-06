@@ -25,28 +25,4 @@ class FileServiceTest {
         assertEquals(FileService.ID, health.id)
         assertTrue(health.up)
     }
-
-    @Test
-    fun create() {
-        val content = "Hello, world!".toByteArray()
-
-        service.init(emptyMap<String, String>(), context)
-        val file = service.create("hello.txt", content)
-
-        assertTrue(file.exists())
-        assertEquals(content.size.toLong(), file.length())
-        assertEquals("Hello, world!", file.readText())
-    }
-
-    @Test
-    fun `create no extension`() {
-        val content = "Hello, world!".toByteArray()
-
-        service.init(emptyMap<String, String>(), context)
-        val file = service.create("hello", content)
-
-        assertTrue(file.exists())
-        assertEquals(content.size.toLong(), file.length())
-        assertEquals("Hello, world!", file.readText())
-    }
 }

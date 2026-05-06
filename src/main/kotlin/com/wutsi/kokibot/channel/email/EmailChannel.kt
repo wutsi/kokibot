@@ -310,7 +310,7 @@ class EmailChannel(
         // Attachment
         if (Part.ATTACHMENT.equals(part.disposition, ignoreCase = true)) {
             if (part is MimeBodyPart) {
-                val file = context.fileService.createFile(part.fileName)
+                val file = context.fileService.createTempFile(part.fileName)
                 part.saveFile(file)
                 return listOf(file)
             }

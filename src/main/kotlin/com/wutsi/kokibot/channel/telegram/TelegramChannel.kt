@@ -349,7 +349,7 @@ class TelegramChannel(
         }
     }
 
-    private fun download(fileId: String, fileName: String): File {
+    private fun download(fileId: String, filename: String): File {
         val fileUrl = "https://api.telegram.org/bot$botToken/getFile?file_id=$fileId"
         val response = rest.getForEntity(fileUrl, Map::class.java).body!!
         val path = MapUtil.toMap("result", response)?.get("file_path")?.toString()
@@ -359,6 +359,8 @@ class TelegramChannel(
         val contentUrl = "https://api.telegram.org/file/bot$botToken$xpath"
         val content = rest.getForEntity(contentUrl, ByteArray::class.java).body!!
 
-        return context.fileService.create(fileName, content)
+        val file = context.fileService.createTempFile(filename)
+        file.writeBytes(content)
+        return file
     }
 }

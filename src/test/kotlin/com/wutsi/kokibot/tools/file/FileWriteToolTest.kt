@@ -10,8 +10,8 @@ import java.io.File
 import java.nio.file.Path
 import kotlin.test.assertEquals
 
-class FileWriteTest {
-    private val tool = FileWrite()
+class FileWriteToolTest {
+    private val tool = FileWriteTool()
 
     @TempDir
     lateinit var tempDir: Path
@@ -20,7 +20,7 @@ class FileWriteTest {
     @Test
     fun metadata() {
         val meta = tool.metadata()
-        assert(meta.name == FileWrite.NAME)
+        assert(meta.name == FileWriteTool.NAME)
         assertEquals(3, meta.parameters.size)
         assertEquals("path", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)

@@ -9,7 +9,7 @@ import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.tools.web.WebFetchTool.Companion.MAX_FILE_SIZE
 import org.springframework.http.MediaTypeFactory
 
-class FileRead : Tool {
+class FileReadTool : Tool {
     companion object {
         const val NAME = "file_read"
     }

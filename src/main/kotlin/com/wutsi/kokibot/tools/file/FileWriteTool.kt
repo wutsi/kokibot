@@ -7,7 +7,7 @@ import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.util.MapUtil
 import java.io.File
 
-class FileWrite : Tool {
+class FileWriteTool : Tool {
     companion object {
         const val NAME = "file_write"
     }

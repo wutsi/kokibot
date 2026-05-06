@@ -261,7 +261,7 @@ class Assistant(val name: String = "") {
             .take(n)
             .trim()
         return if (text.length > n) {
-            "${xtext}..."
+            "$xtext..."
         } else {
             xtext
         }

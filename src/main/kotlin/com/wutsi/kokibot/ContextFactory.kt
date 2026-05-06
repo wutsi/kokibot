@@ -17,8 +17,9 @@ import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolCommand
 import com.wutsi.kokibot.tools.ToolRegistry
-import com.wutsi.kokibot.tools.file.FileRead
-import com.wutsi.kokibot.tools.file.FileWrite
+import com.wutsi.kokibot.tools.file.FileEditTool
+import com.wutsi.kokibot.tools.file.FileReadTool
+import com.wutsi.kokibot.tools.file.FileWriteTool
 import com.wutsi.kokibot.tools.messaging.SendMessageTool
 import com.wutsi.kokibot.tools.python.PythonTool
 import com.wutsi.kokibot.tools.shell.ShellTool
@@ -70,8 +71,9 @@ class ContextFactory(
 
     private fun discoverTools(): List<Tool> {
         return listOf(
-            FileRead(),
-            FileWrite(),
+            FileReadTool(),
+            FileWriteTool(),
+            FileEditTool(),
 
             PythonTool(),
 

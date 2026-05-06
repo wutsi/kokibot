@@ -6,16 +6,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
-class FileReadTest {
-    val tool = FileRead()
+class FileReadToolTest {
+    val tool = FileReadTool()
 
     @Test
     fun metadata() {
         val meta = tool.metadata()
-        assert(meta.name == FileRead.NAME)
+        assert(meta.name == FileReadTool.NAME)
         assertEquals(1, meta.parameters.size)
         assertEquals("path", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
+        assertTrue(meta.parameters[0].required)
     }
 
     @Test

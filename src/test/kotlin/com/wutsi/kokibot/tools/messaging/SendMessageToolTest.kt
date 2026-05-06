@@ -54,13 +54,14 @@ class SendMessageToolTest {
     fun exec() {
         // GIVEN
         val channel = mock<Channel>()
+        doReturn(true).whenever(channel).send(any())
         doReturn(channel).whenever(context.channelRegistry).get(any())
 
         // WHEN
         tool.init(mapOf("" to "yy"), context)
         val result = tool.exec(
             mapOf(
-                "user_id" to "123456",
+                "user_id" to "ray.sponsible",
                 "channel_id" to "telegram",
                 "message" to "Hello, World!",
                 "file_paths" to "/path/to/file1,/path/to/file2"
@@ -72,11 +73,11 @@ class SendMessageToolTest {
 
         val msg = argumentCaptor<Message>()
         verify(channel).send(msg.capture())
-        assertEquals("123456", msg.firstValue.userId)
+        assertEquals("ray.sponsible", msg.firstValue.userId)
         assertEquals("Hello, World!", msg.firstValue.text)
         assertEquals(listOf("/path/to/file1", "/path/to/file2"), msg.firstValue.filePaths)
 
-        assertEquals("Message sent to user 123456 via channel telegram", result)
+        assertEquals("Message sent to ray.sponsible via telegram", result)
     }
 
     @Test
@@ -84,14 +85,13 @@ class SendMessageToolTest {
         // GIVEN
         val channel = mock<Channel>()
         doReturn(channel).whenever(context.channelRegistry).get(any())
-
         doThrow(RuntimeException("failure")).whenever(channel).send(any())
 
         // WHEN
         tool.init(mapOf("" to "yy"), context)
         val result = tool.exec(
             mapOf(
-                "user_id" to "123456",
+                "user_id" to "ray.sponsible",
                 "channel_id" to "telegram",
                 "message" to "Hello, World!",
             )
@@ -102,11 +102,11 @@ class SendMessageToolTest {
 
         val msg = argumentCaptor<Message>()
         verify(channel).send(msg.capture())
-        assertEquals("123456", msg.firstValue.userId)
+        assertEquals("ray.sponsible", msg.firstValue.userId)
         assertEquals("Hello, World!", msg.firstValue.text)
         assertEquals(emptyList(), msg.firstValue.filePaths)
 
-        assertEquals("Message was not sent to user 123456 via telegram. Error=failure", result)
+        assertEquals("Message was not sent to ray.sponsible via telegram. Error=failure", result)
     }
 
     @Test

@@ -240,23 +240,25 @@ class Assistant(val name: String = "") {
                     .joinToString("\n")
         )
 
+        // Execute
         val tool = tools[call.name]
-        if (tool == null) {
-            memory.add("The tool `${call.name}` is not available!")
-            return
-        }
-
-        val result = try {
-            tool.exec(call.arguments)
-        } catch (e: Exception) {
-            LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
-            "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+        val result = if (tool == null) {
+            "The tool `${call.name}` is not available!"
+        } else {
+            try {
+                tool.exec(call.arguments)
+            } catch (e: Exception) {
+                LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
+                "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+            }
         }
         LOGGER.info(clip(result, 200, 4))
-        memory.add(result)
+
+        // Update memory
+        memory.add("Calling tool `${call.name}` with arguments ${clip(call.arguments.toString())}} returns:\n$result")
     }
 
-    private fun clip(text: String, n: Int, l: Int): String {
+    private fun clip(text: String, n: Int = 200, l: Int = 1): String {
         val xtext = text
             .lines()
             .filter { line -> line.isNotBlank() }

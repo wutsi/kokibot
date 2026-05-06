@@ -40,7 +40,7 @@ class TelegramChannel(
         const val ID = "channel:telegram"
         const val TYPING_DELAY_MILLIS = 2000L
         const val MAX_LENGTH = 3840 // Max is 4K, but reserve some for HTML tags
-        const val STREAM_MAX_LENGTH = 100
+        const val STREAM_MAX_LENGTH = 150
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
@@ -122,10 +122,15 @@ class TelegramChannel(
             }
             val job = scheduler.scheduleAtFixedRate(task, 0, TYPING_DELAY_MILLIS, TimeUnit.MILLISECONDS)
 
-            /* Consume the message asynchronously */
+            // Store user for future reference!
+            try {
+                users.put(message.chat.userName, message.chatId.toString()) // Store
+            } catch (_: Exception) {
+                // Ignore if we fail to store user info, it won't affect message processing
+            }
+
             try {
                 consume(chatId, update)
-                users.put(message.chat.userName, message.chatId.toString())
             } finally {
                 job.cancel(true)
             }
@@ -329,7 +334,6 @@ class TelegramChannel(
         }
 
         val html = MarkdownToTelegramHTML.convert(text.takeLast(MAX_LENGTH))
-        println(">>>>\n$html\n<<<<")
 
         if (messageId == null) {
             val sendMessage = SendMessage.builder()

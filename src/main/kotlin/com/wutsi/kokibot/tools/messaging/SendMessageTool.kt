@@ -75,20 +75,24 @@ class SendMessageTool : Tool {
         } catch (_: ChannelNotFoundException) {
             return "Message was not sent. The channel $channelId is not available"
         } catch (ex: Exception) {
-            return "Message was not sent to user $userId via $channelId. Error=${ex.message}"
+            return "Message was not sent to $userId via $channelId. Error=${ex.message}"
         }
     }
 
     private fun send(userId: String, channelId: String, message: String, filePaths: List<String>): String {
         val channel = context.channelRegistry.get("channel:$channelId")
-        channel.send(
+        val result = channel.send(
             Message(
                 userId = userId,
-                channelId = channelId,
+                channelId = "channel:$channelId",
                 text = message,
                 filePaths = filePaths,
             )
         )
-        return "Message sent to user $userId via channel $channelId"
+        return if (result) {
+            "Message sent to $userId via $channelId"
+        } else {
+            "Message not sent to $userId via $channelId"
+        }
     }
 }

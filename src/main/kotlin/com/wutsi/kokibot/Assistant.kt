@@ -10,6 +10,7 @@ import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
+import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Executors
@@ -365,12 +366,12 @@ class Assistant(val name: String = "") {
     }
 
     private fun securityInstructions(): String {
-        return File(Assistant::class.java.getResource("/instructions/SECURITY.md")!!.toURI()).readText()
+        return IOUtils.toString(Assistant::class.java.getResource("/instructions/SECURITY.md"), "utf-8")
             .replace("{{HOME}}", context.home.absolutePath)
     }
 
     private fun dailyLogInstructions(): String {
-        return File(Assistant::class.java.getResource("/instructions/DAILY_LOG.md")!!.toURI()).readText()
+        return IOUtils.toString(Assistant::class.java.getResourceAsStream("/instructions/DAILY_LOG.md"), "utf-8")
             .replace("{{HOME}}", context.home.absolutePath)
     }
 }

@@ -104,8 +104,6 @@ This will automatically
 ### Supported LLM Providers
 
 - Deepseek v3, v4
-- Kimi
-- Gemini
 
 ### Supported Communication Channels
 

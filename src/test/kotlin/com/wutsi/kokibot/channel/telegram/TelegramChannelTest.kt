@@ -81,6 +81,7 @@ class TelegramChannelTest {
         verify(factory).createTelegramClient(botToken)
         verify(factory).createTelegramBotsLongPollingApplication()
         verify(app).registerBot(eq(botToken), any())
+        verify(users).init(context)
     }
 
     @Test

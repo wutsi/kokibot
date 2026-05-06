@@ -66,6 +66,9 @@ class TelegramChannel(
             ?: emptyList()
         this.context = context
 
+        // Users
+        users.init(context)
+
         // Register the bot after initialization
         app = factory.createTelegramBotsLongPollingApplication()
         app.registerBot(botToken, this)

@@ -32,6 +32,7 @@ class TelegramChannel(
     assistant: Assistant,
     val factory: TelegramFactory = TelegramFactory(),
     val restBuilder: RestBuilder = RestBuilder(),
+    val users: TelegramUsers = TelegramUsers(),
 ) : Channel(assistant), LongPollingSingleThreadUpdateConsumer {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TelegramChannel::class.java)
@@ -92,8 +93,12 @@ class TelegramChannel(
         if (message.userId == null || message.channelId != id()) {
             return false
         }
-        send(message.userId, message, false)
-        return true
+
+        users.get(message.userId)?.let { chatId ->
+            send(chatId, message, true)
+            return true
+        }
+        return false
     }
 
     override fun consume(update: Update) {
@@ -117,6 +122,7 @@ class TelegramChannel(
             /* Consume the message asynchronously */
             try {
                 consume(chatId, update)
+                users.put(message.chat.userName, message.chatId.toString())
             } finally {
                 job.cancel(true)
             }
@@ -142,7 +148,7 @@ class TelegramChannel(
 
     private fun consumeText(update: Update): Message {
         val chatId = update.message.chatId.toString()
-        val userId = update.message.chat.id.toString()
+        val userId = update.message.chat.userName
         var streamMessageId: Int? = null
         val streamBuffer = StringBuilder()
         var lastUpdateTime = System.currentTimeMillis()

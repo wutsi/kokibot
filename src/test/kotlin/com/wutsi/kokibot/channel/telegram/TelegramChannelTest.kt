@@ -57,7 +57,8 @@ class TelegramChannelTest {
         llm = mock(),
         fileService = mock(),
     )
-    private val telegram = TelegramChannel(assistant, factory, restBuilder)
+    private val users = mock<TelegramUsers>()
+    private val telegram = TelegramChannel(assistant, factory, restBuilder, users)
 
     @BeforeEach
     fun setUp() {
@@ -136,7 +137,7 @@ class TelegramChannelTest {
         verify(assistant).process(prompt.capture(), anyOrNull())
         assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
-        assertEquals("123", prompt.firstValue.userId)
+        assertEquals("ray.sponsible", prompt.firstValue.userId)
         assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)
         assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
 
@@ -148,6 +149,8 @@ class TelegramChannelTest {
         verify(client).execute(sendMessage.capture())
         assertEquals("World", sendMessage.firstValue.text)
         assertEquals("123", sendMessage.firstValue.chatId)
+
+        verify(users).put("ray.sponsible", "123")
     }
 
     @Test
@@ -223,6 +226,8 @@ class TelegramChannelTest {
         assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
 
         verify(context.fileService).create("foo.pdf", "Hello world".toByteArray())
+
+        verify(users).put("ray.sponsible", "123")
     }
 
     @Test
@@ -258,6 +263,8 @@ class TelegramChannelTest {
         assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
 
         verify(context.fileService).create(eq("photo_2222.jpg"), any())
+
+        verify(users).put("ray.sponsible", "123")
     }
 
     @Test
@@ -294,8 +301,10 @@ class TelegramChannelTest {
 
     @Test
     fun send() {
+        doReturn("123").whenever(users).get("ray.sponsible")
+
         val message = Message(
-            userId = "123",
+            userId = "ray.sponsible",
             channelId = TelegramChannel.ID,
             text = "Hello"
         )
@@ -315,8 +324,10 @@ class TelegramChannelTest {
 
     @Test
     fun `send with document`() {
+        doReturn("123").whenever(users).get("ray.sponsible")
+
         val message = Message(
-            userId = "123",
+            userId = "ray.sponsible",
             channelId = TelegramChannel.ID,
             text = "Hello",
             filePaths = listOf("/path/to/file.pdf", "/path/to/file.docx")
@@ -355,9 +366,28 @@ class TelegramChannelTest {
     }
 
     @Test
-    fun `send - bad ID`() {
+    fun `send - bad userId`() {
+        doReturn(null).whenever(users).get("ray.sponsible")
+
         val message = Message(
-            userId = "123",
+            userId = "xxxx",
+            channelId = TelegramChannel.ID,
+            text = "Hello"
+        )
+        telegram.init(config, context)
+        val result = telegram.send(message)
+
+        assertFalse(result)
+
+        verify(client, never()).execute(any<SendMessage>())
+    }
+
+    @Test
+    fun `send - bad channelId`() {
+        doReturn(null).whenever(users).get("ray.sponsible")
+
+        val message = Message(
+            userId = "ray.sponsible",
             channelId = "xxx",
             text = "Hello"
         )

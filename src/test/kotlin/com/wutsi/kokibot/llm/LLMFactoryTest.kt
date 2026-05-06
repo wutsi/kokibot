@@ -2,7 +2,6 @@ package com.wutsi.kokibot.llm
 
 import com.wutsi.kokibot.llm.deepseek.Deepseek
 import com.wutsi.kokibot.llm.gemini.Gemini
-import com.wutsi.kokibot.llm.kimi.Kimi
 import com.wutsi.kokibot.llm.none.NullLLM
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -14,12 +13,6 @@ class LLMFactoryTest {
     fun deepseek() {
         val llm = factory.create("deepseek")
         assertTrue(llm is Deepseek)
-    }
-
-    @Test
-    fun kimi() {
-        val llm = factory.create("kimi")
-        assertTrue(llm is Kimi)
     }
 
     @Test

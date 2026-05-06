@@ -244,7 +244,7 @@ class TelegramChannelTest {
             .whenever(rest)
             .getForEntity(any<String>(), eq(ByteArray::class.java))
 
-        val file = File("/target/test-data/telegram/files/1.png")
+        val file = File(this::class.java.getResource("/file/medic.png")!!.file)
         doReturn(file).whenever(context.fileService).createTempFile(any())
 
         // WHEN

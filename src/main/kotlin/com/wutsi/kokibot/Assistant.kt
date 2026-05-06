@@ -342,7 +342,7 @@ class Assistant(val name: String = "") {
         val file = File(context.home, "ASSISTANT.md")
         return if (file.exists()) {
             file.readText()
-                .replace("{{assistant_name}}", name)
+                .replace("{{ASSISTANT_NAME}}", name)
         } else {
             null
         }
@@ -364,13 +364,13 @@ class Assistant(val name: String = "") {
         return skills?.let { "# Available skills\n\nHere are the skills available:\n\n$skills" }
     }
 
-    private fun securityInstructions(): String? {
-        return File(this::class.java.getResource("/instructions/SECURITY.md")!!.toURI()).readText()
+    private fun securityInstructions(): String {
+        return File(Assistant::class.java.getResource("/instructions/SECURITY.md")!!.toURI()).readText()
             .replace("{{HOME}}", context.home.absolutePath)
     }
 
     private fun dailyLogInstructions(): String {
-        return File(this::class.java.getResource("/instructions/DAILY_LOG.md")!!.toURI()).readText()
+        return File(Assistant::class.java.getResource("/instructions/DAILY_LOG.md")!!.toURI()).readText()
             .replace("{{HOME}}", context.home.absolutePath)
     }
 }

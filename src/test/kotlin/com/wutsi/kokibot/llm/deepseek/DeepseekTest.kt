@@ -21,10 +21,10 @@ import kotlin.test.assertEquals
 class DeepseekTest {
     private val llm = Deepseek()
     private val config = mapOf(
-        "api-key" to "ds-000001",
+        "api-key" to System.getenv("DEEPSEEK_API_KEY"),
         "model" to "deepseek-v4-flash",
-        "thinking" to true,
-        "max-tokens" to 1000,
+        "thinking" to false,
+        "max-tokens" to 2024,
         "temperature" to 0.7,
         "read-timeout-millis" to 30000,
         "connect-timeout-millis" to 10000,
@@ -45,10 +45,10 @@ class DeepseekTest {
     fun init() {
         llm.init(config, context)
 
-        assertEquals("ds-000001", llm.client.apiKey)
+        assertEquals(System.getenv("DEEPSEEK_API_KEY"), llm.client.apiKey)
         assertEquals("deepseek-v4-flash", llm.client.model)
-        assertEquals(true, llm.client.thinking)
-        assertEquals(1000, llm.client.maxTokens)
+        assertEquals(false, llm.client.thinking)
+        assertEquals(2024, llm.client.maxTokens)
         assertEquals(.7, llm.client.temperature)
         assertEquals(30000, llm.client.readTimeoutMillis)
         assertEquals(10000, llm.client.connectTimeoutMillis)
@@ -130,10 +130,6 @@ class DeepseekTest {
 
     @Test
     fun `completion with PDF file`() {
-        val config = mapOf(
-            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
-            "model" to "deepseek-v4-flash",
-        )
         llm.init(config, context)
 
         val response = llm.completion(
@@ -141,6 +137,28 @@ class DeepseekTest {
                 prompt = "Can you summarize this text?",
                 files = listOf(
                     File(this::class.java.getResource("/file/RL-1.pdf")!!.file)
+                )
+            ),
+            tools = emptyList()
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(0, choices[0].toolCalls.size)
+        assertEquals(false, choices[0].content.isNullOrEmpty())
+        println(choices[0].content)
+    }
+
+    //    @Test
+    fun `completion with image`() {
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(
+                prompt = "Can you describe this image?",
+                files = listOf(
+                    File(this::class.java.getResource("/file/medic.png")!!.file)
                 )
             ),
             tools = emptyList()

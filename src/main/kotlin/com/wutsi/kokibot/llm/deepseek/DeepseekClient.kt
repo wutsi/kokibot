@@ -7,7 +7,6 @@ import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMStreamChunk
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.llm.LLMToolCallDelta
-import com.wutsi.kokibot.service.file.TextExtractorFactory
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
@@ -43,14 +42,13 @@ open class DeepseekClient(
 
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val rest = restBuilder.build(readTimeoutMillis, connectTimeoutMillis)
-    private val textExtractorFactory = TextExtractorFactory()
 
     protected open fun getBaseUrl(): String {
         return "https://api.deepseek.com"
     }
 
     protected open fun supportsMimeType(mimeType: String): Boolean {
-        return false
+        return mimeType.startsWith("image/")
     }
 
     fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
@@ -297,12 +295,13 @@ open class DeepseekClient(
                             "text" to request.prompt
                         )
                     ) +
-                        request.files.mapNotNull { file ->
+                        request.files.map { file ->
                             val mimeType = getMimeType(file)
+                            val bytes = file.readBytes()
                             if (supportsMimeType(mimeType)) {
                                 val base64Content = Base64
                                     .getEncoder()
-                                    .encodeToString(file.readBytes())
+                                    .encodeToString(bytes)
                                 val content = "data:$mimeType;base64,$base64Content"
 
                                 if (mimeType.startsWith("image/")) {

@@ -9,7 +9,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Role
 import jakarta.mail.Flags
@@ -27,8 +26,7 @@ import org.mockito.Mockito.mock
 import java.io.File
 
 class EmailChannelTest {
-    private val assistant = mock<Assistant>()
-    private val channel = EmailChannel(assistant)
+    private val channel = EmailChannel()
     private lateinit var greenMail: GreenMail
     private lateinit var guser: GreenMailUser
 
@@ -52,6 +50,7 @@ class EmailChannelTest {
     private val context = Context(
         home = File("target/test-data/email-channel"),
         llm = mock(),
+        assistant = mock()
     )
 
     @BeforeEach
@@ -180,7 +179,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(context.assistant, never()).process(any(), any())
     }
 
     @Test
@@ -199,14 +198,14 @@ class EmailChannelTest {
             subject = message.subject,
             role = Role.ASSISTANT,
         )
-        doReturn(response).whenever(assistant).process(any(), any())
+        doReturn(response).whenever(context.assistant).process(any(), any())
 
         // WHEN
         channel.fetch()
 
         // THEN
         val prompt = argumentCaptor<com.wutsi.kokibot.Message>()
-        verify(assistant).process(prompt.capture(), any())
+        verify(context.assistant).process(prompt.capture(), any())
 
         assertEquals(message.messageID, prompt.firstValue.id)
         assertEquals("ray.sponsible@gmail.com", prompt.firstValue.userId)
@@ -256,14 +255,14 @@ class EmailChannelTest {
             subject = message.subject,
             role = Role.ASSISTANT,
         )
-        doReturn(response).whenever(assistant).process(any(), any())
+        doReturn(response).whenever(context.assistant).process(any(), any())
 
         // WHEN
         channel.fetch()
 
         // THEN
         val prompt = argumentCaptor<com.wutsi.kokibot.Message>()
-        verify(assistant).process(prompt.capture(), any())
+        verify(context.assistant).process(prompt.capture(), any())
 
         assertEquals(message.messageID, prompt.firstValue.id)
         assertEquals("ray.sponsible@gmail.com", prompt.firstValue.userId)
@@ -321,13 +320,13 @@ class EmailChannelTest {
             subject = message.subject,
             role = Role.ASSISTANT,
         )
-        doReturn(response).whenever(assistant).process(any(), any())
+        doReturn(response).whenever(context.assistant).process(any(), any())
 
         // WHEN
         channel.fetch()
 
         // THEN
-        verify(assistant).process(any(), any())
+        verify(context.assistant).process(any(), any())
     }
 
     @Test
@@ -348,7 +347,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(context.assistant, never()).process(any(), any())
     }
 
     @Test
@@ -366,7 +365,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(context.assistant, never()).process(any(), any())
     }
 
     @Test
@@ -384,7 +383,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(context.assistant, never()).process(any(), any())
     }
 
     @Test
@@ -402,7 +401,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(context.assistant, never()).process(any(), any())
     }
 
     @Test
@@ -420,7 +419,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(context.assistant, never()).process(any(), any())
     }
 
     @Test
@@ -433,7 +432,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant, never()).process(any(), any())
+        verify(context.assistant, never()).process(any(), any())
     }
 
     @Test
@@ -452,7 +451,7 @@ class EmailChannelTest {
             subject = message.subject,
             role = Role.ASSISTANT,
         )
-        doReturn(response).whenever(assistant).process(any(), any())
+        doReturn(response).whenever(context.assistant).process(any(), any())
 
         val cfg = config + mapOf("fetch-frequency" to "5s")
         channel.init(cfg, context)
@@ -463,7 +462,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(assistant).process(any(), any())
+        verify(context.assistant).process(any(), any())
 
         val replies = greenMail.receivedMessages
         assertEquals(2, replies.size)

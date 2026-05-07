@@ -24,6 +24,7 @@ class ContextTest {
     val context = Context(
         home = getResourceFile("/home/007"),
         config = emptyMap<String, String>(),
+        assistant = mock(),
         llm = mock(),
         toolRegistry = mock(),
         channelRegistry = mock(),
@@ -38,21 +39,16 @@ class ContextTest {
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
     private val memoryConfig = mapOf("window" to 1)
     private val channelConfig = listOf(mapOf("type" to "foo"))
-    private val smtpConfig = mapOf("smtp" to "foo")
-    private val imapConfig = mapOf("imap" to "foo")
+    private val assistantConfig = mapOf("x" to "y")
     private val config = mapOf(
         "foo" to "bar",
         "llm" to llmConfig,
         "memory" to memoryConfig,
+        "assistant" to assistantConfig,
         "channels" to listOf(
             channelConfig
         ),
-        "mail" to mapOf(
-            "smtp" to smtpConfig,
-            "imap" to imapConfig,
-        )
     )
-    private val assistant = mock<Assistant>()
 
     @BeforeEach
     fun setUp() {
@@ -71,11 +67,12 @@ class ContextTest {
     @Test
     fun destroy() {
         // GIVEN
-        context.init(assistant, config)
+        context.init(config)
 
         // THEN
         context.destroy()
 
+        verify(context.assistant).destroy()
         verify(context.llm).destroy()
         verify(context.memory).destroy()
         verify(context.dailyLog).destroy()
@@ -85,15 +82,16 @@ class ContextTest {
 
     @Test
     fun init() {
-        context.init(assistant, config)
+        context.init(config)
 
+        verify(context.assistant).init(assistantConfig, context)
         verify(context.toolRegistry).init(context)
         verify(context.llm).init(llmConfig, context)
         verify(context.memory).init(memoryConfig, context)
         verify(context.dailyLog).init(memoryConfig, context)
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
-        verify(context.channelRegistry).init(config, context, assistant)
+        verify(context.channelRegistry).init(config, context)
         verify(context.fileService).init(emptyMap<String, Any>(), context)
     }
 
@@ -101,7 +99,7 @@ class ContextTest {
     fun `init - LLM missing configuration`() {
         val cfg = config - "llm"
 
-        context.init(assistant, cfg)
+        context.init(cfg)
 
         verify(context.llm, never()).init(emptyMap<String, Any>(), context)
     }
@@ -110,13 +108,13 @@ class ContextTest {
     fun `init - bad structure`() {
         doThrow(RuntimeException()).whenever(context.llm).init(any(), any())
 
-        context.init(assistant, config)
+        context.init(config)
     }
 
     @Test
     fun health() {
         // GIVEN
-        context.init(assistant, config)
+        context.init(config)
 
         // WHEN
         val health = context.health()

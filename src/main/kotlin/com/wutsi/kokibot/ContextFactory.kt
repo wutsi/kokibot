@@ -51,6 +51,7 @@ class ContextFactory(
         return Context(
             home = home,
             llm = createLLM(config),
+            assistant = Assistant(home.name),
             toolRegistry = toolRegistry,
             channelRegistry = channelRegistry,
             commandRegistry = commandRegistry,

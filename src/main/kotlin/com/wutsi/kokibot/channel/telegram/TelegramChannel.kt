@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.channel.telegram
 
-import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
@@ -29,11 +28,10 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 class TelegramChannel(
-    assistant: Assistant,
     val factory: TelegramFactory = TelegramFactory(),
     val restBuilder: RestBuilder = RestBuilder(),
     val users: TelegramUsers = TelegramUsers(),
-) : Channel(assistant), LongPollingSingleThreadUpdateConsumer {
+) : Channel(), LongPollingSingleThreadUpdateConsumer {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TelegramChannel::class.java)
 
@@ -122,18 +120,20 @@ class TelegramChannel(
             }
             val job = scheduler.scheduleAtFixedRate(task, 0, TYPING_DELAY_MILLIS, TimeUnit.MILLISECONDS)
 
-            // Store user for future reference!
             try {
-                users.put(message.chat.userName, message.chatId.toString()) // Store
-            } catch (_: Exception) {
-                // Ignore if we fail to store user info, it won't affect message processing
-            }
-
-            try {
+                storeUser(message)
                 consume(chatId, update)
             } finally {
                 job.cancel(true)
             }
+        }
+    }
+
+    private fun storeUser(message: org.telegram.telegrambots.meta.api.objects.message.Message) {
+        try {
+            users.put(message.chat.userName, message.chatId.toString()) // Store
+        } catch (_: Exception) {
+            // Ignore if we fail to store user info, it won't affect message processing
         }
     }
 
@@ -162,7 +162,7 @@ class TelegramChannel(
         var lastUpdateTime = System.currentTimeMillis()
 
         try {
-            return assistant.process(
+            return context.assistant.process(
                 Message(
                     text = toText(update.message.text, update.message.isCommand),
                     role = Role.USER,
@@ -209,7 +209,7 @@ class TelegramChannel(
         val caption = update.message.caption?.trim()?.ifEmpty { null }
         val file = download(fileId, filename)
 
-        return assistant.process(
+        return context.assistant.process(
             Message(
                 text = toText(
                     caption
@@ -234,7 +234,7 @@ class TelegramChannel(
         val filename = "photo_${largest.fileId}.jpg"
         val file = download(largest.fileId, filename)
 
-        return assistant.process(
+        return context.assistant.process(
             Message(
                 text = toText(
                     caption

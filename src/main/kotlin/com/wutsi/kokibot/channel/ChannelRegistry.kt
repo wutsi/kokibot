@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.channel
 
-import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
@@ -16,12 +15,12 @@ class ChannelRegistry(
 
     private val channels = mutableMapOf<String, Channel>()
 
-    fun init(config: Map<*, *>, context: Context, assistant: Assistant) {
+    fun init(config: Map<*, *>, context: Context) {
         val root = MapUtil.toList("channels", config)
         root?.forEach { node ->
             if (node is Map<*, *>) {
                 try {
-                    initChannel(node, context, assistant)
+                    initChannel(node, context)
                 } catch (ex: Exception) {
                     LOGGER.warn("Failed to initialize the channel - ${ex.message}")
                 }
@@ -29,12 +28,12 @@ class ChannelRegistry(
         }
     }
 
-    private fun initChannel(config: Map<*, *>, context: Context, assistant: Assistant) {
+    private fun initChannel(config: Map<*, *>, context: Context) {
         val type = config["type"]?.toString()
             ?: throw ConfigurationException("channel type is required")
 
         LOGGER.info("Channel: $type")
-        val channel = factory.create(type, assistant)
+        val channel = factory.create(type)
         channel.init(config, context)
         register(channel)
     }

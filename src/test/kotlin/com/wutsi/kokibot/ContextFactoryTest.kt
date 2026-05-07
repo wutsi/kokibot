@@ -25,6 +25,7 @@ class ContextFactoryTest {
     private val skillRegistry = mock<SkillRegistry>()
     private val commandRegistry = mock<CommandRegistry>()
     private val jsonMapper = JsonMapper()
+    private val assistant = mock<Assistant>()
     private val factory = ContextFactory(
         toolRegistry,
         channelRegistry,

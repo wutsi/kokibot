@@ -20,7 +20,7 @@ import java.io.File
 class Context(
     val home: File,
     val llm: LLM,
-
+    val assistant: Assistant = Assistant(),
     val config: Map<*, *> = emptyMap<String, String>(),
     val toolRegistry: ToolRegistry = ToolRegistry(),
     val skillRegistry: SkillRegistry = SkillRegistry(SkillParser()),
@@ -39,11 +39,13 @@ class Context(
     private val channels: MutableList<Channel> = mutableListOf()
 
     fun destroy() {
+        assistant.destroy()
         resources().forEach { resource -> resource.destroy() }
     }
 
-    fun init(assistant: Assistant, config: Map<*, *>) {
-        initChannels(config, assistant)
+    fun init(config: Map<*, *>) {
+        initAssistance(config)
+        initChannels(config)
         initMarketplaces(config) // IMPORTANT: Before initSkills() because some skills may depend on marketplaces.
         initSkills()
         initTools()
@@ -71,8 +73,15 @@ class Context(
             listOf(llm, dailyLog, memory, fileService)
     }
 
-    private fun initChannels(config: Map<*, *>, assistant: Assistant) {
-        channelRegistry.init(config, this, assistant)
+    private fun initAssistance(config: Map<*, *>) {
+        assistant.init(
+            MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>(),
+            this,
+        )
+    }
+
+    private fun initChannels(config: Map<*, *>) {
+        channelRegistry.init(config, this)
     }
 
     private fun initMarketplaces(config: Map<*, *>) {

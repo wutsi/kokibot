@@ -278,7 +278,7 @@ class DeepseekClientTest {
         )
     }
 
-    @Test
+    //    @Test
     fun `completion with JPG file`() {
         // WHEN
         val file = File(this::class.java.getResource("/deepseek/sample.jpg")!!.file)

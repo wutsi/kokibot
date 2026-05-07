@@ -18,14 +18,12 @@ class Bootstrap(
     }
 
     private lateinit var context: Context
-    private lateinit var assistant: Assistant
     private lateinit var heartbeat: Heartbeat
     private val channels: MutableList<Channel> = mutableListOf()
 
     fun destroy() {
-        LOGGER.info("Destroying Assistant: ${assistant.name}")
+        LOGGER.info("Destroying Assistant: ${context.assistant.name}")
 
-        assistant.destroy()
         context.destroy()
         heartbeat.destroy()
         channels.forEach { channel -> channel.destroy() }
@@ -37,15 +35,10 @@ class Bootstrap(
 
         val config = loadConfig(File(getConfigDir(home), "settings.json"))
         this.context = contextFactory.create(home, config)
-        this.assistant = Assistant(name = home.name)
 
-        context.init(assistant, config)
-        assistant.init(
-            MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>(),
-            context,
-        )
+        context.init(config)
 
-        heartbeat = Heartbeat(assistant)
+        heartbeat = Heartbeat(context.assistant)
         heartbeat.init(
             MapUtil.toMap("heartbeat", config) ?: emptyMap<String, Any>(),
             context,

@@ -15,10 +15,12 @@ class BootstrapTest {
 
     private val home = File("target/test-data/bootstrap")
     private val context = mock<Context>()
+    private val assistant = mock<Assistant>()
 
     @BeforeEach
     fun setup() {
         doReturn(home).whenever(context).home
+        doReturn(assistant).whenever(context).assistant
         doReturn(Health(id = "-")).whenever(context).health()
         doReturn(context).whenever(contextFactory).create(any(), any())
     }
@@ -37,7 +39,7 @@ class BootstrapTest {
         val home = getResourceFile("/home/007")
         bootstrap.init(home)
 
-        verify(context).init(any(), any())
+        verify(context).init(any())
     }
 
     private fun getResourceFile(path: String): File {

@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.channel.email
 
-import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
@@ -31,9 +30,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-class EmailChannel(
-    assistant: Assistant,
-) : Channel(assistant) {
+class EmailChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(EmailChannel::class.java)
 
@@ -209,7 +206,7 @@ class EmailChannel(
             text = message.subject + "\n" + extractBodyText(message),
             filePaths = extractAttachments(message).map { file -> file.absolutePath },
         )
-        val result = assistant.process(
+        val result = context.assistant.process(
             prompt,
             {}
         )

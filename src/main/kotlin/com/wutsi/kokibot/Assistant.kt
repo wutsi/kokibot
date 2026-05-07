@@ -17,12 +17,14 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import kotlin.math.max
 
 class Assistant(val name: String = "") {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
         private const val DEFAULT_ITERATIONS = 10
-        const val DEFAULT_POOL_SIZE = 1
+        const val DEFAULT_POOL_SIZE = 4
+        const val MIN_POOL_SIZE = 2
         const val DEFAULT_MAX_DURATION_MINUTES = 5L
         const val ERROR_TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
         const val ERROR_TIMEOUT = "Oups, the request has been cancelled because it took too much time to process."
@@ -42,7 +44,7 @@ class Assistant(val name: String = "") {
             ?.let { value -> DurationUtil.minutes(value, DEFAULT_MAX_DURATION_MINUTES) }
             ?: DEFAULT_MAX_DURATION_MINUTES
 
-        val poolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_POOL_SIZE
+        val poolSize = max(MIN_POOL_SIZE, MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_POOL_SIZE)
         scheduler = Executors.newScheduledThreadPool(poolSize)
 
         this.context = context

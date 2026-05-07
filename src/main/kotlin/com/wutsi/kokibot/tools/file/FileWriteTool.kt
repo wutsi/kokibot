@@ -46,12 +46,11 @@ class FileWriteTool : Tool {
         val content = MapUtil.toString("content", arguments) ?: ""
         val overwrite = MapUtil.toBoolean("overwrite", arguments) ?: false
 
-        val result = try {
+        return try {
             write(path, content, overwrite)
         } catch (ex: Throwable) {
             "Failed to read file. Error=${ex.message}"
         }
-        return "Storing content into file: $path\n$result"
     }
 
     private fun write(path: String, content: String, overwrite: Boolean): String {
@@ -67,6 +66,6 @@ class FileWriteTool : Tool {
             file.parentFile?.mkdirs()
         }
         file.writeText(content)
-        return "Success"
+        return "SUCCESS: File updated."
     }
 }

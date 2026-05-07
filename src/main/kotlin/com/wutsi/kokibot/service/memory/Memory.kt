@@ -12,7 +12,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * This is the long term memory of the assistant, which is used to store facts and information that can be used to answer questions.
@@ -34,7 +33,6 @@ class Memory : Resource {
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
-    private val lock = ReentrantLock()
     private var window: Long = DEFAULT_WINDOW
     private var maxLength: Int = DEFAULT_MAX_LENGTH
     private lateinit var context: Context
@@ -83,7 +81,7 @@ class Memory : Resource {
         }
     }
 
-    fun get(): String? = lock.withLock {
+    fun get(): String? {
         val file = getFile()
         if (!file.exists()) {
             return null
@@ -92,7 +90,7 @@ class Memory : Resource {
         }
     }
 
-    fun compact() = lock.withLock {
+    fun compact() {
         val prompt = this::class.java.getResourceAsStream("/instructions/MEMORY.md")!!
             .bufferedReader()
             .readText()

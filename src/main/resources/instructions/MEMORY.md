@@ -59,10 +59,10 @@ to parse in a limited context window.
 
 ## Additional Instructions
 
-- The memory file should be stored into the directory `{{HOME}}/workspace/memory/`.
+- The memory file should be stored into the directory `{{HOME}}/memory/`.
 - Name the memory file `MEMORY.md` and ensure it is updated after each analysis cycle.
 - `MEMORY.md` should be contains a maximum of {{MAX_LENGTH}} character(s).
-- The daily logs to analyze are stored in the `{{HOME}}/workspace/memory/history/` directory, with filenames in the
+- The daily logs to analyze are stored in the `{{HOME}}/memory/history/` directory, with filenames in the
   format `YYYY-MM-DD.md`.
 - Synthesize information for the past {{DAYS}} days of logs to ensure the memory is up-to-date without being overwhelmed
   by too much historical data.

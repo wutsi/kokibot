@@ -18,11 +18,11 @@ import java.io.File
 import kotlin.test.assertTrue
 
 class HeartbeatTest {
-    private val assistant = mock<Assistant>()
-    private val heartbeat = Heartbeat(assistant)
+    private val heartbeat = Heartbeat()
     private val context = Context(
         home = File(this::class.java.getResource("/home/007")!!.path),
         llm = mock(),
+        assistant = mock<Assistant>(),
     )
 
     @Test
@@ -39,13 +39,13 @@ class HeartbeatTest {
 
     @Test
     fun tick() {
-        doReturn(Message("Done")).whenever(assistant).process(any(), anyOrNull())
+        doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
 
         heartbeat.init(mapOf("" to ""), context)
         heartbeat.tick()
 
         val msg = argumentCaptor<Message>()
-        verify(assistant).process(msg.capture(), anyOrNull())
+        verify(context.assistant).process(msg.capture(), anyOrNull())
 
         assertEquals(Role.SYSTEM, msg.firstValue.role)
         assertEquals("This is the heartbeat job\n", msg.firstValue.text)
@@ -54,7 +54,7 @@ class HeartbeatTest {
 
     @Test
     fun `tick - no HEARTBEAT file`() {
-        doReturn(Message("Done")).whenever(assistant).process(any(), anyOrNull())
+        doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
 
         val ctx = Context(
             home = File("target/test-data/heartbeat"),
@@ -63,6 +63,6 @@ class HeartbeatTest {
         heartbeat.init(mapOf("" to ""), ctx)
         heartbeat.tick()
 
-        verify(assistant, never()).process(any(), anyOrNull())
+        verify(context.assistant, never()).process(any(), anyOrNull())
     }
 }

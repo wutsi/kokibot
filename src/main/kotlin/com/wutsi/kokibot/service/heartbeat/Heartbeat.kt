@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.service.heartbeat
 
-import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
@@ -13,7 +12,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-class Heartbeat(private val assistant: Assistant) : Resource {
+class Heartbeat() : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Heartbeat::class.java)
 
@@ -51,7 +50,7 @@ class Heartbeat(private val assistant: Assistant) : Resource {
 
         val query = file.readText()
         if (query.isNotEmpty()) {
-            assistant.process(
+            context.assistant.process(
                 Message(
                     userId = id(),
                     text = query,

@@ -34,17 +34,20 @@ class ContextTest {
         marketplaceRegistry = mock(),
         memory = mock(),
         fileService = mock(),
+        heartbeat = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
     private val memoryConfig = mapOf("window" to 1)
     private val channelConfig = listOf(mapOf("type" to "foo"))
     private val assistantConfig = mapOf("x" to "y")
+    private val heartbeatConfig = mapOf("p" to "q")
     private val config = mapOf(
         "foo" to "bar",
         "llm" to llmConfig,
         "memory" to memoryConfig,
         "assistant" to assistantConfig,
+        "heartbeat" to heartbeatConfig,
         "channels" to listOf(
             channelConfig
         ),
@@ -62,6 +65,7 @@ class ContextTest {
         doReturn(Health(id = "-", up = true)).whenever(context.dailyLog).health()
         doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
         doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.heartbeat).health()
     }
 
     @Test
@@ -77,6 +81,7 @@ class ContextTest {
         verify(context.memory).destroy()
         verify(context.dailyLog).destroy()
         verify(context.fileService).destroy()
+        verify(context.heartbeat).destroy()
         verify(channel).destroy()
     }
 
@@ -89,6 +94,7 @@ class ContextTest {
         verify(context.llm).init(llmConfig, context)
         verify(context.memory).init(memoryConfig, context)
         verify(context.dailyLog).init(memoryConfig, context)
+        verify(context.heartbeat).init(heartbeatConfig, context)
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
         verify(context.channelRegistry).init(config, context)
@@ -121,7 +127,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(6, health.children.size)
+        assertEquals(7, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

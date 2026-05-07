@@ -1,8 +1,9 @@
 package com.wutsi.kokibot.service.memory
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
-import com.wutsi.kokibot.llm.LLMRequest
+import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
@@ -99,7 +100,12 @@ class Memory : Resource {
             .replace("{{DAYS}}", window.toString())
             .replace("{{MAX_LENGTH}}", maxLength.toString())
 
-        context.llm.completion(LLMRequest(prompt = prompt), emptyList())
+        context.assistant.process(
+            prompt = Message(
+                role = Role.SYSTEM,
+                text = prompt,
+            ),
+        )
     }
 
     private fun launchJob(frequency: String): ScheduledFuture<*> {

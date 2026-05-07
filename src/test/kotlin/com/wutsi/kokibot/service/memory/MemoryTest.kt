@@ -44,7 +44,6 @@ class MemoryTest {
         try {
             memory.destroy()
         } catch (_: Exception) {
-
         }
     }
 
@@ -81,7 +80,6 @@ class MemoryTest {
 
         verify(context.assistant).process(any(), anyOrNull())
     }
-
 
     @Test
     fun `launch compaction with errors`() {

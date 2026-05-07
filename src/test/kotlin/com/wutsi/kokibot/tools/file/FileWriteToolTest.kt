@@ -45,7 +45,7 @@ class FileWriteToolTest {
             )
         )
 
-        assertEquals(true, result.contains("Success"))
+        assertEquals(true, result.contains("Success", true))
         assertEquals("Hello, World!", File(path).readText())
     }
 
@@ -60,7 +60,7 @@ class FileWriteToolTest {
             )
         )
 
-        assertEquals(true, result.contains("Success"))
+        assertEquals(true, result.contains("Success", true))
         assertTrue(File(path).exists())
         assertEquals("nested", File(path).readText())
     }
@@ -71,7 +71,7 @@ class FileWriteToolTest {
 
         val result = tool.exec(mapOf("path" to path))
 
-        assertEquals(true, result.contains("Success"))
+        assertEquals(true, result.contains("Success", true))
         assertEquals("", File(path).readText())
     }
 
@@ -104,7 +104,7 @@ class FileWriteToolTest {
             )
         )
 
-        assertEquals(true, result.contains("Success"))
+        assertEquals(true, result.contains("Success", true))
         assertEquals("new", file.readText())
     }
 

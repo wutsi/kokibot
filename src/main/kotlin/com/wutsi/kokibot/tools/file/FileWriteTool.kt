@@ -66,6 +66,6 @@ class FileWriteTool : Tool {
             file.parentFile?.mkdirs()
         }
         file.writeText(content)
-        return "SUCCESS: File updated."
+        return "SUCCESS. File updated."
     }
 }

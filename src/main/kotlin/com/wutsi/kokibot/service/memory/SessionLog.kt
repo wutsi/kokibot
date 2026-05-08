@@ -7,6 +7,8 @@ import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMToolCall
 import java.io.File
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class SessionLog : Resource {
     private lateinit var context: Context
@@ -140,7 +142,8 @@ class SessionLog : Resource {
     }
 
     private fun getFile(id: String): File {
-        val dir = File(context.home.absolutePath + "/memory/sessions")
+        val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+        val dir = File(context.home.absolutePath + "/memory/sessions/$today")
         if (!dir.exists()) {
             dir.mkdirs()
         }

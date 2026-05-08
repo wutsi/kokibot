@@ -93,6 +93,11 @@ This will automatically
          MEMORY.md                          # Agent long term memory. Maintained by the agent itself
          history/
            {yyyy}-{MM}-{dd}.log             # Daily conversation history. Maintained by the agent itself
+         sessions/                          # Directory for conversation sessions
+           {yyyy}/
+             {MM}/
+               {dd}/
+                 {session-id}.log           # Conversation session log file
        workspace/                           # Working directory
          files/                             # Directory for files created by tools/skillsv
          tmp/                               # Temporary directory for intermediate files

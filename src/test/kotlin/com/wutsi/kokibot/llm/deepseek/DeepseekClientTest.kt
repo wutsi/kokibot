@@ -53,7 +53,7 @@ class DeepseekClientTest {
             "total_tokens" to 3051,
             "completion_tokens" to 2051,
             "prompt_tokens" to 1000,
-            "completion_cache_hit_tokens" to 2000,
+            "prompt_cache_hit_tokensF" to 2000,
         )
     )
     private val dsToolCallResponse = mapOf(

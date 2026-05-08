@@ -34,7 +34,7 @@ class SendMessageTool : Tool {
                 description = """
                     ID of the channel to use for sending email.
                     The channel supported are:
-                       - `telegram`: For sending message to Telegram. The `user_id` should be the Telegram user ID of the recipient in this case.
+                       - `telegram`: For sending message to Telegram. The `user_id` should be the Telegram username of the recipient in this case (Ex: ray.sponsible) The system with convert it to chatId.
                        - `email`: For sending email to the user. The `user_id` should be the email address of the recipient in this case.
                 """.trimIndent(),
                 type = ToolParameterType.STRING,

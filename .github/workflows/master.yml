@@ -30,7 +30,6 @@ jobs:
                 run: |
                     python -m pip install --upgrade pip
                     pip install 'markitdown[all]'
-                    brew install pandoc
 
             -   name: Install Pandoc
                 uses: pandoc/actions/setup@v1

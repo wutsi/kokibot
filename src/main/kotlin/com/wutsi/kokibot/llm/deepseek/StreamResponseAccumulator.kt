@@ -4,6 +4,7 @@ import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMStreamChunk
+import com.wutsi.kokibot.llm.LLMUsage
 import tools.jackson.databind.json.JsonMapper
 import java.util.UUID
 
@@ -25,6 +26,7 @@ class StreamResponseAccumulator(private val jsonMapper: JsonMapper) {
 
     private var finishReason: LLMFinishReason? = null
     private val responseId: String = UUID.randomUUID().toString()
+    private var usage: LLMUsage? = null
 
     fun add(chunk: LLMStreamChunk) {
         chunk.delta?.let { contentBuilder.append(it) }
@@ -42,12 +44,15 @@ class StreamResponseAccumulator(private val jsonMapper: JsonMapper) {
             val nextIndex = (toolCallAccumulators.keys.maxOrNull() ?: -1) + 1
             toolCallAccumulators[nextIndex] = ToolCallAccumulator(jsonMapper).apply { setComplete(complete) }
         }
+
+        this.usage = chunk.usage
     }
 
     fun toResponse(): LLMResponse {
         val toolCalls = toolCallAccumulators.values.mapNotNull { it.build(jsonMapper) }
         return LLMResponse(
             id = responseId,
+            usage = usage,
             choices = listOf(
                 LLMResponseChoice(
                     index = 0,

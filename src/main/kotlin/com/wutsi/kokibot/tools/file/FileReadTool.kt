@@ -6,10 +6,10 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.web.WebFetchTool.Companion.MAX_FILE_SIZE
+import com.wutsi.kokibot.tools.web.WebFetchTool
 import org.springframework.http.MediaTypeFactory
 
-class FileReadTool : Tool {
+class FileReadTool(private val maxLength: Int = WebFetchTool.MAX_FILE_SIZE) : Tool {
     companion object {
         const val NAME = "file_read"
     }
@@ -28,7 +28,9 @@ class FileReadTool : Tool {
             This tool supports:
             - Text files (.txt, .md, .csv, etc.)
             - PDF - Return as markdown if possible, otherwise return as text
-            - Office documents (.docx, .xlsx, .pptx, xls, doc) - Return as markdown if possible, otherwise return as text
+            - Office documents (.docx, .xlsx, .pptx, xls, doc) - Return as markdown if possible, otherwise return as text.
+
+            It can read files with a maximum size of ${maxLength / (1024 * 1024)} Mb. If the file content will be truncated
         """.trimIndent(),
         parameters = listOf(
             ToolParameter(
@@ -44,17 +46,14 @@ class FileReadTool : Tool {
         val path = arguments["path"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: path")
 
-        val result = try {
-            read(path, MAX_FILE_SIZE)
+        return try {
+            read(path)
         } catch (ex: Throwable) {
             "Failed to read file. Error=${ex.message}"
         }
-        return "BEGIN FILE CONTENT: $path\n\n" +
-            result +
-            "\n\nEND FILE CONTENT: $path"
     }
 
-    private fun read(path: String, maxLength: Int): String {
+    private fun read(path: String): String {
         val file = java.io.File(path)
         if (!file.exists()) {
             return "File not found: $path"
@@ -82,11 +81,12 @@ class FileReadTool : Tool {
 
             else -> try {
                 val converter = MarkdownConverter(fileService = context.fileService)
-                return converter.convert(file, contentType)
+                converter.convert(file, contentType).take(maxLength)
             } catch (ex: Throwable) {
-                return "Failed to read text from $path. Error=${ex.message}"
+                return "FAILURE. " + (ex.message ?: "Failed to convert $path to markdown")
             }
         }
-        return content.take(maxLength)
+
+        return "BEGIN FILE CONTENT\n\n" + content.take(maxLength) + "\n\nEND FILE CONTENT"
     }
 }

@@ -69,7 +69,7 @@ class FileEditTool : Tool {
         replace: String,
     ): String {
         val file = File(path)
-        if (!file.exists()) return "FAILURE: File not found."
+        if (!file.exists()) return "FAILURE. File not found."
 
         val currentContent = file.readText()
 
@@ -77,14 +77,14 @@ class FileEditTool : Tool {
         val occurrences = currentContent.split(search).size - 1
 
         return when {
-            occurrences == 0 -> "FAILURE: Search block not found. Ensure whitespace/indentation matches exactly."
-            occurrences > 1 -> "FAILURE: Search block is not unique ($occurrences matches found). Provide more context."
-            search.length < MIN_SEARCH_LENGTH -> "FAILURE: Search block too short to be safe. Search block should be at least $MIN_SEARCH_LENGTH characters long."
+            occurrences == 0 -> "FAILURE. Search block not found. Ensure whitespace/indentation matches exactly."
+            occurrences > 1 -> "FAILURE. Search block is not unique ($occurrences matches found). Provide more context."
+            search.length < MIN_SEARCH_LENGTH -> "FAILURE. Search block too short to be safe. Search block should be at least $MIN_SEARCH_LENGTH characters long."
             else -> {
                 // 2. The Swap
                 val newContent = currentContent.replace(search, replace)
                 file.writeText(newContent)
-                "SUCCESS: File updated."
+                "SUCCESS. File updated."
             }
         }
     }

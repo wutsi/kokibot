@@ -345,14 +345,19 @@ class TelegramChannel(
             val sent = client.execute(sendMessage)
             return sent.messageId
         } else {
-            val editMessage = EditMessageText.builder()
-                .chatId(chatId)
-                .messageId(messageId)
-                .text(html)
-                .parseMode(ParseMode.HTML)
-                .build()
-            client.execute(editMessage)
-            return messageId
+            try {
+                val editMessage = EditMessageText.builder()
+                    .chatId(chatId)
+                    .messageId(messageId)
+                    .text(html)
+                    .parseMode(ParseMode.HTML)
+                    .build()
+                client.execute(editMessage)
+                return messageId
+            } catch (ex: Exception) {
+                LOGGER.warn("Edit Failed.\nTXT: $text\n\nHTML: $html")
+                throw ex
+            }
         }
     }
 

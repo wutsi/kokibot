@@ -99,7 +99,7 @@ class Memory : Resource {
             .replace("{{MAX_LENGTH}}", maxLength.toString())
 
         context.assistant.process(
-            prompt = Message(
+            query = Message(
                 role = Role.SYSTEM,
                 text = prompt,
             ),

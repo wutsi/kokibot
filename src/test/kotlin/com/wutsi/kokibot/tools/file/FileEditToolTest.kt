@@ -41,7 +41,7 @@ class FileEditToolTest {
                 "replace" to "Hi",
             )
         )
-        assertEquals("SUCCESS: File updated.", result)
+        assertEquals("SUCCESS. File updated.", result)
         assertEquals("Hi World", file.toFile().readText())
     }
 
@@ -57,7 +57,7 @@ class FileEditToolTest {
                 "replace" to "Hello",
             )
         )
-        assertEquals("FAILURE: Search block not found. Ensure whitespace/indentation matches exactly.", result)
+        assertEquals("FAILURE. Search block not found. Ensure whitespace/indentation matches exactly.", result)
         assertEquals("Hello World", file.toFile().readText())
     }
 
@@ -70,7 +70,7 @@ class FileEditToolTest {
                 "replace" to "Hi",
             )
         )
-        assertEquals("FAILURE: File not found.", result)
+        assertEquals("FAILURE. File not found.", result)
     }
 
     @Test
@@ -85,7 +85,7 @@ class FileEditToolTest {
                 "replace" to "Hi",
             )
         )
-        assertEquals("FAILURE: Search block is not unique (2 matches found). Provide more context.", result)
+        assertEquals("FAILURE. Search block is not unique (2 matches found). Provide more context.", result)
         assertEquals("Hello World\nHello Again", file.toFile().readText())
     }
 
@@ -101,7 +101,7 @@ class FileEditToolTest {
                 "replace" to "Hi World",
             )
         )
-        assertEquals("SUCCESS: File updated.", result)
+        assertEquals("SUCCESS. File updated.", result)
     }
 
     @Test
@@ -117,7 +117,7 @@ class FileEditToolTest {
             )
         )
         assertEquals(
-            "FAILURE: Search block too short to be safe. Search block should be at least 5 characters long.",
+            "FAILURE. Search block too short to be safe. Search block should be at least 5 characters long.",
             result
         )
         assertEquals("Hello World", file.toFile().readText())

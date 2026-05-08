@@ -10,6 +10,7 @@ import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
+import com.wutsi.kokibot.service.memory.SessionLog
 import com.wutsi.kokibot.skill.SkillParser
 import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.ToolRegistry
@@ -30,6 +31,7 @@ class Context(
     val marketplaceRegistry: MarketplaceRegistry = MarketplaceRegistry(),
     val memory: Memory = Memory(),
     val dailyLog: DailyLog = DailyLog(),
+    val sessionLog: SessionLog = SessionLog(),
     val fileService: FileService = FileService(),
     val heartbeat: Heartbeat = Heartbeat(),
     val jsonMapper: JsonMapper = JsonMapper(),
@@ -73,7 +75,7 @@ class Context(
             toolRegistry.all() +
             channelRegistry.all() +
             marketplaceRegistry.all() +
-            listOf(llm, dailyLog, memory, fileService, heartbeat)
+            listOf(llm, memory, dailyLog, sessionLog, fileService, heartbeat)
     }
 
     private fun initAssistance(config: Map<*, *>) {
@@ -106,8 +108,9 @@ class Context(
         val root = MapUtil.toMap("memory", config)
             ?: emptyMap<String, Any>()
 
-        dailyLog.init(root, this)
         memory.init(root, this)
+        dailyLog.init(root, this)
+        sessionLog.init(root, this)
     }
 
     private fun initTools() {

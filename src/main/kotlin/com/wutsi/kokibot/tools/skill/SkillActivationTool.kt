@@ -49,7 +49,7 @@ class SkillActivationTool : Tool {
             }
 
             val sb = StringBuilder()
-            sb.append("Skill `$name` has been activated")
+            sb.append("Skill `$name` has been activated.\n")
             sb.append("BEGIN SKILL INSTRUCTIONS: $name\n\n")
             sb.append(skill.body)
             sb.append("\n\nEND SKILL INSTRUCTIONS: $name")

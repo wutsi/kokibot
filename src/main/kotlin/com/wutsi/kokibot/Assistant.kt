@@ -59,19 +59,20 @@ class Assistant(val name: String = "") {
     }
 
     fun process(
-        prompt: Message,
+        query: Message,
         streamCallback: ((String) -> Unit)? = null,
     ): Message {
         LOGGER.info(
-            "prompt_id=${prompt.id} role=${prompt.role} user=${prompt.userId} channel=${prompt.channelId ?: "-"} files=${prompt.filePaths}\n" +
-                (prompt.subject?.let { subject -> "Subject: $subject\n" } ?: "") +
-                prompt.text
+            "${query.id} $name ${query.userId ?: "-"}@${query.channelId ?: "-"} files=${query.filePaths} " +
+                take(query.text, 200)
         )
+
         val now = System.currentTimeMillis()
+        context.sessionLog.onQuery(query.id, 1, query)
 
         // Process async
         val future = scheduler.submit<Message> {
-            doProcessAsync(prompt, streamCallback)
+            doProcessAsync(query, streamCallback)
         }
 
         // What for the response with timeout
@@ -86,11 +87,10 @@ class Assistant(val name: String = "") {
 
         // Result
         LOGGER.info(
-            "... @$name ....................................\n" +
-                " FINAL ANSWER\n" +
-                " Duration: ${(System.currentTimeMillis() - now) / 1000}s\n" +
-                " Result: ${response.text}"
+            "${query.id} $name FINAL ANSWER (" + (System.currentTimeMillis() - now) / 1000 + "s): " +
+                take(response.text, 200)
         )
+        context.sessionLog.onResponse(query.id, response)
         return response
     }
 
@@ -133,7 +133,7 @@ class Assistant(val name: String = "") {
                 )
             } else {
                 val response = ask(iteration, prompt, memory, streamCallback)
-                if (decide(iteration, response, memory, tools)) {
+                if (decide(prompt.id, iteration, response, memory, tools)) {
                     return Message(
                         text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                         role = Role.ASSISTANT,
@@ -146,37 +146,29 @@ class Assistant(val name: String = "") {
 
     private fun ask(
         iteration: Int,
-        prompt: Message,
+        query: Message,
         memory: MutableList<String>,
         streamCallback: ((String) -> Unit)?,
     ): LLMResponse {
-        val tools = context.toolRegistry.all()
-        val promptText = buildPrompt(prompt, memory)
-        val systemInstructions = listOfNotNull(
-            loadIdentify(),
-            dailyLogInstructions(),
-            skillsInstructions(),
-            securityInstructions(),
-        ).joinToString("\n\n---\n\n")
+        LOGGER.info("$iteration $name LLM " + take(query.text, 200))
 
-        val streamingEnabled = context.llm.supportsStreaming()
-
-        LOGGER.info(
-            "... $iteration @$name ....................................\n" +
-                "Asking LLM with the following prompt:\n" +
-                "  Files: ${prompt.filePaths}\n" +
-                "  Query: ${clip(prompt.text, 200, 1)}\n" +
-                "  Memory: ${memory.size} items\n" +
-                "  Tools: ${tools.size} available"
+        // Call LLM
+        val request = LLMRequest(
+            prompt = buildPrompt(query, memory),
+            systemInstructions = listOfNotNull(
+                loadIdentify(),
+                dailyLogInstructions(),
+                skillsInstructions(),
+                securityInstructions(),
+            ).joinToString("\n\n---\n\n"),
+            files = query.filePaths.map { path -> File(path) }
         )
 
-        return if (streamingEnabled && streamCallback != null) {
+        val tools = context.toolRegistry.all()
+        val streamingEnabled = context.llm.supportsStreaming()
+        val response = if (streamingEnabled && streamCallback != null) {
             context.llm.completionStream(
-                request = LLMRequest(
-                    promptText,
-                    systemInstructions,
-                    files = prompt.filePaths.map { path -> File(path) }
-                ),
+                request = request,
                 tools = tools,
                 onChunk = { chunk ->
                     chunk.reasoningDelta?.let { delta ->
@@ -186,17 +178,24 @@ class Assistant(val name: String = "") {
             )
         } else {
             context.llm.completion(
-                request = LLMRequest(
-                    promptText,
-                    systemInstructions,
-                    files = prompt.filePaths.map { path -> File(path) }
-                ),
+                request = request,
                 tools
             )
         }
+
+        // Update memory with reasoning content
+        response.choices.forEach { choice ->
+            if (choice.content != null) {
+                memory.add(choice.content)
+            }
+        }
+
+        context.sessionLog.onLLMResponse(query.id, iteration, response)
+        return response
     }
 
     private fun decide(
+        id: String,
         iteration: Int,
         response: LLMResponse,
         memory: MutableList<String>,
@@ -205,7 +204,7 @@ class Assistant(val name: String = "") {
         // Tool calls
         val choiceCalls = response.choices.filter { choice -> choice.toolCalls.isNotEmpty() }
         if (choiceCalls.isNotEmpty()) {
-            choiceCalls.forEach { choice -> exec(iteration, choice, memory, tools) }
+            choiceCalls.forEach { choice -> exec(id, iteration, choice, memory, tools) }
             return false
         } else {
             return true
@@ -213,34 +212,26 @@ class Assistant(val name: String = "") {
     }
 
     private fun exec(
+        id: String,
         iteration: Int,
         choice: LLMResponseChoice,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ) {
         choice.toolCalls.forEach { call ->
-            exec(iteration, choice.content, call, memory, tools)
+            exec(id, iteration, call, memory, tools)
         }
     }
 
     private fun exec(
+        id: String,
         iteration: Int,
-        content: String?,
         call: LLMToolCall,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ) {
-        val xcontent = content?.trim()
-            ?.ifEmpty { null }
-            ?.let { clip(content, 200, 1) + "\n" } ?: ""
-        LOGGER.info(
-            "... $iteration @$name ....................................\n" +
-                "${xcontent}TOOL: ${call.name}\n" +
-                "  Arguments:\n" +
-                call.arguments
-                    .map { "  - " + clip(it.toString(), 200, 1) }
-                    .joinToString("\n")
-        )
+        LOGGER.info("$iteration $name TOOL ${call.name} " + take(call.arguments.toString(), 200))
+        context.sessionLog.onToolUse(id, iteration, call)
 
         // Execute
         val tool = tools[call.name]
@@ -254,20 +245,16 @@ class Assistant(val name: String = "") {
                 "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
             }
         }
-        LOGGER.info(clip(result, 200, 4))
 
         // Update memory
-        memory.add("Calling tool `${call.name}` with arguments ${clip(call.arguments.toString())}} returns:\n$result")
+        memory.add(result)
+
+        // Update session log
+        context.sessionLog.onToolResult(id, iteration, call, result)
     }
 
-    private fun clip(text: String, n: Int = 200, l: Int = 1): String {
-        val xtext = text
-            .lines()
-            .filter { line -> line.isNotBlank() }
-            .take(l)
-            .joinToString("\n")
-            .take(n)
-            .trim()
+    private fun take(text: String, n: Int = 200): String {
+        val xtext = text.replace("\r\n", " ").take(n).trim()
         return if (text.length > n) {
             "$xtext..."
         } else {

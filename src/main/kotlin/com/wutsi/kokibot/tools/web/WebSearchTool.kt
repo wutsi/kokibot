@@ -48,20 +48,19 @@ class WebSearchTool : Tool {
         if (results.isEmpty()) {
             sb.append("No results found for the query: $query")
         } else {
+            sb.append("${results.size} result(s) found")
             results.forEach { result ->
                 val title = result.select(".result__title").text()
                 val link = result.select(".result__a").attr("abs:href")
                 val snippet = result.select(".result__snippet").text()
 
                 sb.append("Result #${++i}\n")
-                sb.append("  - Title: ").append(title).append("\n")
-                sb.append("  - Link: ").append(link).append("\n")
-                sb.append("  - Snippet: ").append(snippet).append("\n\n")
+                sb.append("- Title: ").append(title).append("\n")
+                sb.append("- Link: ").append(link).append("\n")
+                sb.append("- Snippet: ").append(snippet).append("\n\n")
             }
         }
 
-        return "BEGIN WEB SEARCH RESULT - query=$query\n\n" +
-            sb.toString() +
-            "\n\nEND WEB SEARCH RESULT"
+        return sb.toString()
     }
 }

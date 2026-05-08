@@ -12,7 +12,6 @@ import java.io.File
 class ShellTool : Tool {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ShellTool::class.java)
-        const val ERROR_FORBIDDEN = "Forbidden! You are not allowed to run this command for security reasons."
         const val NAME = "shell"
         const val DEFAULT_TIMEOUT_SECONDS = 300L
         const val MAX_TIMEOUT_SECONDS = 3600L
@@ -88,14 +87,14 @@ class ShellTool : Tool {
             exec(command, directory, timeout)
         } catch (ex: Throwable) {
             LOGGER.warn("Command failed: $command", ex)
-            "Failure. ${ex.message}"
+            "FAILURE. ${ex.message}"
         }
-        return "Running command: `$command`\n$result"
+        return result
     }
 
     private fun exec(command: String, directory: String?, timeoutSeconds: Long): String {
         if (isForbidden(command)) {
-            return ERROR_FORBIDDEN
+            return "FORBIDDEN! You are not allowed to run this command for security reasons."
         }
 
         val result = ShellUtil.exec(command, directory?.let { File(directory) }, timeoutSeconds)

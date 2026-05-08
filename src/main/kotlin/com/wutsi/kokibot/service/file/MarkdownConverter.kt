@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.service.file
 
 import com.wutsi.kokibot.service.FileService
+import com.wutsi.kokibot.service.UnsupportedMimeTypeException
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -15,6 +16,8 @@ class MarkdownConverter(
 
     fun convert(file: File, contentType: String): String {
         val md = when {
+            contentType.startsWith("image/") || contentType.startsWith("video/") -> throw UnsupportedMimeTypeException("Cannot convert $contentType to markdown")
+
             supportsMarkitdown(contentType) -> markitdown(file) ?: pandoc(file)
 
             contentType.startsWith("text/") -> file.readText()
@@ -22,7 +25,7 @@ class MarkdownConverter(
 
             contentType.startsWith("application/pdf") -> pandoc(file)
 
-            else -> markitdown(file) ?: pandoc(file)
+            else -> pandoc(file)
         }
 
         return md ?: default(file, contentType)

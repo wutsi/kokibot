@@ -2,7 +2,6 @@ package com.wutsi.kokibot.tools.web
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.tools.ToolParameterType
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -29,13 +28,10 @@ class WebFetchToolTest {
     fun metadata() {
         val meta = tool.metadata()
         assertEquals(WebFetchTool.NAME, meta.name)
-        assertEquals(2, meta.parameters.size)
+        assertEquals(1, meta.parameters.size)
         assertEquals("url", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
         assertTrue(meta.parameters[0].required)
-        assertEquals("max_length", meta.parameters[1].name)
-        assertEquals(ToolParameterType.INTEGER, meta.parameters[1].type)
-        assertFalse(meta.parameters[1].required)
     }
 
     @Test
@@ -62,6 +58,16 @@ class WebFetchToolTest {
     }
 
     @Test
+    fun `exec - content too large`() {
+        val tool = WebFetchTool(100)
+        tool.init(mapOf("foo" to "bar"), context)
+
+        val args = mapOf("url" to "https://www.gutenberg.org/files/2600/2600-0.txt")
+        val result = tool.exec(args)
+        assertTrue(result.contains("The file is too large"))
+    }
+
+    @Test
     fun `exec PDF`() {
         val args = mapOf("url" to "https://www.amicaall.org/publications/profiles/Profil_municipal%20Soa_finalise.pdf")
         val result = tool.exec(args)
@@ -84,13 +90,6 @@ class WebFetchToolTest {
         val result = tool.exec(args)
         assertTrue(result.contains("The names \"John Doe\" for males, \"Jane Doe\" or \"Jane Roe\" for females"))
     }
-
-//    @Test
-//    fun `exec - DOC`() {
-//        val args = mapOf("url" to "https://podcasts.ceu.edu/sites/podcasts.ceu.edu/files/sample.doc")
-//        val result = tool.exec(args)
-//        assertTrue(result.contains("Instructions about final paper"))
-//    }
 
     @Test
     fun `exec - DOCX`() {

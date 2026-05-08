@@ -5,6 +5,7 @@ import com.wutsi.kokibot.llm.LLMToolCallDelta
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import tools.jackson.databind.json.JsonMapper
+import java.util.UUID
 
 class ToolCallAccumulator(private val jsonMapper: JsonMapper) {
     companion object {
@@ -41,6 +42,6 @@ class ToolCallAccumulator(private val jsonMapper: JsonMapper) {
                 EMPTY_ARGS
             }
         }
-        return LLMToolCall(name = fnName, arguments = parsedArgs)
+        return LLMToolCall(name = fnName, arguments = parsedArgs, id = id ?: UUID.randomUUID().toString()).apply {}
     }
 }

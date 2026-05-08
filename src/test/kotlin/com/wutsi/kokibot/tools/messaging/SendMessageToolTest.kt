@@ -77,7 +77,7 @@ class SendMessageToolTest {
         assertEquals("Hello, World!", msg.firstValue.text)
         assertEquals(listOf("/path/to/file1", "/path/to/file2"), msg.firstValue.filePaths)
 
-        assertEquals("Message sent to ray.sponsible via telegram", result)
+        assertEquals("SUCCESS. Message sent to ray.sponsible via telegram", result)
     }
 
     @Test

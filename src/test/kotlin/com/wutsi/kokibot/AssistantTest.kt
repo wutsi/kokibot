@@ -20,6 +20,7 @@ import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
+import com.wutsi.kokibot.service.memory.SessionLog
 import com.wutsi.kokibot.skill.Skill
 import com.wutsi.kokibot.skill.SkillMetadata
 import com.wutsi.kokibot.skill.SkillRegistry
@@ -43,6 +44,7 @@ class AssistantTest {
     private val commandRegistry = mock<CommandRegistry>()
     private val skillRegistry = mock<SkillRegistry>()
     private val dailyLog = mock<DailyLog>()
+    private val sessionLog = mock<SessionLog>()
     private val context = Context(
         home = home,
         llm = llm,
@@ -51,6 +53,7 @@ class AssistantTest {
         commandRegistry = commandRegistry,
         skillRegistry = skillRegistry,
         dailyLog = dailyLog,
+        sessionLog = sessionLog,
         config = emptyMap<String, String>(),
     )
     private val assistant: Assistant = Assistant()
@@ -154,6 +157,7 @@ class AssistantTest {
                 memory = memory,
                 skillRegistry = skillRegistry,
                 dailyLog = dailyLog,
+                sessionLog = sessionLog,
             )
         )
 
@@ -187,7 +191,7 @@ class AssistantTest {
         // ASSISANT.md is missing
 
         val systemInstructions = req.firstValue.systemInstructions
-        println(systemInstructions)
+//        println(systemInstructions)
         assertEquals(
             false,
             systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
@@ -217,6 +221,7 @@ class AssistantTest {
                 toolRegistry = toolRegistry,
                 memory = memory,
                 dailyLog = dailyLog,
+                sessionLog = sessionLog,
             )
         )
 

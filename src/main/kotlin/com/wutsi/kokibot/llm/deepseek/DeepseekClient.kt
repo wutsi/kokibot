@@ -7,6 +7,7 @@ import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMStreamChunk
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.llm.LLMToolCallDelta
+import com.wutsi.kokibot.llm.LLMUsage
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
@@ -81,6 +82,7 @@ open class DeepseekClient(
         val body = toDeepseekRequest(request, tools)
         val streamBody = body.toMutableMap().apply {
             put("stream", true)
+            put("stream_options", mapOf("include_usage" to true))
         }
 
         val headers = HttpHeaders()
@@ -126,7 +128,6 @@ open class DeepseekClient(
                 when {
                     line?.startsWith("data: ") == true -> {
                         val data = line.substring(6).trim()
-
                         if (data == "[DONE]") {
                             break
                         }
@@ -160,6 +161,7 @@ open class DeepseekClient(
         val choices = jsonChunk["choices"] as? List<*> ?: emptyList<Any>()
         val firstChoice = choices.firstOrNull() as? Map<*, *>
         val delta = firstChoice?.get("delta") as? Map<*, *>
+        val usage = MapUtil.toMap("usage", jsonChunk)
 
         return LLMStreamChunk(
             delta = delta?.get("content") as? String,
@@ -167,7 +169,8 @@ open class DeepseekClient(
             toolCallDelta = parseToolCallDeltaFromDelta(delta),
             finishReason = (firstChoice?.get("finish_reason") as? String)
                 ?.let { LLMFinishReason.valueOf(it.uppercase()) },
-            isDone = firstChoice?.get("finish_reason") != null
+            isDone = firstChoice?.get("finish_reason") != null,
+            usage = usage?.let { toUsage(usage) }
         )
     }
 
@@ -240,9 +243,11 @@ open class DeepseekClient(
     private fun toLLMResponse(resp: Map<*, *>): LLMResponse {
         val choices = (resp["choices"]
             ?: throw IllegalStateException("No choices in the response")) as List<*>
+        val usage = MapUtil.toMap("usage", resp)
 
         return LLMResponse(
             id = MapUtil.toString("id", resp) ?: UUID.randomUUID().toString(),
+            model = resp["model"] as? String,
             choices = choices.mapNotNull { choice ->
                 val message = MapUtil.toMap("message", (choice as Map<*, *>))
                 val toolCalls = message?.get("tool_calls") as? List<*>?
@@ -260,6 +265,7 @@ open class DeepseekClient(
 
                         function?.let {
                             LLMToolCall(
+                                id = MapUtil.toString("id", function) ?: UUID.randomUUID().toString(),
                                 name = MapUtil.toString("name", function) ?: "__invalid_function__",
                                 arguments = arguments?.let { args ->
                                     try {
@@ -273,7 +279,17 @@ open class DeepseekClient(
                         }
                     } ?: emptyList(),
                 )
-            }
+            },
+            usage = usage?.let { toUsage(usage) }
+        )
+    }
+
+    private fun toUsage(usage: Map<*, *>): LLMUsage {
+        return LLMUsage(
+            promptTokens = MapUtil.toInt("prompt_tokens", usage) ?: 0,
+            completionTokens = MapUtil.toInt("completion_tokens", usage) ?: 0,
+            totalTokens = MapUtil.toInt("total_tokens", usage) ?: 0,
+            promptCacheHitTokens = MapUtil.toInt("prompt_cache_hit_tokens", usage),
         )
     }
 

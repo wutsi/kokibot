@@ -47,6 +47,13 @@ class DeepseekClientTest {
                     "reasoning_content" to "Thinking..."
                 )
             )
+        ),
+        "model" to MODEL,
+        "usage" to mapOf(
+            "total_tokens" to 3051,
+            "completion_tokens" to 2051,
+            "prompt_tokens" to 1000,
+            "completion_cache_hit_tokens" to 2000,
         )
     )
     private val dsToolCallResponse = mapOf(
@@ -109,6 +116,11 @@ class DeepseekClientTest {
         assertEquals("Hello, how can I help you?", response.choices[0].content)
         assertEquals("Thinking...", response.choices[0].reasoningContent)
         assertEquals(0, response.choices[0].toolCalls.size)
+        assertEquals(3051, response.usage?.totalTokens)
+        assertEquals(1000, response.usage?.promptTokens)
+        assertEquals(2051, response.usage?.completionTokens)
+        assertEquals(2000, response.usage?.promptCacheHitTokens)
+        assertEquals(MODEL, response.model)
 
         val req = argumentCaptor<HttpEntity<Map<*, *>>>()
         verify(rest).postForEntity(

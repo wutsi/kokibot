@@ -7,7 +7,6 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.util.MapUtil
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
 
-class WebFetchTool : Tool {
+class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
     private class FileTooLargeException(message: String) : RuntimeException(message)
 
     companion object {
@@ -25,8 +24,6 @@ class WebFetchTool : Tool {
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
         const val NAME = "web_fetch"
         const val BUFFER_SIZE = 1024 * 1024 // 1M
-        const val DEFAULT_MAX_LENGTH = 1 * 1024 * 1024 // 1MB
-        const val MIN_FILE_SIZE = 25 * 1024 // 25K
         const val MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
     }
 
@@ -49,13 +46,7 @@ class WebFetchTool : Tool {
                 description = "URL of the web page to fetch",
                 type = ToolParameterType.STRING,
                 required = true
-            ),
-            ToolParameter(
-                name = "max_length",
-                description = "Maximum length of document fetched (optional)",
-                type = ToolParameterType.INTEGER,
-                required = false,
-            ),
+            )
         )
     )
 
@@ -63,11 +54,8 @@ class WebFetchTool : Tool {
         val url = arguments["url"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: url")
 
-        val maxLength = (MapUtil.toInt("max_length", arguments) ?: DEFAULT_MAX_LENGTH)
-            .coerceIn(MIN_FILE_SIZE, MAX_FILE_SIZE)
-
         try {
-            val content = fetch(url, maxLength)
+            val content = fetch(url)
             return "BEGIN URL CONTENT - $url\n\n" +
                 content +
                 "\n\nEND URL CONTENT"
@@ -83,7 +71,7 @@ class WebFetchTool : Tool {
         }
     }
 
-    private fun fetch(url: String, maxLength: Int): String {
+    private fun fetch(url: String): String {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             return "Invalid URL: $url"
         }
@@ -100,11 +88,11 @@ class WebFetchTool : Tool {
                 return "Failed to fetch content from $url"
             }
 
-            // Reject up-front if the server advertises a content length larger than MAX_FILE_SIZE
+            // Reject up-front if the server advertises a content length larger than maxLength
             val contentLength = response.header("Content-Length")?.toLongOrNull()
-            if (contentLength != null && contentLength > MAX_FILE_SIZE) {
+            if (contentLength != null && contentLength > maxLength) {
                 throw FileTooLargeException(
-                    "File size ($contentLength bytes) exceeds maximum allowed size ($MAX_FILE_SIZE bytes)"
+                    "The file is too large. It exceeds maximum allowed size ($maxLength bytes)"
                 )
             }
 
@@ -144,7 +132,7 @@ class WebFetchTool : Tool {
                         total += read
                         if (total > MAX_FILE_SIZE) {
                             throw FileTooLargeException(
-                                "File size exceeds maximum allowed size (${MAX_FILE_SIZE / (1024 * 1024)} MB)"
+                                "File size exceeds maximum allowed size (${maxLength / (1024 * 1024)} MB)"
                             )
                         }
                         output.write(buffer, 0, read)
@@ -172,7 +160,7 @@ class WebFetchTool : Tool {
                 ?: "N/A"
 
             return "Title: $title\nImage: $image\n\n"
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             return ""
         }
     }

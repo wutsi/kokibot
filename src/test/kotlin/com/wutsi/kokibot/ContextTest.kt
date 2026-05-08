@@ -29,6 +29,7 @@ class ContextTest {
         toolRegistry = mock(),
         channelRegistry = mock(),
         dailyLog = mock(),
+        sessionLog = mock(),
         commandRegistry = mock(),
         skillRegistry = mock(),
         marketplaceRegistry = mock(),
@@ -63,6 +64,7 @@ class ContextTest {
 
         doReturn(Health(id = "-", up = true)).whenever(context.llm).health()
         doReturn(Health(id = "-", up = true)).whenever(context.dailyLog).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.sessionLog).health()
         doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
         doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
         doReturn(Health(id = "-", up = true)).whenever(context.heartbeat).health()
@@ -80,6 +82,7 @@ class ContextTest {
         verify(context.llm).destroy()
         verify(context.memory).destroy()
         verify(context.dailyLog).destroy()
+        verify(context.sessionLog).destroy()
         verify(context.fileService).destroy()
         verify(context.heartbeat).destroy()
         verify(channel).destroy()
@@ -94,6 +97,7 @@ class ContextTest {
         verify(context.llm).init(llmConfig, context)
         verify(context.memory).init(memoryConfig, context)
         verify(context.dailyLog).init(memoryConfig, context)
+        verify(context.sessionLog).init(memoryConfig, context)
         verify(context.heartbeat).init(heartbeatConfig, context)
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
@@ -127,7 +131,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(7, health.children.size)
+        assertEquals(8, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

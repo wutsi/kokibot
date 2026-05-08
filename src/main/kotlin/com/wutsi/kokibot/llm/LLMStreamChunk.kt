@@ -38,4 +38,6 @@ data class LLMStreamChunk(
      * Indicates if this is the final chunk in the stream.
      */
     val isDone: Boolean = false,
+
+    val usage: LLMUsage? = null,
 )

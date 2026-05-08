@@ -3,7 +3,10 @@ package com.wutsi.kokibot.service.memory
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.llm.LLMResponse
+import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.llm.LLMUsage
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -108,6 +111,48 @@ class SessionLogTest {
         assertEquals("tool_result", sessions[0].content[0].type)
         assertEquals("Hello world", sessions[0].content[0].text)
         assertEquals(tool.id, sessions[0].content[0].id)
+    }
+
+    @Test
+    fun onLLMResponse() {
+        val response = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "This is a response",
+                    reasoningContent = "Reasoning",
+                    toolCalls = listOf(
+                        LLMToolCall(
+                            name = "search",
+                            arguments = mapOf("query" to "Kokibot")
+                        )
+                    )
+                )
+            ),
+            model = "gpt-4",
+            usage = LLMUsage(
+                promptTokens = 10,
+                completionTokens = 20,
+                totalTokens = 30
+            )
+        )
+        log.onLLMResponse("4", 2, response)
+
+        val sessions = log.get("4")
+        assertEquals(1, sessions.size)
+        assertEquals(Role.ASSISTANT, sessions[0].role)
+        assertEquals(2, sessions[0].iteration)
+        assertEquals("gpt-4", sessions[0].model)
+        assertEquals(10, sessions[0].usage?.promptTokens)
+        assertEquals(20, sessions[0].usage?.completionTokens)
+        assertEquals(30, sessions[0].usage?.totalTokens)
+        assertEquals(3, sessions[0].content.size)
+        assertEquals("thinking", sessions[0].content[0].type)
+        assertEquals("Reasoning", sessions[0].content[0].text)
+        assertEquals("text", sessions[0].content[1].type)
+        assertEquals("This is a response", sessions[0].content[1].text)
+        assertEquals("tool", sessions[0].content[2].type)
+        assertEquals("search", sessions[0].content[2].name)
+        assertEquals(response.choices[0].toolCalls[0].arguments, sessions[0].content[2].arguments as Map<*, *>)
     }
 
     @Test

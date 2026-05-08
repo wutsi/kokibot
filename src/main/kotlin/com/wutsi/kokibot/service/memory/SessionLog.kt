@@ -6,11 +6,16 @@ import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMToolCall
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class SessionLog : Resource {
+    companion object {
+        private val LOGGER = LoggerFactory.getLogger(SessionLog::class.java)
+    }
+
     private lateinit var context: Context
 
     override fun id(): String {
@@ -134,6 +139,22 @@ class SessionLog : Resource {
                 }
             )
         )
+    }
+
+    fun get(id: String): List<Session> {
+        val file = getFile(id)
+        if (!file.exists()) {
+            return emptyList()
+        }
+
+        return file.readText().lines().mapIndexedNotNull { i, line ->
+            try {
+                context.jsonMapper.readValue(line, Session::class.java)
+            } catch (ex: Exception) {
+                LOGGER.warn("Line ${i + 1} - Failure", ex)
+                null
+            }
+        }
     }
 
     private fun append(id: String, session: Session) {

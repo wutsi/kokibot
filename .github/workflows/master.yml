@@ -32,6 +32,11 @@ jobs:
                     pip install 'markitdown[all]'
                     brew install pandoc
 
+            -   name: Install Pandoc
+                uses: pandoc/actions/setup@v1
+                with:
+                    version: 2.19
+
             -   name: Build
                 env:
                     DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY}}

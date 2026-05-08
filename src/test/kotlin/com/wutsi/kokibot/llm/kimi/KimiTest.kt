@@ -45,7 +45,7 @@ class KimiTest {
             request = LLMRequest(
                 prompt = "Can you describe this image?",
                 files = listOf(
-                    File(this::class.java.getResource("/file/medic.png")!!.file)
+                    File(this::class.java.getResource("/deepseek/sample.jpg")!!.file)
                 )
             ),
             tools = emptyList()

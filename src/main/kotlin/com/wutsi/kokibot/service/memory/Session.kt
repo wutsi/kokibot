@@ -13,6 +13,7 @@ data class Session(
     val content: List<SessionContent> = emptyList(),
     val model: String? = null,
     val usage: LLMUsage? = null,
+    val memory: List<String>? = null,
 )
 
 data class SessionContent(

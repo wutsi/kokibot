@@ -183,14 +183,15 @@ class Assistant(val name: String = "") {
             )
         }
 
+        // Record the result
+        context.sessionLog.onLLMResponse(query.id, iteration, response, memory)
+
         // Update memory with reasoning content
         response.choices.forEach { choice ->
-            if (choice.content != null) {
+            if (!choice.content.isNullOrEmpty()) {
                 memory.add(choice.content)
             }
         }
-
-        context.sessionLog.onLLMResponse(query.id, iteration, response)
         return response
     }
 
@@ -247,6 +248,14 @@ class Assistant(val name: String = "") {
         }
 
         // Update memory
+        memory.add(
+            "Using tool `${call.name}` with arguments: " +
+                call.arguments.map { entry ->
+                    "${entry.key}=" + entry.value?.let { value ->
+                        take(value.toString(), 200)
+                    }
+                }.joinToString(",")
+        )
         memory.add(result)
 
         // Update session log

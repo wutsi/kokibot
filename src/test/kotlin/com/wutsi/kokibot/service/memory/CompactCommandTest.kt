@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.service.memory
 
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
@@ -25,26 +24,9 @@ class CompactCommandTest {
 
     @Test
     fun exec() {
-        val result = cmd.exec(" CoNfIrM ", context)
+        val result = cmd.exec("", context)
 
         verify(memory).compact()
         assertEquals(true, result.contains("Memory compacted"))
-    }
-
-    @Test
-    fun `exec without confirmation`() {
-        val result = cmd.exec("", context)
-
-        assertEquals(
-            """
-                To compact the memory, please use the command with the "confirm" parameter:
-                  /compact confirm
-
-                This is to avoid accidentally compacting the memory, which cannot be undone.
-            """.trimIndent(),
-            result
-        )
-
-        verify(memory, never()).compact()
     }
 }

@@ -133,9 +133,10 @@ class SessionLogTest {
                 promptTokens = 10,
                 completionTokens = 20,
                 totalTokens = 30
-            )
+            ),
         )
-        log.onLLMResponse("4", 2, response)
+        val memory = listOf("A", "B")
+        log.onLLMResponse("4", 2, response, memory)
 
         val sessions = log.get("4")
         assertEquals(1, sessions.size)
@@ -153,6 +154,7 @@ class SessionLogTest {
         assertEquals("tool", sessions[0].content[2].type)
         assertEquals("search", sessions[0].content[2].name)
         assertEquals(response.choices[0].toolCalls[0].arguments, sessions[0].content[2].arguments as Map<*, *>)
+        assertEquals(memory, sessions[0].memory)
     }
 
     @Test

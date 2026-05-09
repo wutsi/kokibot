@@ -106,7 +106,7 @@ class SessionLog : Resource {
         )
     }
 
-    fun onLLMResponse(id: String, iteration: Int, response: LLMResponse) {
+    fun onLLMResponse(id: String, iteration: Int, response: LLMResponse, memory: List<String>) {
         append(
             id,
             Session(
@@ -114,6 +114,7 @@ class SessionLog : Resource {
                 role = Role.ASSISTANT,
                 model = response.model,
                 usage = response.usage,
+                memory = memory,
                 content = response.choices.flatMap { choice ->
                     listOfNotNull(
                         choice.reasoningContent?.let { content ->

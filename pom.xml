@@ -40,7 +40,7 @@
         <pdfbox.vesion>3.0.7</pdfbox.vesion>
         <poi.version>5.5.1</poi.version>
         <snakeyaml.version>2.6</snakeyaml.version>
-        <telegram.version>9.5.0</telegram.version>
+        <telegram.version>9.6.0</telegram.version>
     </properties>
     <dependencies>
         <dependency>

@@ -2,9 +2,10 @@ package com.wutsi.kokibot.service.memory
 
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLMUsage
+import java.time.LocalDateTime
 
 data class Session(
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: LocalDateTime = LocalDateTime.now(),
     val iteration: Int? = null,
     val role: Role = Role.UNKNOWN,
     val userId: String? = null,

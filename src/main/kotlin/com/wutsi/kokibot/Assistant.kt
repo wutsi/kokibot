@@ -90,16 +90,17 @@ class Assistant(val name: String = "") {
             "${query.id} $name FINAL ANSWER (" + (System.currentTimeMillis() - now) / 1000 + "s): " +
                 take(response.text, 200)
         )
+        context.chatHistory.append(query, response)
         context.sessionLog.onResponse(query.id, response)
         return response
     }
 
     private fun doProcessAsync(
-        prompt: Message,
+        query: Message,
         streamCallback: ((String) -> Unit)? = null,
     ): Message {
         return try {
-            doProcess(prompt, streamCallback)
+            doProcess(query, streamCallback)
         } catch (e: TooManyIterationException) {
             LOGGER.error("Too many iterations!", e)
             Message(ERROR_TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
@@ -110,7 +111,7 @@ class Assistant(val name: String = "") {
     }
 
     private fun doProcess(
-        prompt: Message,
+        query: Message,
         streamCallback: ((String) -> Unit)?,
     ): Message {
         var iteration = 0
@@ -123,17 +124,17 @@ class Assistant(val name: String = "") {
                 throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
             }
 
-            val command = getCommand(prompt)
+            val command = getCommand(query)
             if (command != null) {
-                val result = exec(iteration, prompt, command)
+                val result = exec(iteration, query, command)
                 return Message(
                     text = result,
                     role = Role.COMMAND,
                     finishReason = FinishReason.DONE,
                 )
             } else {
-                val response = ask(iteration, prompt, memory, streamCallback)
-                if (decide(prompt.id, iteration, response, memory, tools)) {
+                val response = ask(iteration, query, memory, streamCallback)
+                if (decide(query.id, iteration, response, memory, tools)) {
                     return Message(
                         text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                         role = Role.ASSISTANT,
@@ -158,6 +159,7 @@ class Assistant(val name: String = "") {
             systemInstructions = listOfNotNull(
                 loadIdentify(),
                 dailyLogInstructions(),
+                chatHistoryInstructions(query),
                 skillsInstructions(),
                 securityInstructions(),
             ).joinToString("\n\n---\n\n"),
@@ -308,14 +310,14 @@ class Assistant(val name: String = "") {
         return command.exec(input, context)
     }
 
-    private fun buildPrompt(prompt: Message, memory: List<String>): String {
+    private fun buildPrompt(query: Message, memory: List<String>): String {
         val sb = StringBuilder()
-        sb.append("Query: ${prompt.text}")
+        sb.append("Query: ${query.text}")
 
         // Long-term memory
         val longTermMemory = context.memory.get()
         if (longTermMemory != null) {
-            sb.append("\n\n---\n\n")
+            sb.append("\n---\n")
             sb.append("# Long-Term Memory\n")
             sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
             sb.append("```markdown\n$longTermMemory\n```\n")
@@ -324,15 +326,15 @@ class Assistant(val name: String = "") {
         // Short-term memory (conversation history)
         val shortTermMemory = context.dailyLog.get()
         if (shortTermMemory != null) {
-            sb.append("\n\n---\n\n")
-            sb.append("# Conversation history\n")
-            sb.append("Here is the conversation history between you and the user in JSON format:\n")
-            sb.append("```json\n$shortTermMemory\n```\n")
+            sb.append("\n---\n\n")
+            sb.append("# Short-Term Memory\n")
+            sb.append("Here are information that you have stored in your short-term memory in Markdown format:\n")
+            sb.append("```markdown\n$shortTermMemory\n```\n")
         }
 
         // Reasoning steps and observations
         if (memory.isNotEmpty()) {
-            sb.append("\n\n---\n\n")
+            sb.append("\n---\n\n")
             sb.append("# Previous reasoning steps and observations\n")
             memory.forEach { line -> sb.append("$line\n\n") }
         }
@@ -374,5 +376,17 @@ class Assistant(val name: String = "") {
     private fun dailyLogInstructions(): String {
         return IOUtils.toString(Assistant::class.java.getResourceAsStream("/instructions/DAILY_LOG.md"), "utf-8")
             .replace("{{HOME}}", context.home.absolutePath)
+    }
+
+    private fun chatHistoryInstructions(query: Message): String? {
+        val userId = query.userId
+        val channelId = query.channelId
+        if (userId == null || channelId == null) {
+            return null
+        }
+        return IOUtils.toString(Assistant::class.java.getResourceAsStream("/instructions/CHAT_HISTORY.md"), "utf-8")
+            .replace("{{HOME}}", context.home.absolutePath)
+            .replace("{{USER_ID}}", userId)
+            .replace("{{CHANNEL_ID}}", channelId.removePrefix("channel:"))
     }
 }

@@ -13,11 +13,15 @@ import kotlin.concurrent.write
  * This is the daily
  */
 class DailyLog : Resource {
+    companion object {
+        const val ID = "service:daily-log"
+    }
+
     private lateinit var context: Context
     private val lock = ReentrantReadWriteLock()
 
     override fun id(): String {
-        return "service:daily-log"
+        return ID
     }
 
     override fun init(config: Map<*, *>, context: Context) {

@@ -203,7 +203,7 @@ class TelegramChannel(
     }
 
     private fun consumeDocument(update: Update): Message {
-        val userId = update.message.chat.id.toString()
+        val userId = update.message.chat.userName
         val fileId = update.message.document.fileId
         val filename = update.message.document.fileName
         val caption = update.message.caption?.trim()?.ifEmpty { null }
@@ -226,7 +226,7 @@ class TelegramChannel(
         val largest = update.message.photo.maxByOrNull { it.fileSize ?: 0 }
             ?: throw IllegalStateException("No photo found in message")
 
-        val userId = update.message.chat.id.toString()
+        val userId = update.message.chat.userName
         val caption = update.message.caption?.trim()?.ifEmpty { null }
         val filename = "photo_${largest.fileId}.jpg"
         val file = download(largest.fileId, filename)
@@ -339,7 +339,7 @@ class TelegramChannel(
                 client.execute(editMessage)
                 return messageId
             } catch (ex: Exception) {
-                LOGGER.warn("Edit Failed.\nTXT: $text\n\nHTML: $html")
+                LOGGER.warn("Edit Failed.\nTXT: $text\n\nHTML: $html", ex)
                 throw ex
             }
         }

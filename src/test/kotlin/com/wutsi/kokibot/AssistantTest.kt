@@ -18,6 +18,7 @@ import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.service.memory.SessionLog
@@ -45,6 +46,7 @@ class AssistantTest {
     private val skillRegistry = mock<SkillRegistry>()
     private val dailyLog = mock<DailyLog>()
     private val sessionLog = mock<SessionLog>()
+    private val chatHistory = mock<ChatHistory>()
     private val context = Context(
         home = home,
         llm = llm,
@@ -54,6 +56,7 @@ class AssistantTest {
         skillRegistry = skillRegistry,
         dailyLog = dailyLog,
         sessionLog = sessionLog,
+        chatHistory = chatHistory,
         config = emptyMap<String, String>(),
     )
     private val assistant: Assistant = Assistant()
@@ -114,7 +117,7 @@ class AssistantTest {
         ).whenever(llm).completion(any(), any())
 
         // WHEN
-        val prompt = Message("Yo", Role.USER)
+        val prompt = Message("Yo", Role.USER, userId = "user-1", channelId = "channel:telegram")
         val result = assistant.process(prompt)
 
         // THEN
@@ -141,6 +144,10 @@ class AssistantTest {
         )
         assertEquals(
             true,
+            systemInstructions?.contains("# Conversation History")
+        )
+        assertEquals(
+            true,
             systemInstructions?.contains("# Available skills")
         )
     }
@@ -158,6 +165,7 @@ class AssistantTest {
                 skillRegistry = skillRegistry,
                 dailyLog = dailyLog,
                 sessionLog = sessionLog,
+                chatHistory = chatHistory,
             )
         )
 
@@ -176,7 +184,7 @@ class AssistantTest {
         ).whenever(llm).completion(any(), any())
 
         // WHEN
-        val prompt = Message("Yo", Role.USER)
+        val prompt = Message("Yo", Role.USER, userId = "user-1", channelId = "channel:telegram")
         val result = assistant.process(prompt)
 
         // THEN
@@ -203,6 +211,10 @@ class AssistantTest {
         assertEquals(
             true,
             systemInstructions?.contains("# Daily Log Protocol")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Conversation History")
         )
         assertEquals(
             true,
@@ -290,24 +302,21 @@ class AssistantTest {
 
         assertEquals(
             """
-                Query: Yo
+Query: Yo
+---
+# Long-Term Memory
+Here are information that you have stored in your long-term memory in Markdown format:
+```markdown
+$memory
+```
 
-                ---
+---
 
-                # Long-Term Memory
-                Here are information that you have stored in your long-term memory in Markdown format:
-                ```markdown
-                $memory
-                ```
-
-
-                ---
-
-                # Conversation history
-                Here is the conversation history between you and the user in JSON format:
-                ```json
-                $history
-                ```
+# Short-Term Memory
+Here are information that you have stored in your short-term memory in Markdown format:
+```markdown
+$history
+```
 
                """.trimIndent(),
             req.firstValue.prompt

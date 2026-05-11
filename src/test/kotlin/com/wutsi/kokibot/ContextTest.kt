@@ -36,6 +36,7 @@ class ContextTest {
         memory = mock(),
         fileService = mock(),
         heartbeat = mock(),
+        chatHistory = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
@@ -66,6 +67,7 @@ class ContextTest {
         doReturn(Health(id = "-", up = true)).whenever(context.dailyLog).health()
         doReturn(Health(id = "-", up = true)).whenever(context.sessionLog).health()
         doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.chatHistory).health()
         doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
         doReturn(Health(id = "-", up = true)).whenever(context.heartbeat).health()
     }
@@ -84,6 +86,7 @@ class ContextTest {
         verify(context.dailyLog).destroy()
         verify(context.sessionLog).destroy()
         verify(context.fileService).destroy()
+        verify(context.chatHistory).destroy()
         verify(context.heartbeat).destroy()
         verify(channel).destroy()
     }
@@ -131,7 +134,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(8, health.children.size)
+        assertEquals(9, health.children.size)
     }
 
     private fun getResourceFile(path: String): File {

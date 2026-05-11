@@ -185,7 +185,9 @@ class DeepseekTest {
             request = LLMRequest(prompt = "What is the capital of France?"),
             emptyList(),
             onChunk = { chunk ->
-                println("Chunk: " + chunk.delta)
+                if (chunk.delta != null) {
+                    println("Chunk: " + chunk.delta)
+                }
             }
         )
         // println(response)

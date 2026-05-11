@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantLock
 class Memory : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Memory::class.java)
+        const val ID = "service:memory"
         const val DEFAULT_WINDOW = 7L
         const val DEFAULT_COMPACTION_FREQUENCY = "6h"
         private const val DEFAULT_MAX_LENGTH = 10240
@@ -40,7 +41,7 @@ class Memory : Resource {
     private var consecutiveFailures: Int = 0
 
     override fun id(): String {
-        return "service:memory"
+        return ID
     }
 
     /**

@@ -98,6 +98,10 @@ This will automatically
              {MM}/
                {dd}/
                  {session-id}.log           # Conversation session log file
+         chat/                              # Directory for conversation history with users
+           {user-id}/
+             {channel-id}/
+               {yyyy}-{MM}-{dd}.md          # Daily conversation history with a user in a channel. Maintained by the system
        workspace/                           # Working directory
          files/                             # Directory for files created by tools/skillsv
          tmp/                               # Temporary directory for intermediate files

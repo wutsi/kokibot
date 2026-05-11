@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class MarkdownToTelegramHTMLTest {
-
     @Test
     fun `bold text`() {
         assertEquals("<b>hello</b>", MarkdownToTelegramHTML.convert("**hello**"))
@@ -14,11 +13,6 @@ class MarkdownToTelegramHTMLTest {
     fun `italic text`() {
         assertEquals("<i>hello</i>", MarkdownToTelegramHTML.convert("*hello*"))
     }
-
-//    @Test
-//    fun `strikethrough text`() {
-//        assertEquals("<s>hello</s>", MarkdownToTelegramHTML.convert("~~hello~~"))
-//    }
 
     @Test
     fun `inline code`() {
@@ -78,6 +72,11 @@ class MarkdownToTelegramHTMLTest {
 
     @Test
     fun `returns empty string for empty input`() {
-        kotlin.test.assertEquals("", MarkdownToTelegramHTML.convert(""))
+        assertEquals("", MarkdownToTelegramHTML.convert(""))
+    }
+
+    @Test
+    fun `returns plain text for non-markdown input`() {
+        assertEquals("Hello, World!", MarkdownToTelegramHTML.convert("Hello, World!"))
     }
 }

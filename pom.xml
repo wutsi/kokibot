@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.wutsi</groupId>
     <artifactId>kokibot</artifactId>
-    <version>0.0.41</version>
+    <version>0.0.42</version>
     <name>kokibot</name>
     <description>kokibot</description>
     <url/>

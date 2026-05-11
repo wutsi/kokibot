@@ -49,7 +49,7 @@ open class DeepseekClient(
     }
 
     protected open fun supportsMimeType(mimeType: String): Boolean {
-        return mimeType.startsWith("image/")
+        return false
     }
 
     fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {

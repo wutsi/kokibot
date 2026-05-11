@@ -51,10 +51,22 @@ installing_dependencies(){
     fi
 
     # markitdown
+    # For markitdown:
+    # - we include tesseract and opencv so that it can use OCR to extract text from images
+    # - we include the python dependencies: pytesseract, opencv-python and numpy
     if ! command -v markitdown >/dev/null 2>&1; then
         echo "Installing markitdown..."
         pipx install markitdown
     fi
+    if ! command -v tesseract >/dev/null 2>&1; then
+        echo "Installing tesseract..."
+        brew install tesseract
+    fi
+    if ! command -v opencv >/dev/null 2>&1; then
+        echo "Installing opencv..."
+        brew install opencv
+    fi
+    pip install pytesseract opencv-python numpy
 }
 
 install_files() {

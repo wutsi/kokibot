@@ -164,7 +164,7 @@ class TelegramChannel(
         try {
             return context.assistant.process(
                 Message(
-                    text = toText(update.message.text, update.message.isCommand),
+                    text = update.message.text,
                     role = Role.USER,
                     userId = userId,
                     channelId = id(),
@@ -211,11 +211,8 @@ class TelegramChannel(
 
         return context.assistant.process(
             Message(
-                text = toText(
-                    caption
-                        ?: "File received: $filename. Do not process this document, just return the message `File received`",
-                    update.message.isCommand
-                ),
+                text = caption
+                    ?: "File received: $filename. Do not process this document, just return the message `File received`",
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),
@@ -236,11 +233,8 @@ class TelegramChannel(
 
         return context.assistant.process(
             Message(
-                text = toText(
-                    caption
-                        ?: "Image received: $filename. Do not process this document, just return the message `File received`",
-                    update.message.isCommand
-                ),
+                text = caption
+                    ?: "Image received: $filename. Do not process this document, just return the message `File received`",
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),
@@ -306,16 +300,6 @@ class TelegramChannel(
         } catch (ex: Exception) {
             LOGGER.warn("Failed to delete message $messageId in chat $chatId", ex)
         }
-    }
-
-    private fun toText(text: String, command: Boolean): String {
-        if (command) {
-            return text
-        }
-
-        return "$text\n" +
-            "Do not include table or grid in your response, as they are not well supported in Telegram. " +
-            "Instead, please format the response as a nested bulleted list if you need to express hierarchy or relationships"
     }
 
     /**

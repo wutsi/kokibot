@@ -184,6 +184,7 @@ class Assistant(val name: String = "") {
         }
 
         // Record the result
+        LOGGER.info("$iteration $name LLM - tokens=" + response.usage?.totalTokens)
         context.sessionLog.onLLMResponse(query.id, iteration, response, memory)
 
         // Update memory with reasoning content

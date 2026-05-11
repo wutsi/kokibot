@@ -2,10 +2,12 @@
 name: markitdown
 description: |
     Converts documents to Markdown so that an LLM can understand the content easily.
-    It supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML and YouTube transcripts.
+    It supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML,  YouTube transcripts and Images (using OCR).
 requires:
     bin:
         - markitdown
+        - tesseract
+        - opencv
 ---
 
 # SΩkill: markitdown
@@ -28,10 +30,13 @@ Automatically invoke this skill when the user want to convert the following file
 - Web Content: When the user provides a URL or raw HTML content that needs to be converted into markdown for analysis.
 - Archives: `.zip` files containing mixed documentation.
 - eBooks: `.epub` files.
+- Images: `jpg`, `jpeg`, `png`, `tiff` (with OCR).
 
 ---
 
 ## Usage Guide
+
+### Default Usage
 
 The syntax for the `markitdown` CLI is straightforward:
 
@@ -43,10 +48,6 @@ Where
 
 - `<input>` can be a file path, URL, or piped content.
 - The `-o` flag specifies the output markdown file.
-
-### Examples
-
-#### Single File Conversion Examples
 
 ```bash
 # Convert PDF to markdown
@@ -61,3 +62,15 @@ markitdown "https://www.youtube.com/watch?v=GsvvrTYS3ak" -o transcript.md
 # Convert URL
 markitdown "https://example.com/docs" -o docs.md
 ```
+
+### Image
+
+For images, use the script `scripts/convert.py` which applies OCR for images.
+
+Use the following command:
+
+```bash
+python3 scripts/convert.py <inpu>
+```
+
+The extracted markdown will be printed to the console.

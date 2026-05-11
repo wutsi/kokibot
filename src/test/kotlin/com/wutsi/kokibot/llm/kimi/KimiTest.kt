@@ -12,7 +12,7 @@ class KimiTest {
     private val llm = Kimi()
     private val config = mapOf(
         "api-key" to System.getenv("KIMI_API_KEY"),
-        "model" to "kimi-k2.5",
+        "model" to "kimi-k2.6",
     )
     private val context = Context(
         home = File("/target"),

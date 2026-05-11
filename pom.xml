@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.wutsi</groupId>
     <artifactId>kokibot</artifactId>
-    <version>0.0.40</version>
+    <version>0.0.41</version>
     <name>kokibot</name>
     <description>kokibot</description>
     <url/>
@@ -34,13 +34,13 @@
         <kotlin.version>2.3.21</kotlin.version>
         <kotlin-jackson.version>2.21.3</kotlin-jackson.version>
         <kotlin-mockito.version>2.2.0</kotlin-mockito.version>
-        <kotlinx-coroutines-core.version>1.10.2</kotlinx-coroutines-core.version>
+        <kotlinx-coroutines-core.version>1.11.0</kotlinx-coroutines-core.version>
         <ktlint.version>1.8.0</ktlint.version>
         <okhttp.version>5.3.2</okhttp.version>
         <pdfbox.vesion>3.0.7</pdfbox.vesion>
         <poi.version>5.5.1</poi.version>
         <snakeyaml.version>2.6</snakeyaml.version>
-        <telegram.version>9.5.0</telegram.version>
+        <telegram.version>9.6.0</telegram.version>
     </properties>
     <dependencies>
         <dependency>

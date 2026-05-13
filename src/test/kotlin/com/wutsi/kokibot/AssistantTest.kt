@@ -1,8 +1,8 @@
 package com.wutsi.kokibot
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.times
@@ -31,6 +31,7 @@ import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import java.io.File
 import java.util.UUID
@@ -46,6 +47,7 @@ class AssistantTest {
     private val skillRegistry = mock<SkillRegistry>()
     private val dailyLog = mock<DailyLog>()
     private val sessionLog = mock<SessionLog>()
+    private val assistantRegistry = mock<AssistantRegistry>()
     private val chatHistory = mock<ChatHistory>()
     private val context = Context(
         home = home,
@@ -57,6 +59,7 @@ class AssistantTest {
         dailyLog = dailyLog,
         sessionLog = sessionLog,
         chatHistory = chatHistory,
+        assistantRegistry = assistantRegistry,
         config = emptyMap<String, String>(),
     )
     private val assistant: Assistant = Assistant()
@@ -100,6 +103,15 @@ class AssistantTest {
     }
 
     @Test
+    fun init() {
+        // WHEN
+        // init() called in setup()
+
+        // THEN
+        verify(assistantRegistry).register(assistant)
+    }
+
+    @Test
     fun process() {
         // GIVEN
         doReturn(
@@ -126,8 +138,9 @@ class AssistantTest {
         assertEquals(FinishReason.DONE, result.finishReason)
 
         val req = argumentCaptor<LLMRequest>()
+
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
+        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
 
         val systemInstructions = req.firstValue.systemInstructions
         assertEquals(
@@ -194,7 +207,7 @@ class AssistantTest {
 
         val req = argumentCaptor<LLMRequest>()
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
+        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
 
         // ASSISANT.md is missing
 
@@ -219,6 +232,10 @@ class AssistantTest {
         assertEquals(
             true,
             systemInstructions?.contains("# Available skills")
+        )
+        assertEquals(
+            false,
+            systemInstructions?.contains("# Coordinator Agent Identity")
         )
     }
 
@@ -262,7 +279,7 @@ class AssistantTest {
 
         val req = argumentCaptor<LLMRequest>()
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals("Query: ${prompt.text}", req.firstValue.prompt)
+        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
     }
 
     @Test
@@ -303,6 +320,7 @@ class AssistantTest {
         assertEquals(
             """
 Query: Yo
+
 ---
 # Long-Term Memory
 Here are information that you have stored in your long-term memory in Markdown format:
@@ -320,6 +338,84 @@ $history
 
                """.trimIndent(),
             req.firstValue.prompt
+        )
+    }
+
+    @Test
+    fun `process swarm`() {
+        // GIVEN
+        val planner = mock<Assistant>()
+        doReturn(Message("from planner")).whenever(planner).process(any(), anyOrNull())
+
+        assistant.init(
+            mapOf(
+                "coordinator" to true
+            ),
+            context = Context(
+                home = getResourceFile("/home/swarm"),
+                llm = llm,
+                toolRegistry = toolRegistry,
+                memory = memory,
+                skillRegistry = skillRegistry,
+                dailyLog = dailyLog,
+                sessionLog = sessionLog,
+                chatHistory = chatHistory,
+                assistantRegistry = assistantRegistry,
+            )
+        )
+
+        doReturn(
+            LLMResponse(
+                id = UUID.randomUUID().toString(),
+                choices = listOf(
+                    LLMResponseChoice(
+                        content = "Man",
+                        finishReason = LLMFinishReason.STOP,
+                        reasoningContent = null,
+                        toolCalls = emptyList(),
+                    )
+                )
+            )
+        ).whenever(llm).completion(any(), any())
+
+        // WHEN
+        val prompt = Message("Yo", Role.USER, userId = "user-1", channelId = "channel:telegram")
+        val result = assistant.process(prompt)
+
+        // THEN
+        assertEquals("Man", result.text)
+        assertEquals(Role.ASSISTANT, result.role)
+        assertEquals(FinishReason.DONE, result.finishReason)
+
+        val req = argumentCaptor<LLMRequest>()
+        verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
+        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
+
+        val systemInstructions = req.firstValue.systemInstructions
+        println(systemInstructions)
+        assertEquals(
+            true,
+            systemInstructions?.contains("You are a system agent designed to assist users with various tasks.")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Security Guidelines")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Daily Log Protocol")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Conversation History")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Available skills")
+        )
+        assertEquals(
+            true,
+            systemInstructions?.contains("# Coordinator Agent Identity")
         )
     }
 

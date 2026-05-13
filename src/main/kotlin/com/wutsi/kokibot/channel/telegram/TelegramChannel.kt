@@ -184,8 +184,7 @@ class TelegramChannel(
                             lastUpdateTime = now
                         } catch (ex: Exception) {
                             LOGGER.warn(
-                                "Failed to send or update streaming message, will retry on next update",
-                                ex
+                                "Failed to send or update streaming message, will retry on next update. ${ex.message}"
                             )
                             if (streamMessageId != null) {
                                 deleteMessage(chatId, streamMessageId!!)
@@ -298,7 +297,7 @@ class TelegramChannel(
                 .build()
             client.execute(deleteMessage)
         } catch (ex: Exception) {
-            LOGGER.warn("Failed to delete message $messageId in chat $chatId", ex)
+            LOGGER.warn("Failed to delete message $messageId in chat $chatId. ${ex.message}")
         }
     }
 

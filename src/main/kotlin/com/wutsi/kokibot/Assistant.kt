@@ -36,11 +36,13 @@ class Assistant(val name: String = "") {
     private lateinit var description: String
     private lateinit var context: Context
     private lateinit var scheduler: ScheduledExecutorService
+    private var coordinator: Boolean = false
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         description = MapUtil.toString("description", config) ?: ""
-        maxDurationMinutes = MapUtil.toString("max-duraction", config)
+        coordinator = MapUtil.toBoolean("coordinator", config) ?: false
+        maxDurationMinutes = MapUtil.toString("max-duration", config)
             ?.let { value -> DurationUtil.minutes(value, DEFAULT_MAX_DURATION_MINUTES) }
             ?: DEFAULT_MAX_DURATION_MINUTES
 
@@ -48,6 +50,13 @@ class Assistant(val name: String = "") {
         scheduler = Executors.newScheduledThreadPool(poolSize)
 
         this.context = context
+        context.assistantRegistry.register(this)
+
+        LOGGER.info("Assistant: $name")
+        LOGGER.info("  coordinator: $coordinator")
+        LOGGER.info("  max-duration: ${maxDurationMinutes}m")
+        LOGGER.info("  max-iterations: $maxIterations")
+        LOGGER.info("  pool-size: $poolSize")
     }
 
     fun destroy() {
@@ -158,6 +167,7 @@ class Assistant(val name: String = "") {
             prompt = buildPrompt(query, memory),
             systemInstructions = listOfNotNull(
                 loadIdentify(),
+                if (coordinator) coordinatorInstructions() else null,
                 dailyLogInstructions(),
                 chatHistoryInstructions(query),
                 skillsInstructions(),
@@ -186,12 +196,13 @@ class Assistant(val name: String = "") {
         }
 
         // Record the result
-        LOGGER.info("$iteration $name LLM - tokens=" + response.usage?.totalTokens)
+        LOGGER.info("$iteration $name LLM - tokens=" + response.usage?.totalTokens + ", cached=" + response.usage?.promptCacheHitTokens)
         context.sessionLog.onLLMResponse(query.id, iteration, response, memory)
 
         // Update memory with reasoning content
         response.choices.forEach { choice ->
             if (!choice.content.isNullOrEmpty()) {
+                LOGGER.info(take(choice.content, 200))
                 memory.add(choice.content)
             }
         }
@@ -266,7 +277,7 @@ class Assistant(val name: String = "") {
     }
 
     private fun take(text: String, n: Int = 200): String {
-        val xtext = text.replace("\r\n", " ").take(n).trim()
+        val xtext = text.replace("\n", " ").take(n).trim()
         return if (text.length > n) {
             "$xtext..."
         } else {
@@ -312,7 +323,7 @@ class Assistant(val name: String = "") {
 
     private fun buildPrompt(query: Message, memory: List<String>): String {
         val sb = StringBuilder()
-        sb.append("Query: ${query.text}")
+        sb.append("Query: ${query.text}\n")
 
         // Long-term memory
         val longTermMemory = context.memory.get()
@@ -370,6 +381,11 @@ class Assistant(val name: String = "") {
 
     private fun securityInstructions(): String {
         return IOUtils.toString(Assistant::class.java.getResource("/instructions/SECURITY.md"), "utf-8")
+            .replace("{{HOME}}", context.home.absolutePath)
+    }
+
+    private fun coordinatorInstructions(): String {
+        return IOUtils.toString(Assistant::class.java.getResource("/instructions/COORDINATOR.md"), "utf-8")
             .replace("{{HOME}}", context.home.absolutePath)
     }
 

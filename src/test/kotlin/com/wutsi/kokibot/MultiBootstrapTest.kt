@@ -13,8 +13,9 @@ import kotlin.test.assertEquals
 class MultiBootstrapTest {
     private val jsonMapper = JsonMapper()
     private val env = mock<Environment>()
-    private val home = File(this::class.java.getResource("/multi-agent")!!.file)
-    private val bootstrap = MultiBootstrap(env, jsonMapper)
+    private val assistantRegistry = mock<AssistantRegistry>()
+    private val home = File(this::class.java.getResource("/home/multi-agent")!!.file)
+    private val bootstrap = MultiBootstrap(env, jsonMapper, assistantRegistry)
 
     @BeforeEach
     fun setup() {

@@ -24,6 +24,7 @@ import com.wutsi.kokibot.tools.messaging.SendMessageTool
 import com.wutsi.kokibot.tools.python.PythonTool
 import com.wutsi.kokibot.tools.shell.ShellTool
 import com.wutsi.kokibot.tools.skill.SkillActivationTool
+import com.wutsi.kokibot.tools.swarm.SwarmDelegateTool
 import com.wutsi.kokibot.tools.web.WebFetchTool
 import com.wutsi.kokibot.tools.web.WebSearchTool
 import com.wutsi.kokibot.util.MapUtil
@@ -39,6 +40,7 @@ class ContextFactory(
     private val commandRegistry: CommandRegistry = CommandRegistry(),
     private val skillRegistry: SkillRegistry = SkillRegistry(),
     private val jsonMapper: JsonMapper,
+    val assistantRegistry: AssistantRegistry,
 ) {
     fun create(home: File, config: Map<*, *>): Context {
         // Tools
@@ -60,6 +62,7 @@ class ContextFactory(
             memory = Memory(),
             config = config,
             jsonMapper = jsonMapper,
+            assistantRegistry = assistantRegistry,
         )
     }
 
@@ -83,6 +86,8 @@ class ContextFactory(
             ShellTool(),
 
             SkillActivationTool(),
+
+            SwarmDelegateTool(),
 
             WebSearchTool(),
             WebFetchTool(),

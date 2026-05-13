@@ -14,6 +14,7 @@ import java.io.File
 class MultiBootstrap(
     private val env: Environment,
     private val jsonMapper: JsonMapper,
+    private val assistantRegistry: AssistantRegistry,
 ) {
     val bootstraps = mutableListOf<Bootstrap>()
 
@@ -32,7 +33,10 @@ class MultiBootstrap(
         val agents = File(home, "agents")
         if (agents.exists()) {
             agents.listFiles { file -> file.isDirectory }?.forEach { dir ->
-                val contextFactory = ContextFactory(jsonMapper = jsonMapper)
+                val contextFactory = ContextFactory(
+                    jsonMapper = jsonMapper,
+                    assistantRegistry = assistantRegistry,
+                )
                 val bootstrap = Bootstrap(contextFactory)
                 bootstrap.init(dir)
                 bootstraps.add(bootstrap)

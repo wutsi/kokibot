@@ -28,6 +28,7 @@ open class Deepseek : LLM {
     protected lateinit var context: Context
     internal lateinit var client: DeepseekClient
     internal var streamingEnabled: Boolean = false
+    internal var thinking: Boolean = false
 
     override fun id(): String {
         return "llm:deepseek"
@@ -50,11 +51,13 @@ open class Deepseek : LLM {
 
         this.context = context
         this.streamingEnabled = MapUtil.toBoolean("streaming", config) ?: false
+        this.thinking = MapUtil.toBoolean("thinking", config) ?: false
         this.client = createClient(apiKey, model, config)
 
         LOGGER.info("LLM: " + config["type"])
         LOGGER.info(" model: $model")
-        LOGGER.info(" streaming: $streamingEnabled")
+        LOGGER.info(" streaming: ${this.streamingEnabled}")
+        LOGGER.info(" thinking: ${this.thinking}")
     }
 
     override fun health(): Health {
@@ -87,7 +90,7 @@ open class Deepseek : LLM {
             apiKey = apiKey,
             model = model,
             jsonMapper = context.jsonMapper,
-            thinking = MapUtil.toBoolean("thinking", config),
+            thinking = thinking,
             maxTokens = MapUtil.toInt("max-tokens", config),
             temperature = MapUtil.toDouble("temperature", config),
             readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,

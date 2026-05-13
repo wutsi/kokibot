@@ -37,6 +37,7 @@ class Context(
     val fileService: FileService = FileService(),
     val heartbeat: Heartbeat = Heartbeat(),
     val jsonMapper: JsonMapper = JsonMapper(),
+    val assistantRegistry: AssistantRegistry = AssistantRegistry(),
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Context::class.java)
@@ -50,7 +51,7 @@ class Context(
     }
 
     fun init(config: Map<*, *>) {
-        initAssistance(config)
+        initAssistant(config)
         initChannels(config)
         initMarketplaces(config) // IMPORTANT: Before initSkills() because some skills may depend on marketplaces.
         initSkills()
@@ -80,7 +81,7 @@ class Context(
             listOf(llm, memory, dailyLog, sessionLog, chatHistory, fileService, heartbeat)
     }
 
-    private fun initAssistance(config: Map<*, *>) {
+    private fun initAssistant(config: Map<*, *>) {
         assistant.init(
             MapUtil.toMap("assistant", config) ?: emptyMap<String, Any>(),
             this,

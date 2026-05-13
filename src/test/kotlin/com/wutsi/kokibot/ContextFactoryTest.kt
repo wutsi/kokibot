@@ -25,14 +25,15 @@ class ContextFactoryTest {
     private val skillRegistry = mock<SkillRegistry>()
     private val commandRegistry = mock<CommandRegistry>()
     private val jsonMapper = JsonMapper()
-    private val assistant = mock<Assistant>()
+    private val assistantRegistry = mock<AssistantRegistry>()
     private val factory = ContextFactory(
         toolRegistry,
         channelRegistry,
         llmFactory,
         commandRegistry,
         skillRegistry,
-        jsonMapper
+        jsonMapper,
+        assistantRegistry,
     )
 
     private val llm = mock<LLM>()
@@ -66,8 +67,9 @@ class ContextFactoryTest {
         assertEquals(toolRegistry, context.toolRegistry)
         assertEquals(jsonMapper, context.jsonMapper)
         assertEquals(skillRegistry, context.skillRegistry)
+        assertEquals(assistantRegistry, context.assistantRegistry)
 
-        verify(toolRegistry, times(9)).register(any())
+        verify(toolRegistry, times(10)).register(any())
     }
 
     @Test

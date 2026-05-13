@@ -41,8 +41,8 @@ class HeartbeatTest {
     fun tick() {
         doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
 
-        heartbeat.init(mapOf("" to ""), context)
-        heartbeat.tick()
+        heartbeat.init(mapOf("frequency" to "2s"), context)
+        Thread.sleep(3000)
 
         val msg = argumentCaptor<Message>()
         verify(context.assistant).process(msg.capture(), anyOrNull())
@@ -60,8 +60,28 @@ class HeartbeatTest {
             home = File("target/test-data/heartbeat"),
             llm = mock(),
         )
-        heartbeat.init(mapOf("" to ""), ctx)
-        heartbeat.tick()
+        heartbeat.init(mapOf("frequency" to "2s"), ctx)
+        Thread.sleep(3000)
+
+        verify(context.assistant, never()).process(any(), anyOrNull())
+    }
+
+    @Test
+    fun `tick - empty frequency`() {
+        doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
+
+        heartbeat.init(mapOf("frequency" to ""), context)
+        Thread.sleep(3000)
+
+        verify(context.assistant, never()).process(any(), anyOrNull())
+    }
+
+    @Test
+    fun `tick - null frequency`() {
+        doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
+
+        heartbeat.init(mapOf("frequency" to null), context)
+        Thread.sleep(3000)
 
         verify(context.assistant, never()).process(any(), anyOrNull())
     }

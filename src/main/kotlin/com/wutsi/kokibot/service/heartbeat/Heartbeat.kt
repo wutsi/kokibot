@@ -17,12 +17,11 @@ class Heartbeat() : Resource {
         private val LOGGER = LoggerFactory.getLogger(Heartbeat::class.java)
 
         const val ID = "service:heartbeat"
-        const val DEFAULT_FREQUENCY = "1h"
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private lateinit var context: Context
-    private lateinit var job: ScheduledFuture<*>
+    private var job: ScheduledFuture<*>? = null
 
     override fun id(): String {
         return ID
@@ -30,13 +29,15 @@ class Heartbeat() : Resource {
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-        val frequency = MapUtil.toString("frequency", config) ?: DEFAULT_FREQUENCY
+        val frequency = MapUtil.toString("frequency", config)?.ifEmpty { null }
 
-        job = launchJob(frequency)
+        frequency?.let {
+            job = launchJob(frequency)
+        }
     }
 
     override fun destroy() {
-        job.cancel(false)
+        job?.cancel(false)
     }
 
     fun tick() {
@@ -44,7 +45,6 @@ class Heartbeat() : Resource {
 
         val file = File(context.home, "HEARTBEAT.md")
         if (!file.exists()) {
-            LOGGER.debug("No heartbeat file found, skipping")
             return
         }
 

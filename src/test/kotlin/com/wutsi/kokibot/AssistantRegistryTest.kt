@@ -25,18 +25,30 @@ class AssistantRegistryTest {
     }
 
     @Test
-    fun `register overwrites previous assistant with same name`() {
+    fun `register duplicate name`() {
         val first = Assistant("Foo")
         val second = Assistant("foo")
 
         registry.register(first)
-        registry.register(second)
 
-        assertEquals(second, registry.get("Foo"))
+        assertThrows<AssistantAlreadyRegisteredException> {
+            registry.register(second)
+        }
     }
 
     @Test
     fun `get unknown assistant throws`() {
         assertThrows<AssistantNotFoundException> { registry.get("xxx") }
+    }
+
+    @Test
+    fun all() {
+        val first = Assistant("Foo")
+        val second = Assistant("bar")
+
+        registry.register(first)
+        registry.register(second)
+
+        assertEquals(2, registry.all().size)
     }
 }

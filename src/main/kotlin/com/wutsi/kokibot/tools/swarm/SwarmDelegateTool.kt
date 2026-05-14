@@ -43,7 +43,7 @@ class SwarmDelegateTool : Tool {
                 ToolParameter(
                     name = "name",
                     type = ToolParameterType.STRING,
-                    description = "Name of the specialist agent (see your available agents in system instructions)",
+                    description = "Name of the specialist agent to delegate to. Be sure to use the exact name as registered.",
                     required = true,
                 ),
                 ToolParameter(
@@ -53,10 +53,10 @@ class SwarmDelegateTool : Tool {
                     required = true,
                 ),
                 ToolParameter(
-                    name = "task",
+                    name = "context",
                     type = ToolParameterType.STRING,
                     description = "Optional additional context or constraints for this task",
-                    required = true,
+                    required = false,
                 ),
             )
         )

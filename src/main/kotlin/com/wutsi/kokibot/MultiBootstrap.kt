@@ -2,6 +2,7 @@ package com.wutsi.kokibot
 
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
+import org.slf4j.LoggerFactory
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
@@ -16,6 +17,10 @@ class MultiBootstrap(
     private val jsonMapper: JsonMapper,
     private val assistantRegistry: AssistantRegistry,
 ) {
+    companion object {
+        private val LOGGER = LoggerFactory.getLogger(MultiBootstrap::class.java)
+    }
+
     val bootstraps = mutableListOf<Bootstrap>()
 
     @PostConstruct
@@ -41,6 +46,8 @@ class MultiBootstrap(
                 bootstrap.init(dir)
                 bootstraps.add(bootstrap)
             }
+        } else {
+            LOGGER.warn("No agents/ directory - No assistant be loaded")
         }
     }
 

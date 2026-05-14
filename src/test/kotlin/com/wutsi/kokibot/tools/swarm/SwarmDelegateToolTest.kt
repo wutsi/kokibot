@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SwarmDelegateToolTest {
@@ -47,6 +48,10 @@ class SwarmDelegateToolTest {
         val task = meta.parameters.first { it.name == "task" }
         assertEquals(ToolParameterType.STRING, task.type)
         assertTrue(task.required)
+
+        val context = meta.parameters.first { it.name == "context" }
+        assertEquals(ToolParameterType.STRING, context.type)
+        assertFalse(context.required)
     }
 
     @Test

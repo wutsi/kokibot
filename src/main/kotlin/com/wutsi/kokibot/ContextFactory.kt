@@ -40,7 +40,7 @@ class ContextFactory(
     private val commandRegistry: CommandRegistry = CommandRegistry(),
     private val skillRegistry: SkillRegistry = SkillRegistry(),
     private val jsonMapper: JsonMapper,
-    val assistantRegistry: AssistantRegistry,
+    private val assistantRegistry: AssistantRegistry,
 ) {
     fun create(home: File, config: Map<*, *>): Context {
         // Tools

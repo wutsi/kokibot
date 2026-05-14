@@ -6,8 +6,16 @@ import org.springframework.stereotype.Service
 class AssistantRegistry {
     private val assistants = mutableMapOf<String, Assistant>()
 
+    fun all(): List<Assistant> {
+        return assistants.values.toList()
+    }
+
     fun register(assistant: Assistant) {
-        assistants[assistant.name.lowercase()] = assistant
+        val key = assistant.name.lowercase()
+        if (assistants.containsKey(key)) {
+            throw AssistantAlreadyRegisteredException("Assistant already registered: ${assistant.name}")
+        }
+        assistants[key] = assistant
     }
 
     fun get(name: String): Assistant {

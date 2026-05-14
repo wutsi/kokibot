@@ -2,6 +2,7 @@ package com.wutsi.kokibot.service.heartbeat
 
 import com.nhaarman.mockitokotlin2.verify
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.File
@@ -24,7 +25,7 @@ class HeartbeatCommandTest {
 
     @Test
     fun exec() {
-        val result = command.exec("", context)
+        val result = command.exec(Message(text = ""), context)
         assertEquals("Heartbeat triggered", result)
         verify(heartbeat).tick()
     }

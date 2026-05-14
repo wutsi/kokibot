@@ -6,6 +6,7 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.llm.LLM
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -33,7 +34,7 @@ class SkillCommandTest {
         doReturn(SkillMetadata(name = "skill2", home = File("target"))).whenever(skill2).metadata
         doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
 
-        val result = cmd.exec("", context)
+        val result = cmd.exec(Message(text = ""), context)
 
         assertEquals(
             """
@@ -59,7 +60,7 @@ class SkillCommandTest {
         )
         doReturn(skill).whenever(skillRegistry).get("skill1")
 
-        val result = cmd.exec("skill1", context)
+        val result = cmd.exec(Message(text = "skill1"), context)
 
         assertEquals(
             """
@@ -80,7 +81,7 @@ class SkillCommandTest {
     fun `exec skill not found`() {
         doThrow(SkillNotFoundException("not found")).whenever(skillRegistry).get(any())
 
-        val result = cmd.exec("skill1", context)
+        val result = cmd.exec(Message(text = "skill1"), context)
 
         assertEquals("Skill not found: `skill1`", result)
     }

@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.command
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.util.MarkdownSanitizer
 import org.slf4j.LoggerFactory
 
@@ -21,8 +22,8 @@ class HelpCommand : Command {
         )
     }
 
-    override fun exec(input: String, context: Context): String {
-        val name = input.trim().lowercase()
+    override fun exec(input: Message, context: Context): String {
+        val name = input.text.trim().lowercase()
         return if (name.isEmpty()) {
             list(context)
         } else {

@@ -5,6 +5,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,7 +43,7 @@ class HealthCommandTest {
             )
         ).whenever(context).health()
 
-        val result = cmd.exec("", context)
+        val result = cmd.exec(Message(text = ""), context)
 
         assertEquals(
             """
@@ -70,7 +71,7 @@ class HealthCommandTest {
             )
         ).whenever(context).health()
 
-        val result = cmd.exec("", context)
+        val result = cmd.exec(Message(text = ""), context)
 
         assertEquals(
             """
@@ -96,7 +97,7 @@ class HealthCommandTest {
             )
         ).whenever(rs2).health()
 
-        val result = cmd.exec("id-2", context)
+        val result = cmd.exec(Message(text = "id-2"), context)
 
         assertEquals(
             """
@@ -114,7 +115,7 @@ class HealthCommandTest {
         doReturn("id-1").whenever(rs1).id()
         doReturn("id-2").whenever(rs2).id()
 
-        val result = cmd.exec("xxx", context)
+        val result = cmd.exec(Message(text = "xxx"), context)
 
         assertEquals("Resource not found: `xxx`", result)
     }

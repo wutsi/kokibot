@@ -6,6 +6,7 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.llm.LLM
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -33,7 +34,7 @@ class ToolCommandTest {
         doReturn(ToolMetadata(name = "tool2")).whenever(tool2).metadata()
         doReturn(listOf(tool1, tool2)).whenever(toolRegistry).all()
 
-        val result = cmd.exec("", context)
+        val result = cmd.exec(Message(text = ""), context)
 
         assertEquals(
             """
@@ -70,7 +71,7 @@ class ToolCommandTest {
         ).whenever(tool).metadata()
         doReturn(tool).whenever(toolRegistry).get(any())
 
-        val result = cmd.exec("tool_1", context)
+        val result = cmd.exec(Message(text = "tool_1"), context)
 
         assertEquals(
             """
@@ -98,7 +99,7 @@ class ToolCommandTest {
         ).whenever(tool).metadata()
         doReturn(tool).whenever(toolRegistry).get(any())
 
-        val result = cmd.exec("tool1", context)
+        val result = cmd.exec(Message(text = "tool1"), context)
 
         assertEquals(
             """
@@ -118,7 +119,7 @@ class ToolCommandTest {
     fun `exec bad tool`() {
         doThrow(ToolNotFoundException::class).whenever(toolRegistry).get(any())
 
-        val result = cmd.exec("tool1", context)
+        val result = cmd.exec(Message(text = "tool1"), context)
 
         assertEquals("Tool not found: `tool1`", result)
     }

@@ -6,6 +6,7 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.llm.LLM
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -33,7 +34,7 @@ class HelpCommandTest {
         doReturn(CommandMetadata(name = "command1")).whenever(command2).metadata()
         doReturn(listOf(command1, command2)).whenever(commandRegistry).all()
 
-        val result = cmd.exec("", context)
+        val result = cmd.exec(Message(text = ""), context)
 
         assertEquals(
             """
@@ -56,7 +57,7 @@ class HelpCommandTest {
         ).whenever(command).metadata()
         doReturn(command).whenever(commandRegistry).get(any())
 
-        val result = cmd.exec("command1", context)
+        val result = cmd.exec(Message(text = "command1"), context)
 
         assertEquals(
             """
@@ -72,7 +73,7 @@ class HelpCommandTest {
     fun `exec bad command`() {
         doThrow(CommandNotFoundException::class).whenever(commandRegistry).get(any())
 
-        val result = cmd.exec("command1", context)
+        val result = cmd.exec(Message(text = "command1"), context)
 
         assertEquals("Command not found: command1", result)
     }

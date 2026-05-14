@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.service.heartbeat
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
 
@@ -12,7 +13,7 @@ class HeartbeatCommand : Command {
         )
     }
 
-    override fun exec(input: String, context: Context): String {
+    override fun exec(input: Message, context: Context): String {
         context.heartbeat.tick()
         return "Heartbeat triggered"
     }

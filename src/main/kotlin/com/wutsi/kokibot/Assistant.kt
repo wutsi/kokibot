@@ -301,8 +301,8 @@ class Assistant(val name: String = "") {
                     return CommandMetadata(name = "")
                 }
 
-                override fun exec(input: String, context: Context): String {
-                    return "Invalid command: $name.\nUse /help to get the list of available commands."
+                override fun exec(input: Message, context: Context): String {
+                    return "Invalid command: ${input.text.split(" ").first()}.\nUse /help to get the list of available commands."
                 }
             }
         }
@@ -311,14 +311,17 @@ class Assistant(val name: String = "") {
     private fun exec(iteration: Int, query: Message, command: Command): String {
         val text = query.text.trim()
         val name = command.metadata().name
-        val input = if (text.equals(name, ignoreCase = true)) {
+        val commandText = if (text.equals(name, ignoreCase = true)) {
             ""
         } else {
             text.substring(name.length).trim()
         }
 
-        LOGGER.info("$iteration - COMMAND: {} {}", name, input)
-        return command.exec(input, context)
+        LOGGER.info("$iteration - COMMAND: {} {}", name, commandText)
+        return command.exec(
+            query.copy(text = commandText),
+            context
+        )
     }
 
     private fun buildPrompt(query: Message, memory: List<String>): String {

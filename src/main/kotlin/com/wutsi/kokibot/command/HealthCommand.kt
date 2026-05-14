@@ -2,6 +2,7 @@ package com.wutsi.kokibot.command
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
+import com.wutsi.kokibot.Message
 
 class HealthCommand : Command {
     override fun metadata(): CommandMetadata {
@@ -16,8 +17,8 @@ class HealthCommand : Command {
         )
     }
 
-    override fun exec(input: String, context: Context): String {
-        val id = input.trim().lowercase()
+    override fun exec(input: Message, context: Context): String {
+        val id = input.text.trim().lowercase()
         return if (id.isEmpty()) {
             overall(context)
         } else {

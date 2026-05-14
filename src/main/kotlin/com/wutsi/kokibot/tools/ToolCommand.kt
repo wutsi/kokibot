@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.tools
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.util.MarkdownSanitizer
@@ -24,8 +25,8 @@ class ToolCommand : Command {
         )
     }
 
-    override fun exec(input: String, context: Context): String {
-        val name = input.trim().lowercase()
+    override fun exec(input: Message, context: Context): String {
+        val name = input.text.trim().lowercase()
         return if (name.isEmpty()) {
             list(context)
         } else {

@@ -6,6 +6,8 @@ import com.wutsi.kokibot.Resource
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 
 class ChatHistory : Resource {
     companion object {
@@ -13,6 +15,7 @@ class ChatHistory : Resource {
     }
 
     private lateinit var context: Context
+    private val lock = ReentrantReadWriteLock()
 
     override fun id(): String {
         return ID
@@ -23,20 +26,22 @@ class ChatHistory : Resource {
     }
 
     fun append(query: Message, response: Message) {
-        val userId = query.userId ?: return
-        val channelId = query.channelId ?: return
-        val files = query.filePaths.joinToString("\n") { file -> "- $file" }
+        lock.write {
+            val userId = query.userId ?: return
+            val channelId = query.channelId ?: return
+            val files = query.filePaths.joinToString("\n") { file -> "- $file" }
 
-        val content = "# ${query.dateTime}: Session ${query.id}\n" +
-            "## ${query.role}\n" +
-            "### Query:\n" +
-            "```markdown\n${query.text}\n```" +
-            (if (files.isNotEmpty()) "\n### Files:\n$files" else "") +
-            "\n\n## ${response.role}\n" +
-            "### Response:\n" +
-            "```markdown\n${response.text}\n```\n\n---\n\n"
+            val content = "# ${query.dateTime}: Session ${query.id}\n" +
+                "## ${query.role}\n" +
+                "### Query:\n" +
+                "```markdown\n${query.text}\n```" +
+                (if (files.isNotEmpty()) "\n### Files:\n$files" else "") +
+                "\n\n## ${response.role}\n" +
+                "### Response:\n" +
+                "```markdown\n${response.text}\n```\n\n---\n\n"
 
-        getFile(userId, channelId).appendText(content)
+            getFile(userId, channelId).appendText(content)
+        }
     }
 
     private fun getFile(userId: String, channelId: String): File {

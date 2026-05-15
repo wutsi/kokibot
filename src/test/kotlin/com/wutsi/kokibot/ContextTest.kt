@@ -134,7 +134,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(9, health.children.size)
+        assertEquals(10, health.children.size) // LLM, Memory, DailyLog, SessionLog, ChatHistory, FileService, Heartbeat, DelegationStack, 2 channels
     }
 
     private fun getResourceFile(path: String): File {

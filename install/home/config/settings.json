@@ -2,6 +2,10 @@
   "assistant": {
     "max-iterations": 30
   },
+  "swarm": {
+    "max-depth": 5,
+    "detect-cycles": true
+  },
   "heartbeat": {
     "frequency": "1h"
   },

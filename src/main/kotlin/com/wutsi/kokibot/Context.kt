@@ -12,6 +12,7 @@ import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.service.memory.SessionLog
+import com.wutsi.kokibot.service.swarm.DelegationStack
 import com.wutsi.kokibot.skill.SkillParser
 import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.ToolRegistry
@@ -36,6 +37,7 @@ class Context(
     val chatHistory: ChatHistory = ChatHistory(),
     val fileService: FileService = FileService(),
     val heartbeat: Heartbeat = Heartbeat(),
+    val delegationStack: DelegationStack = DelegationStack(),
     val jsonMapper: JsonMapper = JsonMapper(),
     val assistantRegistry: AssistantRegistry = AssistantRegistry(),
 ) {
@@ -61,6 +63,7 @@ class Context(
         initCommands()
         initFileService()
         initHeartbeat(config)
+        initDelegationStack(config)
     }
 
     fun health(): Health {
@@ -78,7 +81,7 @@ class Context(
             toolRegistry.all() +
             channelRegistry.all() +
             marketplaceRegistry.all() +
-            listOf(llm, memory, dailyLog, sessionLog, chatHistory, fileService, heartbeat)
+            listOf(llm, memory, dailyLog, sessionLog, chatHistory, fileService, heartbeat, delegationStack)
     }
 
     private fun initAssistant(config: Map<*, *>) {
@@ -136,6 +139,13 @@ class Context(
     private fun initHeartbeat(config: Map<*, *>) {
         heartbeat.init(
             MapUtil.toMap("heartbeat", config) ?: emptyMap<String, Any>(),
+            this,
+        )
+    }
+
+    private fun initDelegationStack(config: Map<*, *>) {
+        delegationStack.init(
+            MapUtil.toMap("swarm", config) ?: emptyMap<String, Any>(),
             this,
         )
     }

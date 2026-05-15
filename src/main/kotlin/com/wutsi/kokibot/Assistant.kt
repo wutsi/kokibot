@@ -38,6 +38,9 @@ class Assistant(val name: String = "") {
     private lateinit var scheduler: ScheduledExecutorService
     private var coordinator: Boolean = false
 
+    var currentQuery: Message? = null
+        private set
+
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         description = MapUtil.toString("description", config) ?: ""
@@ -123,34 +126,41 @@ class Assistant(val name: String = "") {
         query: Message,
         streamCallback: ((String) -> Unit)?,
     ): Message {
-        var iteration = 0
-        val memory = mutableListOf<String>()
-        val tools = mutableMapOf<String, Tool>()
-        context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
+        currentQuery = query
+        try {
+            var iteration = 0
+            val memory = mutableListOf<String>()
+            val tools = mutableMapOf<String, Tool>()
+            context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
 
-        while (true) {
-            if (iteration++ > maxIterations) {
-                throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
-            }
+            while (true) {
+                if (iteration++ > maxIterations) {
+                    throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
+                }
 
-            val command = getCommand(query)
-            if (command != null) {
-                val result = exec(iteration, query, command)
-                return Message(
-                    text = result,
-                    role = Role.COMMAND,
-                    finishReason = FinishReason.DONE,
-                )
-            } else {
-                val response = ask(iteration, query, memory, streamCallback)
-                if (decide(query.id, iteration, response, memory, tools)) {
+                val command = getCommand(query)
+                if (command != null) {
+                    val result = exec(iteration, query, command)
                     return Message(
-                        text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
-                        role = Role.ASSISTANT,
+                        text = result,
+                        role = Role.COMMAND,
                         finishReason = FinishReason.DONE,
                     )
+                } else {
+                    val response = ask(iteration, query, memory, streamCallback)
+                    if (decide(query.id, iteration, response, memory, tools)) {
+                        return Message(
+                            text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
+                            role = Role.ASSISTANT,
+                            finishReason = FinishReason.DONE,
+                        )
+                    }
                 }
             }
+        } finally {
+            currentQuery = null
+            // Clear delegation stack for this session
+            context.delegationStack.clear(query.id)
         }
     }
 

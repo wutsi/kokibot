@@ -56,7 +56,12 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec delegates to assistant`() {
-        // GIVEN
+        // GIVEN: Setup calling assistant with current query
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
         val assistant = mock<Assistant>()
         doReturn(assistant).whenever(assistantRegistry).get("planner")
         doReturn(Message(text = "done", role = Role.ASSISTANT))
@@ -85,7 +90,12 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec without optional context`() {
-        // GIVEN
+        // GIVEN: Setup calling assistant
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
         val assistant = mock<Assistant>()
         doReturn(assistant).whenever(assistantRegistry).get("planner")
         doReturn(Message(text = "ok", role = Role.ASSISTANT))
@@ -103,7 +113,12 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec when assistant not found returns error message`() {
-        // GIVEN
+        // GIVEN: Setup calling assistant
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
         doThrow(AssistantNotFoundException("not found")).whenever(assistantRegistry).get("ghost")
 
         // WHEN
@@ -118,7 +133,12 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec when assistant throws returns error message`() {
-        // GIVEN
+        // GIVEN: Setup calling assistant
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
         val assistant = mock<Assistant>()
         doReturn(assistant).whenever(assistantRegistry).get("planner")
         doThrow(RuntimeException("boom"))
@@ -143,5 +163,91 @@ class SwarmDelegateToolTest {
         assertThrows<IllegalArgumentException> {
             tool.exec(mapOf("name" to "planner"))
         }
+    }
+
+    @Test
+    fun `exec enforces max depth via delegation stack`() {
+        // Given: calling assistant at max depth
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
+        // Push to max depth
+        repeat(5) { i ->
+            context.delegationStack.push("session1", "agent-$i")
+        }
+
+        val targetAssistant = mock<Assistant>()
+        doReturn(targetAssistant).whenever(assistantRegistry).get("specialist")
+
+        // When
+        val result = tool.exec(mapOf("name" to "specialist", "task" to "Task"))
+
+        // Then
+        assertTrue(result.startsWith("Error:"))
+        assertTrue(result.contains("depth limit"))
+    }
+
+    @Test
+    fun `exec detects cycles via delegation stack`() {
+        // Given: delegation chain agent-a → agent-b
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
+        context.delegationStack.push("session1", "agent-a")
+        context.delegationStack.push("session1", "agent-b")
+
+        val targetAssistant = mock<Assistant>()
+        doReturn(targetAssistant).whenever(assistantRegistry).get("agent-a")
+
+        // When: try to delegate back to 'agent-a'
+        val result = tool.exec(mapOf("name" to "agent-a", "task" to "Task"))
+
+        // Then
+        assertTrue(result.startsWith("Error:"))
+        assertTrue(result.contains("cycle detected"))
+    }
+
+    @Test
+    fun `exec pops stack even when delegation fails`() {
+        // Given
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
+        val targetAssistant = mock<Assistant>()
+        doReturn(targetAssistant).whenever(assistantRegistry).get("specialist")
+        doThrow(RuntimeException("boom"))
+            .whenever(targetAssistant).process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
+
+        // When: delegation fails
+        tool.exec(mapOf("name" to "specialist", "task" to "Task"))
+
+        // Then: stack still cleaned up
+        assertEquals(0, context.delegationStack.getDepth("session1"))
+    }
+
+    @Test
+    fun `exec pops stack on successful delegation`() {
+        // Given
+        val callingAssistant = mock<Assistant>()
+        val message = Message(text = "test", role = Role.USER, id = "session1")
+        doReturn(message).whenever(callingAssistant).currentQuery
+        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
+
+        val targetAssistant = mock<Assistant>()
+        doReturn(targetAssistant).whenever(assistantRegistry).get("specialist")
+        doReturn(Message(text = "done", role = Role.ASSISTANT))
+            .whenever(targetAssistant).process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
+
+        // When: delegation succeeds
+        tool.exec(mapOf("name" to "specialist", "task" to "Task"))
+
+        // Then: stack cleaned up
+        assertEquals(0, context.delegationStack.getDepth("session1"))
     }
 }

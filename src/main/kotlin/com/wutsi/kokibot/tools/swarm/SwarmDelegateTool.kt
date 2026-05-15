@@ -4,6 +4,7 @@ import com.wutsi.kokibot.AssistantNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.swarm.DelegationException
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
@@ -67,7 +68,16 @@ class SwarmDelegateTool : Tool {
         val task = arguments["task"] as? String ?: throw IllegalArgumentException("Missing required parameter: task")
         val context = (arguments["context"] as? String?)?.ifEmpty { null }
 
+        // Find calling assistant's session ID
+        val callingAssistant = this.context.assistantRegistry.all()
+            .find { it.currentQuery != null }
+        val sessionId = callingAssistant?.currentQuery?.id
+            ?: return "Error: Cannot determine session context for delegation"
+
         try {
+            // Validate and push to delegation stack (throws on failure)
+            this.context.delegationStack.push(sessionId, name)
+            // Execute delegation
             val assistant = this.context.assistantRegistry.get(name)
             val result = assistant.process(
                 Message(
@@ -79,11 +89,17 @@ class SwarmDelegateTool : Tool {
                 {}
             )
             return "Result from `$name`:\n${result.text}"
+        } catch (e: DelegationException) {
+            // Return validation error to LLM
+            return "Error: ${e.message}"
         } catch (_: AssistantNotFoundException) {
             return "Error: Specialist agent '$name' not found. Please check the name and try again."
         } catch (e: Exception) {
             LOGGER.error("Error delegating task to '$name'", e)
             return "Error delegating task to '$name': ${e.message}"
+        } finally {
+            // Always pop on exit (success or failure)
+            this.context.delegationStack.pop(sessionId)
         }
     }
 }

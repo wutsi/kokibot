@@ -2,6 +2,7 @@ package com.wutsi.kokibot.tools.python
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.tools.ToolParameterType
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -17,6 +18,12 @@ class PythonToolTest {
         llm = mock(),
     )
 
+    private fun createFile(name: String, code: String): File {
+        val file = File.createTempFile(name, ".py")
+        file.writeText(code)
+        return file
+    }
+
     @BeforeEach
     fun init() {
         tool.init(emptyMap<String, Any>(), context)
@@ -26,29 +33,34 @@ class PythonToolTest {
     fun metadata() {
         val meta = tool.metadata()
         assertEquals(PythonTool.NAME, meta.name)
-        assertEquals(2, meta.parameters.size)
+        assertEquals(3, meta.parameters.size)
 
-        assertEquals("code", meta.parameters[0].name)
+        assertEquals("path", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
         assertTrue(meta.parameters[0].required)
 
-        assertEquals("timeout", meta.parameters[1].name)
-        assertEquals(ToolParameterType.INTEGER, meta.parameters[1].type)
+        assertEquals("working_dir", meta.parameters[1].name)
+        assertEquals(ToolParameterType.STRING, meta.parameters[1].type)
+        assertFalse(meta.parameters[1].required)
+
+        assertEquals("timeout", meta.parameters[2].name)
+        assertEquals(ToolParameterType.INTEGER, meta.parameters[2].type)
+        assertFalse(meta.parameters[2].required)
     }
 
     @Test
     fun `exec - print`() {
-        val result = tool.exec(mapOf("code" to "print('Hello, World!')"))
+        val file = createFile("print", "print('Hello, World!')")
+        val result = tool.exec(mapOf("path" to file.absolutePath))
 
         assertEquals("Hello, World!\n", result)
     }
 
     @Test
     fun `exec - math`() {
-        val result = tool.exec(
-            mapOf(
-                "code" to
-                    """
+        val file = createFile(
+            "math",
+            """
                         import math
 
                         number = 16
@@ -56,73 +68,62 @@ class PythonToolTest {
 
                         print(f"The square root of {number} is {result}")
                     """.trimIndent()
-            )
         )
+        val result = tool.exec(mapOf("path" to file.absolutePath))
 
         assertEquals("The square root of 16 is 4.0\n", result)
     }
 
     @Test
     fun `exec - compute error`() {
-        val result = tool.exec(
-            mapOf(
-                "code" to
-                    """
-                        import math
+        val file = createFile("compute_error", "print(1 / 0)")
+        val result = tool.exec(mapOf("path" to file.absolutePath))
 
-                        number = -16
-                        result = math.sqrt(number)
-
-                        print(f"The square root of {number} is {result}")
-                    """.trimIndent()
-            )
-        )
-
-        assertEquals(true, result.startsWith("Error executing Python code: "))
+        assertEquals(true, result.contains("FAILURE"))
     }
 
     @Test
     fun `exec - syntax error`() {
-        val result = tool.exec(
-            mapOf(
-                "code" to
-                    """
+        val file = createFile(
+            "syntax_error",
+            """
                         number = 16
                         result = sqrt(number)
 
                         print(f"The square root of {number} is {result}")
-                    """.trimIndent()
-            )
+                    """.trimIndent(),
         )
 
-        assertEquals(true, result.startsWith("Error executing Python code: "))
+        val result = tool.exec(mapOf("path" to file.absolutePath))
+        assertEquals(true, result.contains("FAILURE"))
     }
 
     @Test
-    fun `exec - empty code`() {
-        assertThrows<IllegalArgumentException> { tool.exec(mapOf("code" to "")) }
+    fun `exec - empty path`() {
+        assertThrows<IllegalArgumentException> { tool.exec(mapOf("oath" to "")) }
     }
 
     @Test
-    fun `exec - no code`() {
+    fun `exec - no path`() {
         assertThrows<IllegalArgumentException> { tool.exec(emptyMap<String, String>()) }
     }
 
     @Test
     fun `exec - timeout`() {
-        val started = System.currentTimeMillis()
+        val file = createFile(
+            "timeout",
+            """
+                        while True:
+                            pass
+                    """.trimIndent(),
+        )
+
         val result = tool.exec(
             mapOf(
-                "code" to "while True:\n    pass\n",
-                "timeout" to "1",
+                "path" to file.absolutePath,
+                "timeout" to 1, // 1 second timeout for testing
             )
         )
-        val elapsedMs = System.currentTimeMillis() - started
-
-        assertTrue(
-            result.startsWith("Error executing Python code: execution timed out after 1 seconds"),
-            "Unexpected result: $result"
-        )
-        assertTrue(elapsedMs < 10_000, "Execution did not terminate promptly: ${elapsedMs}ms")
+        assertEquals(true, result.contains("TIMEOUT"))
     }
 }

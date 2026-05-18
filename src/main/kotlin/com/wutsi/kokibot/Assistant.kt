@@ -98,8 +98,9 @@ class Assistant(val name: String = "") {
         }
 
         // Result
+        val duration = DurationUtil.hms(System.currentTimeMillis() - now)
         LOGGER.info(
-            "${query.id} $name FINAL ANSWER (" + (System.currentTimeMillis() - now) / 1000 + "s): " +
+            "${query.id} $name FINAL ANSWER ($duration): " +
                 take(response.text, 200)
         )
         context.chatHistory.append(query, response)
@@ -255,7 +256,12 @@ class Assistant(val name: String = "") {
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ) {
-        LOGGER.info("$iteration $name TOOL ${call.name} " + take(call.arguments.toString(), 200))
+        LOGGER.info(
+            "$iteration $name TOOL ${call.name} " +
+                call.arguments.map { entry ->
+                "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
+            }.joinToString(",")
+        )
         context.sessionLog.onToolUse(id, iteration, call)
 
         // Execute
@@ -312,7 +318,9 @@ class Assistant(val name: String = "") {
                 }
 
                 override fun exec(input: Message, context: Context): String {
-                    return "Invalid command: ${input.text.split(" ").first()}.\nUse /help to get the list of available commands."
+                    return "Invalid command: ${
+                        input.text.split(" ").first()
+                    }.\nUse /help to get the list of available commands."
                 }
             }
         }

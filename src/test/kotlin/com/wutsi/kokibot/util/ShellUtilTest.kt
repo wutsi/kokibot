@@ -52,6 +52,6 @@ class ShellUtilTest {
 
         assertEquals(-1, result.status)
         assertNull(result.output)
-        assertNull(result.error)
+        assertEquals(true, result.error?.contains("TIMEOUT"))
     }
 }

@@ -1,9 +1,28 @@
 package com.wutsi.kokibot.util
 
+import com.wutsi.kokibot.util.DurationUtil.ONE_HOUR
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class DurationUtilTest {
+    @Test
+    fun hms() {
+        val value = DurationUtil.hms(ONE_HOUR + 30 * DurationUtil.ONE_MINUTE + 15 * DurationUtil.ONE_SECOND)
+        assertEquals("1h30m15s", value)
+    }
+
+    @Test
+    fun ms() {
+        val value = DurationUtil.hms(30 * DurationUtil.ONE_MINUTE + 15 * DurationUtil.ONE_SECOND)
+        assertEquals("30m15s", value)
+    }
+
+    @Test
+    fun s() {
+        val value = DurationUtil.hms(15 * DurationUtil.ONE_SECOND)
+        assertEquals("15s", value)
+    }
+
     @Test
     fun `days 3d`() {
         val millis = DurationUtil.days("3d")

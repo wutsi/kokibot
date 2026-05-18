@@ -23,8 +23,6 @@
 
         <flexmark.version>0.64.8</flexmark.version>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
-        <graalvm.version>25.0.2</graalvm.version>
-        <graalvm-python-embeded.version>25.0.2</graalvm-python-embeded.version>
         <greenmail.version>2.1.8</greenmail.version>
         <jakarta.mail-api.version>2.1.5</jakarta.mail-api.version>
         <jakarta.activation-api.version>2.1.4</jakarta.activation-api.version>
@@ -118,17 +116,6 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <version>${jqit.version}</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.polyglot</groupId>
-            <artifactId>python</artifactId>
-            <version>${graalvm.version}</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.python</groupId>
-            <artifactId>python-embedding</artifactId>
-            <version>${graalvm-python-embeded.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>

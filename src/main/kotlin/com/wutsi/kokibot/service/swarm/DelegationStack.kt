@@ -90,7 +90,6 @@ class DelegationStack : Resource {
             }
 
             stack.add(agentName)
-            LOGGER.debug("Pushed '$agentName' to stack for session $sessionId. Depth: ${stack.size}")
         }
     }
 
@@ -103,11 +102,7 @@ class DelegationStack : Resource {
     fun pop(sessionId: String): String? {
         return lock.write {
             val stack = stacks[sessionId]
-            val popped = stack?.removeLastOrNull()
-            if (popped != null) {
-                LOGGER.debug("Popped '$popped' from stack for session $sessionId. Depth: ${stack.size}")
-            }
-            popped
+            return stack?.removeLastOrNull()
         }
     }
 
@@ -119,7 +114,6 @@ class DelegationStack : Resource {
     fun clear(sessionId: String) {
         lock.write {
             stacks.remove(sessionId)
-            LOGGER.debug("Cleared stack for session $sessionId")
         }
     }
 

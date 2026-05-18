@@ -49,7 +49,7 @@ object ShellUtil {
             return ExecResult(
                 status = -1,
                 output = toString(process.inputStream),
-                error = toString(process.errorStream),
+                error = "TIMEOUT. " + toString(process.errorStream),
             )
         }
 

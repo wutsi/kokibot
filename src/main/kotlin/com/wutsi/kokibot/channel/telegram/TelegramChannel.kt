@@ -160,6 +160,7 @@ class TelegramChannel(
         var streamMessageId: Int? = null
         val streamBuffer = StringBuilder()
         var lastUpdateTime = System.currentTimeMillis()
+        var delay = 500L
 
         try {
             return context.assistant.process(
@@ -173,7 +174,7 @@ class TelegramChannel(
                     streamBuffer.append(delta)
                     val now = System.currentTimeMillis()
 
-                    if ((streamBuffer.length % 50 == 0 || now - lastUpdateTime > 500) && streamBuffer.isNotEmpty()) {
+                    if (streamBuffer.length % 50 == 0 && now - lastUpdateTime > delay && streamBuffer.isNotEmpty()) {
                         val msg = streamBuffer.toString().takeLast(STREAM_MAX_LENGTH)
                         try {
                             streamMessageId = sendOrUpdateMessage(
@@ -190,6 +191,9 @@ class TelegramChannel(
                                 deleteMessage(chatId, streamMessageId!!)
                             }
                             streamMessageId = null // Invalidate message ID to trigger sending a new message
+                            if (ex.message?.contains("[429] Too Many Requests") == true) {
+                                delay *= 2
+                            }
                         }
                     }
                 }
@@ -328,19 +332,14 @@ class TelegramChannel(
             val sent = client.execute(sendMessage)
             return sent.messageId
         } else {
-            try {
-                val editMessage = EditMessageText.builder()
-                    .chatId(chatId)
-                    .messageId(messageId)
-                    .text(html)
-                    .parseMode(ParseMode.HTML)
-                    .build()
-                client.execute(editMessage)
-                return messageId
-            } catch (ex: Exception) {
-                LOGGER.warn("Edit Failed.\nTXT: $text\n\nHTML: $html", ex)
-                throw ex
-            }
+            val editMessage = EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .text(html)
+                .parseMode(ParseMode.HTML)
+                .build()
+            client.execute(editMessage)
+            return messageId
         }
     }
 

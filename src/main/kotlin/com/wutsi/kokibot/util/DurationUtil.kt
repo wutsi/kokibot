@@ -6,6 +6,25 @@ object DurationUtil {
     val ONE_HOUR = 60 * ONE_MINUTE
     val ONE_DAY = 24 * ONE_HOUR
 
+    fun hms(duration: Long): String {
+        // Format duration from <hour>h<minute>m<second>s
+        // Ex: 2h30m15s, 4m20s, 45s
+        val hours = duration / ONE_HOUR
+        val minutes = (duration % ONE_HOUR) / ONE_MINUTE
+        val seconds = (duration % ONE_MINUTE) / ONE_SECOND
+        val sb = StringBuilder()
+        if (hours > 0) {
+            sb.append("${hours}h")
+        }
+        if (minutes > 0) {
+            sb.append("${minutes}m")
+        }
+        if (seconds > 0) {
+            sb.append("${seconds}s")
+        }
+        return sb.toString()
+    }
+
     fun days(earliest: String, default: Long = 0): Long {
         return millis(earliest, default * ONE_DAY) / ONE_DAY
     }

@@ -201,7 +201,13 @@ open class DeepseekClient(
     private fun toDeepseekRequest(request: LLMRequest, tools: List<Tool>): Map<*, *> {
         return mapOf(
             "model" to model,
-            "thinking" to (if (thinking == true) "enabled" else null),
+            "thinking" to if (thinking == true) {
+                mapOf(
+                    "type" to "enabled",
+                )
+            } else {
+                null
+            },
             "reasoning_effort" to if (thinking == true) "max" else null,
             "max_tokens" to maxTokens,
             "temperature" to temperature,

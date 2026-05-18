@@ -134,11 +134,10 @@ class DeepseekClientTest {
         val body = req.firstValue.body as Map<*, *>
         assertEquals(7, body.size)
         assertEquals(MODEL, body["model"])
-        assertEquals("enabled", body["thinking"])
+        assertEquals(mapOf("type" to "enabled"), body["thinking"])
         assertEquals(2048, body["max_tokens"])
         assertEquals(1.0, body["temperature"])
         assertEquals(true, body["parallel_tool_calls"])
-        assertEquals("enabled", body["thinking"])
         assertEquals("max", body["reasoning_effort"])
         assertEquals(
             listOf(
@@ -518,6 +517,7 @@ class DeepseekClientTest {
             readTimeoutMillis = 1000,
             connectTimeoutMillis = 3000,
             restBuilder = restBuilder,
+            reasoningEffort = "max"
         )
     }
 

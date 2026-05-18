@@ -29,6 +29,7 @@ open class DeepseekClient(
     val apiKey: String,
     val model: String,
     val thinking: Boolean? = null,
+    val reasoningEffort: String? = null,
     val temperature: Double? = null,
     val maxTokens: Int? = null,
     val readTimeoutMillis: Long? = null,
@@ -208,7 +209,7 @@ open class DeepseekClient(
             } else {
                 null
             },
-            "reasoning_effort" to if (thinking == true) "max" else null,
+            "reasoning_effort" to reasoningEffort,
             "max_tokens" to maxTokens,
             "temperature" to temperature,
             "messages" to listOfNotNull(

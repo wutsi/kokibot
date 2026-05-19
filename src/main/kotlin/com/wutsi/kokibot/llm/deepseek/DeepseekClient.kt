@@ -11,6 +11,9 @@ import com.wutsi.kokibot.llm.LLMUsage
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
+import com.wutsi.kokibot.util.retry.Retrier
+import com.wutsi.kokibot.util.retry.RetryClassifier
+import com.wutsi.kokibot.util.retry.RetryPolicy
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -20,6 +23,7 @@ import tools.jackson.databind.json.JsonMapper
 import java.io.File
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This is the client for the Deepseek API.
@@ -34,6 +38,7 @@ open class DeepseekClient(
     val maxTokens: Int? = null,
     val readTimeoutMillis: Long? = null,
     val connectTimeoutMillis: Long? = null,
+    val retryPolicy: RetryPolicy = RetryPolicy.default(),
     val restBuilder: RestBuilder = RestBuilder(),
     val jsonMapper: JsonMapper = JsonMapper(),
 ) {
@@ -44,6 +49,7 @@ open class DeepseekClient(
 
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val rest = restBuilder.build(readTimeoutMillis, connectTimeoutMillis)
+    private val retrier = Retrier(policy = retryPolicy, logger = logger)
 
     protected open fun getBaseUrl(): String {
         return "https://api.deepseek.com"
@@ -61,12 +67,13 @@ open class DeepseekClient(
         headers.set("Authorization", "Bearer $apiKey")
 
         val entity = HttpEntity(body, headers)
-        val resp = rest.postForEntity(
-            getBaseUrl() + COMPLETION_ENDPOINT,
-            entity,
-            Map::class.java
-        ).body
-            ?: throw IllegalStateException("No response from LLM")
+        val resp = retrier.execute(operationName = "${this::class.java.simpleName}.completion") {
+            rest.postForEntity(
+                getBaseUrl() + COMPLETION_ENDPOINT,
+                entity,
+                Map::class.java
+            ).body
+        } ?: throw IllegalStateException("No response from LLM")
 
         return toLLMResponse(resp)
     }
@@ -91,19 +98,32 @@ open class DeepseekClient(
         headers.set("Authorization", "Bearer $apiKey")
         headers.setAccept(listOf(MediaType.TEXT_EVENT_STREAM))
 
-        return rest.execute(
-            getBaseUrl() + COMPLETION_ENDPOINT,
-            org.springframework.http.HttpMethod.POST,
-            { clientRequest ->
-                clientRequest.headers.putAll(headers)
-                clientRequest.body.write(
-                    jsonMapper.writeValueAsBytes(streamBody)
-                )
-            },
-            { clientResponse ->
-                parseSSEStream(clientResponse.body, onChunk)
-            }
-        ) ?: throw IllegalStateException("No response from streaming LLM")
+        // Retry only the initiation of the stream. Once we forward a chunk to
+        // `onChunk`, we cannot replay deltas safely, so refuse any further retry.
+        val firstChunkEmitted = AtomicBoolean(false)
+        val guardedOnChunk: (LLMStreamChunk) -> Unit = { chunk ->
+            firstChunkEmitted.set(true)
+            onChunk(chunk)
+        }
+
+        return retrier.execute(
+            operationName = "deepseek.completionStream",
+            shouldRetry = { ex -> !firstChunkEmitted.get() && RetryClassifier.isRetryable(ex) },
+        ) {
+            rest.execute(
+                getBaseUrl() + COMPLETION_ENDPOINT,
+                org.springframework.http.HttpMethod.POST,
+                { clientRequest ->
+                    clientRequest.headers.putAll(headers)
+                    clientRequest.body.write(
+                        jsonMapper.writeValueAsBytes(streamBody)
+                    )
+                },
+                { clientResponse ->
+                    parseSSEStream(clientResponse.body, guardedOnChunk)
+                }
+            )
+        } ?: throw IllegalStateException("No response from streaming LLM")
     }
 
     /**

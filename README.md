@@ -120,6 +120,7 @@ This will automatically
 
 - Telegram
 - Email
+- Websocket
 
 ---
 

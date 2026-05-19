@@ -4,15 +4,3 @@ server:
         enabled: true
         mime-types: application/json,application/xml,text/html,text/xml,text/plain
         min-response-size: 512
-
-management:
-    endpoint:
-        health:
-            show-details: always
-        info:
-            git:
-                mode: full
-    endpoints:
-        web:
-            exposure:
-                include: "beans,flyway,health,info,scheduledtasks,mappings"

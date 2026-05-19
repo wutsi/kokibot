@@ -56,7 +56,7 @@ installing_dependencies(){
     # - we include the python dependencies: pytesseract, opencv-python and numpy
     if ! command -v markitdown >/dev/null 2>&1; then
         echo "Installing markitdown..."
-        pipx install markitdown
+        pipx install markitdown[all]
     fi
     if ! command -v tesseract >/dev/null 2>&1; then
         echo "Installing tesseract..."

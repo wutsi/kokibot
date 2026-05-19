@@ -14,17 +14,13 @@ import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import kotlin.math.max
 
 class Assistant(val name: String = "") {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
         private const val DEFAULT_ITERATIONS = 10
-        const val DEFAULT_POOL_SIZE = 4
-        const val MIN_POOL_SIZE = 2
         const val DEFAULT_MAX_DURATION_MINUTES = 5L
         const val ERROR_TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
         const val ERROR_TIMEOUT = "Oups, the request has been cancelled because it took too much time to process."
@@ -35,7 +31,6 @@ class Assistant(val name: String = "") {
     private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
     private lateinit var description: String
     private lateinit var context: Context
-    private lateinit var scheduler: ScheduledExecutorService
     private var coordinator: Boolean = false
 
     var currentQuery: Message? = null
@@ -49,9 +44,6 @@ class Assistant(val name: String = "") {
             ?.let { value -> DurationUtil.minutes(value, DEFAULT_MAX_DURATION_MINUTES) }
             ?: DEFAULT_MAX_DURATION_MINUTES
 
-        val poolSize = max(MIN_POOL_SIZE, MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_POOL_SIZE)
-        scheduler = Executors.newScheduledThreadPool(poolSize)
-
         this.context = context
         context.assistantRegistry.register(this)
 
@@ -59,15 +51,9 @@ class Assistant(val name: String = "") {
         LOGGER.info("  coordinator: $coordinator")
         LOGGER.info("  max-duration: ${maxDurationMinutes}m")
         LOGGER.info("  max-iterations: $maxIterations")
-        LOGGER.info("  pool-size: $poolSize")
     }
 
     fun destroy() {
-        try {
-            scheduler.shutdown()
-        } catch (e: Exception) {
-            LOGGER.warn("Error while shutting down scheduler", e)
-        }
     }
 
     fun process(
@@ -83,7 +69,8 @@ class Assistant(val name: String = "") {
         context.sessionLog.onQuery(query.id, 1, query)
 
         // Process async
-        val future = scheduler.submit<Message> {
+        val timer = Executors.newSingleThreadExecutor()
+        val future = timer.submit<Message> {
             doProcessAsync(query, streamCallback)
         }
 
@@ -95,6 +82,12 @@ class Assistant(val name: String = "") {
             Message(ERROR_TIMEOUT, Role.ASSISTANT, FinishReason.TIMEOUT)
         } catch (e: Exception) {
             Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
+        } finally {
+            try {
+                timer.shutdown()
+            } catch (e: Exception) {
+                LOGGER.warn("Error while shutting down scheduler. ${e.message}")
+            }
         }
 
         // Result
@@ -259,8 +252,8 @@ class Assistant(val name: String = "") {
         LOGGER.info(
             "$iteration $name TOOL ${call.name} " +
                 call.arguments.map { entry ->
-                "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
-            }.joinToString(",")
+                    "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
+                }.joinToString(",")
         )
         context.sessionLog.onToolUse(id, iteration, call)
 

@@ -131,6 +131,7 @@ class TelegramChannelTest {
         // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
+        Thread.sleep(3000) // Wait for the async processing to complete
 
         // THEN
         val prompt = argumentCaptor<Message>()
@@ -164,6 +165,7 @@ class TelegramChannelTest {
         // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
+        Thread.sleep(1000) // Wait for the async processing to complete
 
         // THEN
         verify(context.assistant).process(any(), anyOrNull())
@@ -213,6 +215,7 @@ class TelegramChannelTest {
         // WHEN
         telegram.init(config, context)
         telegram.consume(update)
+        Thread.sleep(1000) // Wait for the async processing to complete
 
         // THEN
         verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=21093209", Map::class.java)
@@ -250,6 +253,7 @@ class TelegramChannelTest {
         // WHEN
         telegram.init(config, context)
         telegram.consume(update)
+        Thread.sleep(1000) // Wait for the async processing to complete
 
         // THEN
         verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=2222", Map::class.java)
@@ -275,6 +279,7 @@ class TelegramChannelTest {
         // WHEN
         val update = createTextUpdate(null, 4309)
         telegram.consume(update)
+        Thread.sleep(1000) // Wait for the async processing to complete
 
         // THEN
         verify(context.assistant, never()).process(any(), anyOrNull())

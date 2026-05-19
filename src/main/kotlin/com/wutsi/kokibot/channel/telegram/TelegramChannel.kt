@@ -24,8 +24,13 @@ import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 class TelegramChannel(
     val factory: TelegramFactory = TelegramFactory(),
@@ -39,25 +44,57 @@ class TelegramChannel(
         const val TYPING_DELAY_MILLIS = 2000L
         const val MAX_LENGTH = 3840 // Max is 4K, but reserve some for HTML tags
         const val STREAM_MAX_LENGTH = 150
+        const val STREAM_INITIAL_DELAY_MILLIS = 500L
+        const val STREAM_MAX_DELAY_MILLIS = 30_000L
+        const val DEFAULT_THREAD_POOL_SIZE = 4
+        const val DEFAULT_QUEUE_CAPACITY = 256
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
 
-    private val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(4)
-    private lateinit var app: TelegramBotsLongPollingApplication
-    private lateinit var client: TelegramClient
-    private lateinit var botToken: String
+    private var app: TelegramBotsLongPollingApplication? = null
+    private var client: TelegramClient? = null
+    private var botToken: String? = null
     private lateinit var context: Context
     private lateinit var rest: RestTemplate
     private lateinit var senderWhitelist: List<String>
+    private var threadPoolSize: Int = DEFAULT_THREAD_POOL_SIZE
+
+    // Bounded worker pool for processing incoming updates
+    private var workerPool: ThreadPoolExecutor? = null
+
+    // Shared scheduler for periodic typing indicators (one per active chat),
+    // instead of spawning a new single-thread scheduler per request.
+    private var typingScheduler: ScheduledExecutorService? = null
+
+    /**
+     * Shared back-off for streaming "Thinking..." updates.
+     * Telegram rate limits are global per bot, so a 429 in one worker must
+     * slow down all other workers. The value is shrunk back gradually after
+     * each successful update.
+     */
+    private val streamUpdateDelayMillis = AtomicLong(STREAM_INITIAL_DELAY_MILLIS)
 
     override fun id(): String = ID
 
+    @Synchronized
     override fun init(config: Map<*, *>, context: Context) {
-        this.botToken = config["token"]?.toString()
-            ?: throw ConfigurationException("token is required")
+        if (app != null) {
+            // Idempotent: avoid leaking threads / double-registration
+            return
+        }
 
-        client = factory.createTelegramClient(botToken)
+        val token = config["token"]?.toString() ?: throw ConfigurationException("token is required")
+        this.botToken = token
+        this.threadPoolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_THREAD_POOL_SIZE
+        val queueCapacity = MapUtil.toInt("queue-capacity", config) ?: DEFAULT_QUEUE_CAPACITY
+
+        client = factory.createTelegramClient(token)
+        workerPool = newWorkerPool(threadPoolSize, queueCapacity)
+        typingScheduler = Executors.newScheduledThreadPool(
+            1,
+            namedThreadFactory("telegram-typing"),
+        )
         rest = restBuilder.build(30000L, 30000L)
         senderWhitelist = MapUtil.toList("sender-whitelist", config)
             ?.mapNotNull { entry -> entry?.toString() }
@@ -69,14 +106,34 @@ class TelegramChannel(
 
         // Register the bot after initialization
         app = factory.createTelegramBotsLongPollingApplication()
-        app.registerBot(botToken, this)
+        app!!.registerBot(token, this)
     }
 
+    @Synchronized
     override fun destroy() {
         try {
-            app.unregisterBot(botToken)
+            app?.unregisterBot(botToken)
         } catch (e: Exception) {
             LOGGER.warn("Error while disconnecting from Telegram", e)
+        } finally {
+            app = null
+        }
+
+        try {
+            workerPool?.shutdown()
+            workerPool?.awaitTermination(5, TimeUnit.SECONDS)
+        } catch (e: Exception) {
+            LOGGER.warn("Error while shutting down worker pool", e)
+        } finally {
+            workerPool = null
+        }
+
+        try {
+            typingScheduler?.shutdownNow()
+        } catch (e: Exception) {
+            LOGGER.warn("Error while shutting down typing scheduler", e)
+        } finally {
+            typingScheduler = null
         }
     }
 
@@ -103,37 +160,72 @@ class TelegramChannel(
     }
 
     override fun consume(update: Update) {
-        /* Process the message */
         if (update.hasMessage()) {
+            /* Check sender whitelist */
             val message = update.message
             val chatId = message.chatId.toString()
-
-            /* Check sender whitelist */
             if (!accept(message)) {
                 send(chatId, Message(text = ERROR_UNAUTHORIZED_MESSAGE), true)
                 return
             }
 
-            /* Typing indicator */
-            val task = Runnable {
-                typing(chatId)
+            /* Consume message asynchronously. If the bounded queue is full,
+             * CallerRunsPolicy will run the task on the long-polling thread,
+             * which naturally throttles incoming updates. */
+            val pool = workerPool
+            if (pool == null) {
+                LOGGER.warn("Worker pool not initialized; dropping update")
+                return
             }
-            val job = scheduler.scheduleAtFixedRate(task, 0, TYPING_DELAY_MILLIS, TimeUnit.MILLISECONDS)
+            pool.submit {
+                try {
+                    consumeAsync(update)
+                } catch (ex: Exception) {
+                    LOGGER.error("Unhandled error while processing Telegram update", ex)
+                }
+            }
+        }
+    }
 
+    private fun consumeAsync(update: Update) {
+        val message = update.message
+        val chatId = message.chatId.toString()
+
+        /* Typing indicator scheduled on the shared scheduler */
+        val scheduler = typingScheduler
+        val job = scheduler?.scheduleAtFixedRate(
+            { safeTyping(chatId) },
+            0,
+            TYPING_DELAY_MILLIS,
+            TimeUnit.MILLISECONDS,
+        )
+
+        try {
+            storeUser(message)
+            consume(chatId, update)
+        } finally {
             try {
-                storeUser(message)
-                consume(chatId, update)
-            } finally {
-                job.cancel(true)
+                job?.cancel(true)
+            } catch (e: Exception) {
+                LOGGER.warn("Failed to cancel typing indicator job. ${e.message}")
             }
+        }
+    }
+
+    private fun safeTyping(chatId: String) {
+        try {
+            typing(chatId)
+        } catch (ex: Exception) {
+            // Don't let a failure here kill the scheduled task or leak through the pool
+            LOGGER.warn("Failed to send typing indicator for chat $chatId. ${ex.message}")
         }
     }
 
     private fun storeUser(message: org.telegram.telegrambots.meta.api.objects.message.Message) {
         try {
             users.put(message.chat.userName, message.chatId.toString()) // Store
-        } catch (_: Exception) {
-            // Ignore if we fail to store user info, it won't affect message processing
+        } catch (ex: Exception) {
+            LOGGER.warn("Failed to persist Telegram user mapping for ${message.chat.userName}", ex)
         }
     }
 
@@ -160,7 +252,6 @@ class TelegramChannel(
         var streamMessageId: Int? = null
         val streamBuffer = StringBuilder()
         var lastUpdateTime = System.currentTimeMillis()
-        var delay = 500L
 
         try {
             return context.assistant.process(
@@ -173,16 +264,20 @@ class TelegramChannel(
                 streamCallback = { delta ->
                     streamBuffer.append(delta)
                     val now = System.currentTimeMillis()
+                    val delay = streamUpdateDelayMillis.get()
 
-                    if (streamBuffer.length % 50 == 0 && now - lastUpdateTime > delay && streamBuffer.isNotEmpty()) {
+                    if (now - lastUpdateTime > delay && streamBuffer.isNotEmpty()) {
                         val msg = streamBuffer.toString().takeLast(STREAM_MAX_LENGTH)
                         try {
                             streamMessageId = sendOrUpdateMessage(
                                 chatId,
                                 "**Thinking...**: $msg",
-                                streamMessageId
+                                streamMessageId,
                             )
                             lastUpdateTime = now
+                            // Successful update: gently shrink the global back-off
+                            // back towards the initial value (halve, floor at initial).
+                            shrinkStreamDelay()
                         } catch (ex: Exception) {
                             LOGGER.warn(
                                 "Failed to send or update streaming message, will retry on next update. ${ex.message}"
@@ -190,18 +285,54 @@ class TelegramChannel(
                             if (streamMessageId != null) {
                                 deleteMessage(chatId, streamMessageId!!)
                             }
-                            streamMessageId = null // Invalidate message ID to trigger sending a new message
+                            streamMessageId = null // Invalidate to trigger sending a new message
                             if (ex.message?.contains("[429] Too Many Requests") == true) {
-                                delay *= 2
+                                // Globally back off all workers
+                                growStreamDelay()
                             }
                         }
                     }
-                }
+                },
             )
         } finally {
             if (streamMessageId != null) {
                 deleteMessage(chatId, streamMessageId!!)
             }
+        }
+    }
+
+    private fun growStreamDelay() {
+        streamUpdateDelayMillis.updateAndGet { current ->
+            (current * 2).coerceAtMost(STREAM_MAX_DELAY_MILLIS)
+        }
+    }
+
+    private fun shrinkStreamDelay() {
+        streamUpdateDelayMillis.updateAndGet { current ->
+            (current / 2).coerceAtLeast(STREAM_INITIAL_DELAY_MILLIS)
+        }
+    }
+
+    private fun newWorkerPool(size: Int, queueCapacity: Int): ThreadPoolExecutor {
+        val pool = ThreadPoolExecutor(
+            size,
+            size,
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(queueCapacity),
+            namedThreadFactory("telegram-worker"),
+            ThreadPoolExecutor.CallerRunsPolicy(), // back-pressure: long-poll thread runs the task itself
+        )
+        pool.allowCoreThreadTimeOut(false)
+        return pool
+    }
+
+    private fun namedThreadFactory(prefix: String): ThreadFactory {
+        val counter = AtomicInteger(0)
+        return ThreadFactory { runnable ->
+            val t = Thread(runnable, "$prefix-${counter.incrementAndGet()}")
+            t.isDaemon = true
+            t
         }
     }
 
@@ -261,7 +392,7 @@ class TelegramChannel(
             .chatId(chatId)
             .action(ActionType.TYPING.toString())
             .build()
-        client.execute(action)
+        client!!.execute(action)
     }
 
     private fun send(chatId: String, message: Message, notification: Boolean) {
@@ -272,7 +403,7 @@ class TelegramChannel(
             .parseMode(ParseMode.HTML)
             .disableNotification(!notification)
             .build()
-        client.execute(sendMessage)
+        client!!.execute(sendMessage)
 
         message.filePaths.forEach { path ->
             try {
@@ -290,7 +421,7 @@ class TelegramChannel(
             .chatId(chatId)
             .document(InputFile(file, file.name))
             .build()
-        client.execute(sendDocument)
+        client!!.execute(sendDocument)
     }
 
     private fun deleteMessage(chatId: String, messageId: Int) {
@@ -299,7 +430,7 @@ class TelegramChannel(
                 .chatId(chatId)
                 .messageId(messageId)
                 .build()
-            client.execute(deleteMessage)
+            client!!.execute(deleteMessage)
         } catch (ex: Exception) {
             LOGGER.warn("Failed to delete message $messageId in chat $chatId. ${ex.message}")
         }
@@ -329,7 +460,7 @@ class TelegramChannel(
                 .parseMode(ParseMode.HTML)
                 .disableNotification(true)
                 .build()
-            val sent = client.execute(sendMessage)
+            val sent = client!!.execute(sendMessage)
             return sent.messageId
         } else {
             val editMessage = EditMessageText.builder()
@@ -338,7 +469,7 @@ class TelegramChannel(
                 .text(html)
                 .parseMode(ParseMode.HTML)
                 .build()
-            client.execute(editMessage)
+            client!!.execute(editMessage)
             return messageId
         }
     }

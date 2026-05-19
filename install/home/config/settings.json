@@ -19,7 +19,8 @@
   "channels": [
     {
       "type": "${KOKIBOT_CHANNEL_TYPE}",
-      "token": "${KOKIBOT_CHANNEL_TOKEN}"
+      "token": "${KOKIBOT_CHANNEL_TOKEN}",
+      "thread-pool-size": 4
     }
   ],
   "memory": {

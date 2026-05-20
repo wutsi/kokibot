@@ -9,6 +9,7 @@ import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.service.heartbeat.HeartbeatCommand
+import com.wutsi.kokibot.service.memory.ClearCommand
 import com.wutsi.kokibot.service.memory.CompactCommand
 import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
@@ -96,6 +97,7 @@ class ContextFactory(
 
     private fun discoverCommands(): List<Command> {
         return listOf(
+            ClearCommand(),
             CompactCommand(),
             HealthCommand(),
             HelpCommand(),

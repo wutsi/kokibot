@@ -519,14 +519,14 @@ body {
 }
 
 .chat-container::-webkit-scrollbar-track {
-    background: #f1f3f4;
+    background: var(--color-bg-tertiary);
 }
 
 .chat-container::-webkit-scrollbar-thumb {
-    background: #dadce0;
+    background: var(--color-border-medium);
     border-radius: 4px;
 }
 
 .chat-container::-webkit-scrollbar-thumb:hover {
-    background: #bdc1c6;
+    filter: brightness(0.8);
 }

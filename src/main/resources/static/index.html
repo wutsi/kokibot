@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Kokibot Chat</title>
+    <link href="css/chat.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet" media="(prefers-color-scheme: light)">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" rel="stylesheet" media="(prefers-color-scheme: dark)">
+</head>
+<body>
+<div class="app-container">
+    <!-- Header -->
+    <header class="chat-header">
+        <div class="agent-info">
+            <h1 id="agent-name">Kokibot</h1>
+            <span id="agent-description">AI Assistant</span>
+        </div>
+        <div class="connection-status">
+            <span class="status-dot" id="status-indicator"></span>
+            <span id="status-text">Connecting...</span>
+        </div>
+    </header>
+
+    <!-- Chat Container -->
+    <main class="chat-container" id="chat-container">
+        <!-- Messages will be dynamically inserted here -->
+    </main>
+
+    <!-- Input Area -->
+    <footer class="input-container">
+        <div class="input-wrapper">
+                <textarea
+                    id="message-input"
+                    maxlength="10000"
+                    placeholder="Ask me anything..."
+                    rows="1"
+                ></textarea>
+            <button disabled id="send-button">
+                <svg height="24" viewBox="0 0 24 24" width="24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+            </button>
+        </div>
+    </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/websocket-client.js"></script>
+<script src="js/chat-ui.js"></script>
+<script>
+    // Initialize app on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const agentName = getAgentNameFromURL(); // e.g., ?agent=my-agent
+        ChatUI.init(agentName);
+    });
+</script>
+</body>
+</html>

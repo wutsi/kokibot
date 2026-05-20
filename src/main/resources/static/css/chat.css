@@ -203,7 +203,7 @@ body {
 /* ===== Reasoning Section ===== */
 .reasoning-section {
     margin-bottom: 12px;
-    border: 1px solid #e8eaed;
+    border: 1px solid var(--color-border-light);
     border-radius: 8px;
     overflow: hidden;
 }
@@ -213,13 +213,13 @@ body {
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background-color: #f8f9fa;
+    background-color: var(--color-bg-secondary);
     cursor: pointer;
     user-select: none;
 }
 
 .reasoning-header:hover {
-    background-color: #f1f3f4;
+    background-color: var(--color-bg-tertiary);
 }
 
 .reasoning-toggle {
@@ -234,14 +234,14 @@ body {
 .reasoning-title {
     font-size: 14px;
     font-weight: 500;
-    color: #5f6368;
+    color: var(--color-text-secondary);
 }
 
 .reasoning-content {
     padding: 16px;
-    background-color: #fafafa;
+    background-color: var(--color-bg-tertiary);
     font-size: 14px;
-    color: #5f6368;
+    color: var(--color-text-secondary);
     font-style: normal;
     line-height: 1.6;
     max-height: 0;
@@ -270,7 +270,7 @@ body {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: #9aa0a6;
+    background-color: var(--color-text-tertiary);
     animation: typing 1.4s infinite;
 }
 

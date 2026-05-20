@@ -80,7 +80,7 @@ class ChatHistoryTest {
     }
 
     @Test
-    fun `no user-id`() {
+    fun `append - no user-id`() {
         chatHistory.append(query.copy(userId = null), response)
 
         val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -89,11 +89,41 @@ class ChatHistoryTest {
     }
 
     @Test
-    fun `no channel-id`() {
+    fun `append - no channel-id`() {
         chatHistory.append(query.copy(channelId = null), response)
 
         val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")
         assertFalse(file.exists())
+    }
+
+    @Test
+    fun clear() {
+        chatHistory.append(query, response)
+        chatHistory.clear(query.userId, query.channelId)
+
+        val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")
+        assertFalse(file.exists())
+    }
+
+    @Test
+    fun `clear - no channeId`() {
+        chatHistory.append(query, response)
+        chatHistory.clear(query.userId, null)
+
+        val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")
+        assertTrue(file.exists())
+    }
+
+    @Test
+    fun `clear - no userId`() {
+        chatHistory.append(query, response)
+        chatHistory.clear(null, "telegram")
+
+        val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")
+        assertTrue(file.exists())
     }
 }

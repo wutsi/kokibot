@@ -44,6 +44,19 @@ class ChatHistory : Resource {
         }
     }
 
+    fun clear(userId: String?, channelId: String?) {
+        userId ?: return
+        channelId ?: return
+
+        val file = getFile(userId, channelId)
+        if (file.exists()) {
+            val bak = File(file.parentFile, file.nameWithoutExtension + "." + System.currentTimeMillis() + ".md")
+            lock.write {
+                file.renameTo(bak)
+            }
+        }
+    }
+
     private fun getFile(userId: String, channelId: String): File {
         val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val xuserId = sanitizeId(userId)

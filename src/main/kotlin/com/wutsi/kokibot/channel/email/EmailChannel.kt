@@ -90,6 +90,11 @@ class EmailChannel : Channel() {
 
         // Launch the job to fetch emails periodically after initialization
         job = launchJob(frequency)
+
+        LOGGER.info("Channel: email")
+        LOGGER.info("  email: $email")
+        LOGGER.info("  username: $username")
+        LOGGER.info("  sender-whitelist: $senderWhitelist")
     }
 
     override fun destroy() {

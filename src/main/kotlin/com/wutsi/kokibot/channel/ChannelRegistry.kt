@@ -32,7 +32,6 @@ class ChannelRegistry(
         val type = config["type"]?.toString()
             ?: throw ConfigurationException("channel type is required")
 
-        LOGGER.info("Channel: $type")
         val channel = factory.create(type)
         channel.init(config, context)
         register(channel)

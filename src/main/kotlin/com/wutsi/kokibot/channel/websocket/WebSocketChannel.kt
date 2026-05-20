@@ -30,13 +30,14 @@ class WebSocketChannel : Channel() {
         this.context = context
         this.path = config["path"]?.toString() ?: "/ws/${context.assistant.name}"
 
-        LOGGER.info("WebSocket channel initialized at path: $path")
-
         // Create handler
         handler = WebSocketHandler(this)
 
         // Register with global WebSocket registry (static access)
         WebSocketChannelRegistry.registerChannel(this)
+
+        LOGGER.info("Channel: websocket")
+        LOGGER.info("  path: $path")
     }
 
     override fun destroy() {

@@ -107,6 +107,11 @@ class TelegramChannel(
         // Register the bot after initialization
         app = factory.createTelegramBotsLongPollingApplication()
         app!!.registerBot(token, this)
+
+        LOGGER.info("Channel: telegram")
+        LOGGER.info("  thread-pool-size: $threadPoolSize")
+        LOGGER.info("  queue-capacity: $queueCapacity")
+        LOGGER.info("  sender-whitelist: $senderWhitelist")
     }
 
     @Synchronized

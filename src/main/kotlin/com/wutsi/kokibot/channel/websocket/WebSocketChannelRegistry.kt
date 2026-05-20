@@ -17,13 +17,11 @@ class WebSocketChannelRegistry {
         fun registerChannel(channel: WebSocketChannel) {
             val path = channel.getPath()
             channels[path] = channel
-            LOGGER.info("Registered WebSocket channel at path: $path")
         }
 
         fun unregisterChannel(channel: WebSocketChannel) {
             val path = channel.getPath()
             channels.remove(path)
-            LOGGER.info("Unregistered WebSocket channel at path: $path")
         }
 
         fun getAllChannels(): List<WebSocketChannel> {

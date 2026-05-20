@@ -62,20 +62,20 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 16px 24px;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e8eaed;
+    background-color: var(--color-bg-primary);
+    border-bottom: 1px solid var(--color-border-light);
 }
 
 .agent-info h1 {
     font-size: 20px;
     font-weight: 500;
-    color: #202124;
+    color: var(--color-text-primary);
     margin-bottom: 4px;
 }
 
 .agent-info span {
     font-size: 13px;
-    color: #5f6368;
+    color: var(--color-text-secondary);
 }
 
 .connection-status {
@@ -83,28 +83,28 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #5f6368;
+    color: var(--color-text-secondary);
 }
 
 .status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: #9aa0a6;
+    background-color: var(--color-text-tertiary);
     animation: pulse 2s infinite;
 }
 
 .status-dot.connected {
-    background-color: #34a853;
+    background-color: var(--color-accent-green);
     animation: none;
 }
 
 .status-dot.disconnected {
-    background-color: #ea4335;
+    background-color: var(--color-accent-red);
 }
 
 .status-dot.error {
-    background-color: #ea4335;
+    background-color: var(--color-accent-red);
 }
 
 @keyframes pulse {

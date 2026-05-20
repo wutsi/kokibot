@@ -204,6 +204,9 @@ const ChatUI = {
         reasoningContent.innerHTML = chunks.map(chunk =>
             `<span class="reasoning-chunk">${escapeHtml(chunk)}</span>`
         ).join('');
+
+        // Auto-scroll to bottom of reasoning box
+        reasoningContent.scrollTop = reasoningContent.scrollHeight;
     },
 
     createReasoningSection() {

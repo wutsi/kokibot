@@ -530,3 +530,38 @@ body {
 .chat-container::-webkit-scrollbar-thumb:hover {
     filter: brightness(0.8);
 }
+
+/* ===== Dark Mode ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Background colors */
+        --color-bg-primary: #2d2d2d;
+        --color-bg-secondary: #1e1e1e;
+        --color-bg-tertiary: #3a3a3a;
+        --color-bg-user-message: #1e3a5f;
+        --color-bg-assistant-message: #2d2d2d;
+        --color-bg-code: #2d2d2d;
+
+        /* Text colors */
+        --color-text-primary: #e8eaed;
+        --color-text-secondary: #9aa0a6;
+        --color-text-tertiary: #5f6368;
+
+        /* Border colors */
+        --color-border-light: #3c4043;
+        --color-border-medium: #5f6368;
+
+        /* Accent colors */
+        --color-accent-blue: #4c8bf5;
+        --color-accent-green: #5bb974;
+        --color-accent-red: #f28b82;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 0 20px rgba(0, 0, 0, 0.5);
+
+        /* Error states */
+        --color-error-bg: #3d1a1a;
+        --color-error-text: #f28b82;
+    }
+}

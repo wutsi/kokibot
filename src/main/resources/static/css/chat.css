@@ -356,13 +356,13 @@ body {
 
 /* ===== Error Message ===== */
 .error-message {
-    background-color: #fce8e6;
-    border-left: 4px solid #ea4335;
+    background-color: var(--color-error-bg);
+    border-left: 4px solid var(--color-accent-red);
     padding: 12px 16px;
     margin-bottom: 16px;
     border-radius: 4px;
     font-size: 14px;
-    color: #c5221f;
+    color: var(--color-error-text);
 }
 
 /* ===== Responsive Design ===== */
@@ -432,17 +432,17 @@ body {
 }
 
 .message-text code {
-    background-color: #f1f3f4;
+    background-color: var(--color-bg-tertiary);
     padding: 2px 6px;
     border-radius: 3px;
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
     font-size: 13px;
-    color: #c7254e;
+    color: var(--color-accent-red);
 }
 
 .message-text pre {
-    background-color: #f6f8fa;
-    border: 1px solid #e8eaed;
+    background-color: var(--color-bg-code);
+    border: 1px solid var(--color-border-light);
     border-radius: 6px;
     padding: 16px;
     margin: 12px 0;
@@ -453,7 +453,7 @@ body {
 .message-text pre code {
     background-color: transparent;
     padding: 0;
-    color: #24292f;
+    color: var(--color-text-primary);
     font-size: 14px;
     line-height: 1.6;
     font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
@@ -466,15 +466,15 @@ body {
 }
 
 .message-text blockquote {
-    border-left: 4px solid #1a73e8;
+    border-left: 4px solid var(--color-accent-blue);
     padding-left: 16px;
     margin: 12px 0;
-    color: #5f6368;
+    color: var(--color-text-secondary);
     font-style: italic;
 }
 
 .message-text a {
-    color: #1a73e8;
+    color: var(--color-accent-blue);
     text-decoration: none;
 }
 
@@ -490,19 +490,19 @@ body {
 
 .message-text th,
 .message-text td {
-    border: 1px solid #e8eaed;
+    border: 1px solid var(--color-border-light);
     padding: 8px 12px;
     text-align: left;
 }
 
 .message-text th {
-    background-color: #f8f9fa;
+    background-color: var(--color-bg-tertiary);
     font-weight: 600;
 }
 
 .message-text hr {
     border: none;
-    border-top: 1px solid #e8eaed;
+    border-top: 1px solid var(--color-border-light);
     margin: 16px 0;
 }
 

@@ -16,6 +16,7 @@ import java.io.File
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
@@ -279,69 +280,74 @@ class Assistant(val name: String = "") {
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ): Boolean {
-        // Tool calls
-        val choiceCalls = response.choices.filter { choice -> choice.toolCalls.isNotEmpty() }
-        if (choiceCalls.isNotEmpty()) {
-            choiceCalls.forEach { choice -> exec(id, iteration, choice, memory, tools) }
-            return false
-        } else {
-            return true
+        // Collect all tool calls from all choices
+        val allToolCalls = response.choices
+            .flatMap { choice -> choice.toolCalls }
+
+        if (allToolCalls.isEmpty()) {
+            return true // No tool calls, done
         }
+
+        // Execute all tool calls in parallel
+        execParallel(id, iteration, allToolCalls, memory, tools)
+        return false
     }
 
-    private fun exec(
+    private fun execParallel(
         id: String,
         iteration: Int,
-        choice: LLMResponseChoice,
+        toolCalls: List<LLMToolCall>,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
     ) {
-        choice.toolCalls.forEach { call ->
-            exec(id, iteration, call, memory, tools)
+        if (toolCalls.isEmpty()) {
+            return
         }
-    }
 
-    private fun exec(
-        id: String,
-        iteration: Int,
-        call: LLMToolCall,
-        memory: MutableList<String>,
-        tools: Map<String, Tool>,
-    ) {
-        LOGGER.info(
-            "$iteration $name TOOL ${call.name} " +
-                call.arguments.map { entry ->
-                    "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
-                }.joinToString(",")
-        )
-        context.sessionLog.onToolUse(id, iteration, call)
+        LOGGER.info("$iteration $name Executing ${toolCalls.size} tool calls in parallel")
 
-        // Execute
-        val tool = tools[call.name]
-        val result = if (tool == null) {
-            "The tool `${call.name}` is not available!"
-        } else {
+        // Create callables for each tool call
+        val callables = toolCalls.map { call ->
+            createToolCallable(id, iteration, call, tools)
+        }
+
+        // Execute all in parallel and wait for completion
+        val futures = callables.map { callable ->
+            toolExecutor.submit(callable)
+        }
+
+        // Collect results (blocks until all complete)
+        val results = futures.map { future ->
             try {
-                tool.exec(call.arguments)
+                future.get() // Blocks until this tool completes
             } catch (e: Exception) {
-                LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
-                "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                LOGGER.error("Tool execution failed: ${e.message}", e)
+                // Create error result
+                ToolExecutionResult(
+                    call = LLMToolCall(name = "unknown", id = "error"),
+                    result = "",
+                    error = e
+                )
             }
         }
 
-        // Update memory
-        memory.add(
-            "Using tool `${call.name}` with arguments: " +
-                call.arguments.map { entry ->
-                    "${entry.key}=" + entry.value?.let { value ->
-                        take(value.toString(), 200)
-                    }
-                }.joinToString(",")
-        )
-        memory.add(result)
+        // Update memory with all results
+        results.forEach { result ->
+            memory.add(
+                "Using tool `${result.call.name}` with arguments: " +
+                    result.call.arguments.map { entry ->
+                        "${entry.key}=" + entry.value?.let { value ->
+                            take(value.toString(), 200)
+                        }
+                    }.joinToString(",")
+            )
+            memory.add(result.result)
 
-        // Update session log
-        context.sessionLog.onToolResult(id, iteration, call, result)
+            // Update session log
+            context.sessionLog.onToolResult(id, iteration, result.call, result.result)
+        }
+
+        LOGGER.info("$iteration $name Completed ${results.size} tool calls")
     }
 
     private fun take(text: String, n: Int = 200): String {

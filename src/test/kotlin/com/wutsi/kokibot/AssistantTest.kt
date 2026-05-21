@@ -715,6 +715,45 @@ $history
         verify(tool1).exec(mapOf("city" to "Paris"))
     }
 
+    @Test
+    fun `should execute multiple tool calls in parallel`() {
+        val query = Message(
+            text = "test parallel",
+            userId = "user-1",
+            channelId = "channel-1"
+        )
+        val call1 = LLMToolCall(name = "test-tool", arguments = mapOf("city" to "Paris"), id = "call-1")
+        val call2 = LLMToolCall(name = "test-tool-2", arguments = mapOf("city" to "London"), id = "call-2")
+
+        val response1 = LLMResponse(
+            id = UUID.randomUUID().toString(),
+            choices = listOf(
+                LLMResponseChoice(
+                    content = null,
+                    toolCalls = listOf(call1, call2),
+                    finishReason = LLMFinishReason.TOOL_CALLS
+                )
+            )
+        )
+        val response2 = LLMResponse(
+            id = UUID.randomUUID().toString(),
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "Final answer",
+                    finishReason = LLMFinishReason.STOP
+                )
+            )
+        )
+
+        doReturn(response1).doReturn(response2).whenever(llm).completion(any(), any())
+
+        val result = assistant.process(query)
+
+        assertEquals("Final answer", result.text)
+        verify(tool1).exec(mapOf("city" to "Paris"))
+        verify(tool2).exec(mapOf("city" to "London"))
+    }
+
     private fun getResourceFile(path: String): File {
         val resource = BootstrapTest::class.java.getResource(path)
             ?: throw IllegalArgumentException("Resource not found: $path")

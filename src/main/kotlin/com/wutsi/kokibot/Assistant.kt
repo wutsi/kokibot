@@ -13,6 +13,7 @@ import com.wutsi.kokibot.util.MapUtil
 import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -32,6 +33,8 @@ class Assistant(val name: String = "") {
     private lateinit var description: String
     private lateinit var context: Context
     private var coordinator: Boolean = false
+    private var threadPoolSize: Int = 4
+    private lateinit var toolExecutor: ExecutorService
 
     var currentQuery: Message? = null
         private set
@@ -44,6 +47,14 @@ class Assistant(val name: String = "") {
             ?.let { value -> DurationUtil.minutes(value, DEFAULT_MAX_DURATION_MINUTES) }
             ?: DEFAULT_MAX_DURATION_MINUTES
 
+        // Initialize thread pool size
+        threadPoolSize = MapUtil.toInt("thread-pool-size", config) ?: 4
+        if (threadPoolSize < 2) {
+            LOGGER.warn("thread-pool-size must be at least 2, using 2")
+            threadPoolSize = 2
+        }
+        toolExecutor = Executors.newFixedThreadPool(threadPoolSize)
+
         this.context = context
         context.assistantRegistry.register(this)
 
@@ -51,9 +62,24 @@ class Assistant(val name: String = "") {
         LOGGER.info("  coordinator: $coordinator")
         LOGGER.info("  max-duration: ${maxDurationMinutes}m")
         LOGGER.info("  max-iterations: $maxIterations")
+        LOGGER.info("  thread-pool-size: $threadPoolSize")
     }
 
     fun destroy() {
+        if (::toolExecutor.isInitialized) {
+            LOGGER.info("Shutting down tool executor for assistant: $name")
+            toolExecutor.shutdown()
+            try {
+                if (!toolExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                    LOGGER.warn("Tool executor did not terminate in 30s, forcing shutdown")
+                    toolExecutor.shutdownNow()
+                }
+            } catch (e: InterruptedException) {
+                LOGGER.warn("Interrupted while waiting for tool executor shutdown")
+                toolExecutor.shutdownNow()
+                Thread.currentThread().interrupt()
+            }
+        }
     }
 
     fun process(

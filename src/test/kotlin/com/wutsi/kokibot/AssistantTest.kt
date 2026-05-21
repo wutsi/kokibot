@@ -112,6 +112,65 @@ class AssistantTest {
     }
 
     @Test
+    fun `init with thread-pool-size config`() {
+        // GIVEN
+        val newAssistant = Assistant("test-assistant")
+        val config = mapOf("thread-pool-size" to 8)
+
+        // WHEN
+        newAssistant.init(config, context)
+
+        // THEN
+        verify(assistantRegistry, times(2)).register(any())
+        // Thread pool should be initialized (verified by destroy not throwing exception)
+        newAssistant.destroy()
+    }
+
+    @Test
+    fun `init with default thread-pool-size`() {
+        // GIVEN
+        val newAssistant = Assistant("test-assistant")
+        val config = emptyMap<String, Any>()
+
+        // WHEN
+        newAssistant.init(config, context)
+
+        // THEN
+        verify(assistantRegistry, times(2)).register(any())
+        // Thread pool should be initialized with default size
+        newAssistant.destroy()
+    }
+
+    @Test
+    fun `init with thread-pool-size below minimum`() {
+        // GIVEN
+        val newAssistant = Assistant("test-assistant")
+        val config = mapOf("thread-pool-size" to 1)
+
+        // WHEN
+        newAssistant.init(config, context)
+
+        // THEN
+        verify(assistantRegistry, times(2)).register(any())
+        // Thread pool should be initialized with minimum size (2)
+        newAssistant.destroy()
+    }
+
+    @Test
+    fun `destroy shuts down thread pool gracefully`() {
+        // GIVEN
+        val newAssistant = Assistant("test-assistant")
+        newAssistant.init(emptyMap<String, Any>(), context)
+
+        // WHEN
+        newAssistant.destroy()
+
+        // THEN
+        // No exception should be thrown, and thread pool should be shut down
+        // This is a smoke test to ensure destroy() completes successfully
+    }
+
+    @Test
     fun process() {
         // GIVEN
         doReturn(

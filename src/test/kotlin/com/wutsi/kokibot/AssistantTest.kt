@@ -674,6 +674,47 @@ $history
         verify(llm, times(4)).completion(any(), eq(listOf(tool1, tool2)))
     }
 
+    @Test
+    fun `should execute single tool call successfully`() {
+        val query = Message(
+            text = "test",
+            userId = "user-1",
+            channelId = "channel-1"
+        )
+        val call = LLMToolCall(
+            name = "test-tool",
+            arguments = mapOf("city" to "Paris"),
+            id = "call-1"
+        )
+
+        val response1 = LLMResponse(
+            id = UUID.randomUUID().toString(),
+            choices = listOf(
+                LLMResponseChoice(
+                    content = null,
+                    toolCalls = listOf(call),
+                    finishReason = LLMFinishReason.TOOL_CALLS
+                )
+            )
+        )
+        val response2 = LLMResponse(
+            id = UUID.randomUUID().toString(),
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "Final answer",
+                    finishReason = LLMFinishReason.STOP
+                )
+            )
+        )
+
+        doReturn(response1).doReturn(response2).whenever(llm).completion(any(), any())
+
+        val result = assistant.process(query)
+
+        assertEquals("Final answer", result.text)
+        verify(tool1).exec(mapOf("city" to "Paris"))
+    }
+
     private fun getResourceFile(path: String): File {
         val resource = BootstrapTest::class.java.getResource(path)
             ?: throw IllegalArgumentException("Resource not found: $path")

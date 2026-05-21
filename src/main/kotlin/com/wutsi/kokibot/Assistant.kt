@@ -13,6 +13,7 @@ import com.wutsi.kokibot.util.MapUtil
 import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -237,6 +238,38 @@ class Assistant(val name: String = "") {
             }
         }
         return response
+    }
+
+    private fun createToolCallable(
+        id: String,
+        iteration: Int,
+        call: LLMToolCall,
+        tools: Map<String, Tool>,
+    ): Callable<ToolExecutionResult> {
+        return Callable {
+            LOGGER.info(
+                "$iteration $name TOOL ${call.name} " +
+                    call.arguments.map { entry ->
+                        "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
+                    }.joinToString(",")
+            )
+            context.sessionLog.onToolUse(id, iteration, call)
+
+            // Execute
+            val tool = tools[call.name]
+            val result = if (tool == null) {
+                "The tool `${call.name}` is not available!"
+            } else {
+                try {
+                    tool.exec(call.arguments)
+                } catch (e: Exception) {
+                    LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
+                    "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                }
+            }
+
+            ToolExecutionResult(call = call, result = result)
+        }
     }
 
     private fun decide(

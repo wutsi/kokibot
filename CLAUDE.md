@@ -68,6 +68,27 @@ The assistant uses an **iterative reasoning loop** (max 10 iterations, configura
 7. If text response: **Assistant** persists to history and returns to channel
 8. Response sent to user
 
+### Parallel Tool Execution
+
+The assistant executes independent tool calls in parallel to reduce response time:
+
+1. **LLM** returns response with multiple tool calls
+2. **Assistant** collects all tool calls from all choices
+3. **Thread Pool** submits all tool calls as concurrent tasks
+4. **Assistant** blocks until all tool calls complete
+5. Results are added to iteration memory in order
+6. Loop continues with next LLM call
+
+**Configuration:**
+- `assistant.thread-pool-size`: Controls concurrency (default: 4 threads)
+- Minimum 2 threads enforced
+- Thread pool gracefully shuts down with assistant
+
+**Error Handling:**
+- Individual tool failures don't block other tools
+- Errors are logged and returned as tool results
+- Timeouts and cancellations are handled gracefully
+
 ### Key Components
 
 **Bootstrap** (`Bootstrap.kt`)

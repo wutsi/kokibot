@@ -4,6 +4,7 @@ import com.wutsi.kokibot.AssistantNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.SessionContext
 import com.wutsi.kokibot.service.swarm.DelegationException
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
@@ -66,23 +67,23 @@ class SwarmDelegateTool : Tool {
     override fun exec(arguments: Map<*, *>): String {
         val name = arguments["name"] as? String ?: throw IllegalArgumentException("Missing required parameter: name")
         val task = arguments["task"] as? String ?: throw IllegalArgumentException("Missing required parameter: task")
-        val context = (arguments["context"] as? String?)?.ifEmpty { null }
+        val taskContext = (arguments["context"] as? String?)?.ifEmpty { null }
 
-        // Find calling assistant's session ID
-        val callingAssistant = this.context.assistantRegistry.all()
-            .find { it.currentQuery != null }
-        val sessionId = callingAssistant?.currentQuery?.id
+        // Get session ID from thread-local context
+        val sessionId = SessionContext.getSessionId()
             ?: return "Error: Cannot determine session context for delegation"
 
         try {
-            // Validate and push to delegation stack (throws on failure)
-            this.context.delegationStack.push(sessionId, name)
+            // Push to delegation stack (may throw DelegationException)
+            context.delegationStack.push(sessionId, name)
+
             // Execute delegation
-            val assistant = this.context.assistantRegistry.get(name)
+            val assistant = context.assistantRegistry.get(name)
             val result = assistant.process(
                 Message(
+                    id = sessionId,
                     role = Role.USER,
-                    text = task + (context?.let { "\n\nAdditional context:\n$it" } ?: ""),
+                    text = task + (taskContext?.let { "\n\nAdditional context:\n$it" } ?: ""),
                     userId = "tool:$ID",
                     channelId = "internal"
                 ),
@@ -98,8 +99,8 @@ class SwarmDelegateTool : Tool {
             LOGGER.error("Error delegating task to '$name'", e)
             return "Error delegating task to '$name': ${e.message}"
         } finally {
-            // Always pop on exit (success or failure)
-            this.context.delegationStack.pop(sessionId)
+            // Pop what we pushed - RAII principle
+            context.delegationStack.pop(sessionId)
         }
     }
 }

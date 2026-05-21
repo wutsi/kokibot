@@ -15,6 +15,7 @@ class WebSearchTool : Tool {
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
         const val URL_PREFIX = "https://duckduckgo.com/html/?q="
         const val NAME = "web_search"
+        const val TIMEOUT = 60_000 // 60 seconds
     }
 
     override fun metadata(): ToolMetadata = ToolMetadata(
@@ -40,6 +41,7 @@ class WebSearchTool : Tool {
         val doc = Jsoup.connect(url)
             .userAgent(USER_AGENT)
             .followRedirects(true)
+            .timeout(TIMEOUT)
             .get()
 
         val sb = StringBuffer()

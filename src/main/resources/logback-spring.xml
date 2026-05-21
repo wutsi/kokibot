@@ -7,7 +7,8 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%thread] %logger - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %logger - %X{session} %X{user} %X{channel} %X{assistant} %msg%n
+            </pattern>
         </encoder>
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -16,7 +17,7 @@
             <fileNamePattern>${HOME}/.kokibot/logs/kokibot.%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
         <encoder>
-            <pattern>%d %-5level [%thread] %logger - %msg%n</pattern>
+            <pattern>%d %-5level [%thread] %logger - %X{session} %X{user} %X{channel} %X{assistant} %msg%n</pattern>
         </encoder>
     </appender>
 

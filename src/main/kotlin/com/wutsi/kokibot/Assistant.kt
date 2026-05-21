@@ -6,6 +6,7 @@ import com.wutsi.kokibot.command.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.service.SessionContext
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
@@ -36,9 +37,6 @@ class Assistant(val name: String = "") {
     private var coordinator: Boolean = false
     private var threadPoolSize: Int = 4
     private lateinit var toolExecutor: ExecutorService
-
-    var currentQuery: Message? = null
-        private set
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
@@ -147,41 +145,34 @@ class Assistant(val name: String = "") {
         query: Message,
         streamCallback: ((String) -> Unit)?,
     ): Message {
-        currentQuery = query
-        try {
-            var iteration = 0
-            val memory = mutableListOf<String>()
-            val tools = mutableMapOf<String, Tool>()
-            context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
+        var iteration = 0
+        val memory = mutableListOf<String>()
+        val tools = mutableMapOf<String, Tool>()
+        context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
 
-            while (true) {
-                if (iteration++ > maxIterations) {
-                    throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
-                }
+        while (true) {
+            if (iteration++ > maxIterations) {
+                throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
+            }
 
-                val command = getCommand(query)
-                if (command != null) {
-                    val result = exec(iteration, query, command)
+            val command = getCommand(query)
+            if (command != null) {
+                val result = exec(iteration, query, command)
+                return Message(
+                    text = result,
+                    role = Role.COMMAND,
+                    finishReason = FinishReason.DONE,
+                )
+            } else {
+                val response = ask(iteration, query, memory, streamCallback)
+                if (decide(query.id, iteration, response, memory, tools)) {
                     return Message(
-                        text = result,
-                        role = Role.COMMAND,
+                        text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
+                        role = Role.ASSISTANT,
                         finishReason = FinishReason.DONE,
                     )
-                } else {
-                    val response = ask(iteration, query, memory, streamCallback)
-                    if (decide(query.id, iteration, response, memory, tools)) {
-                        return Message(
-                            text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
-                            role = Role.ASSISTANT,
-                            finishReason = FinishReason.DONE,
-                        )
-                    }
                 }
             }
-        } finally {
-            currentQuery = null
-            // Clear delegation stack for this session
-            context.delegationStack.clear(query.id)
         }
     }
 
@@ -247,29 +238,33 @@ class Assistant(val name: String = "") {
         tools: Map<String, Tool>,
     ): Callable<ToolExecutionResult> {
         return Callable {
-            val startTime = System.currentTimeMillis()
-            LOGGER.info(
-                "$iteration $name TOOL ${call.name} " +
-                    call.arguments.map { entry ->
-                        "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
-                    }.joinToString(",")
-            )
-            context.sessionLog.onToolUse(id, iteration, call)
+            SessionContext.set(id, name)
+            try {
+                val startTime = System.currentTimeMillis()
+                LOGGER.info(
+                    "$iteration $name TOOL ${call.name} " +
+                        call.arguments.map { entry ->
+                            "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
+                        }.joinToString(",")
+                )
+                context.sessionLog.onToolUse(id, iteration, call)
 
-            // Execute
-            val result = tools[call.name]?.let { tool ->
-                try {
-                    val output = tool.exec(call.arguments)
-                    val duration = System.currentTimeMillis() - startTime
-                    LOGGER.info("$iteration $name TOOL ${call.name} completed in ${duration}ms")
-                    output
-                } catch (e: Exception) {
-                    val duration = System.currentTimeMillis() - startTime
-                    LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
-                    "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                val result = tools[call.name]?.let { tool ->
+                    try {
+                        val output = tool.exec(call.arguments)
+                        val duration = System.currentTimeMillis() - startTime
+                        LOGGER.info("$iteration $name TOOL ${call.name} completed in ${duration}ms")
+                        output
+                    } catch (e: Exception) {
+                        val duration = System.currentTimeMillis() - startTime
+                        LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
+                        "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                    }
                 }
+                ToolExecutionResult(call = call, result = result ?: "Tool `${call.name}` not found")
+            } finally {
+                SessionContext.clear()
             }
-            ToolExecutionResult(call = call, result = result ?: "Tool `${call.name}` not found")
         }
     }
 

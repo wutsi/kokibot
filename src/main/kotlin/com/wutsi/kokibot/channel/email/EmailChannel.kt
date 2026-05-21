@@ -117,11 +117,14 @@ class EmailChannel : Channel() {
             // IMAP
             val session = getIMAPSession()
             val store = session.getStore(getIMAPProtocol())
-            store.connect(imapHost, imapPort.toInt(), username, password)
-            store.close()
+            store.use {
+                store.connect(imapHost, imapPort.toInt(), username, password)
+            }
 
             // SMTP
-            getSMTPSession().transport.connect(smtpHost, smtpPort.toInt(), username, password)
+            getSMTPSession().transport.use { transport ->
+                transport.connect(smtpHost, smtpPort.toInt(), username, password)
+            }
 
             Health(id(), true)
         } catch (e: Exception) {

@@ -12,7 +12,10 @@ import com.wutsi.kokibot.AssistantRegistry
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.SessionContext
 import com.wutsi.kokibot.tools.ToolParameterType
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
@@ -28,6 +31,20 @@ class SwarmDelegateToolTest {
         assistantRegistry = assistantRegistry,
     )
     private val tool = SwarmDelegateTool().also { it.init(emptyMap<String, String>(), context) }
+
+    @BeforeEach
+    fun setUp() {
+        // Set up session context for tests
+        SessionContext.set("session1", "test-assistant")
+    }
+
+    @AfterEach
+    fun tearDown() {
+        // Clean up session context and delegation stack
+        SessionContext.clear()
+        // Use clear() here since we're cleaning up all test state
+        context.delegationStack.clear("session1")
+    }
 
     @Test
     fun id() {
@@ -56,12 +73,7 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec delegates to assistant`() {
-        // GIVEN: Setup calling assistant with current query
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
+        // GIVEN
         val assistant = mock<Assistant>()
         doReturn(assistant).whenever(assistantRegistry).get("planner")
         doReturn(Message(text = "done", role = Role.ASSISTANT))
@@ -79,6 +91,7 @@ class SwarmDelegateToolTest {
         // THEN
         val msg = argumentCaptor<Message>()
         verify(assistant).process(msg.capture(), com.nhaarman.mockitokotlin2.anyOrNull())
+        assertEquals("session1", msg.firstValue.id)
         assertEquals(Role.USER, msg.firstValue.role)
         assertEquals("tool:${SwarmDelegateTool.ID}", msg.firstValue.userId)
         assertEquals("internal", msg.firstValue.channelId)
@@ -90,12 +103,7 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec without optional context`() {
-        // GIVEN: Setup calling assistant
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
+        // GIVEN
         val assistant = mock<Assistant>()
         doReturn(assistant).whenever(assistantRegistry).get("planner")
         doReturn(Message(text = "ok", role = Role.ASSISTANT))
@@ -113,12 +121,7 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec when assistant not found returns error message`() {
-        // GIVEN: Setup calling assistant
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
+        // GIVEN
         doThrow(AssistantNotFoundException("not found")).whenever(assistantRegistry).get("ghost")
 
         // WHEN
@@ -133,12 +136,7 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec when assistant throws returns error message`() {
-        // GIVEN: Setup calling assistant
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
+        // GIVEN
         val assistant = mock<Assistant>()
         doReturn(assistant).whenever(assistantRegistry).get("planner")
         doThrow(RuntimeException("boom"))
@@ -167,13 +165,7 @@ class SwarmDelegateToolTest {
 
     @Test
     fun `exec enforces max depth via delegation stack`() {
-        // Given: calling assistant at max depth
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
-        // Push to max depth
+        // Given: push to max depth
         repeat(5) { i ->
             context.delegationStack.push("session1", "agent-$i")
         }
@@ -192,11 +184,6 @@ class SwarmDelegateToolTest {
     @Test
     fun `exec detects cycles via delegation stack`() {
         // Given: delegation chain agent-a → agent-b
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
         context.delegationStack.push("session1", "agent-a")
         context.delegationStack.push("session1", "agent-b")
 
@@ -212,13 +199,8 @@ class SwarmDelegateToolTest {
     }
 
     @Test
-    fun `exec pops stack even when delegation fails`() {
+    fun `exec clears stack even when delegation fails`() {
         // Given
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
         val targetAssistant = mock<Assistant>()
         doReturn(targetAssistant).whenever(assistantRegistry).get("specialist")
         doThrow(RuntimeException("boom"))
@@ -232,13 +214,8 @@ class SwarmDelegateToolTest {
     }
 
     @Test
-    fun `exec pops stack on successful delegation`() {
+    fun `exec clears stack on successful delegation`() {
         // Given
-        val callingAssistant = mock<Assistant>()
-        val message = Message(text = "test", role = Role.USER, id = "session1")
-        doReturn(message).whenever(callingAssistant).currentQuery
-        doReturn(listOf(callingAssistant)).whenever(assistantRegistry).all()
-
         val targetAssistant = mock<Assistant>()
         doReturn(targetAssistant).whenever(assistantRegistry).get("specialist")
         doReturn(Message(text = "done", role = Role.ASSISTANT))

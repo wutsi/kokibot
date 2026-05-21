@@ -42,8 +42,8 @@ class TelegramChannel(
 
         const val ID = "channel:telegram"
         const val TYPING_DELAY_MILLIS = 2000L
-        const val MAX_LENGTH = 3840 // Max is 4K, but reserve some for HTML tags
         const val STREAM_MAX_LENGTH = 150
+        const val MESSAGE_MAX_LENGTH = 3900 // Telegram max is 4096, but we reserve some for HTML tags
         const val STREAM_INITIAL_DELAY_MILLIS = 500L
         const val STREAM_MAX_DELAY_MILLIS = 30_000L
         const val DEFAULT_THREAD_POOL_SIZE = 4
@@ -239,7 +239,7 @@ class TelegramChannel(
                 Message(
                     text = update.message.text +
                         "\n\n. Return and answer having a maximum of 500 words. " +
-                        "Do not return information formatted as tables, as Telegram does not support them. If you want to return tabular data, format it as a code block with markdown syntax highlighting (e.g., ```csv ... ```).",
+                        "Telegram does not support table, when you return tabular data, format it as a code block with markdown syntax highlighting (e.g., ``` ... ```) and make sure that cells a properly spaces.",
                     role = Role.USER,
                     userId = userId,
                     channelId = id(),
@@ -379,14 +379,14 @@ class TelegramChannel(
     }
 
     private fun send(chatId: String, message: Message, notification: Boolean) {
-        val html = MarkdownToTelegramHTML.convert(message.text.takeLast(MAX_LENGTH))
+        val html = MarkdownToTelegramHTML.convert(message.text.takeLast(MESSAGE_MAX_LENGTH))
         val sendMessage = SendMessage.builder()
             .chatId(chatId)
             .text(html)
             .parseMode(ParseMode.HTML)
             .disableNotification(!notification)
             .build()
-        client!!.execute(sendMessage)
+        client.execute(sendMessage)
 
         message.filePaths.forEach { path ->
             try {
@@ -434,7 +434,7 @@ class TelegramChannel(
             return messageId
         }
 
-        val html = MarkdownToTelegramHTML.convert(text.takeLast(MAX_LENGTH))
+        val html = MarkdownToTelegramHTML.convert(text)
 
         if (messageId == null) {
             val sendMessage = SendMessage.builder()

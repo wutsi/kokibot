@@ -4,7 +4,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
-import com.wutsi.kokibot.util.MarkdownSanitizer
+import com.wutsi.kokibot.util.MarkdownUtil
 import org.slf4j.LoggerFactory
 
 class ToolCommand : Command {
@@ -64,6 +64,6 @@ class ToolCommand : Command {
     }
 
     private fun sanitize(input: String): String {
-        return MarkdownSanitizer.escape(input)
+        return MarkdownUtil.escape(input)
     }
 }

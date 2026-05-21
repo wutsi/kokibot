@@ -340,6 +340,27 @@ class TelegramChannelTest {
     }
 
     @Test
+    fun `consume - long response are slitted`() {
+        // GIVEN
+        telegram.init(config, context)
+        doReturn(
+            Message(
+                "H".repeat(3000) + "\n\n" + "W".repeat(1000)
+            )
+        )
+            .whenever(context.assistant)
+            .process(any(), anyOrNull())
+
+        // WHEN
+        val update = createTextUpdate("Hello", 123L)
+        telegram.consume(update)
+        Thread.sleep(1000) // Wait for the async processing to complete
+
+        // THEN
+        verify(client, times(2)).execute(any<SendMessage>())
+    }
+
+    @Test
     fun send() {
         doReturn("123").whenever(users).get("ray.sponsible")
 

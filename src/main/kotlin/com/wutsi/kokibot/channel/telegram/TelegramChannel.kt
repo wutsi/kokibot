@@ -7,6 +7,7 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.util.MapUtil
+import com.wutsi.kokibot.util.MarkdownUtil
 import com.wutsi.kokibot.util.RestBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.web.client.RestTemplate
@@ -143,7 +144,7 @@ class TelegramChannel(
         }
 
         users.get(message.userId)?.let { chatId ->
-            send(chatId, message, true)
+            send(chatId, message)
             return true
         }
         return false
@@ -155,7 +156,7 @@ class TelegramChannel(
             val message = update.message
             val chatId = message.chatId.toString()
             if (!accept(message)) {
-                send(chatId, Message(text = ERROR_UNAUTHORIZED_MESSAGE), true)
+                send(chatId, Message(text = ERROR_UNAUTHORIZED_MESSAGE))
                 return
             }
 
@@ -224,7 +225,7 @@ class TelegramChannel(
             )
         }
 
-        send(chatId, message, true)
+        send(chatId, message)
     }
 
     private fun consumeText(update: Update): Message {
@@ -238,8 +239,7 @@ class TelegramChannel(
             return context.assistant.process(
                 Message(
                     text = update.message.text +
-                        "\n\n. Return and answer having a maximum of 500 words. " +
-                        "Telegram does not support table, when you return tabular data, format it as a code block with markdown syntax highlighting (e.g., ``` ... ```) and make sure that cells a properly spaces.",
+                        "\n\nTelegram does not support tables. When you return tabular data, format it as a code block with markdown syntax highlighting (e.g., ``` ... ```) and make sure that cells a properly spaced.",
                     role = Role.USER,
                     userId = userId,
                     channelId = id(),
@@ -378,16 +378,22 @@ class TelegramChannel(
         client!!.execute(action)
     }
 
-    private fun send(chatId: String, message: Message, notification: Boolean) {
-        val html = MarkdownToTelegramHTML.convert(message.text.takeLast(MESSAGE_MAX_LENGTH))
-        val sendMessage = SendMessage.builder()
-            .chatId(chatId)
-            .text(html)
-            .parseMode(ParseMode.HTML)
-            .disableNotification(!notification)
-            .build()
-        client.execute(sendMessage)
+    private fun send(chatId: String, message: Message) {
+        // Send message in parts if it exceeds Telegram's limit
+        val parts = MarkdownUtil.split(message.text, MESSAGE_MAX_LENGTH)
+        parts.forEachIndexed { index, part ->
+            val html = MarkdownToTelegramHTML.convert(part)
+            val sendMessage = SendMessage
+                .builder()
+                .chatId(chatId)
+                .text(html)
+                .parseMode(ParseMode.HTML)
+                .disableNotification(index == 0)
+                .build()
+            client.execute(sendMessage)
+        }
 
+        // Send files after the message, since Telegram does not support attachments
         message.filePaths.forEach { path ->
             try {
                 LOGGER.info("Sending $path to $chatId")
@@ -452,7 +458,7 @@ class TelegramChannel(
                 .text(html)
                 .parseMode(ParseMode.HTML)
                 .build()
-            client!!.execute(editMessage)
+            client.execute(editMessage)
             return messageId
         }
     }

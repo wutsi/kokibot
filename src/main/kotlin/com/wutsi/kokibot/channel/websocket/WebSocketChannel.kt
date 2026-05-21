@@ -112,7 +112,11 @@ class WebSocketChannel : Channel() {
             sendFinalResponse(session, response.text)
         } catch (e: Exception) {
             LOGGER.error("Error processing WebSocket message", e)
-            sendError(session, e.message ?: "Internal error")
+            try {
+                sendError(session, e.message ?: "Internal error")
+            } catch (ex: Exception) {
+                LOGGER.error("Error sending error '${e.message}' to WebSocket", ex)
+            }
         }
     }
 
@@ -126,15 +130,11 @@ class WebSocketChannel : Channel() {
     }
 
     private fun sendReasoningChunk(session: WebSocketSession, delta: String) {
-        try {
-            val response = WebSocketResponse(
-                type = WebSocketResponseType.REASONING_CHUNK,
-                content = delta,
-            )
-            session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
-        } catch (e: Exception) {
-            LOGGER.error("Error sending reasoning chunk", e)
-        }
+        val response = WebSocketResponse(
+            type = WebSocketResponseType.REASONING_CHUNK,
+            content = delta,
+        )
+        session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
     }
 
     private fun sendFinalResponse(session: WebSocketSession, content: String) {
@@ -147,17 +147,15 @@ class WebSocketChannel : Channel() {
     }
 
     private fun sendError(session: WebSocketSession, errorMessage: String) {
-        try {
-            val response = WebSocketResponse(
-                type = WebSocketResponseType.ERROR,
-                message = errorMessage,
-            )
-            session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
-        } catch (e: Exception) {
-            LOGGER.error("Error sending error message", e)
-        }
+        val response = WebSocketResponse(
+            type = WebSocketResponseType.ERROR,
+            message = errorMessage,
+        )
+        session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
     }
 
     fun getHandler(): WebSocketHandler = handler
     fun getPath(): String = path
+
+    internal fun getSession(userId: String): WebSocketSession? = sessions[userId]
 }

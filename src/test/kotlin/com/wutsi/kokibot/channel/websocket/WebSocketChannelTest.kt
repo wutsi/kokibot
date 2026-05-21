@@ -12,7 +12,10 @@ import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
+import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import tools.jackson.databind.json.JsonMapper
@@ -26,17 +29,21 @@ class WebSocketChannelTest {
     private val session = mock<WebSocketSession>()
     private val jsonMapper = JsonMapper()
 
-    @Test
-    fun `valid request returns final response`() {
+    @BeforeEach
+    fun setup() {
         whenever(context.assistant).doReturn(assistant)
         whenever(assistant.name).doReturn("test-agent")
+        whenever(session.id).doReturn("session-123")
+    }
+
+    @Test
+    fun `valid request returns final response`() {
         whenever(assistant.process(any<Message>(), any())).doReturn(
             Message(
                 text = "Hello, world!",
                 role = Role.ASSISTANT,
             ),
         )
-        whenever(session.id).doReturn("session-123")
 
         val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
@@ -47,6 +54,8 @@ class WebSocketChannelTest {
             {"query": "Hello", "userId": "user123"}
             """.trimIndent(),
             )
+
+            assertEquals(session, channel.getSession("user123"))
 
             verify(session).sendMessage(
                 argThat { message ->
@@ -65,10 +74,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `streaming sends multiple chunks`() {
-        whenever(context.assistant).doReturn(assistant)
-        whenever(assistant.name).doReturn("test-agent")
-        whenever(session.id).doReturn("session-123")
-
         doAnswer { invocation ->
             val callback = invocation.getArgument<(String) -> Unit>(1)
             callback("Thinking...")
@@ -124,10 +129,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `backend issue sends error response`() {
-        whenever(context.assistant).doReturn(assistant)
-        whenever(assistant.name).doReturn("test-agent")
-        whenever(session.id).doReturn("session-123")
-
         doThrow(RuntimeException("Failed")).whenever(assistant).process(any(), any())
 
         val channel = WebSocketChannel()
@@ -220,5 +221,95 @@ class WebSocketChannelTest {
         channel.init(emptyMap<String, Any>(), context)
 
         assertEquals("/ws/test-agent", channel.getPath())
+    }
+
+    @Test
+    fun send() {
+        whenever(context.assistant).doReturn(assistant)
+        whenever(assistant.name).doReturn("test-agent")
+        whenever(session.id).doReturn("session-123")
+
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+
+        val message = Message(
+            text = "Hello",
+            channelId = "channel:websocket:test-agent",
+            userId = "user123",
+        )
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+        assertTrue(channel.send(message))
+
+        verify(session).sendMessage(
+            argThat { msg ->
+                val response = jsonMapper.readValue(
+                    (msg as TextMessage).payload,
+                    WebSocketResponse::class.java,
+                )
+                response.type == WebSocketResponseType.FINAL &&
+                    response.content == "Hello"
+            },
+        )
+    }
+
+    @Test
+    fun `send returns false if session failed`() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+
+        doThrow(RuntimeException("Failed")).whenever(session).sendMessage(any())
+        val message = Message(
+            text = "Hello",
+            channelId = "channel:websocket:test-agent",
+            userId = "user123",
+        )
+        assertFalse(channel.send(message))
+    }
+
+    @Test
+    fun `send returns false if channel is not the same`() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+
+        val message = Message(
+            text = "Hello",
+            channelId = "channel:websocket:xxx",
+            userId = "user123",
+        )
+        assertFalse(channel.send(message))
+    }
+
+    @Test
+    fun `send returns false if channel has never received message from user`() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+
+        val message = Message(
+            text = "Hello",
+            channelId = "channel:websocket:xxx",
+            userId = "user123",
+        )
+        assertFalse(channel.send(message))
+    }
+
+    @Test
+    fun handleConnectionEstablished() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+        channel.handleConnectionEstablished(session)
+    }
+
+    @Test
+    fun handleConnectionClosed() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+        channel.init(mapOf("path" to "/ws/test"), context)
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+
+        channel.handleConnectionClosed(session, CloseStatus.NORMAL)
+
+        assertNull(channel.getSession("user123"))
     }
 }

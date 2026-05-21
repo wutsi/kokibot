@@ -5,7 +5,6 @@ import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.command.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
-import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.util.DurationUtil
@@ -14,9 +13,9 @@ import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
@@ -76,7 +75,7 @@ class Assistant(val name: String = "") {
                     LOGGER.warn("Tool executor did not terminate in 30s, forcing shutdown")
                     toolExecutor.shutdownNow()
                 }
-            } catch (e: InterruptedException) {
+            } catch (_: InterruptedException) {
                 LOGGER.warn("Interrupted while waiting for tool executor shutdown")
                 toolExecutor.shutdownNow()
                 Thread.currentThread().interrupt()
@@ -258,10 +257,7 @@ class Assistant(val name: String = "") {
             context.sessionLog.onToolUse(id, iteration, call)
 
             // Execute
-            val tool = tools[call.name]
-            val result = if (tool == null) {
-                "The tool `${call.name}` is not available!"
-            } else {
+            val result = tools[call.name]?.let { tool ->
                 try {
                     val output = tool.exec(call.arguments)
                     val duration = System.currentTimeMillis() - startTime
@@ -273,8 +269,7 @@ class Assistant(val name: String = "") {
                     "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
                 }
             }
-
-            ToolExecutionResult(call = call, result = result)
+            ToolExecutionResult(call = call, result = result ?: "Tool `${call.name}` not found")
         }
     }
 
@@ -330,10 +325,12 @@ class Assistant(val name: String = "") {
                 LOGGER.error("Tool execution failed for ${call.name}: ${e.message}", e)
                 // Create error result
                 val errorMessage = when (e) {
-                    is java.util.concurrent.TimeoutException ->
+                    is TimeoutException ->
                         "Tool `${call.name}` timed out"
-                    is java.util.concurrent.CancellationException ->
+
+                    is CancellationException ->
                         "Tool `${call.name}` was cancelled"
+
                     else ->
                         "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
                 }

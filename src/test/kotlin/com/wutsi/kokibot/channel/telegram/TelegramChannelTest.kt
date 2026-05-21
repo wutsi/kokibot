@@ -155,6 +155,41 @@ class TelegramChannelTest {
     }
 
     @Test
+    fun `consume - should process text message even if error while storing users`() {
+        // GIVEN
+        telegram.init(config, context)
+        doAnswer {
+            Thread.sleep(TelegramChannel.TYPING_DELAY_MILLIS)
+            Message("World")
+        }.whenever(context.assistant).process(any(), anyOrNull())
+
+        doThrow(IllegalArgumentException::class).whenever(users).put(any(), any())
+
+        // WHEN
+        val update = createTextUpdate("Hello", 123L)
+        telegram.consume(update)
+        Thread.sleep(3000) // Wait for the async processing to complete
+
+        // THEN
+        val prompt = argumentCaptor<Message>()
+        verify(context.assistant).process(prompt.capture(), anyOrNull())
+        assertEquals(true, prompt.firstValue.text.contains("Hello"))
+        assertEquals(Role.USER, prompt.firstValue.role)
+        assertEquals("ray.sponsible", prompt.firstValue.userId)
+        assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)
+        assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
+
+        val sendAction = argumentCaptor<SendChatAction>()
+        verify(client, atLeast(1)).execute(sendAction.capture())
+        assertEquals(ActionType.TYPING.toString(), sendAction.firstValue.action)
+
+        val sendMessage = argumentCaptor<SendMessage>()
+        verify(client).execute(sendMessage.capture())
+        assertEquals("World", sendMessage.firstValue.text)
+        assertEquals("123", sendMessage.firstValue.chatId)
+    }
+
+    @Test
     fun `consume - with whitelist - accepted`() {
         // GIVEN
         doReturn(Message("World")).whenever(context.assistant).process(any(), anyOrNull())

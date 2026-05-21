@@ -52,20 +52,15 @@ class TelegramChannel(
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
 
-    private var app: TelegramBotsLongPollingApplication? = null
-    private var client: TelegramClient? = null
+    private var threadPoolSize: Int = DEFAULT_THREAD_POOL_SIZE
     private var botToken: String? = null
+    private lateinit var app: TelegramBotsLongPollingApplication
+    private lateinit var client: TelegramClient
     private lateinit var context: Context
     private lateinit var rest: RestTemplate
     private lateinit var senderWhitelist: List<String>
-    private var threadPoolSize: Int = DEFAULT_THREAD_POOL_SIZE
-
-    // Bounded worker pool for processing incoming updates
-    private var workerPool: ThreadPoolExecutor? = null
-
-    // Shared scheduler for periodic typing indicators (one per active chat),
-    // instead of spawning a new single-thread scheduler per request.
-    private var typingScheduler: ScheduledExecutorService? = null
+    private lateinit var workerPool: ThreadPoolExecutor
+    private lateinit var typingScheduler: ScheduledExecutorService
 
     /**
      * Shared back-off for streaming "Thinking..." updates.
@@ -79,11 +74,6 @@ class TelegramChannel(
 
     @Synchronized
     override fun init(config: Map<*, *>, context: Context) {
-        if (app != null) {
-            // Idempotent: avoid leaking threads / double-registration
-            return
-        }
-
         val token = config["token"]?.toString() ?: throw ConfigurationException("token is required")
         this.botToken = token
         this.threadPoolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_THREAD_POOL_SIZE
@@ -104,41 +94,36 @@ class TelegramChannel(
         // Users
         users.init(context)
 
-        // Register the bot after initialization
-        app = factory.createTelegramBotsLongPollingApplication()
-        app!!.registerBot(token, this)
-
+        // Log  configuration
         LOGGER.info("Channel: telegram")
         LOGGER.info("  thread-pool-size: $threadPoolSize")
         LOGGER.info("  queue-capacity: $queueCapacity")
         LOGGER.info("  sender-whitelist: $senderWhitelist")
+
+        // Register the bot after initialization
+        app = factory.createTelegramBotsLongPollingApplication()
+        app.registerBot(token, this)
     }
 
     @Synchronized
     override fun destroy() {
         try {
-            app?.unregisterBot(botToken)
+            app.unregisterBot(botToken)
         } catch (e: Exception) {
             LOGGER.warn("Error while disconnecting from Telegram", e)
-        } finally {
-            app = null
         }
 
         try {
-            workerPool?.shutdown()
-            workerPool?.awaitTermination(5, TimeUnit.SECONDS)
+            workerPool.shutdown()
+            workerPool.awaitTermination(5, TimeUnit.SECONDS)
         } catch (e: Exception) {
             LOGGER.warn("Error while shutting down worker pool", e)
-        } finally {
-            workerPool = null
         }
 
         try {
-            typingScheduler?.shutdownNow()
+            typingScheduler.shutdownNow()
         } catch (e: Exception) {
             LOGGER.warn("Error while shutting down typing scheduler", e)
-        } finally {
-            typingScheduler = null
         }
     }
 
@@ -176,12 +161,9 @@ class TelegramChannel(
 
             /* Consume message asynchronously. If the bounded queue is full,
              * CallerRunsPolicy will run the task on the long-polling thread,
-             * which naturally throttles incoming updates. */
+             * which naturally throttles incoming updates.
+             */
             val pool = workerPool
-            if (pool == null) {
-                LOGGER.warn("Worker pool not initialized; dropping update")
-                return
-            }
             pool.submit {
                 try {
                     consumeAsync(update)
@@ -198,40 +180,34 @@ class TelegramChannel(
 
         /* Typing indicator scheduled on the shared scheduler */
         val scheduler = typingScheduler
-        val job = scheduler?.scheduleAtFixedRate(
-            { safeTyping(chatId) },
+        val job = scheduler.scheduleAtFixedRate(
+            { typing(chatId) },
             0,
             TYPING_DELAY_MILLIS,
             TimeUnit.MILLISECONDS,
         )
 
         try {
-            storeUser(message)
+            // Store user
+            try {
+                storeUser(message)
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to store user info for chat ${message.chatId}. ${ex.message}")
+            }
+
+            // Consume message
             consume(chatId, update)
         } finally {
             try {
-                job?.cancel(true)
+                job.cancel(true)
             } catch (e: Exception) {
                 LOGGER.warn("Failed to cancel typing indicator job. ${e.message}")
             }
         }
     }
 
-    private fun safeTyping(chatId: String) {
-        try {
-            typing(chatId)
-        } catch (ex: Exception) {
-            // Don't let a failure here kill the scheduled task or leak through the pool
-            LOGGER.warn("Failed to send typing indicator for chat $chatId. ${ex.message}")
-        }
-    }
-
     private fun storeUser(message: org.telegram.telegrambots.meta.api.objects.message.Message) {
-        try {
-            users.put(message.chat.userName, message.chatId.toString()) // Store
-        } catch (ex: Exception) {
-            LOGGER.warn("Failed to persist Telegram user mapping for ${message.chat.userName}", ex)
-        }
+        users.put(message.chat.userName, message.chatId.toString()) // Store
     }
 
     private fun consume(chatId: String, update: Update) {
@@ -261,7 +237,9 @@ class TelegramChannel(
         try {
             return context.assistant.process(
                 Message(
-                    text = update.message.text,
+                    text = update.message.text +
+                        "\n\n. Return and answer having a maximum of 500 words. " +
+                        "Do not return information formatted as tables, as Telegram does not support them. If you want to return tabular data, format it as a code block with markdown syntax highlighting (e.g., ```csv ... ```).",
                     role = Role.USER,
                     userId = userId,
                     channelId = id(),
@@ -300,8 +278,8 @@ class TelegramChannel(
                 },
             )
         } finally {
-            if (streamMessageId != null) {
-                deleteMessage(chatId, streamMessageId!!)
+            streamMessageId?.let { id ->
+                deleteMessage(chatId, id)
             }
         }
     }

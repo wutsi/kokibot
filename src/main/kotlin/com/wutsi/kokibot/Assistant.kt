@@ -248,6 +248,7 @@ class Assistant(val name: String = "") {
         tools: Map<String, Tool>,
     ): Callable<ToolExecutionResult> {
         return Callable {
+            val startTime = System.currentTimeMillis()
             LOGGER.info(
                 "$iteration $name TOOL ${call.name} " +
                     call.arguments.map { entry ->
@@ -262,9 +263,13 @@ class Assistant(val name: String = "") {
                 "The tool `${call.name}` is not available!"
             } else {
                 try {
-                    tool.exec(call.arguments)
+                    val output = tool.exec(call.arguments)
+                    val duration = System.currentTimeMillis() - startTime
+                    LOGGER.info("$iteration $name TOOL ${call.name} completed in ${duration}ms")
+                    output
                 } catch (e: Exception) {
-                    LOGGER.warn("Unexpected error while executing tool `${call.name}`. Error=${e.message}")
+                    val duration = System.currentTimeMillis() - startTime
+                    LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
                     "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
                 }
             }
@@ -317,15 +322,24 @@ class Assistant(val name: String = "") {
         }
 
         // Collect results (blocks until all complete)
-        val results = futures.map { future ->
+        val results = futures.mapIndexed { index, future ->
             try {
                 future.get() // Blocks until this tool completes
             } catch (e: Exception) {
-                LOGGER.error("Tool execution failed: ${e.message}", e)
+                val call = toolCalls.getOrNull(index) ?: LLMToolCall(name = "unknown", id = "error-$index")
+                LOGGER.error("Tool execution failed for ${call.name}: ${e.message}", e)
                 // Create error result
+                val errorMessage = when (e) {
+                    is java.util.concurrent.TimeoutException ->
+                        "Tool `${call.name}` timed out"
+                    is java.util.concurrent.CancellationException ->
+                        "Tool `${call.name}` was cancelled"
+                    else ->
+                        "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                }
                 ToolExecutionResult(
-                    call = LLMToolCall(name = "unknown", id = "error"),
-                    result = "",
+                    call = call,
+                    result = errorMessage,
                     error = e
                 )
             }

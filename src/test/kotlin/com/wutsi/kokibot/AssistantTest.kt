@@ -754,6 +754,49 @@ $history
         verify(tool2).exec(mapOf("city" to "London"))
     }
 
+    @Test
+    fun `should handle tool execution timeout gracefully`() {
+        val query = Message(
+            text = "test timeout",
+            userId = "user-1",
+            channelId = "channel-1"
+        )
+
+        // Mock tool that throws error
+        val slowTool = mock<Tool>()
+        doReturn(ToolMetadata(name = "slow-tool", parameters = emptyList())).whenever(slowTool).metadata()
+        doThrow(RuntimeException("Timeout")).whenever(slowTool).exec(any())
+
+        val call = LLMToolCall(name = "slow-tool", id = "call-timeout")
+        val response1 = LLMResponse(
+            id = UUID.randomUUID().toString(),
+            choices = listOf(
+                LLMResponseChoice(
+                    content = null,
+                    toolCalls = listOf(call),
+                    finishReason = LLMFinishReason.TOOL_CALLS
+                )
+            )
+        )
+        val response2 = LLMResponse(
+            id = UUID.randomUUID().toString(),
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "Handled error",
+                    finishReason = LLMFinishReason.STOP
+                )
+            )
+        )
+
+        doReturn(listOf(tool1, slowTool)).whenever(toolRegistry).all()
+        doReturn(response1).doReturn(response2).whenever(llm).completion(any(), any())
+
+        val result = assistant.process(query)
+
+        assertEquals("Handled error", result.text)
+        // Should not crash, should continue to next iteration
+    }
+
     private fun getResourceFile(path: String): File {
         val resource = BootstrapTest::class.java.getResource(path)
             ?: throw IllegalArgumentException("Resource not found: $path")

@@ -191,7 +191,7 @@ class TelegramChannel(
         try {
             // Store user
             try {
-                storeUser(message)
+                storeUser(update)
             } catch (ex: Exception) {
                 LOGGER.warn("Failed to store user info for chat ${message.chatId}. ${ex.message}")
             }
@@ -207,8 +207,9 @@ class TelegramChannel(
         }
     }
 
-    private fun storeUser(message: org.telegram.telegrambots.meta.api.objects.message.Message) {
-        users.put(message.chat.userName, message.chatId.toString()) // Store
+    private fun storeUser(update: Update) {
+        val userId = toUserId(update)
+        users.put(userId, update.message.chatId.toString()) // Store
     }
 
     private fun consume(chatId: String, update: Update) {

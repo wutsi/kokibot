@@ -12,10 +12,10 @@ tools*
 [![pr](https://github.com/wutsi/kokibot/actions/workflows/pr.yml/badge.svg)](https://github.com/wutsi/kokibot/actions/workflows/pr.yml)
 [![JaCoCo Coverage](https://img.shields.io/badge/Coverage-93%25-brightgreen.svg)](target/site/jacoco/index.html)
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg?logo=openjdk)](https://openjdk.org/)
 [![Python](https://img.shields.io/badge/Python-3.x-orange.svg?logo=python)](https://python.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen.svg?logo=spring)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-brightgreen.svg?logo=spring)](https://spring.io/projects/spring-boot)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Features](#-key-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation)
@@ -48,9 +48,6 @@ Setup the following environment variables:
 export KOKIBOT_LLM_TYPE="your-llm-api-key"        // Type of LLM: deepseek, kimi, gemini
 export KOKIBOT_LLM_API_KEY="your-llm-api-key"     // LLM API Key
 export KOKIBOT_LLM_MODEL="your-llm-model"         // LLM Model
-
-export KOKIBOT_CHANNEL_TYPE="your-channel-type"   // Type of channel: telegram
-export KOKIBOT_TOKEN="your-channel-token"         // Channel token: e.g., Telegram Bot Token
 ```
 
 ### Step 2: Install Kokibot (macOS & Linux)
@@ -69,9 +66,19 @@ This will automatically
     - The configuration, logs and data will be stored in `~/.kokibot`
 - Run it a background service  (with `launchd` for macOS, `systemd` for Linux).
 
+### Step 3: Access the assistant
+
+Open your navigator and go to `http://localhost:10807?agent=koki` to chat with the default assistant.
+
+You can also use Telegram or Email to communicate with the assistant, please refer to
+the [Configuration Guide](docs/CONFIGURATION.md) for details.
+
 ---
 
 ## Documentation
+
+- **[Configuration Guide](docs/CONFIGURATION.md)** - Comprehensive configuration reference
+- **[Architecture Overview](ARCHITECTURE.md)** - System architecture and design patterns
 
 ### Directory Structure
 
@@ -120,7 +127,7 @@ This will automatically
 
 - Telegram
 - Email
-- Websocket
+- WebSocket
 
 ---
 

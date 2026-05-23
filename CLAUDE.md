@@ -138,10 +138,11 @@ The assistant executes independent tool calls in parallel to reduce response tim
 
 - Tools extend assistant capabilities with external integrations
 - Interface: `init(config, context)`, `metadata()`, `exec(arguments)`, `destroy()`
-- Built-in tools: `clock`, `web_search`, `web_fetch`, `python`, `shell`, `mail_*`, `swarm_delegate`
+- Built-in tools: `web_search`, `web_fetch`, `python`, `shell`, `file_read`, `file_write`, `file_edit`, `skill_activation`, `swarm_delegate`, `send_message`
 - Tool execution results are added to iteration memory as: "Calling the tool `{name}` returned: {result}"
 - Tools are registered in `ToolRegistry` during initialization by `ContextFactory.discoverTools()`
 - `swarm_delegate` tool enables multi-agent task delegation (see Multi-Agent System section)
+- File tools (`file_read`, `file_write`, `file_edit`) allow agents to manipulate files in their workspace
 
 **Adding a New Tool:**
 
@@ -181,6 +182,8 @@ The assistant executes independent tool calls in parallel to reduce response tim
       Markdown→HTML conversion
     - `EmailChannel` ([channel/email/](src/main/kotlin/com/wutsi/kokibot/channel/email/)) — IMAP inbox polling + SMTP
       replies
+    - `WebSocketChannel` ([channel/websocket/](src/main/kotlin/com/wutsi/kokibot/channel/websocket/)) — real-time
+      bidirectional communication
 - Exception: `ChannelNotFoundException`
 
 **Memory & History** (`memory/`)
@@ -509,13 +512,15 @@ Environment variables are substituted via `${VAR_NAME}` syntax in agent settings
 - **Kotlin 2.3.21** - Primary language
 - **Java 17** - Runtime
 - **Spring Boot 4.0.6** - Application framework
-- **Jackson Kotlin 2.21.2** - JSON serialization
-- **GraalVM Polyglot 25.0.2** - Python execution engine
-- **Telegram Bots 9.5.0** - Telegram integration
+- **Jackson Kotlin 2.21.3** - JSON serialization
+- **Telegram Bots 9.6.0** - Telegram integration
 - **JSoup 1.22.2** - HTML parsing
 - **Apache PDFBox 3.0.7** - PDF text extraction
 - **Apache POI 5.5.1** - Office document parsing
 - **Flexmark 0.64.8** - HTML to Markdown conversion
+- **JGit 7.6.0** - Git operations
+- **OkHttp 5.3.2** - HTTP client
+- **Kotlinx Coroutines 1.11.0** - Async programming
 - **JUnit 5** - Testing framework
 - **Mockito Kotlin 2.2.0** - Mocking library
 
@@ -557,8 +562,8 @@ Environment variables are substituted via `${VAR_NAME}` syntax in agent settings
 
 **PythonTool** (`tools/PythonTool.kt`)
 
-- Executes in sandboxed GraalVM context
-- No file system access outside sandbox
+- Executes Python code via subprocess
+- Isolated execution environment
 - Limited execution time
 
 **Configuration**

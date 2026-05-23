@@ -62,11 +62,16 @@ installing_dependencies(){
         echo "Installing tesseract..."
         brew install tesseract
     fi
-    if ! command -v opencv >/dev/null 2>&1; then
+    if ! brew list --formula opencv >/dev/null 2>&1; then
         echo "Installing opencv..."
         brew install opencv
     fi
-    pip install pytesseract opencv-python numpy
+    for pkg in pytesseract opencv-python numpy; do
+        if ! pipx list --short 2>/dev/null | awk '{print $1}' | grep -qx "$pkg"; then
+            echo "Installing $pkg..."
+            pipx install --include-deps "$pkg"
+        fi
+    done
 }
 
 install_files() {
@@ -86,11 +91,11 @@ install_files() {
 
     # Install files
     if [ ! -d "$HOME_DIR/agents" ]; then
-        mkdir -p "$HOME_DIR/agents/joe"
-        cp -R kokibot/* "$HOME_DIR/agents/joe" 2>/dev/null || true
+        mkdir -p "$HOME_DIR/agents/koki"
+        cp -R kokibot/* "$HOME_DIR/agents/koki" 2>/dev/null || true
 
-        rm "$HOME_DIR/agents/joe/uninstall.sh" 2>/dev/null || true
-        rm "$HOME_DIR/agents/joe/kokibot.jar" 2>/dev/null || true
+        rm "$HOME_DIR/agents/koki/uninstall.sh" 2>/dev/null || true
+        rm "$HOME_DIR/agents/koki/kokibot.jar" 2>/dev/null || true
     fi
 
     # Binaries

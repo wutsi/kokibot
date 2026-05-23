@@ -13,24 +13,18 @@
     "type": "${KOKIBOT_LLM_TYPE}",
     "api-key": "${KOKIBOT_LLM_API_KEY}",
     "model": "${KOKIBOT_LLM_MODEL}",
-    "streaming": true,
-    "temperature": 0.1
+    "streaming": true
   },
   "channels": [
     {
-      "type": "${KOKIBOT_CHANNEL_TYPE}",
-      "token": "${KOKIBOT_CHANNEL_TOKEN}",
-      "thread-pool-size": 4
-    },
-    {
       "type": "websocket",
-      "path": "/ws/hello"
+      "path": "/ws/koki"
     }
   ],
   "memory": {
     "window": "5d",
     "compaction-frequency": "6h",
-    "max-length": 2048
+    "max-length": 400480
   },
   "marketplaces": [
     {
@@ -39,7 +33,6 @@
       "skill-whitelist": [
         "obsidian-markdown",
         "obsidian-bases",
-        "obsidian-cli",
         "json-canvas"
       ]
     },

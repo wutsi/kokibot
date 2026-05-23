@@ -155,6 +155,36 @@ class TelegramChannelTest {
     }
 
     @Test
+    fun `consume - should process message from username-less user`() {
+        // GIVEN
+        telegram.init(config, context)
+        doReturn(Message("World"))
+            .whenever(context.assistant)
+            .process(any(), anyOrNull())
+
+        // WHEN
+        val update = createTextUpdate("Hello", 123L, null)
+        telegram.consume(update)
+        Thread.sleep(1000) // Wait for the async processing to complete
+
+        // THEN
+        val prompt = argumentCaptor<Message>()
+        verify(context.assistant).process(prompt.capture(), anyOrNull())
+        assertEquals(true, prompt.firstValue.text.contains("Hello"))
+        assertEquals(Role.USER, prompt.firstValue.role)
+        assertEquals("123", prompt.firstValue.userId)
+        assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)
+        assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
+
+        val sendMessage = argumentCaptor<SendMessage>()
+        verify(client).execute(sendMessage.capture())
+        assertEquals("World", sendMessage.firstValue.text)
+        assertEquals("123", sendMessage.firstValue.chatId)
+
+        verify(users).put("123", "123")
+    }
+
+    @Test
     fun `consume - should process text message even if error while storing users`() {
         // GIVEN
         telegram.init(config, context)
@@ -190,7 +220,7 @@ class TelegramChannelTest {
     }
 
     @Test
-    fun `consume - with whitelist - accepted`() {
+    fun `consume - with username white-listed - accepted`() {
         // GIVEN
         doReturn(Message("World")).whenever(context.assistant).process(any(), anyOrNull())
 
@@ -199,6 +229,30 @@ class TelegramChannelTest {
 
         // WHEN
         val update = createTextUpdate("Hello", 123L)
+        telegram.consume(update)
+        Thread.sleep(1000) // Wait for the async processing to complete
+
+        // THEN
+        verify(context.assistant).process(any(), anyOrNull())
+
+        val sendMessage = argumentCaptor<SendMessage>()
+        verify(client).execute(sendMessage.capture())
+        assertEquals("World", sendMessage.firstValue.text)
+        assertEquals("123", sendMessage.firstValue.chatId)
+    }
+
+    @Test
+    fun `consume - with chatId white-listed - accepted`() {
+        // GIVEN
+        doReturn(Message("World"))
+            .whenever(context.assistant)
+            .process(any(), anyOrNull())
+
+        val config = this.config + mapOf("sender-whitelist" to listOf("123"))
+        telegram.init(config, context)
+
+        // WHEN
+        val update = createTextUpdate("Hello", 123L, null)
         telegram.consume(update)
         Thread.sleep(1000) // Wait for the async processing to complete
 
@@ -519,9 +573,9 @@ class TelegramChannelTest {
         return update
     }
 
-    private fun createTextUpdate(text: String?, chatId: Long): Update {
+    private fun createTextUpdate(text: String?, chatId: Long, username: String? = "ray.sponsible"): Update {
         val chat = Chat(chatId, "")
-        chat.userName = "ray.sponsible"
+        chat.userName = username
         chat.firstName = "Ray"
         chat.lastName = "Responsible"
 

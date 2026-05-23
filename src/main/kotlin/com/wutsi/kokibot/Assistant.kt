@@ -251,10 +251,7 @@ class Assistant(val name: String = "") {
 
                 val result = tools[call.name]?.let { tool ->
                     try {
-                        val output = tool.exec(call.arguments)
-                        val duration = System.currentTimeMillis() - startTime
-                        LOGGER.info("$iteration $name TOOL ${call.name} completed in ${duration}ms")
-                        output
+                        tool.exec(call.arguments)
                     } catch (e: Exception) {
                         val duration = System.currentTimeMillis() - startTime
                         LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")

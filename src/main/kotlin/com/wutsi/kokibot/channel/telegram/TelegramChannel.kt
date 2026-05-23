@@ -155,7 +155,7 @@ class TelegramChannel(
             /* Check sender whitelist */
             val message = update.message
             val chatId = message.chatId.toString()
-            if (!accept(message)) {
+            if (!accept(update)) {
                 send(chatId, Message(text = ERROR_UNAUTHORIZED_MESSAGE))
                 return
             }
@@ -230,7 +230,7 @@ class TelegramChannel(
 
     private fun consumeText(update: Update): Message {
         val chatId = update.message.chatId.toString()
-        val userId = update.message.chat.userName
+        val userId = toUserId(update)
         var streamMessageId: Int? = null
         val streamBuffer = StringBuilder()
         var lastUpdateTime = System.currentTimeMillis()
@@ -284,6 +284,11 @@ class TelegramChannel(
         }
     }
 
+    private fun toUserId(update: Update): String {
+        val chat = update.message.chat
+        return chat.userName ?: chat.id.toString()
+    }
+
     private fun growStreamDelay() {
         streamUpdateDelayMillis.updateAndGet { current ->
             (current * 2).coerceAtMost(STREAM_MAX_DELAY_MILLIS)
@@ -320,7 +325,7 @@ class TelegramChannel(
     }
 
     private fun consumeDocument(update: Update): Message {
-        val userId = update.message.chat.userName
+        val userId = toUserId(update)
         val fileId = update.message.document.fileId
         val filename = update.message.document.fileName
         val caption = update.message.caption?.trim()?.ifEmpty { null }
@@ -343,7 +348,7 @@ class TelegramChannel(
         val largest = update.message.photo.maxByOrNull { it.fileSize ?: 0 }
             ?: throw IllegalStateException("No photo found in message")
 
-        val userId = update.message.chat.userName
+        val userId = toUserId(update)
         val caption = update.message.caption?.trim()?.ifEmpty { null }
         val filename = "photo_${largest.fileId}.jpg"
         val file = download(largest.fileId, filename)
@@ -360,8 +365,8 @@ class TelegramChannel(
         )
     }
 
-    private fun accept(message: org.telegram.telegrambots.meta.api.objects.message.Message): Boolean {
-        val sender = message.chat.userName ?: return false
+    private fun accept(update: Update): Boolean {
+        val sender = toUserId(update)
         if (senderWhitelist.isEmpty() || senderWhitelist.contains(sender)) {
             return true
         } else {

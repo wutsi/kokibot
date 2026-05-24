@@ -1,6 +1,7 @@
 # Configuration Guide
 
-This document provides a comprehensive guide to configuring Kokibot. All configuration is done through JSON files located in each agent's `config/` directory.
+This document provides a comprehensive guide to configuring Kokibot. All configuration is done through JSON files
+located in each agent's `config/` directory.
 
 ## Table of Contents
 
@@ -8,13 +9,13 @@ This document provides a comprehensive guide to configuring Kokibot. All configu
 - [Environment Variable Substitution](#environment-variable-substitution)
 - [Complete Configuration Example](#complete-configuration-example)
 - [Configuration Sections](#configuration-sections)
-  - [Assistant Configuration](#assistant-configuration)
-  - [LLM Configuration](#llm-configuration)
-  - [Channel Configuration](#channel-configuration)
-  - [Memory Configuration](#memory-configuration)
-  - [Heartbeat Configuration](#heartbeat-configuration)
-  - [Marketplace Configuration](#marketplace-configuration)
-  - [Swarm Configuration](#swarm-configuration)
+    - [Assistant Configuration](#assistant-configuration)
+    - [LLM Configuration](#llm-configuration)
+    - [Channel Configuration](#channel-configuration)
+    - [Memory Configuration](#memory-configuration)
+    - [Heartbeat Configuration](#heartbeat-configuration)
+    - [Marketplace Configuration](#marketplace-configuration)
+    - [Swarm Configuration](#swarm-configuration)
 - [Tool-Specific Configuration](#tool-specific-configuration)
 
 ---
@@ -34,6 +35,7 @@ Each agent has its own configuration file:
 ```
 
 **Development vs Production:**
+
 - **Development mode** (default): `~/kokibot/`
 - **Production mode** (Spring profile `prod`): `~/.kokibot/`
 
@@ -41,15 +43,16 @@ Each agent has its own configuration file:
 
 ## Environment Variable Substitution
 
-Kokibot supports environment variable substitution using the `${VAR_NAME}` syntax. This is useful for storing sensitive data like API keys outside of configuration files.
+Kokibot supports environment variable substitution using the `${VAR_NAME}` syntax. This is useful for storing sensitive
+data like API keys outside of configuration files.
 
 **Example:**
 
 ```json
 {
-  "llm": {
-    "api-key": "${DEEPSEEK_API_KEY}"
-  }
+    "llm": {
+        "api-key": "${DEEPSEEK_API_KEY}"
+    }
 }
 ```
 
@@ -67,69 +70,69 @@ Here's a comprehensive example showing all available configuration options:
 
 ```json
 {
-  "assistant": {
-    "coordinator": false,
-    "max-iterations": 10,
-    "max-duration": "5m",
-    "thread-pool-size": 4,
-    "description": "General purpose assistant"
-  },
-  "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
-    "model": "deepseek-chat",
-    "temperature": 0.7,
-    "max-tokens": 2048,
-    "streaming": false,
-    "thinking": false,
-    "reasoning-effort": null,
-    "read-timeout-millis": 60000,
-    "connect-timeout-millis": 5000
-  },
-  "channels": [
-    {
-      "type": "telegram",
-      "token": "${TELEGRAM_TOKEN}",
-      "thread-pool-size": 4,
-      "sender-whitelist": []
+    "assistant": {
+        "coordinator": false,
+        "max-iterations": 10,
+        "max-duration": "5m",
+        "thread-pool-size": 4,
+        "description": "General purpose assistant"
     },
-    {
-      "type": "email",
-      "email": "bot@example.com",
-      "username": "bot@example.com",
-      "password": "${EMAIL_PASSWORD}",
-      "imap-host": "imap.example.com",
-      "imap-port": 993,
-      "imap-ssl": true,
-      "smtp-host": "smtp.example.com",
-      "smtp-port": 465,
-      "smtp-ssl": true,
-      "fetch-frequency": "15m",
-      "sender-whitelist": []
+    "llm": {
+        "type": "deepseek",
+        "api-key": "${DEEPSEEK_API_KEY}",
+        "model": "deepseek-chat",
+        "temperature": 0.7,
+        "max-tokens": 2048,
+        "streaming": false,
+        "thinking": false,
+        "reasoning-effort": null,
+        "read-timeout-millis": 60000,
+        "connect-timeout-millis": 5000
     },
-    {
-      "type": "websocket",
-      "path": "/ws/agent-name"
+    "channels": [
+        {
+            "type": "telegram",
+            "token": "${TELEGRAM_TOKEN}",
+            "thread-pool-size": 4,
+            "sender-whitelist": []
+        },
+        {
+            "type": "email",
+            "email": "bot@example.com",
+            "username": "bot@example.com",
+            "password": "${EMAIL_PASSWORD}",
+            "imap-host": "imap.example.com",
+            "imap-port": 993,
+            "imap-ssl": true,
+            "smtp-host": "smtp.example.com",
+            "smtp-port": 465,
+            "smtp-ssl": true,
+            "fetch-frequency": "15m",
+            "sender-whitelist": []
+        },
+        {
+            "type": "websocket",
+            "path": "/ws/agent-name"
+        }
+    ],
+    "memory": {
+        "window": "3d",
+        "compaction-frequency": "6h",
+        "max-length": 10240
+    },
+    "heartbeat": {
+        "frequency": "30m"
+    },
+    "marketplaces": [
+        {
+            "url": "https://github.com/username/skill-marketplace.git",
+            "branch": "main"
+        }
+    ],
+    "swarm": {
+        "max-depth": 5,
+        "detect-cycles": true
     }
-  ],
-  "memory": {
-    "window": "3d",
-    "compaction-frequency": "6h",
-    "max-length": 10240
-  },
-  "heartbeat": {
-    "frequency": "30m"
-  },
-  "marketplaces": [
-    {
-      "url": "https://github.com/username/skill-marketplace.git",
-      "branch": "main"
-    }
-  ],
-  "swarm": {
-    "max-depth": 5,
-    "detect-cycles": true
-  }
 }
 ```
 
@@ -143,29 +146,30 @@ Controls the core assistant behavior and reasoning loop.
 
 **Section:** `assistant`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `coordinator` | boolean | `false` | Enable coordinator mode for multi-agent delegation. When `true`, loads additional instructions from `COORDINATOR.md` |
-| `max-iterations` | integer | `10` | Maximum number of reasoning loop iterations per request. Prevents infinite loops |
-| `max-duration` | string | `"5m"` | Maximum processing time per request. Format: `{number}{unit}` where unit is `s` (seconds), `m` (minutes), `h` (hours), `d` (days) |
-| `thread-pool-size` | integer | `4` | Number of threads for parallel tool execution. Minimum: 2 |
-| `description` | string | `""` | Human-readable description of the assistant's purpose |
+| Parameter          | Type    | Default | Description                                                                                                                       |
+|--------------------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `coordinator`      | boolean | `false` | Enable coordinator mode for multi-agent delegation. When `true`, loads additional instructions from `COORDINATOR.md`              |
+| `max-iterations`   | integer | `10`    | Maximum number of reasoning loop iterations per request. Prevents infinite loops                                                  |
+| `max-duration`     | string  | `"5m"`  | Maximum processing time per request. Format: `{number}{unit}` where unit is `s` (seconds), `m` (minutes), `h` (hours), `d` (days) |
+| `thread-pool-size` | integer | `4`     | Number of threads for parallel tool execution. Minimum: 2                                                                         |
+| `description`      | string  | `""`    | Human-readable description of the assistant's purpose                                                                             |
 
 **Example:**
 
 ```json
 {
-  "assistant": {
-    "coordinator": true,
-    "max-iterations": 15,
-    "max-duration": "10m",
-    "thread-pool-size": 8,
-    "description": "Coordinator agent for task delegation"
-  }
+    "assistant": {
+        "coordinator": true,
+        "max-iterations": 15,
+        "max-duration": "10m",
+        "thread-pool-size": 8,
+        "description": "Coordinator agent for task delegation"
+    }
 }
 ```
 
 **Duration Format Examples:**
+
 - `"30s"` = 30 seconds
 - `"5m"` = 5 minutes
 - `"2h"` = 2 hours
@@ -181,39 +185,34 @@ Configures the Large Language Model provider and its parameters.
 
 #### Common Parameters (All Providers)
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | string | ✅ | LLM provider type. Values: `deepseek`, `kimi`, `gemini` |
-| `api-key` | string | ✅ | API key for the LLM provider |
-| `model` | string | ✅ | Model identifier (provider-specific) |
-| `temperature` | number | ❌ | Sampling temperature (0.0-2.0). Higher = more creative |
-| `max-tokens` | integer | ❌ | Maximum tokens in response |
-| `read-timeout-millis` | integer | ❌ | API read timeout in milliseconds |
-| `connect-timeout-millis` | integer | ❌ | API connection timeout in milliseconds |
-
-#### Deepseek-Specific Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `streaming` | boolean | `false` | Enable streaming responses |
-| `thinking` | boolean | `false` | Enable extended thinking mode |
-| `reasoning-effort` | string | `null` | Reasoning effort level. Values: `low`, `medium`, `high` |
+| Parameter                | Type    | Required | Description                                             |
+|--------------------------|---------|----------|---------------------------------------------------------|
+| `type`                   | string  | ✅        | LLM provider type. Values: `deepseek`, `kimi`, `gemini` |
+| `api-key`                | string  | ✅        | API key for the LLM provider                            |
+| `model`                  | string  | ✅        | Model identifier (provider-specific)                    |
+| `temperature`            | number  | ❌        | Sampling temperature (0.0-2.0). Higher = more creative  |
+| `max-tokens`             | integer | ❌        | Maximum tokens in response                              |
+| `read-timeout-millis`    | integer | ❌        | API read timeout in milliseconds                        |
+| `connect-timeout-millis` | integer | ❌        | API connection timeout in milliseconds                  |
+| `streaming`              | boolean | `false`  | Enable streaming responses                              |
+| `thinking`               | boolean | `false`  | Enable extended thinking mode                           |
+| `reasoning-effort`       | string  | `null`   | Reasoning effort level. Values: `low`, `medium`, `high` |
 
 **Deepseek Example:**
 
 ```json
 {
-  "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
-    "model": "deepseek-chat",
-    "temperature": 0.7,
-    "max-tokens": 4096,
-    "streaming": true,
-    "thinking": false,
-    "read-timeout-millis": 60000,
-    "connect-timeout-millis": 5000
-  }
+    "llm": {
+        "type": "deepseek",
+        "api-key": "${DEEPSEEK_API_KEY}",
+        "model": "deepseek-chat",
+        "temperature": 0.7,
+        "max-tokens": 4096,
+        "streaming": true,
+        "thinking": false,
+        "read-timeout-millis": 60000,
+        "connect-timeout-millis": 5000
+    }
 }
 ```
 
@@ -221,13 +220,13 @@ Configures the Large Language Model provider and its parameters.
 
 ```json
 {
-  "llm": {
-    "type": "kimi",
-    "api-key": "${KIMI_API_KEY}",
-    "model": "moonshot-v1-8k",
-    "temperature": 0.8,
-    "max-tokens": 2048
-  }
+    "llm": {
+        "type": "kimi",
+        "api-key": "${KIMI_API_KEY}",
+        "model": "moonshot-v1-8k",
+        "temperature": 0.8,
+        "max-tokens": 2048
+    }
 }
 ```
 
@@ -235,23 +234,23 @@ Configures the Large Language Model provider and its parameters.
 
 ```json
 {
-  "llm": {
-    "type": "gemini",
-    "api-key": "${GEMINI_API_KEY}",
-    "model": "gemini-1.5-pro",
-    "temperature": 0.5,
-    "max-tokens": 2048
-  }
+    "llm": {
+        "type": "gemini",
+        "api-key": "${GEMINI_API_KEY}",
+        "model": "gemini-1.5-pro",
+        "temperature": 0.5,
+        "max-tokens": 2048
+    }
 }
 ```
 
 **Available Models:**
 
-| Provider | Models |
-|----------|--------|
+| Provider     | Models                                                    |
+|--------------|-----------------------------------------------------------|
 | **Deepseek** | `deepseek-chat`, `deepseek-reasoner`, `deepseek-v4-flash` |
-| **Kimi** | `moonshot-v1-8k`, `moonshot-v1-32k`, `moonshot-v1-128k` |
-| **Gemini** | `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-2.0-flash` |
+| **Kimi**     | `moonshot-v1-8k`, `moonshot-v1-32k`, `moonshot-v1-128k`   |
+| **Gemini**   | `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-2.0-flash`  |
 
 ---
 
@@ -265,29 +264,33 @@ Configures communication channels for user interaction.
 
 Real-time messaging via Telegram Bot API with long polling.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | string | ✅ | Must be `"telegram"` |
-| `token` | string | ✅ | Telegram Bot API token from [@BotFather](https://t.me/botfather) |
-| `thread-pool-size` | integer | ❌ | Worker threads for concurrent message processing (default: 4) |
-| `sender-whitelist` | array | ❌ | List of allowed Telegram usernames (empty = allow all) |
+| Parameter          | Type    | Required | Description                                                      |
+|--------------------|---------|----------|------------------------------------------------------------------|
+| `type`             | string  | ✅        | Must be `"telegram"`                                             |
+| `token`            | string  | ✅        | Telegram Bot API token from [@BotFather](https://t.me/botfather) |
+| `thread-pool-size` | integer | ❌        | Worker threads for concurrent message processing (default: 4)    |
+| `sender-whitelist` | array   | ❌        | List of allowed Telegram usernames (empty = allow all)           |
 
 **Example:**
 
 ```json
 {
-  "channels": [
-    {
-      "type": "telegram",
-      "token": "${TELEGRAM_TOKEN}",
-      "thread-pool-size": 8,
-      "sender-whitelist": ["alice", "bob"]
-    }
-  ]
+    "channels": [
+        {
+            "type": "telegram",
+            "token": "${TELEGRAM_TOKEN}",
+            "thread-pool-size": 8,
+            "sender-whitelist": [
+                "alice",
+                "bob"
+            ]
+        }
+    ]
 }
 ```
 
 **Getting a Telegram Bot Token:**
+
 1. Message [@BotFather](https://t.me/botfather) on Telegram
 2. Send `/newbot` command
 3. Follow instructions to create your bot
@@ -299,47 +302,51 @@ Real-time messaging via Telegram Bot API with long polling.
 
 Email-based communication using IMAP (receiving) and SMTP (sending).
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | string | ✅ | Must be `"email"` |
-| `email` | string | ✅ | Email address for the bot |
-| `username` | string | ✅ | Email account username (often same as email) |
-| `password` | string | ✅ | Email account password or app-specific password |
-| `imap-host` | string | ✅ | IMAP server hostname |
-| `imap-port` | integer | ❌ | IMAP server port (default: 993) |
-| `imap-ssl` | boolean | ❌ | Enable SSL for IMAP (default: true) |
-| `imap-tls` | boolean | ❌ | Enable TLS for IMAP (default: false) |
-| `smtp-host` | string | ✅ | SMTP server hostname |
-| `smtp-port` | integer | ❌ | SMTP server port (default: 465) |
-| `smtp-ssl` | boolean | ❌ | Enable SSL for SMTP (default: true) |
-| `smtp-tls` | boolean | ❌ | Enable TLS for SMTP (default: false) |
-| `fetch-frequency` | string | ❌ | How often to check for new emails (default: `"15m"`) |
-| `sender-whitelist` | array | ❌ | List of allowed sender email addresses (empty = allow all) |
+| Parameter          | Type    | Required | Description                                                |
+|--------------------|---------|----------|------------------------------------------------------------|
+| `type`             | string  | ✅        | Must be `"email"`                                          |
+| `email`            | string  | ✅        | Email address for the bot                                  |
+| `username`         | string  | ✅        | Email account username (often same as email)               |
+| `password`         | string  | ✅        | Email account password or app-specific password            |
+| `imap-host`        | string  | ✅        | IMAP server hostname                                       |
+| `imap-port`        | integer | ❌        | IMAP server port (default: 993)                            |
+| `imap-ssl`         | boolean | ❌        | Enable SSL for IMAP (default: true)                        |
+| `imap-tls`         | boolean | ❌        | Enable TLS for IMAP (default: false)                       |
+| `smtp-host`        | string  | ✅        | SMTP server hostname                                       |
+| `smtp-port`        | integer | ❌        | SMTP server port (default: 465)                            |
+| `smtp-ssl`         | boolean | ❌        | Enable SSL for SMTP (default: true)                        |
+| `smtp-tls`         | boolean | ❌        | Enable TLS for SMTP (default: false)                       |
+| `fetch-frequency`  | string  | ❌        | How often to check for new emails (default: `"15m"`)       |
+| `sender-whitelist` | array   | ❌        | List of allowed sender email addresses (empty = allow all) |
 
 **Example:**
 
 ```json
 {
-  "channels": [
-    {
-      "type": "email",
-      "email": "kokibot@example.com",
-      "username": "kokibot@example.com",
-      "password": "${EMAIL_PASSWORD}",
-      "imap-host": "imap.gmail.com",
-      "imap-port": 993,
-      "imap-ssl": true,
-      "smtp-host": "smtp.gmail.com",
-      "smtp-port": 465,
-      "smtp-ssl": true,
-      "fetch-frequency": "10m",
-      "sender-whitelist": ["alice@example.com", "bob@example.com"]
-    }
-  ]
+    "channels": [
+        {
+            "type": "email",
+            "email": "kokibot@example.com",
+            "username": "kokibot@example.com",
+            "password": "${EMAIL_PASSWORD}",
+            "imap-host": "imap.gmail.com",
+            "imap-port": 993,
+            "imap-ssl": true,
+            "smtp-host": "smtp.gmail.com",
+            "smtp-port": 465,
+            "smtp-ssl": true,
+            "fetch-frequency": "10m",
+            "sender-whitelist": [
+                "alice@example.com",
+                "bob@example.com"
+            ]
+        }
+    ]
 }
 ```
 
 **Gmail Configuration Notes:**
+
 - Use [App-Specific Passwords](https://support.google.com/accounts/answer/185833) instead of your main password
 - Enable IMAP in Gmail settings
 - IMAP: `imap.gmail.com:993` (SSL)
@@ -351,21 +358,21 @@ Email-based communication using IMAP (receiving) and SMTP (sending).
 
 Real-time bidirectional communication via WebSocket protocol.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | string | ✅ | Must be `"websocket"` |
-| `path` | string | ❌ | WebSocket endpoint path (default: `"/ws/{agent-name}"`) |
+| Parameter | Type   | Required | Description                                             |
+|-----------|--------|----------|---------------------------------------------------------|
+| `type`    | string | ✅        | Must be `"websocket"`                                   |
+| `path`    | string | ❌        | WebSocket endpoint path (default: `"/ws/{agent-name}"`) |
 
 **Example:**
 
 ```json
 {
-  "channels": [
-    {
-      "type": "websocket",
-      "path": "/ws/assistant"
-    }
-  ]
+    "channels": [
+        {
+            "type": "websocket",
+            "path": "/ws/assistant"
+        }
+    ]
 }
 ```
 
@@ -374,29 +381,32 @@ Real-time bidirectional communication via WebSocket protocol.
 The WebSocket channel uses JSON messages for communication:
 
 **Client → Server:**
+
 ```json
 {
-  "type": "query",
-  "content": "What is the weather today?"
+    "type": "query",
+    "content": "What is the weather today?"
 }
 ```
 
 **Server → Client:**
+
 ```json
 {
-  "type": "stream",
-  "content": "The weather..."
+    "type": "stream",
+    "content": "The weather..."
 }
 ```
 
 ```json
 {
-  "type": "final",
-  "content": "The weather today is sunny with a high of 75°F."
+    "type": "final",
+    "content": "The weather today is sunny with a high of 75°F."
 }
 ```
 
 **Message Types:**
+
 - `query` - User query from client
 - `stream` - Streaming response chunk from server
 - `final` - Final complete response from server
@@ -411,32 +421,32 @@ Controls long-term memory compaction and retention.
 
 **Section:** `memory`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `window` | string | `"7d"` | Time window for conversation history to include in compaction. Format: `{number}{unit}` where unit is `d` (days), `h` (hours) |
-| `compaction-frequency` | string | `"6h"` | How often to run automatic memory compaction. Format: `{number}{unit}` |
-| `max-length` | integer | `10240` | Maximum length (characters) of the memory file. Prevents unbounded growth |
+| Parameter              | Type    | Default | Description                                                                                                                   |
+|------------------------|---------|---------|-------------------------------------------------------------------------------------------------------------------------------|
+| `window`               | string  | `"7d"`  | Time window for conversation history to include in compaction. Format: `{number}{unit}` where unit is `d` (days), `h` (hours) |
+| `compaction-frequency` | string  | `"6h"`  | How often to run automatic memory compaction. Format: `{number}{unit}`                                                        |
+| `max-length`           | integer | `10240` | Maximum length (characters) of the memory file. Prevents unbounded growth                                                     |
 
 **Example:**
 
 ```json
 {
-  "memory": {
-    "window": "3d",
-    "compaction-frequency": "12h",
-    "max-length": 8192
-  }
+    "memory": {
+        "window": "3d",
+        "compaction-frequency": "12h",
+        "max-length": 8192
+    }
 }
 ```
 
 **How Memory Compaction Works:**
 
 1. Every `compaction-frequency` interval, the assistant:
-   - Extracts conversation history from the last `window` period
-   - Uses LLM to identify key facts, decisions, and learnings
-   - Merges extracted facts with existing `MEMORY.md`
-   - Removes outdated or duplicate information
-   - Truncates to `max-length` if necessary
+    - Extracts conversation history from the last `window` period
+    - Uses LLM to identify key facts, decisions, and learnings
+    - Merges extracted facts with existing `MEMORY.md`
+    - Removes outdated or duplicate information
+    - Truncates to `max-length` if necessary
 
 2. Memory is stored in: `~/kokibot/agents/{agent-name}/memory/MEMORY.md`
 
@@ -456,26 +466,26 @@ Schedules periodic automated tasks for the assistant.
 
 **Section:** `heartbeat`
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `frequency` | string | ❌ | How often to run the heartbeat task. Format: `{number}{unit}`. If omitted, heartbeat is disabled |
+| Parameter   | Type   | Required | Description                                                                                      |
+|-------------|--------|----------|--------------------------------------------------------------------------------------------------|
+| `frequency` | string | ❌        | How often to run the heartbeat task. Format: `{number}{unit}`. If omitted, heartbeat is disabled |
 
 **Example:**
 
 ```json
 {
-  "heartbeat": {
-    "frequency": "1h"
-  }
+    "heartbeat": {
+        "frequency": "1h"
+    }
 }
 ```
 
 **How Heartbeat Works:**
 
 1. Every `frequency` interval, the assistant:
-   - Reads the content of `~/kokibot/agents/{agent-name}/HEARTBEAT.md`
-   - Processes the content as a system message
-   - Executes any instructions or tasks defined in the file
+    - Reads the content of `~/kokibot/agents/{agent-name}/HEARTBEAT.md`
+    - Processes the content as a system message
+    - Executes any instructions or tasks defined in the file
 
 2. The `HEARTBEAT.md` file contains instructions for periodic tasks
 
@@ -494,6 +504,7 @@ If there are any critical issues, log them to the daily log.
 - **Reminders:** Send scheduled notifications
 
 **Frequency Examples:**
+
 - `"30m"` = Every 30 minutes
 - `"1h"` = Every hour
 - `"6h"` = Every 6 hours
@@ -509,34 +520,34 @@ Configures external skill repositories for the assistant.
 
 **Section:** `marketplaces` (array)
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `url` | string | ✅ | Git repository URL containing skills |
-| `branch` | string | ❌ | Git branch to use (default: `"main"`) |
+| Parameter | Type   | Required | Description                           |
+|-----------|--------|----------|---------------------------------------|
+| `url`     | string | ✅        | Git repository URL containing skills  |
+| `branch`  | string | ❌        | Git branch to use (default: `"main"`) |
 
 **Example:**
 
 ```json
 {
-  "marketplaces": [
-    {
-      "url": "https://github.com/wutsi/kokibot-skills.git",
-      "branch": "main"
-    },
-    {
-      "url": "https://github.com/mycompany/internal-skills.git",
-      "branch": "production"
-    }
-  ]
+    "marketplaces": [
+        {
+            "url": "https://github.com/wutsi/kokibot-skills.git",
+            "branch": "main"
+        },
+        {
+            "url": "https://github.com/mycompany/internal-skills.git",
+            "branch": "production"
+        }
+    ]
 }
 ```
 
 **How Marketplaces Work:**
 
 1. On initialization, Kokibot:
-   - Clones each marketplace repository to `~/kokibot/agents/{agent-name}/skills/marketplace-{hash}/`
-   - Discovers all `SKILL.md` files in the repository
-   - Registers skills alongside local skills
+    - Clones each marketplace repository to `~/kokibot/agents/{agent-name}/skills/marketplace-{hash}/`
+    - Discovers all `SKILL.md` files in the repository
+    - Registers skills alongside local skills
 
 2. Skills from marketplaces are treated identically to local skills
 
@@ -571,19 +582,19 @@ Controls multi-agent delegation behavior and safety limits.
 
 **Section:** `swarm`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `max-depth` | integer | `5` | Maximum depth of delegation chains (A→B→C→...). Prevents stack overflow |
-| `detect-cycles` | boolean | `true` | Enable cycle detection to prevent circular delegation (A→B→C→A) |
+| Parameter       | Type    | Default | Description                                                             |
+|-----------------|---------|---------|-------------------------------------------------------------------------|
+| `max-depth`     | integer | `5`     | Maximum depth of delegation chains (A→B→C→...). Prevents stack overflow |
+| `detect-cycles` | boolean | `true`  | Enable cycle detection to prevent circular delegation (A→B→C→A)         |
 
 **Example:**
 
 ```json
 {
-  "swarm": {
-    "max-depth": 10,
-    "detect-cycles": true
-  }
+    "swarm": {
+        "max-depth": 10,
+        "detect-cycles": true
+    }
 }
 ```
 
@@ -635,13 +646,13 @@ Some tools support additional configuration via separate files in `config/tools/
 
 ```json
 {
-  "timeout-seconds": 10,
-  "blacklist": [
-    "rm -rf",
-    "sudo",
-    "chmod",
-    "chown"
-  ]
+    "timeout-seconds": 10,
+    "blacklist": [
+        "rm -rf",
+        "sudo",
+        "chmod",
+        "chown"
+    ]
 }
 ```
 
@@ -651,8 +662,8 @@ Some tools support additional configuration via separate files in `config/tools/
 
 ```json
 {
-  "timeout-seconds": 30,
-  "max-memory-mb": 512
+    "timeout-seconds": 30,
+    "max-memory-mb": 512
 }
 ```
 
@@ -662,9 +673,9 @@ Some tools support additional configuration via separate files in `config/tools/
 
 ```json
 {
-  "api-key": "${SEARCH_API_KEY}",
-  "max-results": 5,
-  "timeout-millis": 5000
+    "api-key": "${SEARCH_API_KEY}",
+    "max-results": 5,
+    "timeout-millis": 5000
 }
 ```
 
@@ -680,22 +691,22 @@ Some tools support additional configuration via separate files in `config/tools/
 
 ```json
 {
-  "assistant": {
-    "coordinator": true,
-    "max-iterations": 15,
-    "description": "Main coordinator for task delegation"
-  },
-  "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
-    "model": "deepseek-chat"
-  },
-  "channels": [
-    {
-      "type": "telegram",
-      "token": "${TELEGRAM_TOKEN}"
-    }
-  ]
+    "assistant": {
+        "coordinator": true,
+        "max-iterations": 15,
+        "description": "Main coordinator for task delegation"
+    },
+    "llm": {
+        "type": "deepseek",
+        "api-key": "${DEEPSEEK_API_KEY}",
+        "model": "deepseek-chat"
+    },
+    "channels": [
+        {
+            "type": "telegram",
+            "token": "${TELEGRAM_TOKEN}"
+        }
+    ]
 }
 ```
 
@@ -703,20 +714,21 @@ Some tools support additional configuration via separate files in `config/tools/
 
 ```json
 {
-  "assistant": {
-    "max-iterations": 5,
-    "description": "Weather forecasting specialist"
-  },
-  "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
-    "model": "deepseek-v4-flash"
-  },
-  "channels": []
+    "assistant": {
+        "max-iterations": 5,
+        "description": "Weather forecasting specialist"
+    },
+    "llm": {
+        "type": "deepseek",
+        "api-key": "${DEEPSEEK_API_KEY}",
+        "model": "deepseek-v4-flash"
+    },
+    "channels": []
 }
 ```
 
 **Key Points:**
+
 - Coordinator has `coordinator: true` and channels
 - Specialists have no channels (internal-only)
 - Each agent has isolated configuration and workspace
@@ -729,18 +741,18 @@ Some tools support additional configuration via separate files in `config/tools/
 
 ```json
 {
-  "assistant": {
-    "max-iterations": 20,
-    "max-duration": "10m"
-  },
-  "llm": {
-    "type": "deepseek",
-    "model": "deepseek-chat",
-    "temperature": 0.9
-  },
-  "memory": {
-    "compaction-frequency": "1h"
-  }
+    "assistant": {
+        "max-iterations": 20,
+        "max-duration": "10m"
+    },
+    "llm": {
+        "type": "deepseek",
+        "model": "deepseek-chat",
+        "temperature": 0.9
+    },
+    "memory": {
+        "compaction-frequency": "1h"
+    }
 }
 ```
 
@@ -748,22 +760,23 @@ Some tools support additional configuration via separate files in `config/tools/
 
 ```json
 {
-  "assistant": {
-    "max-iterations": 10,
-    "max-duration": "5m"
-  },
-  "llm": {
-    "type": "deepseek",
-    "model": "deepseek-v4-flash",
-    "temperature": 0.5
-  },
-  "memory": {
-    "compaction-frequency": "6h"
-  }
+    "assistant": {
+        "max-iterations": 10,
+        "max-duration": "5m"
+    },
+    "llm": {
+        "type": "deepseek",
+        "model": "deepseek-v4-flash",
+        "temperature": 0.5
+    },
+    "memory": {
+        "compaction-frequency": "6h"
+    }
 }
 ```
 
 **Differences:**
+
 - **Development:** More iterations, higher creativity, frequent compaction
 - **Production:** Lower limits for stability, faster model, less frequent compaction
 
@@ -775,12 +788,12 @@ Some tools support additional configuration via separate files in `config/tools/
 
 Kokibot validates configuration on startup. Common errors:
 
-| Error | Cause | Solution |
-|-------|-------|----------|
+| Error                                             | Cause                          | Solution                                          |
+|---------------------------------------------------|--------------------------------|---------------------------------------------------|
 | `ConfigurationException: llm.api-key is required` | Missing or invalid LLM API key | Set environment variable or provide key in config |
-| `ConfigurationException: token is required` | Missing Telegram bot token | Provide `token` in channel config |
-| `ChannelNotFoundException` | Invalid channel type | Use `telegram`, `email`, or `websocket` |
-| `No agents/ directory` | Missing agents directory | Create `~/kokibot/agents/` directory |
+| `ConfigurationException: token is required`       | Missing Telegram bot token     | Provide `token` in channel config                 |
+| `ChannelNotFoundException`                        | Invalid channel type           | Use `telegram`, `email`, or `websocket`           |
+| `No agents/ directory`                            | Missing agents directory       | Create `~/kokibot/agents/` directory              |
 
 ### Health Check
 
@@ -801,6 +814,7 @@ Assistant:
 ### Logging
 
 Logs are stored in:
+
 - **Console:** Standard output during development
 - **File:** `~/kokibot/logs/kokibot.log` (production)
 

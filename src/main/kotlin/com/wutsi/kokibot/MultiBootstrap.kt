@@ -43,8 +43,12 @@ class MultiBootstrap(
                     assistantRegistry = assistantRegistry,
                 )
                 val bootstrap = Bootstrap(contextFactory)
-                bootstrap.init(dir)
-                bootstraps.add(bootstrap)
+                try {
+                    bootstrap.init(dir)
+                    bootstraps.add(bootstrap)
+                } catch (ex: Exception) {
+                    LOGGER.warn("Could not initialize agent from ${home}. ${ex.message}")
+                }
             }
         } else {
             LOGGER.warn("No agents/ directory - No assistant be loaded")

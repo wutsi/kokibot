@@ -130,28 +130,42 @@ class WebSocketChannel : Channel() {
     }
 
     private fun sendReasoningChunk(session: WebSocketSession, delta: String) {
-        val response = WebSocketResponse(
-            type = WebSocketResponseType.REASONING_CHUNK,
-            content = delta,
+        sendMessage(
+            session,
+            WebSocketResponse(
+                type = WebSocketResponseType.REASONING_CHUNK,
+                content = delta,
+            ),
         )
-        session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
     }
 
     private fun sendFinalResponse(session: WebSocketSession, content: String) {
-        val response = WebSocketResponse(
-            type = WebSocketResponseType.FINAL,
-            content = content,
-            finishReason = "DONE",
+        sendMessage(
+            session,
+            WebSocketResponse(
+                type = WebSocketResponseType.FINAL,
+                content = content,
+                finishReason = "DONE",
+            ),
         )
-        session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
     }
 
     private fun sendError(session: WebSocketSession, errorMessage: String) {
-        val response = WebSocketResponse(
-            type = WebSocketResponseType.ERROR,
-            message = errorMessage,
+        sendMessage(
+            session,
+            WebSocketResponse(
+                type = WebSocketResponseType.ERROR,
+                message = errorMessage,
+            ),
         )
-        session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
+    }
+
+    private fun sendMessage(session: WebSocketSession, response: WebSocketResponse) {
+        if (session.isOpen()) {
+            session.sendMessage(
+                TextMessage(jsonMapper.writeValueAsString(response))
+            )
+        }
     }
 
     fun getHandler(): WebSocketHandler = handler

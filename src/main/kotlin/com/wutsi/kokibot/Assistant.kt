@@ -93,6 +93,14 @@ class Assistant(val name: String = "") {
         val now = System.currentTimeMillis()
         context.sessionLog.onQuery(query.id, 1, query)
 
+        // Push to delegation stack
+        try {
+            context.delegationStack.push(query.id, name)
+        } catch (e: Exception) {
+            LOGGER.error("Delegation stack push failed for $name", e)
+            return Message("Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
+        }
+
         // Process async
         val timer = Executors.newSingleThreadExecutor()
         val future = timer.submit<Message> {
@@ -113,6 +121,8 @@ class Assistant(val name: String = "") {
             } catch (e: Exception) {
                 LOGGER.warn("Error while shutting down scheduler. ${e.message}")
             }
+            // Pop from delegation stack - RAII principle
+            context.delegationStack.pop(query.id)
         }
 
         // Result

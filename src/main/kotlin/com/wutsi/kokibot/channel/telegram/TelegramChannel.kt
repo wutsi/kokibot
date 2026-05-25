@@ -240,7 +240,9 @@ class TelegramChannel(
             return context.assistant.process(
                 Message(
                     text = update.message.text +
-                        "\n\nTelegram does not support tables. When you return tabular data, format it as a code block with markdown syntax highlighting (e.g., ``` ... ```) and make sure that cells a properly spaced.",
+                        "\n\nTelegram does not support tables." +
+                        "Use bullet points instead, " +
+                        "but if you really have to render information using table, wrap it within a code block (e.g., ``` ... ```) and make sure that cells a properly spaced.",
                     role = Role.USER,
                     userId = userId,
                     channelId = id(),

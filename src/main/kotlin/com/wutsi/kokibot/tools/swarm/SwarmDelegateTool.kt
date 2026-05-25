@@ -74,9 +74,6 @@ class SwarmDelegateTool : Tool {
             ?: return "Error: Cannot determine session context for delegation"
 
         try {
-            // Push to delegation stack (may throw DelegationException)
-            context.delegationStack.push(sessionId, name)
-
             // Execute delegation
             val assistant = context.assistantRegistry.get(name)
             val result = assistant.process(
@@ -98,9 +95,6 @@ class SwarmDelegateTool : Tool {
         } catch (e: Exception) {
             LOGGER.error("Error delegating task to '$name'", e)
             return "Error delegating task to '$name': ${e.message}"
-        } finally {
-            // Pop what we pushed - RAII principle
-            context.delegationStack.pop(sessionId)
         }
     }
 }

@@ -74,8 +74,8 @@ class SwarmDelegateTool : Tool {
             ?: return "Error: Cannot determine session context for delegation"
 
         try {
-            // Get parent's stream callback to propagate to delegated assistant
-            val parentCallback = context.delegationStack.getParentStreamCallback(sessionId)
+            // Get current stream callback to propagate to delegated assistant
+            val currentCallback = context.delegationStack.getCurrentStreamCallback(sessionId)
 
             // Execute delegation
             val assistant = context.assistantRegistry.get(name)
@@ -87,7 +87,7 @@ class SwarmDelegateTool : Tool {
                     userId = "tool:$ID",
                     channelId = "internal"
                 ),
-                parentCallback
+                currentCallback
             )
             return "Result from `$name`:\n${result.text}"
         } catch (e: DelegationException) {

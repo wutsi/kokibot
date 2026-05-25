@@ -152,6 +152,19 @@ class DelegationStack : Resource {
     }
 
     /**
+     * Get the stream callback from the current delegation (top of stack).
+     *
+     * @param sessionId The session (request) ID
+     * @return The stream callback from the current delegation, or null if stack is empty or no callback
+     */
+    fun getCurrentStreamCallback(sessionId: String): ((String) -> Unit)? {
+        return lock.read {
+            val stack = stacks[sessionId]
+            stack?.lastOrNull()?.streamCallback
+        }
+    }
+
+    /**
      * Get the stream callback from the parent delegation (one level up).
      *
      * @param sessionId The session (request) ID

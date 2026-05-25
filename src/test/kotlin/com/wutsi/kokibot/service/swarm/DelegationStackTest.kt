@@ -249,6 +249,39 @@ class DelegationStackTest {
     }
 
     @Test
+    fun `getCurrentStreamCallback returns current callback`() {
+        val callback: (String) -> Unit = { _ -> }
+
+        stack.push("session1", "agent-a", callback)
+
+        assertEquals(callback, stack.getCurrentStreamCallback("session1"))
+    }
+
+    @Test
+    fun `getCurrentStreamCallback returns null when stack is empty`() {
+        assertNull(stack.getCurrentStreamCallback("session1"))
+    }
+
+    @Test
+    fun `getCurrentStreamCallback returns null when current has no callback`() {
+        stack.push("session1", "agent-a", null)
+
+        assertNull(stack.getCurrentStreamCallback("session1"))
+    }
+
+    @Test
+    fun `getCurrentStreamCallback returns latest callback in multi-level stack`() {
+        val callback1: (String) -> Unit = { _ -> }
+        val callback2: (String) -> Unit = { _ -> }
+
+        stack.push("session1", "agent-a", callback1)
+        stack.push("session1", "agent-b", callback2)
+
+        // Should return callback2 (current/top of stack)
+        assertEquals(callback2, stack.getCurrentStreamCallback("session1"))
+    }
+
+    @Test
     fun `getParentStreamCallback returns parent callback`() {
         val parentCallback: (String) -> Unit = { _ -> }
         val childCallback: (String) -> Unit = { _ -> }

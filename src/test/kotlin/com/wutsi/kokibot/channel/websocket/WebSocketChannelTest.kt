@@ -34,6 +34,7 @@ class WebSocketChannelTest {
         whenever(context.assistant).doReturn(assistant)
         whenever(assistant.name).doReturn("test-agent")
         whenever(session.id).doReturn("session-123")
+        whenever(session.isOpen).doReturn(true)
     }
 
     @Test

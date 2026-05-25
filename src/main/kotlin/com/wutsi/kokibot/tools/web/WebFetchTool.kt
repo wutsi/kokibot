@@ -8,11 +8,13 @@ import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Arrays
 
 class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
     private class FileTooLargeException(message: String) : RuntimeException(message)
@@ -76,7 +78,9 @@ class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
             return "Invalid URL: $url"
         }
 
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+            .protocols(Arrays.asList(Protocol.HTTP_1_1))
+            .build()
         val request = Request.Builder()
             .url(url)
             .header("User-Agent", USER_AGENT)

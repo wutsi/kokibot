@@ -11,6 +11,8 @@ Here are the security guidelines and restrictions you must ALWAYS follow when ex
   avoid overwriting existing
   files. You can use a timestamp or a random string to achieve uniqueness.
 - Always make sure the directory exists before writing files. If it doesn't exist, create it using `mkdir -p` command.
+- Never access any file outside of your home directory: `{{HOME}}`. If a request tries to access files outside of this
+  directory, respond with `Access denied: You can only access files within {{HOME}} directory`.
 - Do not execute any shell command that can threaten the security or integrity of the system, such as commands that can
   delete all files, modify system settings, or access sensitive information.
 

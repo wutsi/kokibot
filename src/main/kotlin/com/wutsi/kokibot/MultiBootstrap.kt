@@ -47,7 +47,7 @@ class MultiBootstrap(
                     bootstrap.init(dir)
                     bootstraps.add(bootstrap)
                 } catch (ex: Exception) {
-                    LOGGER.warn("Could not initialize agent from ${home}. ${ex.message}")
+                    LOGGER.warn("Could not initialize agent from $home. ${ex.message}")
                 }
             }
         } else {

@@ -201,9 +201,8 @@ const ChatUI = {
         }
 
         const reasoningContent = reasoningSection.querySelector('.reasoning-content');
-        reasoningContent.innerHTML = chunks.map(chunk =>
-            `<div class="reasoning-chunk">${this.renderMarkdown(chunk)}</div>`
-        ).join('');
+        const fullText = chunks.join('');
+        reasoningContent.innerHTML = `<div class="reasoning-chunk">${this.renderMarkdown(fullText)}</div>`;
 
         // Auto-scroll to bottom of reasoning box
         reasoningContent.scrollTop = reasoningContent.scrollHeight;

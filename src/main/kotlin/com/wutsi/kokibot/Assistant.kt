@@ -95,7 +95,7 @@ class Assistant(val name: String = "") {
 
         // Push to delegation stack
         try {
-            context.delegationStack.push(query.id, name)
+            context.delegationStack.push(query.id, name, streamCallback)
         } catch (e: Exception) {
             LOGGER.error("Delegation stack push failed for $name", e)
             return Message("Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)

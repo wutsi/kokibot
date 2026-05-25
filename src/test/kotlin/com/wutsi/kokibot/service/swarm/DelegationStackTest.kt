@@ -72,7 +72,8 @@ class DelegationStackTest {
         stack.push("session1", "agent-c")
 
         assertEquals(3, stack.getDepth("session1"))
-        assertEquals(listOf("agent-a", "agent-b", "agent-c"), stack.getStack("session1"))
+        val entries = stack.getStack("session1")
+        assertEquals(listOf("agent-a", "agent-b", "agent-c"), entries.map { it.agentName })
     }
 
     @Test
@@ -115,7 +116,8 @@ class DelegationStackTest {
         stack.push("session1", "agent-a") // No throw
 
         assertEquals(3, stack.getDepth("session1"))
-        assertEquals(listOf("agent-a", "agent-b", "agent-a"), stack.getStack("session1"))
+        val entries = stack.getStack("session1")
+        assertEquals(listOf("agent-a", "agent-b", "agent-a"), entries.map { it.agentName })
     }
 
     @Test
@@ -124,11 +126,12 @@ class DelegationStackTest {
         stack.push("session1", "agent-b")
         stack.push("session1", "agent-c")
 
-        assertEquals("agent-c", stack.pop("session1"))
+        assertEquals("agent-c", stack.pop("session1")?.agentName)
         assertEquals(2, stack.getDepth("session1"))
-        assertEquals(listOf("agent-a", "agent-b"), stack.getStack("session1"))
+        val entries = stack.getStack("session1")
+        assertEquals(listOf("agent-a", "agent-b"), entries.map { it.agentName })
 
-        assertEquals("agent-b", stack.pop("session1"))
+        assertEquals("agent-b", stack.pop("session1")?.agentName)
         assertEquals(1, stack.getDepth("session1"))
     }
 
@@ -167,11 +170,11 @@ class DelegationStackTest {
         stack.push("session1", "agent-b")
 
         val stackCopy = stack.getStack("session1")
-        assertEquals(listOf("agent-a", "agent-b"), stackCopy)
+        assertEquals(listOf("agent-a", "agent-b"), stackCopy.map { it.agentName })
 
         // Pushing should not affect the copy
         stack.push("session1", "agent-c")
-        assertEquals(listOf("agent-a", "agent-b"), stackCopy) // unchanged
+        assertEquals(listOf("agent-a", "agent-b"), stackCopy.map { it.agentName }) // unchanged
     }
 
     @Test
@@ -189,8 +192,8 @@ class DelegationStackTest {
 
         assertEquals(2, stack.getDepth("session1"))
         assertEquals(2, stack.getDepth("session2"))
-        assertEquals(listOf("agent-a", "agent-b"), stack.getStack("session1"))
-        assertEquals(listOf("agent-c", "agent-d"), stack.getStack("session2"))
+        assertEquals(listOf("agent-a", "agent-b"), stack.getStack("session1").map { it.agentName })
+        assertEquals(listOf("agent-c", "agent-d"), stack.getStack("session2").map { it.agentName })
     }
 
     @Test
@@ -221,5 +224,63 @@ class DelegationStackTest {
 
         assertEquals(0, stack.getDepth("session1"))
         assertEquals(0, stack.getDepth("session2"))
+    }
+
+    @Test
+    fun `push stores stream callback`() {
+        val callback: (String) -> Unit = { _ -> }
+
+        stack.push("session1", "agent-a", callback)
+
+        val entries = stack.getStack("session1")
+        assertEquals(1, entries.size)
+        assertEquals("agent-a", entries[0].agentName)
+        assertEquals(callback, entries[0].streamCallback)
+    }
+
+    @Test
+    fun `push allows null stream callback`() {
+        stack.push("session1", "agent-a", null)
+
+        val entries = stack.getStack("session1")
+        assertEquals(1, entries.size)
+        assertEquals("agent-a", entries[0].agentName)
+        assertNull(entries[0].streamCallback)
+    }
+
+    @Test
+    fun `getParentStreamCallback returns parent callback`() {
+        val parentCallback: (String) -> Unit = { _ -> }
+        val childCallback: (String) -> Unit = { _ -> }
+
+        stack.push("session1", "agent-a", parentCallback)
+        stack.push("session1", "agent-b", childCallback)
+
+        // Parent callback should be from agent-a
+        assertEquals(parentCallback, stack.getParentStreamCallback("session1"))
+    }
+
+    @Test
+    fun `getParentStreamCallback returns null when no parent`() {
+        val callback: (String) -> Unit = { _ -> }
+        stack.push("session1", "agent-a", callback)
+
+        // No parent, should return null
+        assertNull(stack.getParentStreamCallback("session1"))
+    }
+
+    @Test
+    fun `getParentStreamCallback returns null when stack is empty`() {
+        assertNull(stack.getParentStreamCallback("session1"))
+    }
+
+    @Test
+    fun `getParentStreamCallback returns null when parent has no callback`() {
+        val childCallback: (String) -> Unit = { _ -> }
+
+        stack.push("session1", "agent-a", null) // Parent with no callback
+        stack.push("session1", "agent-b", childCallback)
+
+        assertNull(stack.getParentStreamCallback("session1"))
     }
 }

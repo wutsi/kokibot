@@ -17,6 +17,7 @@ import kotlin.concurrent.write
  * - Cycle detection: Prevents circular delegation like A→B→C→A
  * - Thread-safe: Uses ReentrantReadWriteLock for concurrent access
  * - Session isolation: Each session (request) has independent stack
+ * - Stream callback propagation: Maintains stream callback for each delegation level
  *
  * Configuration (via swarm section in settings.json):
  * - max-depth: Maximum delegation depth (default: 5)
@@ -31,13 +32,21 @@ class DelegationStack : Resource {
         const val DEFAULT_DETECT_CYCLES = true
     }
 
+    /**
+     * Represents a single entry in the delegation stack.
+     */
+    data class DelegationEntry(
+        val agentName: String,
+        val streamCallback: ((String) -> Unit)?
+    )
+
     // Configuration
     private var maxDepth: Int = DEFAULT_MAX_DEPTH
     private var detectCycles: Boolean = DEFAULT_DETECT_CYCLES
     private lateinit var context: Context
 
-    // State: sessionId -> Stack<AgentName>
-    private val stacks = ConcurrentHashMap<String, MutableList<String>>()
+    // State: sessionId -> Stack<DelegationEntry>
+    private val stacks = ConcurrentHashMap<String, MutableList<DelegationEntry>>()
     private val lock = ReentrantReadWriteLock()
 
     override fun id(): String = ID
@@ -64,15 +73,16 @@ class DelegationStack : Resource {
      *
      * @param sessionId The session (request) ID
      * @param agentName The agent being delegated to
+     * @param streamCallback Optional callback for streaming responses
      * @throws DelegationException if validation fails (max depth or cycle)
      */
-    fun push(sessionId: String, agentName: String) {
+    fun push(sessionId: String, agentName: String, streamCallback: ((String) -> Unit)? = null) {
         lock.write {
             val stack = stacks.getOrPut(sessionId) { mutableListOf() }
 
             // Check max depth
             if (stack.size >= maxDepth) {
-                val chain = stack.joinToString(" → ")
+                val chain = stack.joinToString(" → ") { it.agentName }
                 throw DelegationException(
                     "Delegation depth limit ($maxDepth) exceeded. " +
                         "Current chain: $chain. " +
@@ -81,15 +91,15 @@ class DelegationStack : Resource {
             }
 
             // Check cycles (if enabled)
-            if (detectCycles && agentName in stack) {
-                val chain = (stack + agentName).joinToString(" → ")
+            if (detectCycles && stack.any { it.agentName == agentName }) {
+                val chain = (stack.map { it.agentName } + agentName).joinToString(" → ")
                 throw DelegationException(
                     "Delegation cycle detected: $chain. " +
                         "Agent '$agentName' is already in the delegation chain."
                 )
             }
 
-            stack.add(agentName)
+            stack.add(DelegationEntry(agentName, streamCallback))
         }
     }
 
@@ -97,9 +107,9 @@ class DelegationStack : Resource {
      * Pop the top agent from the delegation stack.
      *
      * @param sessionId The session (request) ID
-     * @return The agent name that was popped, or null if stack is empty
+     * @return The delegation entry that was popped, or null if stack is empty
      */
-    fun pop(sessionId: String): String? {
+    fun pop(sessionId: String): DelegationEntry? {
         return lock.write {
             val stack = stacks[sessionId]
             return stack?.removeLastOrNull()
@@ -123,7 +133,7 @@ class DelegationStack : Resource {
      * @param sessionId The session (request) ID
      * @return Immutable copy of the stack (oldest first, newest last)
      */
-    fun getStack(sessionId: String): List<String> {
+    fun getStack(sessionId: String): List<DelegationEntry> {
         return lock.read {
             stacks[sessionId]?.toList() ?: emptyList()
         }
@@ -138,6 +148,24 @@ class DelegationStack : Resource {
     fun getDepth(sessionId: String): Int {
         return lock.read {
             stacks[sessionId]?.size ?: 0
+        }
+    }
+
+    /**
+     * Get the stream callback from the parent delegation (one level up).
+     *
+     * @param sessionId The session (request) ID
+     * @return The stream callback from the parent delegation, or null if no parent or no callback
+     */
+    fun getParentStreamCallback(sessionId: String): ((String) -> Unit)? {
+        return lock.read {
+            val stack = stacks[sessionId]
+            if (stack.isNullOrEmpty() || stack.size < 2) {
+                null
+            } else {
+                // Get the second-to-last entry (parent)
+                stack[stack.size - 2].streamCallback
+            }
         }
     }
 }

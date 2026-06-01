@@ -30,7 +30,7 @@
         <jqit.version>7.6.0.202603022253-r</jqit.version>
         <jsoup.version>1.22.2</jsoup.version>
         <kotlin.version>2.3.21</kotlin.version>
-        <kotlin-jackson.version>2.21.4</kotlin-jackson.version>
+        <kotlin-jackson.version>2.22.0</kotlin-jackson.version>
         <kotlin-mockito.version>2.2.0</kotlin-mockito.version>
         <kotlinx-coroutines-core.version>1.11.0</kotlinx-coroutines-core.version>
         <ktlint.version>1.8.0</ktlint.version>

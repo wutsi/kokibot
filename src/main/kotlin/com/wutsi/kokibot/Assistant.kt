@@ -185,6 +185,14 @@ class Assistant(val name: String = "") {
                         role = Role.ASSISTANT,
                         finishReason = FinishReason.DONE,
                     )
+                } else {
+                    if (streamCallback != null) {
+                        response.choices.forEach { choice ->
+                            if (!choice.content.isNullOrEmpty()) {
+                                streamCallback(choice.content)
+                            }
+                        }
+                    }
                 }
             }
         }

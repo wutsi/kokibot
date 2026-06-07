@@ -334,7 +334,7 @@ ol, li {
 }
 
 .message-content-wrapper {
-    max-width: 85%;
+    max-width: 95%;
     margin: 0 12px;
     display: flex;
     flex-direction: column;

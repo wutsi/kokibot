@@ -227,9 +227,11 @@ open class DeepseekClient(
                     "type" to "enabled",
                 )
             } else {
-                null
+                mapOf(
+                    "type" to "disabled",
+                )
             },
-            "reasoning_effort" to reasoningEffort,
+            "reasoning_effort" to if (thinking == true) reasoningEffort else null,
             "max_tokens" to maxTokens,
             "temperature" to temperature,
             "messages" to listOfNotNull(

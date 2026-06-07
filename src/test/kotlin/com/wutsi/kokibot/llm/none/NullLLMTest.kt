@@ -38,4 +38,9 @@ class NullLLMTest {
         assertFalse(health.up)
         assertEquals(llm.id(), health.id)
     }
+
+    @Test
+    fun maxContextLength() {
+        assertEquals(0, llm.maxContextLength())
+    }
 }

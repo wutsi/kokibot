@@ -211,6 +211,11 @@ const ChatUI = {
         this.updateFinalResponse(assistantMessage, content);
         this.scrollToBottom();
         this.enableInput();
+
+        // Refresh context gauge after response
+        if (typeof ContextGauge !== 'undefined') {
+            ContextGauge.refresh();
+        }
     },
 
     createMessageElement(type, text) {

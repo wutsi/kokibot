@@ -29,4 +29,11 @@ interface LLM : Resource {
         tools: List<Tool>,
         onChunk: (LLMStreamChunk) -> Unit,
     ): LLMResponse
+
+    /**
+     * Returns the maximum context length (in tokens) that this LLM can handle.
+     * This is used to determine how much of the conversation history and tool outputs can be included
+     * in the prompt when calling the LLM.
+     */
+    fun maxContextLength(): Int
 }

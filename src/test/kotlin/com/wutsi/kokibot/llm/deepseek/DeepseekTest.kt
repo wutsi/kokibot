@@ -269,4 +269,9 @@ class DeepseekTest {
         assertEquals(false, health.up)
         assertNotNull(health.details)
     }
+
+    @Test
+    fun maxContextLength() {
+        assertEquals(1024 * 1024, llm.maxContextLength())
+    }
 }

@@ -45,4 +45,8 @@ class NullLLM : LLM {
     override fun health(): Health {
         return Health(up = false, id = id())
     }
+
+    override fun maxContextLength(): Int {
+        return 0
+    }
 }

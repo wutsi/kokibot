@@ -81,6 +81,10 @@ class Assistant(val name: String = "") {
         }
     }
 
+    fun contextLength(): Int {
+        return buildPrompt(Message(), emptyList()).length
+    }
+
     fun process(
         query: Message,
         streamCallback: ((String) -> Unit)? = null,

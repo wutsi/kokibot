@@ -103,4 +103,6 @@ open class Deepseek : LLM {
             connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
         )
     }
+
+    override fun maxContextLength() = 1024 * 1024
 }

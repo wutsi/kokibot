@@ -13,7 +13,14 @@
     <!-- Header -->
     <header class="chat-header">
         <div class="agent-info">
-            <h1 id="agent-name">Kokibot</h1>
+            <div class="agent-name-container">
+                <h1 id="agent-name">Kokibot</h1>
+                <button id="agent-selector-btn" class="agent-selector-button" title="Switch Agent">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 11L3 6h10l-5 5z"/>
+                    </svg>
+                </button>
+            </div>
             <span id="agent-description">AI Assistant</span>
         </div>
         <div class="connection-status">
@@ -22,10 +29,55 @@
         </div>
     </header>
 
-    <!-- Chat Container -->
-    <main class="chat-container" id="chat-container">
-        <!-- Messages will be dynamically inserted here -->
-    </main>
+    <!-- Agent Selector Modal -->
+    <div id="agent-selector-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Select Agent</h2>
+                <button id="close-modal-btn" class="close-button">&times;</button>
+            </div>
+            <div id="agent-list" class="agent-list">
+                <div class="agent-list-loading">Loading agents...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Chat Container -->
+        <main class="chat-container" id="chat-container">
+            <!-- Messages will be dynamically inserted here -->
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle Sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                </svg>
+            </button>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Context</h3>
+                    <div class="context-gauge">
+                    <div class="gauge-container">
+                        <svg class="gauge-svg" viewBox="0 0 200 120">
+                            <!-- Background arc -->
+                            <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="20"/>
+                            <!-- Progress arc -->
+                            <path id="gauge-progress" class="gauge-progress" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="20" stroke-dasharray="0 251.2"/>
+                        </svg>
+                        <div class="gauge-text">
+                            <div id="context-value" class="context-value">--</div>
+                            <div id="context-max" class="context-max">of --</div>
+                        </div>
+                    </div>
+                    <div id="context-percentage" class="context-percentage">--%</div>
+                </div>
+            </div>
+            </div>
+        </aside>
+    </div>
 
     <!-- Input Area -->
     <footer class="input-container">
@@ -50,11 +102,17 @@
 <script src="js/utils.js"></script>
 <script src="js/websocket-client.js"></script>
 <script src="js/chat-ui.js"></script>
+<script src="js/agent-selector.js"></script>
+<script src="js/context-gauge.js"></script>
+<script src="js/sidebar.js"></script>
 <script>
     // Initialize app on page load
     document.addEventListener('DOMContentLoaded', () => {
         const agentName = getAgentNameFromURL(); // e.g., ?agent=my-agent
         ChatUI.init(agentName);
+        AgentSelector.init(agentName);
+        ContextGauge.init(agentName);
+        Sidebar.init();
     });
 </script>
 </body>

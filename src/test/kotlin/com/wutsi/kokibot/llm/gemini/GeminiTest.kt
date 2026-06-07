@@ -3,6 +3,7 @@ package com.wutsi.kokibot.llm.gemini
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
@@ -78,5 +79,10 @@ class GeminiTest {
         assertEquals(0, choices[0].toolCalls.size)
         assertEquals(false, choices[0].content.isNullOrEmpty())
         println(choices[0].content)
+    }
+
+    @Test
+    fun contextLength() {
+        assertEquals(1024 * 1024, llm.maxContextLength())
     }
 }

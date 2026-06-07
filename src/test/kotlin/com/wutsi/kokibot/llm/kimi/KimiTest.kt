@@ -58,4 +58,9 @@ class KimiTest {
         assertEquals(false, choices[0].content.isNullOrEmpty())
         println(choices[0].content)
     }
+
+    @Test
+    fun contextLength() {
+        assertEquals(1024 * 1024, llm.maxContextLength())
+    }
 }

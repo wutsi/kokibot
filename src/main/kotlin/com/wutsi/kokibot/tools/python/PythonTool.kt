@@ -34,7 +34,7 @@ class PythonTool : Tool {
 
     override fun metadata(): ToolMetadata = ToolMetadata(
         name = NAME,
-        description = "Run a Python code and return the output",
+        description = "Execute a python file and return the result",
         parameters = listOf(
             ToolParameter(
                 name = "path",

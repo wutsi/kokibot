@@ -313,4 +313,62 @@ class WebSocketChannelTest {
 
         assertNull(channel.getSession("user123"))
     }
+
+    @Test
+    fun `sendStatus sends tool status message`() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+
+        val message = Message(
+            text = "🔧 Calling 2 tools: web_search, file_read",
+            channelId = "channel:websocket:test-agent",
+            userId = "user123",
+            role = Role.SYSTEM,
+        )
+        channel.sendStatus(message)
+
+        verify(session).sendMessage(
+            argThat { msg ->
+                val response = jsonMapper.readValue(
+                    (msg as TextMessage).payload,
+                    WebSocketResponse::class.java,
+                )
+                response.type == WebSocketResponseType.TOOL_STATUS &&
+                    response.content == "🔧 Calling 2 tools: web_search, file_read"
+            },
+        )
+    }
+
+    @Test
+    fun `sendStatus does nothing for wrong channel`() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+
+        val message = Message(
+            text = "Status",
+            channelId = "other-channel",
+            userId = "user123",
+            role = Role.SYSTEM,
+        )
+        channel.sendStatus(message)
+
+        // No sendMessage should be called since it's wrong channel
+    }
+
+    @Test
+    fun `sendStatus does nothing for unknown user`() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+
+        val message = Message(
+            text = "Status",
+            channelId = "channel:websocket:test-agent",
+            userId = "unknown-user",
+            role = Role.SYSTEM,
+        )
+        channel.sendStatus(message)
+
+        // No sendMessage should be called since user is unknown
+    }
 }

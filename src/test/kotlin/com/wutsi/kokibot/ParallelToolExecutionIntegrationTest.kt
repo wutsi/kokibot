@@ -38,8 +38,10 @@ class ParallelToolExecutionIntegrationTest {
         val slowTool1 = createSlowTool("weather-tool", delayMs = 500)
         val slowTool2 = createSlowTool("news-tool", delayMs = 500)
         val slowTool3 = createSlowTool("stock-tool", delayMs = 500)
-
         doReturn(listOf(slowTool1, slowTool2, slowTool3)).whenever(toolRegistry).all()
+        doReturn(slowTool1).whenever(toolRegistry).get("weather-tool")
+        doReturn(slowTool2).whenever(toolRegistry).get("news-tool")
+        doReturn(slowTool3).whenever(toolRegistry).get("stock-tool")
 
         context = Context(
             home = File(System.getProperty("java.io.tmpdir"), "kokibot-test-parallel"),

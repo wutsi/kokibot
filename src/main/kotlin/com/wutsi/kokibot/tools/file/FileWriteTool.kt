@@ -1,13 +1,13 @@
 package com.wutsi.kokibot.tools.file
 
-import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
 import com.wutsi.kokibot.util.MapUtil
 import java.io.File
 
-class FileWriteTool : Tool {
+class FileWriteTool : AbstractFileTool() {
     companion object {
         const val NAME = "file_write"
     }
@@ -39,6 +39,15 @@ class FileWriteTool : Tool {
             ),
         )
     )
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        return if (accessingMemory(toolCalls)) {
+            "Saving memory"
+        } else {
+            "Saving ${toolCalls.size} file" + (if (toolCalls.size > 1) "s" else "") +
+                (if (toolCalls.size == 1) ": ${toolCalls[0].arguments["path"]}" else "")
+        }
+    }
 
     override fun exec(arguments: Map<*, *>): String {
         val path = arguments["path"]?.toString()?.ifEmpty { null }

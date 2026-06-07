@@ -6,6 +6,7 @@ const ChatUI = {
     wsClient: null,
     currentMessageId: null,
     reasoningChunks: [],
+    currentToolStatus: null,
 
     init(agentName) {
         this.agentName = agentName || 'thoth';
@@ -66,11 +67,14 @@ const ChatUI = {
 
         this.wsClient.on('Error', (error) => {
             this.updateConnectionStatus('error', 'Connection Error');
-            this.addErrorMessage('Failed to connect to server');
         });
 
         this.wsClient.on('ReasoningChunk', (chunk) => {
             this.handleReasoningChunk(chunk);
+        });
+
+        this.wsClient.on('ToolStatus', (status) => {
+            this.handleToolStatus(status);
         });
 
         this.wsClient.on('FinalResponse', (content) => {
@@ -108,6 +112,7 @@ const ChatUI = {
         // Reset for new response
         this.currentMessageId = this.generateMessageId();
         this.reasoningChunks = [];
+        this.currentToolStatus = null;
     },
 
     addUserMessage(text) {
@@ -127,7 +132,70 @@ const ChatUI = {
             this.chatContainer.appendChild(assistantMessage);
         }
 
-        this.updateReasoningSection(assistantMessage, this.reasoningChunks);
+        const contentDiv = assistantMessage.querySelector('.message-content');
+
+        // Ensure reasoning section exists
+        let reasoningSection = contentDiv.querySelector('.reasoning-section');
+        if (!reasoningSection) {
+            reasoningSection = this.createReasoningSection();
+            contentDiv.insertBefore(reasoningSection, contentDiv.firstChild);
+        }
+
+        const reasoningContent = reasoningSection.querySelector('.reasoning-content');
+
+        // Check if any tool status badges exist inside reasoning-content
+        const toolStatusBadges = reasoningContent.querySelectorAll('.tool-status-badge');
+
+        if (toolStatusBadges.length > 0) {
+            // Tool calls exist, get or create a reasoning-content-block after the last element
+            const lastChild = reasoningContent.lastElementChild;
+            let currentBlock;
+
+            if (lastChild && lastChild.classList.contains('tool-status-badge')) {
+                // Last element is a badge, create new block
+                currentBlock = document.createElement('div');
+                currentBlock.className = 'reasoning-content-block';
+                reasoningContent.appendChild(currentBlock);
+            } else if (lastChild && lastChild.classList.contains('reasoning-content-block')) {
+                // Last element is already a block, use it
+                currentBlock = lastChild;
+            } else {
+                // Shouldn't happen, but create a block just in case
+                currentBlock = document.createElement('div');
+                currentBlock.className = 'reasoning-content-block';
+                reasoningContent.appendChild(currentBlock);
+            }
+
+            // Update the current block
+            const text = this.reasoningChunks.join('');
+            currentBlock.innerHTML = this.renderMarkdown(text);
+        } else {
+            // No tool calls yet, update initial reasoning block
+            const initialBlock = reasoningContent.querySelector('.reasoning-content-block');
+            if (initialBlock) {
+                const text = this.reasoningChunks.join('');
+                initialBlock.innerHTML = this.renderMarkdown(text);
+            }
+        }
+
+        // Auto-scroll reasoning content to bottom
+        reasoningContent.scrollTop = reasoningContent.scrollHeight;
+        this.scrollToBottom();
+    },
+
+    handleToolStatus(status) {
+        this.hideTypingIndicator();
+        this.currentToolStatus = status;
+
+        // Create or update assistant message with tool status
+        let assistantMessage = document.getElementById(this.currentMessageId);
+        if (!assistantMessage) {
+            assistantMessage = this.createAssistantMessageElement(this.currentMessageId);
+            this.chatContainer.appendChild(assistantMessage);
+        }
+
+        // Show tool status badge AFTER reasoning (DeepSeek-style: sequential display)
+        this.updateToolStatusBadge(assistantMessage, status);
         this.scrollToBottom();
     },
 
@@ -191,22 +259,6 @@ const ChatUI = {
         return messageDiv;
     },
 
-    updateReasoningSection(messageElement, chunks) {
-        const contentDiv = messageElement.querySelector('.message-content');
-
-        let reasoningSection = contentDiv.querySelector('.reasoning-section');
-        if (!reasoningSection) {
-            reasoningSection = this.createReasoningSection();
-            contentDiv.insertBefore(reasoningSection, contentDiv.firstChild);
-        }
-
-        const text = chunks.map(chunk => escapeHtml(chunk)).join('');
-        const reasoningContent = reasoningSection.querySelector('.reasoning-content');
-        reasoningContent.innerHTML = this.renderMarkdown(text);
-
-        // Auto-scroll to bottom of reasoning box
-        reasoningContent.scrollTop = reasoningContent.scrollHeight;
-    },
 
     createReasoningSection() {
         const section = document.createElement('div');
@@ -216,24 +268,80 @@ const ChatUI = {
                 <span class="reasoning-toggle expanded">▶</span>
                 <span class="reasoning-title">Reasoning</span>
             </div>
-            <div class="reasoning-content expanded"></div>
+            <div class="reasoning-content expanded">
+                <div class="reasoning-content-block"></div>
+            </div>
         `;
 
         // Toggle functionality
         const header = section.querySelector('.reasoning-header');
-        const content = section.querySelector('.reasoning-content');
         const toggle = section.querySelector('.reasoning-toggle');
+        const content = section.querySelector('.reasoning-content');
 
         header.addEventListener('click', () => {
-            const isExpanded = content.classList.toggle('expanded');
-            toggle.classList.toggle('expanded', isExpanded);
+            const isExpanded = toggle.classList.toggle('expanded');
+            content.classList.toggle('expanded', isExpanded);
         });
 
         return section;
     },
 
+    clearReasoningSection(messageElement) {
+        const contentDiv = messageElement.querySelector('.message-content');
+        const reasoningSection = contentDiv.querySelector('.reasoning-section');
+
+        if (reasoningSection) {
+            // Add fade-out animation
+            reasoningSection.classList.add('fade-out');
+            setTimeout(() => {
+                reasoningSection.remove();
+                this.reasoningChunks = []; // Clear stored chunks
+            }, 300); // Match CSS transition duration
+        }
+    },
+
+    updateToolStatusBadge(messageElement, status) {
+        const contentDiv = messageElement.querySelector('.message-content');
+
+        // Ensure reasoning section exists
+        let reasoningSection = contentDiv.querySelector('.reasoning-section');
+        if (!reasoningSection) {
+            reasoningSection = this.createReasoningSection();
+            contentDiv.insertBefore(reasoningSection, contentDiv.firstChild);
+        }
+
+        const reasoningContent = reasoningSection.querySelector('.reasoning-content');
+
+        // Always create a NEW status badge inside reasoning-content
+        const statusBadge = document.createElement('div');
+        statusBadge.className = 'tool-status-badge';
+
+        // Determine badge type (calling or completed)
+        const isCalling = status.includes('⚙️') || status.toLowerCase().includes('calling');
+        const isCompleted = status.includes('✓') || status.toLowerCase().includes('completed');
+
+        if (isCalling) {
+            statusBadge.classList.add('calling');
+        } else if (isCompleted) {
+            statusBadge.classList.add('completed');
+        }
+
+        statusBadge.textContent = status;
+
+        // Append to reasoning-content (as sibling to reasoning-content-blocks and other badges)
+        reasoningContent.appendChild(statusBadge);
+
+        // Reset reasoning chunks for next post-tool reasoning
+        this.reasoningChunks = [];
+    },
+
     updateFinalResponse(messageElement, text) {
         const contentDiv = messageElement.querySelector('.message-content');
+
+        // Keep reasoning expanded - don't collapse
+        // Keep status badge visible - don't remove
+        // Keep post-tool content visible - don't remove
+        // Just add the final answer below everything
 
         let textDiv = contentDiv.querySelector('.message-text');
         if (!textDiv) {

@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.tools.python
 
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
@@ -25,6 +26,10 @@ class PythonTool : Tool {
     override fun init(config: Map<*, *>, context: com.wutsi.kokibot.Context) {
         super.init(config, context)
         this.context = context
+    }
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        return "Running python code"
     }
 
     override fun metadata(): ToolMetadata = ToolMetadata(

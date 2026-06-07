@@ -4,6 +4,7 @@ import com.wutsi.kokibot.AssistantNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.service.SessionContext
 import com.wutsi.kokibot.service.swarm.DelegationException
 import com.wutsi.kokibot.tools.Tool
@@ -62,6 +63,13 @@ class SwarmDelegateTool : Tool {
                 ),
             )
         )
+    }
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        return "Executing sub-agent" +
+            (if (toolCalls.size > 1) "s" else "") +
+            ": " +
+            toolCalls.joinToString(",") { it.arguments["name"].toString() }
     }
 
     override fun exec(arguments: Map<*, *>): String {

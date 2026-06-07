@@ -9,6 +9,7 @@ data class WebSocketResponse(
 
 enum class WebSocketResponseType {
     REASONING_CHUNK,
+    TOOL_STATUS,
     FINAL,
     ERROR,
 }

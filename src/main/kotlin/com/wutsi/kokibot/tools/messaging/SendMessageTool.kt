@@ -3,6 +3,7 @@ package com.wutsi.kokibot.tools.messaging
 import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
@@ -54,6 +55,10 @@ class SendMessageTool : Tool {
             ),
         )
     )
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        return "Sending message"
+    }
 
     override fun exec(arguments: Map<*, *>): String {
         val userId = arguments["user_id"]?.toString()?.ifEmpty { null }

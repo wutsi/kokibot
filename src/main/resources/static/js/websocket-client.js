@@ -15,6 +15,7 @@ class WebSocketClient {
             onClose: null,
             onError: null,
             onReasoningChunk: null,
+            onToolStatus: null,
             onFinalResponse: null,
             onErrorMessage: null
         };
@@ -82,6 +83,12 @@ class WebSocketClient {
             case 'REASONING_CHUNK':
                 if (this.handlers.onReasoningChunk) {
                     this.handlers.onReasoningChunk(response.content);
+                }
+                break;
+
+            case 'TOOL_STATUS':
+                if (this.handlers.onToolStatus) {
+                    this.handlers.onToolStatus(response.content);
                 }
                 break;
 

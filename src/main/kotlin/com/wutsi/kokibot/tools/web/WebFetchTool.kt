@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.tools.web
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.service.UnsupportedMimeTypeException
 import com.wutsi.kokibot.service.file.MarkdownConverter
 import com.wutsi.kokibot.tools.Tool
@@ -51,6 +52,10 @@ class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
             )
         )
     )
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        return "Reading ${toolCalls.size} page" + (if (toolCalls.size > 1) "s" else "")
+    }
 
     override fun exec(arguments: Map<*, *>): String {
         val url = arguments["url"]?.toString()?.ifEmpty { null }

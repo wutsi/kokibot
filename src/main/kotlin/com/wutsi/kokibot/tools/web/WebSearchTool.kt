@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.tools.web
 
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
@@ -64,5 +65,9 @@ class WebSearchTool : Tool {
         }
 
         return sb.toString()
+    }
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        return "Searching online"
     }
 }

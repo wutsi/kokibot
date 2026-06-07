@@ -2,6 +2,7 @@ package com.wutsi.kokibot.tools
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Resource
+import com.wutsi.kokibot.llm.LLMToolCall
 
 interface Tool : Resource {
     override fun id(): String {
@@ -13,4 +14,7 @@ interface Tool : Resource {
 
     fun metadata(): ToolMetadata
     fun exec(arguments: Map<*, *>): String
+    fun statusText(toolCalls: List<LLMToolCall>): String {
+        return "Calling ${toolCalls.size} tool${if (toolCalls.size > 1) "s" else ""}: ${toolCalls.joinToString(", ") { "`${it.name}`" }}"
+    }
 }

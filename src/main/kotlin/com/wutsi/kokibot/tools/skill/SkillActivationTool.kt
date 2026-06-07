@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.tools.skill
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
@@ -30,6 +31,15 @@ class SkillActivationTool : Tool {
             )
         )
     )
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        val skills = toolCalls.joinToString(",") { it.arguments["skills"].toString() }.split(",").distinct()
+        return "Activating skills" +
+            (if (skills.size > 1) "s" else "") +
+            ": " +
+            skills.take(5).joinToString(",") +
+            if (skills.size > 5) " and ${skills.size - 5} more" else ""
+    }
 
     override fun exec(arguments: Map<*, *>): String {
         val names = arguments["skills"]?.toString()?.ifEmpty { null }

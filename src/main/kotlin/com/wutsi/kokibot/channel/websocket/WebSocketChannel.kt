@@ -83,6 +83,24 @@ class WebSocketChannel : Channel() {
         }
     }
 
+    override fun sendStatus(message: Message) {
+        if (message.channelId != id()) {
+            return
+        }
+
+        val session = sessions[message.userId] ?: return
+
+        try {
+            val response = WebSocketResponse(
+                type = WebSocketResponseType.TOOL_STATUS,
+                content = message.text,
+            )
+            session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
+        } catch (e: Exception) {
+            LOGGER.warn("Error sending status to WebSocket: ${e.message}")
+        }
+    }
+
     internal fun handleMessage(session: WebSocketSession, payload: String) {
         try {
             val request = jsonMapper.readValue(payload, WebSocketRequest::class.java)

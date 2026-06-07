@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.tools.shell
 
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
@@ -75,6 +76,15 @@ class ShellTool : Tool {
             ),
         )
     )
+
+    override fun statusText(toolCalls: List<LLMToolCall>): String {
+        return "Bash:" +
+            if (toolCalls.size == 1) {
+                " ${toolCalls[0].arguments["command"]}"
+            } else {
+                " ${toolCalls.size} commands"
+            }
+    }
 
     override fun exec(arguments: Map<*, *>): String {
         val command = arguments["command"]?.toString()?.ifEmpty { null }

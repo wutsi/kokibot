@@ -175,7 +175,7 @@ class Assistant(val name: String = "") {
                 )
             } else {
                 val response = ask(iteration, query, memory, streamCallback)
-                if (decide(query.id, iteration, response, memory, tools)) {
+                if (decide(query.id, iteration, response, memory, tools, query)) {
                     return Message(
                         text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                         role = Role.ASSISTANT,
@@ -281,6 +281,7 @@ class Assistant(val name: String = "") {
         response: LLMResponse,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
+        query: Message,
     ): Boolean {
         // Collect all tool calls from all choices
         val allToolCalls = response.choices
@@ -291,7 +292,7 @@ class Assistant(val name: String = "") {
         }
 
         // Execute all tool calls in parallel
-        execParallel(id, iteration, allToolCalls, memory, tools)
+        execParallel(id, iteration, allToolCalls, memory, tools, query)
         return false
     }
 
@@ -301,12 +302,16 @@ class Assistant(val name: String = "") {
         toolCalls: List<LLMToolCall>,
         memory: MutableList<String>,
         tools: Map<String, Tool>,
+        query: Message,
     ) {
         if (toolCalls.isEmpty()) {
             return
         }
 
         LOGGER.info("$iteration $name Executing ${toolCalls.size} tool calls in parallel")
+
+        // Send status before tool execution
+        sendToolStatus(query, toolCalls)
 
         // Create callables for each tool call
         val callables = toolCalls.map { call ->
@@ -496,5 +501,34 @@ class Assistant(val name: String = "") {
             .replace("{{HOME}}", context.home.absolutePath)
             .replace("{{USER_ID}}", userId)
             .replace("{{CHANNEL_ID}}", channelId.removePrefix("channel:"))
+    }
+
+    private fun sendToolStatus(query: Message, toolCalls: List<LLMToolCall>) {
+        toolCalls.groupBy { toolCall -> toolCall.name }
+            .map { entry ->
+                val tool = context.toolRegistry.get(entry.key)
+                val statusText = "⚙\uFE0F " + tool.statusText(entry.value)
+                sendToolStatus(query, statusText)
+            }
+    }
+
+    private fun sendToolStatus(query: Message, statusText: String) {
+        try {
+            val userId = query.userId
+            val channelId = query.channelId
+            if (userId != null && channelId != null) {
+                val channel = context.channelRegistry.get(channelId)
+                channel.sendStatus(
+                    Message(
+                        text = statusText,
+                        role = Role.SYSTEM,
+                        userId = userId,
+                        channelId = channelId,
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            LOGGER.debug("Failed to send tool status: ${e.message}")
+        }
     }
 }

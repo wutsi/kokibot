@@ -43,7 +43,7 @@ class TelegramChannel(
 
         const val ID = "channel:telegram"
         const val TYPING_DELAY_MILLIS = 2000L
-        const val STREAM_MAX_LENGTH = 150
+        const val STREAM_MAX_LENGTH = 1024
         const val MESSAGE_MAX_LENGTH = 3900 // Telegram max is 4096, but we reserve some for HTML tags
         const val STREAM_INITIAL_DELAY_MILLIS = 500L
         const val STREAM_MAX_DELAY_MILLIS = 30_000L
@@ -148,6 +148,28 @@ class TelegramChannel(
             return true
         }
         return false
+    }
+
+    override fun sendStatus(message: Message) {
+        if (message.userId == null || message.channelId != id()) {
+            return
+        }
+
+        users.get(message.userId)?.let { chatId ->
+            try {
+                val html = MarkdownToTelegramHTML.convert(message.text)
+                val sendMessage = SendMessage
+                    .builder()
+                    .chatId(chatId)
+                    .text(html)
+                    .parseMode(ParseMode.HTML)
+                    .disableNotification(true)
+                    .build()
+                client.execute(sendMessage)
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to send status to Telegram: ${ex.message}")
+            }
+        }
     }
 
     override fun consume(update: Update) {

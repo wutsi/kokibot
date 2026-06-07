@@ -206,6 +206,12 @@ body {
     border: 1px solid var(--color-border-light);
     border-radius: 8px;
     overflow: hidden;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.reasoning-section.fade-out {
+    opacity: 0;
+    transform: scale(0.98);
 }
 
 .reasoning-header {
@@ -244,14 +250,28 @@ body {
     color: var(--color-text-secondary);
     font-style: normal;
     line-height: 1.6;
-    max-height: 0;
+    display: none;
     overflow: hidden;
     transition: max-height 0.3s ease-out;
 }
 
 .reasoning-content.expanded {
-    max-height: 150px;
+    display: block;
     overflow-y: auto;
+}
+
+/* Reasoning content blocks */
+.reasoning-content-block {
+    margin-bottom: 8px;
+}
+
+.reasoning-content-block:last-child {
+    margin-bottom: 0;
+}
+
+/* Tool status badges inside reasoning content */
+.reasoning-content .tool-status-badge {
+    margin: 8px 0;
 }
 
 .reasoning-chunk {
@@ -511,6 +531,65 @@ body {
     height: auto;
     border-radius: 6px;
     margin: 8px 0;
+}
+
+/* ===== Tool Status Badge ===== */
+.tool-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    margin: 8px;
+    border-radius: 16px;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-light);
+    width: fit-content;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tool-status-badge.calling {
+    background-color: #e3f2fd;
+    color: var(--color-accent-blue);
+    border-color: var(--color-accent-blue);
+    /*animation: pulse-badge 1.5s ease-in-out infinite;*/
+}
+
+.tool-status-badge.completed {
+    background-color: #e8f5e9;
+    color: var(--color-accent-green);
+    border-color: var(--color-accent-green);
+}
+
+.tool-status-badge.fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+@keyframes pulse-badge {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+}
+
+/* Dark mode adjustments for tool status badge */
+@media (prefers-color-scheme: dark) {
+    .tool-status-badge.calling {
+        background-color: #1e3a5f;
+        color: #4c8bf5;
+        border-color: #4c8bf5;
+    }
+
+    .tool-status-badge.completed {
+        background-color: #1e3d2a;
+        color: #5bb974;
+        border-color: #5bb974;
+    }
 }
 
 /* ===== Scrollbar Styling ===== */

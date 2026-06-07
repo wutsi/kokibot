@@ -383,7 +383,7 @@ class TelegramChannel(
             .chatId(chatId)
             .action(ActionType.TYPING.toString())
             .build()
-        client!!.execute(action)
+        client.execute(action)
     }
 
     private fun send(chatId: String, message: Message) {
@@ -418,7 +418,7 @@ class TelegramChannel(
             .chatId(chatId)
             .document(InputFile(file, file.name))
             .build()
-        client!!.execute(sendDocument)
+        client.execute(sendDocument)
     }
 
     private fun deleteMessage(chatId: String, messageId: Int) {
@@ -427,7 +427,7 @@ class TelegramChannel(
                 .chatId(chatId)
                 .messageId(messageId)
                 .build()
-            client!!.execute(deleteMessage)
+            client.execute(deleteMessage)
         } catch (ex: Exception) {
             LOGGER.warn("Failed to delete message $messageId in chat $chatId. ${ex.message}")
         }
@@ -457,7 +457,7 @@ class TelegramChannel(
                 .parseMode(ParseMode.HTML)
                 .disableNotification(true)
                 .build()
-            val sent = client!!.execute(sendMessage)
+            val sent = client.execute(sendMessage)
             return sent.messageId
         } else {
             val editMessage = EditMessageText.builder()

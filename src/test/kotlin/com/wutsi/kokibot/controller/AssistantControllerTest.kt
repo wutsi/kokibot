@@ -45,9 +45,32 @@ class AssistantControllerTest {
     }
 
     @Test
+    fun assistant() {
+        doReturn(
+            listOf(createBootstrap("007", description = "Hello world"))
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007", Map::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals("Hello world", response.body!!["description"])
+    }
+
+    @Test
+    fun `assistant not found`() {
+        doReturn(
+            listOf(createBootstrap("007"))
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/xxx", Map::class.java)
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
     fun contextLength() {
         doReturn(
-            listOf(createBootstrap("007", 333))
+            listOf(createBootstrap("007", contextLength = 333))
         ).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/007/context-length", Map::class.java)
@@ -60,7 +83,7 @@ class AssistantControllerTest {
     @Test
     fun `contextLength - not-found`() {
         doReturn(
-            listOf(createBootstrap("007", 333))
+            listOf(createBootstrap("007", contextLength = 333))
         ).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/xxxx/context-length", Map::class.java)
@@ -68,12 +91,13 @@ class AssistantControllerTest {
         assertEquals(404, response.statusCode.value())
     }
 
-    private fun createBootstrap(name: String, contextLength: Int = 1024): Bootstrap {
+    private fun createBootstrap(name: String, description: String? = null, contextLength: Int = 1024): Bootstrap {
         val llm = mock<LLM>()
         doReturn(MAX_CONTEXT_WINDOW).whenever(llm).maxContextLength()
 
         val assistant = mock<Assistant>()
         doReturn(name).whenever(assistant).name
+        doReturn(description).whenever(assistant).description
         doReturn(contextLength).whenever(assistant).contextLength()
 
         val context = Context(

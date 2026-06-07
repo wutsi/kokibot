@@ -15,6 +15,20 @@ class AssistantController(private val multi: MultiBootstrap) {
         return multi.bootstraps.map { bootstrap -> bootstrap.getContext().assistant.name }
     }
 
+    @GetMapping("/{name}")
+    fun get(@PathVariable("name") name: String): ResponseEntity<Map<String, Any?>> {
+        val bootstrap = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }
+            ?: return ResponseEntity.notFound().build()
+
+        val context = bootstrap.getContext()
+        return ResponseEntity.ok(
+            mapOf(
+                "name" to context.assistant.name,
+                "description" to context.assistant.description,
+            )
+        )
+    }
+
     @GetMapping("/{name}/context-length")
     fun contextLength(@PathVariable("name") name: String): ResponseEntity<Map<String, Any>> {
         val bootstrap = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }

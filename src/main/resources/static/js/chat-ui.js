@@ -12,6 +12,7 @@ const ChatUI = {
         this.agentName = agentName || 'thoth';
         this.setupElements();
         this.setupEventListeners();
+        this.loadAssistantInfo();
         this.connectWebSocket();
     },
 
@@ -22,9 +23,30 @@ const ChatUI = {
         this.statusIndicator = document.getElementById('status-indicator');
         this.statusText = document.getElementById('status-text');
         this.agentNameElement = document.getElementById('agent-name');
+        this.agentDescriptionElement = document.getElementById('agent-description');
 
-        // Update agent name in header
+        // Update agent name in header (initial display)
         this.agentNameElement.textContent = this.formatAgentName(this.agentName);
+    },
+
+    async loadAssistantInfo() {
+        try {
+            const response = await fetch(`/assistants/${this.agentName}`);
+            if (!response.ok) {
+                console.warn('Failed to load assistant info, using defaults');
+                return;
+            }
+
+            const data = await response.json();
+
+            // Update header with fetched information
+            this.agentNameElement.textContent = this.formatAgentName(data.name);
+            if (data.description) {
+                this.agentDescriptionElement.textContent = data.description;
+            }
+        } catch (error) {
+            console.error('Error loading assistant info:', error);
+        }
     },
 
     setupEventListeners() {

@@ -32,7 +32,7 @@ class Assistant(val name: String = "") {
 
     private var maxIterations: Int = DEFAULT_ITERATIONS
     private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
-    private lateinit var description: String
+    lateinit var description: String
     private lateinit var context: Context
     private var coordinator: Boolean = false
     private var threadPoolSize: Int = 4

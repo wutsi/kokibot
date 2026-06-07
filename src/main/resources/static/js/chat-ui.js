@@ -137,11 +137,13 @@ const ChatUI = {
             FileUpload.clearUploadedFiles();
         }
 
-        // Show typing indicator
-        this.showTypingIndicator();
+        // Create assistant message immediately with thinking avatar
+        this.currentMessageId = this.generateMessageId();
+        const assistantMessage = this.createAssistantMessageElement(this.currentMessageId);
+        this.chatContainer.appendChild(assistantMessage);
+        this.scrollToBottom();
 
         // Reset for new response
-        this.currentMessageId = this.generateMessageId();
         this.reasoningChunks = [];
         this.currentToolStatus = null;
     },
@@ -153,14 +155,13 @@ const ChatUI = {
     },
 
     handleReasoningChunk(chunk) {
-        this.hideTypingIndicator();
         this.reasoningChunks.push(chunk);
 
-        // Create or update assistant message with reasoning
-        let assistantMessage = document.getElementById(this.currentMessageId);
+        // Get the assistant message (should already exist from handleSend)
+        const assistantMessage = document.getElementById(this.currentMessageId);
         if (!assistantMessage) {
-            assistantMessage = this.createAssistantMessageElement(this.currentMessageId);
-            this.chatContainer.appendChild(assistantMessage);
+            console.error('Assistant message not found for reasoning chunk');
+            return;
         }
 
         const contentDiv = assistantMessage.querySelector('.message-content');
@@ -215,14 +216,13 @@ const ChatUI = {
     },
 
     handleToolStatus(status) {
-        this.hideTypingIndicator();
         this.currentToolStatus = status;
 
-        // Create or update assistant message with tool status
-        let assistantMessage = document.getElementById(this.currentMessageId);
+        // Get the assistant message (should already exist from handleSend)
+        const assistantMessage = document.getElementById(this.currentMessageId);
         if (!assistantMessage) {
-            assistantMessage = this.createAssistantMessageElement(this.currentMessageId);
-            this.chatContainer.appendChild(assistantMessage);
+            console.error('Assistant message not found for tool status');
+            return;
         }
 
         // Show tool status badge AFTER reasoning (DeepSeek-style: sequential display)
@@ -231,12 +231,17 @@ const ChatUI = {
     },
 
     handleFinalResponse(content) {
-        this.hideTypingIndicator();
-
-        let assistantMessage = document.getElementById(this.currentMessageId);
+        const assistantMessage = document.getElementById(this.currentMessageId);
         if (!assistantMessage) {
-            assistantMessage = this.createAssistantMessageElement(this.currentMessageId);
-            this.chatContainer.appendChild(assistantMessage);
+            console.error('Assistant message not found for final response');
+            return;
+        }
+
+        // Switch avatar from thinking to normal
+        const avatar = assistantMessage.querySelector('.message-avatar');
+        if (avatar) {
+            avatar.classList.remove('thinking');
+            avatar.textContent = 'A';
         }
 
         this.updateFinalResponse(assistantMessage, content);
@@ -348,8 +353,8 @@ const ChatUI = {
         messageDiv.className = 'message assistant';
 
         const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
-        avatar.textContent = 'A';
+        avatar.className = 'message-avatar thinking';
+        avatar.innerHTML = '<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>';
 
         const contentWrapper = document.createElement('div');
         contentWrapper.className = 'message-content-wrapper';

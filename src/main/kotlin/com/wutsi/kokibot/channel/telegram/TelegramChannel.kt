@@ -150,28 +150,6 @@ class TelegramChannel(
         return false
     }
 
-    override fun sendStatus(message: Message) {
-        if (message.userId == null || message.channelId != id()) {
-            return
-        }
-
-        users.get(message.userId)?.let { chatId ->
-            try {
-                val html = MarkdownToTelegramHTML.convert(message.text)
-                val sendMessage = SendMessage
-                    .builder()
-                    .chatId(chatId)
-                    .text(html)
-                    .parseMode(ParseMode.HTML)
-                    .disableNotification(true)
-                    .build()
-                client.execute(sendMessage)
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to send status to Telegram: ${ex.message}")
-            }
-        }
-    }
-
     override fun consume(update: Update) {
         if (update.hasMessage()) {
             /* Check sender whitelist */

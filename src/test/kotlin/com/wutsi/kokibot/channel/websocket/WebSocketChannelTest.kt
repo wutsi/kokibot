@@ -52,8 +52,12 @@ class WebSocketChannelTest {
             channel.handleMessage(
                 session,
                 """
-            {"query": "Hello", "userId": "user123"}
-            """.trimIndent(),
+                {
+                    "query": "Hello",
+                    "userId": "user123",
+                    "filePaths": ["/path/to/file1.txt", "/path/to/file2.txt"]
+                }
+                """.trimIndent(),
             )
 
             assertEquals(session, channel.getSession("user123"))

@@ -34,6 +34,10 @@ class Bootstrap(
         LOGGER.info("Initialization completed")
     }
 
+    fun getContext(): Context {
+        return context
+    }
+
     private fun loadConfig(file: File): Map<*, *> {
         val config = JsonMapper().readValue(file, Map::class.java)
         return MapUtil.applyEnv(config)

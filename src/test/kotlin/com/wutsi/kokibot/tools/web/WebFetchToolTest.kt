@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.tools.web
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -45,6 +46,32 @@ class WebFetchToolTest {
         assertTrue(health.up)
         assertEquals(tool.id(), health.id)
         assertNull(health.details)
+    }
+
+    @Test
+    fun `statusText - no tool calls`() {
+        val result = tool.statusText(emptyList())
+        assertEquals("Reading 0 page", result)
+    }
+
+    @Test
+    fun `statusText - single tool call`() {
+        val toolCalls = listOf(
+            LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com"))
+        )
+        val result = tool.statusText(toolCalls)
+        assertEquals("Reading 1 page", result)
+    }
+
+    @Test
+    fun `statusText - multiple tool calls`() {
+        val toolCalls = listOf(
+            LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com/a")),
+            LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com/b")),
+            LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com/c"))
+        )
+        val result = tool.statusText(toolCalls)
+        assertEquals("Reading 3 pages", result)
     }
 
     @Test

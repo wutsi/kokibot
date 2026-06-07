@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.tools.web
 
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -17,6 +18,31 @@ class WebSearchToolTest {
         assertEquals("query", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
         assertTrue(meta.parameters[0].required)
+    }
+
+    @Test
+    fun `statusText - no tool calls`() {
+        val result = tool.statusText(emptyList())
+        assertEquals("Searching online", result)
+    }
+
+    @Test
+    fun `statusText - single tool call`() {
+        val toolCalls = listOf(
+            LLMToolCall(name = WebSearchTool.NAME, arguments = mapOf("query" to "Capitale de la France"))
+        )
+        val result = tool.statusText(toolCalls)
+        assertEquals("Searching online", result)
+    }
+
+    @Test
+    fun `statusText - multiple tool calls`() {
+        val toolCalls = listOf(
+            LLMToolCall(name = WebSearchTool.NAME, arguments = mapOf("query" to "Capitale de la France")),
+            LLMToolCall(name = WebSearchTool.NAME, arguments = mapOf("query" to "Capital of Germany"))
+        )
+        val result = tool.statusText(toolCalls)
+        assertEquals("Searching online", result)
     }
 
     @Test

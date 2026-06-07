@@ -34,7 +34,7 @@ class SkillActivationTool : Tool {
 
     override fun statusText(toolCalls: List<LLMToolCall>): String {
         val skills = toolCalls.joinToString(",") { it.arguments["skills"].toString() }.split(",").distinct()
-        return "Activating skills" +
+        return "Activating skill" +
             (if (skills.size > 1) "s" else "") +
             ": " +
             skills.take(5).joinToString(",") +

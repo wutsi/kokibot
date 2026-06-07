@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.tools.shell
 
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
@@ -130,5 +131,52 @@ class ShellToolTest {
                 result.contains("FORBIDDEN"),
             )
         }
+    }
+
+    @Test
+    fun `statusText - single command`() {
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = ShellTool.NAME,
+                    arguments = mapOf("command" to "ls -la"),
+                )
+            )
+        )
+        assertEquals("Bash: ls -la", result)
+    }
+
+    @Test
+    fun `statusText - multiple commands`() {
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = ShellTool.NAME,
+                    arguments = mapOf("command" to "ls -la"),
+                ),
+                LLMToolCall(
+                    name = ShellTool.NAME,
+                    arguments = mapOf("command" to "pwd"),
+                ),
+                LLMToolCall(
+                    name = ShellTool.NAME,
+                    arguments = mapOf("command" to "whoami"),
+                ),
+            )
+        )
+        assertEquals("Bash: 3 commands", result)
+    }
+
+    @Test
+    fun `statusText - single command missing argument`() {
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = ShellTool.NAME,
+                    arguments = emptyMap<String, Any>(),
+                )
+            )
+        )
+        assertEquals("Bash: null", result)
     }
 }

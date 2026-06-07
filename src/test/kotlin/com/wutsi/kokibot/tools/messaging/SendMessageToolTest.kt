@@ -11,6 +11,7 @@ import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.channel.Channel
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -171,5 +172,22 @@ class SendMessageToolTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun statusText() {
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = SendMessageTool.NAME,
+                    arguments = mapOf(
+                        "user_id" to "11111",
+                        "channel_id" to "messenger",
+                        "message" to "Hello, World!",
+                    )
+                )
+            )
+        )
+        assertEquals("Sending message", result)
     }
 }

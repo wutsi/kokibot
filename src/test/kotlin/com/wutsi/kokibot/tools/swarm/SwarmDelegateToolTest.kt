@@ -12,6 +12,7 @@ import com.wutsi.kokibot.AssistantRegistry
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.service.SessionContext
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.AfterEach
@@ -177,7 +178,8 @@ class SwarmDelegateToolTest {
 
         // Mock process() to simulate real Assistant behavior: push to stack
         doReturn(Message(text = "Error: Delegation depth limit (5) exceeded", role = Role.ASSISTANT))
-            .whenever(targetAssistant).process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
+            .whenever(targetAssistant)
+            .process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
 
         // When
         val result = tool.exec(mapOf("name" to "specialist", "task" to "Task"))
@@ -199,7 +201,8 @@ class SwarmDelegateToolTest {
 
         // Mock process() to simulate real Assistant behavior: detect cycle
         doReturn(Message(text = "Error: Delegation cycle detected", role = Role.ASSISTANT))
-            .whenever(targetAssistant).process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
+            .whenever(targetAssistant)
+            .process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
 
         // When: try to delegate back to 'agent-a'
         val result = tool.exec(mapOf("name" to "agent-a", "task" to "Task"))
@@ -216,7 +219,8 @@ class SwarmDelegateToolTest {
         }
         doReturn(targetAssistant).whenever(assistantRegistry).get("specialist")
         doThrow(RuntimeException("boom"))
-            .whenever(targetAssistant).process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
+            .whenever(targetAssistant)
+            .process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
 
         // When: delegation fails
         val result = tool.exec(mapOf("name" to "specialist", "task" to "Task"))
@@ -233,12 +237,90 @@ class SwarmDelegateToolTest {
         }
         doReturn(targetAssistant).whenever(assistantRegistry).get("specialist")
         doReturn(Message(text = "done", role = Role.ASSISTANT))
-            .whenever(targetAssistant).process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
+            .whenever(targetAssistant)
+            .process(com.nhaarman.mockitokotlin2.any(), com.nhaarman.mockitokotlin2.anyOrNull())
 
         // When: delegation succeeds
         val result = tool.exec(mapOf("name" to "specialist", "task" to "Task"))
 
         // Then: result returned
         assertEquals("Result from `specialist`:\ndone", result)
+    }
+
+    @Test
+    fun `statusText - single sub-agent`() {
+        val toolCalls = listOf(
+            LLMToolCall(
+                id = "1",
+                name = SwarmDelegateTool.ID,
+                arguments = mapOf("name" to "planner", "task" to "Plan my day"),
+            )
+        )
+
+        val result = tool.statusText(toolCalls)
+
+        assertEquals("Executing sub-agent: planner", result)
+    }
+
+    @Test
+    fun `statusText - multiple sub-agents`() {
+        val toolCalls = listOf(
+            LLMToolCall(
+                id = "1",
+                name = SwarmDelegateTool.ID,
+                arguments = mapOf("name" to "planner", "task" to "Plan"),
+            ),
+            LLMToolCall(
+                id = "2",
+                name = SwarmDelegateTool.ID,
+                arguments = mapOf("name" to "researcher", "task" to "Research"),
+            ),
+            LLMToolCall(
+                id = "3",
+                name = SwarmDelegateTool.ID,
+                arguments = mapOf("name" to "writer", "task" to "Write"),
+            ),
+        )
+
+        val result = tool.statusText(toolCalls)
+
+        assertEquals("Executing sub-agents: planner,researcher,writer", result)
+    }
+
+    @Test
+    fun `statusText - empty tool calls`() {
+        val result = tool.statusText(emptyList())
+
+        assertEquals("Executing sub-agent: ", result)
+    }
+
+    @Test
+    fun `statusText - missing name argument renders as null`() {
+        val toolCalls = listOf(
+            LLMToolCall(
+                id = "1",
+                name = SwarmDelegateTool.ID,
+                arguments = mapOf("task" to "Plan"),
+            )
+        )
+
+        val result = tool.statusText(toolCalls)
+
+        assertEquals("Executing sub-agent: null", result)
+    }
+
+    @Test
+    fun `statusText - explicit null name renders as null`() {
+        val toolCalls = listOf(
+            LLMToolCall(
+                id = "1",
+                name = SwarmDelegateTool.ID,
+                arguments = mapOf("name" to null, "task" to "Plan"),
+            )
+        )
+
+        val result = tool.statusText(toolCalls)
+
+        assertEquals("Executing sub-agent: null", result)
     }
 }

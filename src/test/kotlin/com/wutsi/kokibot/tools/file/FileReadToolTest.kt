@@ -1,7 +1,9 @@
 package com.wutsi.kokibot.tools.file
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -108,5 +110,47 @@ class FileReadToolTest {
 
         assertTrue(result.contains("Content"))
         assertFalse(result.contains("Content of TXT file"))
+    }
+
+    @Test
+    fun `statusText - accessing memory`() {
+        val context = Context(
+            home = File("target/file-read-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = FileEditTool.NAME,
+                    arguments = mapOf(
+                        "path" to "${context.home.absolutePath}/memory/MEMORY.md",
+                    )
+                )
+            )
+        )
+        Assertions.assertEquals("Reading memory", result)
+    }
+
+    @Test
+    fun statusText() {
+        val context = Context(
+            home = File("target/file-read-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = FileEditTool.NAME,
+                    arguments = mapOf(
+                        "path" to "/foo/bar.md",
+                    )
+                )
+            )
+        )
+        Assertions.assertEquals(true, result.contains("/foo/bar.md"))
     }
 }

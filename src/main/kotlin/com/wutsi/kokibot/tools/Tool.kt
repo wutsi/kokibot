@@ -14,7 +14,5 @@ interface Tool : Resource {
 
     fun metadata(): ToolMetadata
     fun exec(arguments: Map<*, *>): String
-    fun statusText(toolCalls: List<LLMToolCall>): String {
-        return "Calling ${toolCalls.size} tool${if (toolCalls.size > 1) "s" else ""}: ${toolCalls.joinToString(", ") { "`${it.name}`" }}"
-    }
+    fun statusText(toolCalls: List<LLMToolCall>): String
 }

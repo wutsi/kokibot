@@ -104,4 +104,90 @@ class SkillActivationToolTest {
 
         assertFalse(result.contains(skill1.body))
     }
+
+    @Test
+    fun `exec - skill not found`() {
+        tool.init(mapOf("" to "xx"), context)
+        val result = tool.exec(mapOf("skills" to "unknown_skill"))
+
+        assertTrue(result.contains("Unable to activate skill"))
+        assertTrue(result.contains("unknown_skill"))
+    }
+
+    @Test
+    fun `exec - empty skills parameter`() {
+        tool.init(mapOf("" to "xx"), context)
+
+        try {
+            tool.exec(mapOf("skills" to ""))
+            throw AssertionError("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message?.contains("Missing required argument") == true)
+        }
+    }
+
+    @Test
+    fun `exec - missing skills parameter`() {
+        tool.init(mapOf("" to "xx"), context)
+
+        try {
+            tool.exec(emptyMap<String, Any>())
+            throw AssertionError("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message?.contains("Missing required argument") == true)
+        }
+    }
+
+    @Test
+    fun `statusText - single skill`() {
+        tool.init(mapOf("" to "xx"), context)
+
+        val toolCalls = listOf(
+            com.wutsi.kokibot.llm.LLMToolCall(
+                id = "1",
+                name = "skill_activate",
+                arguments = mapOf("skills" to "skill1")
+            )
+        )
+
+        val result = tool.statusText(toolCalls)
+        assertEquals("Activating skill: skill1", result)
+    }
+
+    @Test
+    fun `statusText - multiple skills`() {
+        tool.init(mapOf("" to "xx"), context)
+
+        val toolCalls = listOf(
+            com.wutsi.kokibot.llm.LLMToolCall(
+                id = "1",
+                name = "skill_activate",
+                arguments = mapOf("skills" to "skill1,skill2")
+            ),
+            com.wutsi.kokibot.llm.LLMToolCall(
+                id = "2",
+                name = "skill_activate",
+                arguments = mapOf("skills" to "skill3")
+            )
+        )
+
+        val result = tool.statusText(toolCalls)
+        assertEquals("Activating skills: skill1,skill2,skill3", result)
+    }
+
+    @Test
+    fun `statusText - more than 5 skills`() {
+        tool.init(mapOf("" to "xx"), context)
+
+        val toolCalls = listOf(
+            com.wutsi.kokibot.llm.LLMToolCall(
+                id = "1",
+                name = "skill_activate",
+                arguments = mapOf("skills" to "skill1,skill2,skill3,skill4,skill5,skill6,skill7")
+            )
+        )
+
+        val result = tool.statusText(toolCalls)
+        assertEquals("Activating skills: skill1,skill2,skill3,skill4,skill5 and 2 more", result)
+    }
 }

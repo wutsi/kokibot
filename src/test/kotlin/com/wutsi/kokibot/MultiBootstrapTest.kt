@@ -36,4 +36,12 @@ class MultiBootstrapTest {
 
         assertEquals(0, bootstrap.bootstraps.size)
     }
+
+    @Test
+    fun `init - non-existent agents directory`() {
+        val nonExistentHome = File("target/test-data/non-existent-" + System.currentTimeMillis())
+        bootstrap.init(nonExistentHome)
+
+        assertEquals(0, bootstrap.bootstraps.size)
+    }
 }

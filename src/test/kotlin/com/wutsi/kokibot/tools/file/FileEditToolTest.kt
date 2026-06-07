@@ -1,9 +1,13 @@
 package com.wutsi.kokibot.tools.file
 
+import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
+import java.io.File
 import java.nio.file.Files
 import kotlin.io.path.writeText
 
@@ -121,5 +125,47 @@ class FileEditToolTest {
             result
         )
         assertEquals("Hello World", file.toFile().readText())
+    }
+
+    @Test
+    fun `statusText - accessing memory`() {
+        val context = Context(
+            home = File("target/file-edit-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = FileEditTool.NAME,
+                    arguments = mapOf(
+                        "path" to "${context.home.absolutePath}/memory/MEMORY.md",
+                    )
+                )
+            )
+        )
+        assertEquals("Updating memory", result)
+    }
+
+    @Test
+    fun statusText() {
+        val context = Context(
+            home = File("target/file-edit-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = FileEditTool.NAME,
+                    arguments = mapOf(
+                        "path" to "/foo/bar.md",
+                    )
+                )
+            )
+        )
+        assertEquals(true, result.contains("/foo/bar.md"))
     }
 }

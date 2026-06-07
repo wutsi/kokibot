@@ -131,6 +131,11 @@ const AgentSelector = {
             ContextGauge.setAgent(agentName);
         }
 
+        // Clear uploaded files before reloading
+        if (typeof FileUpload !== 'undefined') {
+            FileUpload.setAgent(agentName);
+        }
+
         // Update URL and reload
         const url = new URL(window.location);
         url.searchParams.set('agent', agentName);

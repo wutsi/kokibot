@@ -81,7 +81,16 @@
 
     <!-- Input Area -->
     <footer class="input-container">
+        <!-- Uploaded Files Display -->
+        <div id="uploaded-files-container" class="uploaded-files-container"></div>
+
         <div class="input-wrapper">
+            <button id="upload-button" class="upload-button" title="Upload Files">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                </svg>
+            </button>
+            <input type="file" id="file-input" multiple hidden accept="*/*">
                 <textarea
                     id="message-input"
                     maxlength="10000"
@@ -105,6 +114,7 @@
 <script src="js/agent-selector.js"></script>
 <script src="js/context-gauge.js"></script>
 <script src="js/sidebar.js"></script>
+<script src="js/file-upload.js"></script>
 <script>
     // Initialize app on page load
     document.addEventListener('DOMContentLoaded', () => {
@@ -113,6 +123,7 @@
         AgentSelector.init(agentName);
         ContextGauge.init(agentName);
         Sidebar.init();
+        FileUpload.init(agentName);
     });
 </script>
 </body>

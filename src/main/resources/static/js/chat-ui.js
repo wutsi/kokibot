@@ -117,16 +117,25 @@ const ChatUI = {
             return;
         }
 
-        // Add user message to UI
-        this.addUserMessage(query);
+        // Get uploaded file info
+        const filesInfo = typeof FileUpload !== 'undefined' ? FileUpload.getUploadedFilesInfo() : [];
+        const filePaths = filesInfo.map(f => f.path);
 
-        // Send to server
-        this.wsClient.sendMessage(query);
+        // Add user message to UI with full file info
+        this.addUserMessage(query, filesInfo);
+
+        // Send to server with file paths
+        this.wsClient.sendMessage(query, null, filePaths);
 
         // Clear input and disable
         this.messageInput.value = '';
         this.messageInput.style.height = 'auto';
         this.disableInput();
+
+        // Clear uploaded files after sending
+        if (typeof FileUpload !== 'undefined') {
+            FileUpload.clearUploadedFiles();
+        }
 
         // Show typing indicator
         this.showTypingIndicator();
@@ -137,8 +146,8 @@ const ChatUI = {
         this.currentToolStatus = null;
     },
 
-    addUserMessage(text) {
-        const messageDiv = this.createMessageElement('user', text);
+    addUserMessage(text, filesInfo = []) {
+        const messageDiv = this.createMessageElement('user', text, filesInfo);
         this.chatContainer.appendChild(messageDiv);
         this.scrollToBottom();
     },
@@ -240,13 +249,27 @@ const ChatUI = {
         }
     },
 
-    createMessageElement(type, text) {
+    createMessageElement(type, text, filesInfo = []) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}`;
 
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
         avatar.textContent = type === 'user' ? 'U' : 'A';
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'message-content-wrapper';
+
+        // Add attached files if present (above the message bubble)
+        if (filesInfo.length > 0) {
+            const filesDiv = document.createElement('div');
+            filesDiv.className = 'message-files';
+            filesInfo.forEach(fileInfo => {
+                const fileDiv = this.createMessageFileElement(fileInfo);
+                filesDiv.appendChild(fileDiv);
+            });
+            contentWrapper.appendChild(filesDiv);
+        }
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
@@ -262,10 +285,61 @@ const ChatUI = {
         contentDiv.appendChild(textDiv);
         contentDiv.appendChild(timestamp);
 
+        contentWrapper.appendChild(contentDiv);
+
         messageDiv.appendChild(avatar);
-        messageDiv.appendChild(contentDiv);
+        messageDiv.appendChild(contentWrapper);
 
         return messageDiv;
+    },
+
+    createMessageFileElement(fileInfo) {
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'message-file';
+
+        const icon = document.createElement('span');
+        icon.className = 'message-file-extension file-extension-' + fileInfo.extension;
+        icon.textContent = fileInfo.extension;
+
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'message-file-info';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'message-file-name';
+        nameSpan.textContent = fileInfo.name;
+        nameSpan.title = fileInfo.name;
+
+        const sizeSpan = document.createElement('span');
+        sizeSpan.className = 'message-file-size';
+        sizeSpan.textContent = this.formatFileSize(fileInfo.size);
+
+        infoContainer.appendChild(nameSpan);
+        infoContainer.appendChild(sizeSpan);
+
+        fileDiv.appendChild(icon);
+        fileDiv.appendChild(infoContainer);
+
+        return fileDiv;
+    },
+
+    formatFileSize(bytes) {
+        if (bytes === 0 || bytes === null || bytes === undefined) {
+            return '0 B';
+        }
+
+        const kb = bytes / 1024;
+        const mb = kb / 1024;
+        const gb = mb / 1024;
+
+        if (gb >= 1) {
+            return `${gb.toFixed(gb >= 10 ? 0 : 1)} GB`;
+        } else if (mb >= 1) {
+            return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`;
+        } else if (kb >= 1) {
+            return `${kb.toFixed(kb >= 10 ? 0 : 1)} KB`;
+        } else {
+            return `${bytes} B`;
+        }
     },
 
     createAssistantMessageElement(id) {
@@ -277,11 +351,16 @@ const ChatUI = {
         avatar.className = 'message-avatar';
         avatar.textContent = 'A';
 
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'message-content-wrapper';
+
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
 
+        contentWrapper.appendChild(contentDiv);
+
         messageDiv.appendChild(avatar);
-        messageDiv.appendChild(contentDiv);
+        messageDiv.appendChild(contentWrapper);
 
         return messageDiv;
     },

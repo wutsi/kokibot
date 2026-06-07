@@ -115,7 +115,7 @@ class WebSocketChannel : Channel() {
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),
-                filePaths = emptyList(),
+                filePaths = request.filePaths,
             )
 
             // Process with streaming callback (always enabled)

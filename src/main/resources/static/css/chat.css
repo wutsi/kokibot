@@ -333,12 +333,24 @@ ol, li {
     background-color: var(--color-accent-green);
 }
 
-.message-content {
+.message-content-wrapper {
     max-width: 85%;
     margin: 0 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.message.user .message-content-wrapper {
+    align-items: flex-end;
+}
+
+.message-content {
+    width: 100%;
 }
 
 .message.user .message-content {
+    width: fit-content;
     background-color: var(--color-bg-user-message);
     border-radius: 18px 18px 4px 18px;
     padding: 12px 16px;
@@ -366,6 +378,105 @@ ol, li {
     font-size: 11px;
     color: var(--color-text-secondary);
     margin-top: 4px;
+}
+
+.message-files {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.message-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    max-width: 250px;
+}
+
+.message.user .message-content {
+   max-width: 80%;
+   min-width: 200px;
+}
+
+.message.user .message-file {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.message-file-extension {
+    flex-shrink: 0;
+    background: lightgray;
+    color: black;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 6px;
+    border: 1px solid gray;
+    border-radius: 4px;
+    text-transform: uppercase;
+    min-width: 32px;
+    text-align: center;
+}
+
+.file-extension-pdf {
+    background: darkred;
+    color: white;
+    border-color: darkred;
+}
+
+.file-extension-csv,
+.file-extension-xls,
+.file-extension-xlsx {
+    background: green;
+    color: white;
+    border-color: green;
+}
+
+.file-extension-zip {
+    background: orangered;
+    color: white;
+    border-color: orangered;
+}
+
+.file-extension-doc,
+.file-extension-docx {
+    background: var(--color-accent-blue);
+    color: white;
+    border-color: var(--color-accent-blue);
+}
+
+.file-extension-ppt,
+.file-extension-pptx {
+    background: indianred;
+    color: white;
+    border-color: indianred;
+}
+
+.message-file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.message-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--color-text-primary);
+}
+
+.message-file-size {
+    font-size: 11px;
+    color: var(--color-text-secondary);
 }
 
 /* ===== Reasoning Section ===== */
@@ -486,12 +597,148 @@ ol, li {
     border-top: 1px solid var(--color-border-light);
 }
 
+.uploaded-files-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 800px;
+    margin: 0 auto 12px auto;
+}
+
+.uploaded-files-container:empty {
+    display: none;
+}
+
+.uploaded-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    max-width: 250px;
+}
+
+.uploaded-file-extension {
+    flex-shrink: 0;
+    background: lightgray;
+    color: black;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 6px;
+    border: 1px solid gray;
+    border-radius: 4px;
+    text-transform: uppercase;
+    min-width: 32px;
+    text-align: center;
+}
+
+.file-extension-pdf {
+    background: darkred;
+    color: white;
+}
+
+.file-extension-csv,
+.file-extension-xls,
+.file-extension-xlsx {
+    background: green;
+    color: white;
+}
+
+.file-extension-zip {
+    background: orangered;
+    color: white;
+}
+
+.file-extension-doc,
+.file-extension-docx {
+    background: var(--highlight-color);
+    color: white;
+}
+
+.file-extension-ppt,
+.file-extension-pptx {
+    background: indianred;
+    color: white;
+}
+
+
+.uploaded-file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.uploaded-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--color-text-primary);
+}
+
+.uploaded-file-size {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+.uploaded-file-remove {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+    font-size: 18px;
+}
+
+.uploaded-file-remove:hover {
+    color: var(--color-accent-red);
+}
+
 .input-wrapper {
     display: flex;
     gap: 12px;
     align-items: flex-end;
     max-width: 800px;
     margin: 0 auto;
+}
+
+.upload-button {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--color-border-light);
+    border-radius: 50%;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+}
+
+.upload-button:hover {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-accent-blue);
+    color: var(--color-accent-blue);
+}
+
+.upload-button.uploading {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 #message-input {

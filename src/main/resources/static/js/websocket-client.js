@@ -109,10 +109,11 @@ class WebSocketClient {
         }
     }
 
-    sendMessage(query, userId = null) {
+    sendMessage(query, userId = null, filePaths = []) {
         const message = {
             query: query,
-            userId: userId || this.generateUserId()
+            userId: userId || this.generateUserId(),
+            filePaths: filePaths
         };
 
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {

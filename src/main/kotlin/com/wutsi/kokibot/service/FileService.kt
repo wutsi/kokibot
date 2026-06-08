@@ -33,12 +33,16 @@ class FileService : Resource {
         return File(dir, "${filename}_${UUID.randomUUID()}.${extension.removePrefix(".")}")
     }
 
-    fun url(path: String): String? {
+    fun urlPath(path: String): String? {
         if (path.startsWith(context.home.absolutePath)) {
-            return "/files" + path.substring(context.home.absolutePath.length)
+            return "/assistants/${context.assistant.name}/files" + path.substring(context.home.absolutePath.length)
         } else {
             return null
         }
+    }
+
+    fun urlPathFile(urlPath: String): File {
+        return File(context.home.absolutePath, urlPath)
     }
 
     private fun getTempDir(): File {

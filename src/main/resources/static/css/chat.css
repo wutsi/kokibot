@@ -690,7 +690,7 @@ ol, li {
 
 .file-extension-doc,
 .file-extension-docx {
-    background: var(--highlight-color);
+    background: blue;
     color: white;
 }
 

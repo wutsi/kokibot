@@ -20,6 +20,7 @@ import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import tools.jackson.databind.json.JsonMapper
+import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -29,10 +30,12 @@ class WebSocketChannelTest {
     private val assistant = mock<Assistant>()
     private val session = mock<WebSocketSession>()
     private val jsonMapper = JsonMapper()
+    private val home = File("target/test-data/websocket-channel")
 
     @BeforeEach
     fun setup() {
         whenever(context.assistant).doReturn(assistant)
+        whenever(context.home).doReturn(home)
         whenever(assistant.name).doReturn("test-agent")
         whenever(session.id).doReturn("session-123")
         whenever(session.isOpen).doReturn(true)

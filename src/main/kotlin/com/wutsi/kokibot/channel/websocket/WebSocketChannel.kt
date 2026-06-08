@@ -111,7 +111,14 @@ class WebSocketChannel : Channel() {
 
             // Create message
             val message = Message(
-                text = request.query,
+                text = request.query + "\n\n" +
+                    """
+                        When your refer to a file in the agent home directory (${context.home.absolutePath}), always format it as hyperlink in markdown format (instead of plain text or code format).
+                        This allows the user to click and open the file directly from the message.
+
+                        A message contains a file names `foo.pdf`, located in directory `${context.home.absolutePath}/workspace/a/b` convert it to
+                         `[file.pdf](/files/${context.assistant.name}|workspace|a|b|foo.pdf)`.
+                    """.trimIndent(),
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),

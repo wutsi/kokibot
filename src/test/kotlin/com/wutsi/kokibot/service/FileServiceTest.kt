@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.service
 
 import com.nhaarman.mockitokotlin2.mock
+import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -12,6 +13,9 @@ class FileServiceTest {
     private val context = Context(
         home = File("target/test-data/file-service"),
         llm = mock(),
+        assistant = Assistant(
+            name = "test"
+        )
     )
 
     @Test
@@ -27,18 +31,18 @@ class FileServiceTest {
     }
 
     @Test
-    fun url() {
+    fun urlPath() {
         service.init(emptyMap<String, Any>(), context)
 
-        val url = service.url(context.home.absolutePath + "/workspace/a/file.pdf")
-        assertEquals("/files/workspace/a/file.pdf", url)
+        val url = service.urlPath(context.home.absolutePath + "/workspace/a/file.pdf")
+        assertEquals("/assistants/test/files/workspace/a/file.pdf", url)
     }
 
     @Test
-    fun `url - not in homw`() {
+    fun `urlPath - not in home`() {
         service.init(emptyMap<String, Any>(), context)
 
-        val url = service.url("/workspace/a/file.pdf")
+        val url = service.urlPath("/workspace/a/file.pdf")
         assertEquals(null, url)
     }
 }

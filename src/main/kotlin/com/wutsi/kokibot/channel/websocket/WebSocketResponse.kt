@@ -5,11 +5,5 @@ data class WebSocketResponse(
     val content: String? = null,
     val message: String? = null,
     val finishReason: String? = null,
+    val contextLength: Int? = null,
 )
-
-enum class WebSocketResponseType {
-    REASONING_CHUNK,
-    TOOL_STATUS,
-    FINAL,
-    ERROR,
-}

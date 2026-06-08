@@ -9,6 +9,7 @@ const ContextGauge = {
     percentageElement: null,
     progressPath: null,
     refreshInterval: null,
+    maxContextLength: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -29,16 +30,27 @@ const ContextGauge = {
         }
 
         try {
-            const response = await fetch(`/assistants/${this.agentName}/context-length`);
+            const response = await fetch(`/assistants/${this.agentName}/context-length?channel-id=websocket`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
+            this.maxContextLength = data.max; // Store max for later use
             this.updateGauge(data.value, data.max);
         } catch (error) {
             console.error('Error loading context length:', error);
             this.showError();
+        }
+    },
+
+    updateContextLength(value) {
+        // Update gauge with new context length value, keeping the same max
+        if (this.maxContextLength) {
+            this.updateGauge(value, this.maxContextLength);
+        } else {
+            // If max not loaded yet, fetch it
+            this.loadContextLength();
         }
     },
 

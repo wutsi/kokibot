@@ -99,8 +99,8 @@ const ChatUI = {
             this.handleToolStatus(status);
         });
 
-        this.wsClient.on('FinalResponse', (content) => {
-            this.handleFinalResponse(content);
+        this.wsClient.on('FinalResponse', (content, finishReason, contextLength) => {
+            this.handleFinalResponse(content, finishReason, contextLength);
         });
 
         this.wsClient.on('ErrorMessage', (errorMsg) => {
@@ -230,7 +230,7 @@ const ChatUI = {
         this.scrollToBottom();
     },
 
-    handleFinalResponse(content) {
+    handleFinalResponse(content, finishReason, contextLength) {
         const assistantMessage = document.getElementById(this.currentMessageId);
         if (!assistantMessage) {
             console.error('Assistant message not found for final response');
@@ -248,9 +248,9 @@ const ChatUI = {
         this.scrollToBottom();
         this.enableInput();
 
-        // Refresh context gauge after response
-        if (typeof ContextGauge !== 'undefined') {
-            ContextGauge.refresh();
+        // Update context gauge with the contextLength from the response
+        if (typeof ContextGauge !== 'undefined' && contextLength !== null && contextLength !== undefined) {
+            ContextGauge.updateContextLength(contextLength);
         }
     },
 

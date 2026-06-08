@@ -25,4 +25,20 @@ class FileServiceTest {
         assertEquals(FileService.ID, health.id)
         assertTrue(health.up)
     }
+
+    @Test
+    fun url() {
+        service.init(emptyMap<String, Any>(), context)
+
+        val url = service.url(context.home.absolutePath + "/workspace/a/file.pdf")
+        assertEquals("/files/workspace/a/file.pdf", url)
+    }
+
+    @Test
+    fun `url - not in homw`() {
+        service.init(emptyMap<String, Any>(), context)
+
+        val url = service.url("/workspace/a/file.pdf")
+        assertEquals(null, url)
+    }
 }

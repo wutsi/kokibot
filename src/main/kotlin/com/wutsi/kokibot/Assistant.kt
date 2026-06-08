@@ -81,8 +81,12 @@ class Assistant(val name: String = "") {
         }
     }
 
-    fun contextLength(): Int {
-        return buildPrompt(Message(), emptyList()).length
+    fun contextLength(userId: String?, channelId: String?): Int {
+        val query = Message(
+            userId = userId,
+            channelId = channelId,
+        )
+        return buildPrompt(query, emptyList()).length + buildSystemInstructions(query).length
     }
 
     fun process(
@@ -209,14 +213,7 @@ class Assistant(val name: String = "") {
         // Call LLM
         val request = LLMRequest(
             prompt = buildPrompt(query, memory),
-            systemInstructions = listOfNotNull(
-                loadIdentify(),
-                if (coordinator) coordinatorInstructions() else null,
-                dailyLogInstructions(),
-                chatHistoryInstructions(query),
-                skillsInstructions(),
-                securityInstructions(),
-            ).joinToString("\n\n---\n\n"),
+            systemInstructions = buildSystemInstructions(query),
             files = query.filePaths.map { path -> File(path) }
         )
 
@@ -460,6 +457,17 @@ class Assistant(val name: String = "") {
         }
 
         return sb.toString()
+    }
+
+    private fun buildSystemInstructions(query: Message): String {
+        return listOfNotNull(
+            loadIdentify(),
+            if (coordinator) coordinatorInstructions() else null,
+            dailyLogInstructions(),
+            chatHistoryInstructions(query),
+            skillsInstructions(),
+            securityInstructions(),
+        ).joinToString("\n\n---\n\n")
     }
 
     private fun loadIdentify(): String? {

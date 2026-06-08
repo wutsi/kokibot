@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSocketChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebSocketChannel::class.java)
-        const val ID_PREFIX = "channel:websocket"
+        const val ID = "channel:websocket"
     }
 
     private lateinit var context: Context
@@ -24,7 +24,7 @@ class WebSocketChannel : Channel() {
     private val sessions = ConcurrentHashMap<String, WebSocketSession>() // userId -> session
     private val jsonMapper = JsonMapper()
 
-    override fun id(): String = "$ID_PREFIX:${context.assistant.name}"
+    override fun id(): String = ID
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
@@ -127,7 +127,7 @@ class WebSocketChannel : Channel() {
             )
 
             // Send final response
-            sendFinalResponse(session, response.text)
+            sendFinalResponse(session, response.text, userId)
         } catch (e: Exception) {
             LOGGER.error("Error processing WebSocket message", e)
             try {
@@ -157,13 +157,17 @@ class WebSocketChannel : Channel() {
         )
     }
 
-    private fun sendFinalResponse(session: WebSocketSession, content: String) {
+    private fun sendFinalResponse(session: WebSocketSession, content: String, userId: String) {
         sendMessage(
             session,
             WebSocketResponse(
                 type = WebSocketResponseType.FINAL,
                 content = content,
                 finishReason = "DONE",
+                contextLength = context.assistant.contextLength(
+                    channelId = id(),
+                    userId = userId
+                ),
             ),
         )
     }

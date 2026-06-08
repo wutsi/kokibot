@@ -6,6 +6,7 @@ import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
@@ -35,6 +36,9 @@ class WebSocketChannelTest {
         whenever(assistant.name).doReturn("test-agent")
         whenever(session.id).doReturn("session-123")
         whenever(session.isOpen).doReturn(true)
+
+        val msg = Message(text = "Final answer", role = Role.ASSISTANT)
+        doReturn(msg).whenever(assistant).process(any(), any())
     }
 
     @Test
@@ -92,7 +96,7 @@ class WebSocketChannelTest {
         channel.handleMessage(
             session,
             """
-            {"query": "Complex question", "userId": "user123"}
+            {"query": "Complex question", "userId": "user123", "filePaths": []}
             """.trimIndent(),
         )
 
@@ -142,7 +146,7 @@ class WebSocketChannelTest {
         channel.handleMessage(
             session,
             """
-            {"query": "Complex question", "userId": "user123"}
+            {"query": "Complex question", "userId": "user123", "filePaths": []}
             """.trimIndent(),
         )
 
@@ -169,7 +173,7 @@ class WebSocketChannelTest {
         val health = channel.health()
 
         assertTrue(health.up)
-        assertEquals("channel:websocket:test-agent", health.id)
+        assertEquals("channel:websocket", health.id)
         assertEquals("0 active connections", health.details)
     }
 
@@ -239,10 +243,11 @@ class WebSocketChannelTest {
 
         val message = Message(
             text = "Hello",
-            channelId = "channel:websocket:test-agent",
+            channelId = "channel:websocket",
             userId = "user123",
+            filePaths = emptyList(),
         )
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123", "filePaths": []}""")
         assertTrue(channel.send(message))
 
         verify(session).sendMessage(
@@ -261,7 +266,7 @@ class WebSocketChannelTest {
     fun `send returns false if session failed`() {
         val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123", "filePaths": []}""")
 
         doThrow(RuntimeException("Failed")).whenever(session).sendMessage(any())
         val message = Message(
@@ -322,26 +327,26 @@ class WebSocketChannelTest {
     fun `sendStatus sends tool status message`() {
         val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+
+        channel.handleMessage(session, """{"query": "Hello", "userId": "user123", "filePaths": []}""")
+        reset(session)
 
         val message = Message(
             text = "🔧 Calling 2 tools: web_search, file_read",
-            channelId = "channel:websocket:test-agent",
+            channelId = "channel:websocket",
             userId = "user123",
             role = Role.SYSTEM,
         )
         channel.sendStatus(message)
 
-        verify(session).sendMessage(
-            argThat { msg ->
-                val response = jsonMapper.readValue(
-                    (msg as TextMessage).payload,
-                    WebSocketResponse::class.java,
-                )
-                response.type == WebSocketResponseType.TOOL_STATUS &&
-                    response.content == "🔧 Calling 2 tools: web_search, file_read"
-            },
-        )
+        verify(session).sendMessage(argThat { msg ->
+            val response = jsonMapper.readValue(
+                (msg as TextMessage).payload,
+                WebSocketResponse::class.java,
+            )
+            response.type == WebSocketResponseType.TOOL_STATUS &&
+                response.content == "🔧 Calling 2 tools: web_search, file_read"
+        })
     }
 
     @Test

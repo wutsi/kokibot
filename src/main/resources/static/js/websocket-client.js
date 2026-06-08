@@ -40,7 +40,7 @@ class WebSocketClient {
 
     setupEventHandlers() {
         this.ws.onopen = (event) => {
-            console.log('WebSocket connected');
+            console.log('WebSocket connected: ', event);
             this.reconnectAttempts = 0;
             this.reconnectDelay = 1000;
 
@@ -94,7 +94,7 @@ class WebSocketClient {
 
             case 'FINAL':
                 if (this.handlers.onFinalResponse) {
-                    this.handlers.onFinalResponse(response.content, response.finishReason);
+                    this.handlers.onFinalResponse(response.content, response.finishReason, response.contextLength);
                 }
                 break;
 

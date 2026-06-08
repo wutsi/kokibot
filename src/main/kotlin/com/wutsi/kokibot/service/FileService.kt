@@ -33,6 +33,14 @@ class FileService : Resource {
         return File(dir, "${filename}_${UUID.randomUUID()}.${extension.removePrefix(".")}")
     }
 
+    fun url(path: String): String? {
+        if (path.startsWith(context.home.absolutePath)) {
+            return "/files" + path.substring(context.home.absolutePath.length)
+        } else {
+            return null
+        }
+    }
+
     private fun getTempDir(): File {
         return File(context.home.absolutePath, "workspace/tmp")
     }

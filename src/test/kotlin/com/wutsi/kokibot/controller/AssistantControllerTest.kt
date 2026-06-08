@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.controller
 
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
@@ -98,7 +99,7 @@ class AssistantControllerTest {
         val assistant = mock<Assistant>()
         doReturn(name).whenever(assistant).name
         doReturn(description).whenever(assistant).description
-        doReturn(contextLength).whenever(assistant).contextLength()
+        doReturn(contextLength).whenever(assistant).contextLength(anyOrNull(), anyOrNull())
 
         val context = Context(
             assistant = assistant,

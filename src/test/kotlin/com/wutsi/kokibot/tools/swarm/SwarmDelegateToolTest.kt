@@ -13,7 +13,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.service.SessionContext
+import com.wutsi.kokibot.service.ExecutionContext
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -36,13 +36,13 @@ class SwarmDelegateToolTest {
     @BeforeEach
     fun setUp() {
         // Set up session context for tests
-        SessionContext.set("session1", "test-assistant")
+        ExecutionContext.set("session1", "test-assistant", "test-user", "internal")
     }
 
     @AfterEach
     fun tearDown() {
         // Clean up session context and delegation stack
-        SessionContext.clear()
+        ExecutionContext.clear()
         // Use clear() here since we're cleaning up all test state
         context.delegationStack.clear("session1")
     }

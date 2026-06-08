@@ -80,7 +80,8 @@ class ShellTool : Tool {
     override fun statusText(toolCalls: List<LLMToolCall>): String {
         return "Bash:" +
             if (toolCalls.size == 1) {
-                " ${toolCalls[0].arguments["command"]}"
+                val cmd = toolCalls[0].arguments["command"].toString()
+                if (cmd.length > 100) " ${cmd.take(100)}..." else " $cmd"
             } else {
                 " ${toolCalls.size} commands"
             }

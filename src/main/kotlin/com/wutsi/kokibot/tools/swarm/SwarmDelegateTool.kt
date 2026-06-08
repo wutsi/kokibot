@@ -5,7 +5,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.service.SessionContext
+import com.wutsi.kokibot.service.ExecutionContext
 import com.wutsi.kokibot.service.swarm.DelegationException
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
@@ -78,7 +78,7 @@ class SwarmDelegateTool : Tool {
         val taskContext = (arguments["context"] as? String?)?.ifEmpty { null }
 
         // Get session ID from thread-local context
-        val sessionId = SessionContext.getSessionId()
+        val sessionId = ExecutionContext.getSessionId()
             ?: return "Error: Cannot determine session context for delegation"
 
         try {

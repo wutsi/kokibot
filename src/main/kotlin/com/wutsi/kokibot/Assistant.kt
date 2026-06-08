@@ -6,8 +6,9 @@ import com.wutsi.kokibot.command.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.service.SessionContext
+import com.wutsi.kokibot.service.ExecutionContext
 import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.tools.user.AskQuestionException
 import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import org.apache.commons.io.IOUtils
@@ -93,51 +94,77 @@ class Assistant(val name: String = "") {
         query: Message,
         streamCallback: ((String) -> Unit)? = null,
     ): Message {
-        LOGGER.info(
-            "${query.id} $name ${query.userId ?: "-"}@${query.channelId ?: "-"} files=${query.filePaths} " +
-                take(query.text, 200)
-        )
-
+        // Restore session if exists
         val now = System.currentTimeMillis()
-        context.sessionLog.onQuery(query.id, 1, query)
+        val sessionId = context.sessionLog.resume(query.userId, query.channelId)
+        val sessions = sessionId?.let {
+            context.sessionLog.get(sessionId)
+        }
+
+        // Restore execution context
+        var xquery = query
+        var iteration = 0
+        var memory = mutableListOf<String>()
+        if (sessions != null && sessions.isNotEmpty()) {
+            // Resume processing
+            xquery = query.copy(
+                id = sessionId,
+                text = sessions.first().content.firstOrNull { content -> content.type == "text" }?.text ?: query.text,
+                filePaths = sessions.first().content.filter { content -> content.type == "file" }
+                    .mapNotNull { content -> content.text }
+            )
+            memory = sessions.lastOrNull { session -> session.memory != null && session.memory.isNotEmpty() }
+                ?.memory
+                ?.toMutableList()
+                ?: mutableListOf()
+            memory.add(query.text)
+
+            iteration = sessions.last { session -> session.iteration != null }
+                .iteration ?: 0
+        }
+
+        LOGGER.info(
+            "${xquery.id} $name ${xquery.userId ?: "-"}@${xquery.channelId ?: "-"} files=${xquery.filePaths} " +
+                take(xquery.text, 200)
+        )
+        context.sessionLog.onQuery(xquery.id, iteration, xquery)
 
         // Push to delegation stack
-        try {
-            context.delegationStack.push(query.id, name, streamCallback)
+        context.delegationStack.push(xquery.id, name, streamCallback)
+        val response = try {
+            // Process async
+            val timer = Executors.newSingleThreadExecutor()
+            val future = timer.submit<Message> {
+                doProcessAsync(query, streamCallback, iteration, memory)
+            }
+
+            // Wait for the response with timeout
+            try {
+                future.get(maxDurationMinutes, TimeUnit.MINUTES)
+            } catch (_: TimeoutException) {
+                future.cancel(true)
+                Message(ERROR_TIMEOUT, Role.ASSISTANT, FinishReason.TIMEOUT)
+            } catch (e: Exception) {
+                Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
+            } finally {
+                try {
+                    timer.shutdown()
+                } catch (e: Exception) {
+                    LOGGER.warn("Error while shutting down scheduler. ${e.message}")
+                }
+            }
         } catch (e: Exception) {
             LOGGER.error("Delegation stack push failed for $name", e)
-            return Message("Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
-        }
-
-        // Process async
-        val timer = Executors.newSingleThreadExecutor()
-        val future = timer.submit<Message> {
-            doProcessAsync(query, streamCallback)
-        }
-
-        // What for the response with timeout
-        val response = try {
-            future.get(maxDurationMinutes, TimeUnit.MINUTES)
-        } catch (_: TimeoutException) {
-            future.cancel(true)
-            Message(ERROR_TIMEOUT, Role.ASSISTANT, FinishReason.TIMEOUT)
-        } catch (e: Exception) {
-            Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
+            Message("Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
         } finally {
-            try {
-                timer.shutdown()
-            } catch (e: Exception) {
-                LOGGER.warn("Error while shutting down scheduler. ${e.message}")
-            }
-            // Pop from delegation stack - RAII principle
+            // Pop from delegation stack
             context.delegationStack.pop(query.id)
         }
 
         // Result
         val duration = DurationUtil.hms(System.currentTimeMillis() - now)
         LOGGER.info(
-            "${query.id} $name FINAL ANSWER ($duration): " +
-                take(response.text, 200)
+            "${query.id} $name FINAL ANSWER ($duration): " + take(response.text, 200)
         )
         context.chatHistory.append(query, response)
         context.sessionLog.onResponse(query.id, response)
@@ -147,9 +174,11 @@ class Assistant(val name: String = "") {
     private fun doProcessAsync(
         query: Message,
         streamCallback: ((String) -> Unit)? = null,
+        iteration: Int,
+        memory: MutableList<String>,
     ): Message {
         return try {
-            doProcess(query, streamCallback)
+            doProcess(query, streamCallback, iteration, memory)
         } catch (e: TooManyIterationException) {
             LOGGER.error("Too many iterations!", e)
             Message(ERROR_TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
@@ -162,9 +191,10 @@ class Assistant(val name: String = "") {
     private fun doProcess(
         query: Message,
         streamCallback: ((String) -> Unit)?,
+        iter: Int,
+        memory: MutableList<String>,
     ): Message {
-        var iteration = 0
-        val memory = mutableListOf<String>()
+        var iteration = iter
         val tools = mutableMapOf<String, Tool>()
         context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
 
@@ -182,21 +212,33 @@ class Assistant(val name: String = "") {
                     finishReason = FinishReason.DONE,
                 )
             } else {
-                val response = ask(iteration, query, memory, streamCallback)
-                if (decide(query.id, iteration, response, memory, tools, query)) {
-                    return Message(
-                        text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
-                        role = Role.ASSISTANT,
-                        finishReason = FinishReason.DONE,
-                    )
-                } else {
-                    if (streamCallback != null) {
-                        response.choices.forEach { choice ->
-                            if (!choice.content.isNullOrEmpty()) {
-                                streamCallback(choice.content)
+                try {
+                    val response = ask(iteration, query, memory, streamCallback)
+                    if (decide(query.id, iteration, response, memory, tools, query)) {
+                        return Message(
+                            text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
+                            role = Role.ASSISTANT,
+                            finishReason = FinishReason.DONE,
+                        )
+                    } else {
+                        if (streamCallback != null) {
+                            response.choices.forEach { choice ->
+                                if (!choice.content.isNullOrEmpty()) {
+                                    streamCallback(choice.content)
+                                }
                             }
                         }
                     }
+                } catch (ex: AskQuestionException) {
+                    // Pause the current session
+                    context.sessionLog.pause(query.userId, query.channelId, query.id)
+
+                    // Return the question to ask to the user, the session will be resumed when the user answers
+                    return Message(
+                        text = ex.question,
+                        role = Role.ASSISTANT,
+                        finishReason = FinishReason.DONE,
+                    )
                 }
             }
         }
@@ -255,32 +297,35 @@ class Assistant(val name: String = "") {
         iteration: Int,
         call: LLMToolCall,
         tools: Map<String, Tool>,
+        query: Message,
     ): Callable<ToolExecutionResult> {
         return Callable {
-            SessionContext.set(id, name)
-            try {
-                val startTime = System.currentTimeMillis()
-                LOGGER.info(
-                    "$iteration $name TOOL ${call.name} " +
-                        call.arguments.map { entry ->
-                            "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
-                        }.joinToString(",")
-                )
-                context.sessionLog.onToolUse(id, iteration, call)
+            ExecutionContext.set(id, name, query.userId, query.channelId)
+            val startTime = System.currentTimeMillis()
+            LOGGER.info(
+                "$iteration $name TOOL ${call.name} " +
+                    call.arguments.map { entry ->
+                        "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
+                    }.joinToString(",")
+            )
+            context.sessionLog.onToolUse(id, iteration, call)
 
-                val result = tools[call.name]?.let { tool ->
-                    try {
-                        tool.exec(call.arguments)
-                    } catch (e: Exception) {
-                        val duration = System.currentTimeMillis() - startTime
-                        LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
-                        "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
-                    }
+            var exception: Exception? = null
+            val result = tools[call.name]?.let { tool ->
+                try {
+                    tool.exec(call.arguments)
+                } catch (e: Exception) {
+                    exception = e
+                    val duration = System.currentTimeMillis() - startTime
+                    LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
+                    "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
                 }
-                ToolExecutionResult(call = call, result = result ?: "Tool `${call.name}` not found")
-            } finally {
-                SessionContext.clear()
             }
+            ToolExecutionResult(
+                call = call,
+                result = result ?: "Tool `${call.name}` not found",
+                error = exception,
+            )
         }
     }
 
@@ -324,7 +369,7 @@ class Assistant(val name: String = "") {
 
         // Create callables for each tool call
         val callables = toolCalls.map { call ->
-            createToolCallable(id, iteration, call, tools)
+            createToolCallable(id, iteration, call, tools, query)
         }
 
         // Execute all in parallel and wait for completion
@@ -360,6 +405,10 @@ class Assistant(val name: String = "") {
 
         // Update memory with all results
         results.forEach { result ->
+            if (result.error is AskQuestionException) {
+                throw result.error // Force Human In the loop!
+            }
+
             memory.add(
                 "Using tool `${result.call.name}` with arguments: " +
                     result.call.arguments.map { entry ->
@@ -460,14 +509,15 @@ class Assistant(val name: String = "") {
     }
 
     private fun buildSystemInstructions(query: Message): String {
-        return listOfNotNull(
+        val entries = listOfNotNull(
             loadIdentify(),
             if (coordinator) coordinatorInstructions() else null,
             dailyLogInstructions(),
             chatHistoryInstructions(query),
             skillsInstructions(),
             securityInstructions(),
-        ).joinToString("\n\n---\n\n")
+        )
+        return entries.joinToString("\n\n---\n\n")
     }
 
     private fun loadIdentify(): String? {

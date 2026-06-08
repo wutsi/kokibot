@@ -28,6 +28,7 @@ import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolRegistry
+import com.wutsi.kokibot.tools.user.AskQuestionException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -522,6 +523,40 @@ $history
         assertEquals(FinishReason.DONE, result.finishReason)
 
         verify(llm, times(2)).completion(any(), eq(listOf(tool1, tool2)))
+    }
+
+    @Test
+    fun `process with human in the loop`() {
+        // GIVEN
+        doReturn(
+            LLMResponse(
+                id = UUID.randomUUID().toString(),
+                choices = listOf(
+                    LLMResponseChoice(
+                        content = "Calling the tool",
+                        finishReason = LLMFinishReason.TOOL_CALLS,
+                        reasoningContent = null,
+                        toolCalls = listOf(
+                            LLMToolCall(
+                                name = "test-tool",
+                                arguments = emptyMap<String, Any>()
+                            )
+                        ),
+                    )
+                )
+            )
+        ).whenever(llm).completion(any(), any())
+
+        doThrow(AskQuestionException("Can you clarify for which country?")).whenever(tool1).exec(any())
+
+        // WHEN
+        val prompt = Message("What is the capital of the country", Role.USER)
+        val result = assistant.process(prompt)
+
+        // THEN
+        assertEquals("Can you clarify for which country?", result.text)
+        assertEquals(Role.ASSISTANT, result.role)
+        assertEquals(FinishReason.DONE, result.finishReason)
     }
 
     @Test

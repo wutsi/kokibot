@@ -16,6 +16,7 @@ class SessionLog : Resource {
         private val LOGGER = LoggerFactory.getLogger(SessionLog::class.java)
     }
 
+    private val pausedSessionId = mutableMapOf<String, String>()
     private lateinit var context: Context
 
     override fun id(): String {
@@ -26,9 +27,9 @@ class SessionLog : Resource {
         this.context = context
     }
 
-    fun onQuery(id: String, iteration: Int, prompt: Message) {
+    fun onQuery(sessionId: String, iteration: Int, prompt: Message) {
         append(
-            id,
+            sessionId,
             Session(
                 iteration = iteration,
                 role = prompt.role,
@@ -50,9 +51,9 @@ class SessionLog : Resource {
         )
     }
 
-    fun onResponse(id: String, message: Message) {
+    fun onResponse(sessionId: String, message: Message) {
         append(
-            id,
+            sessionId,
             Session(
                 role = message.role,
                 userId = message.userId,
@@ -71,9 +72,9 @@ class SessionLog : Resource {
         )
     }
 
-    fun onToolUse(id: String, iteration: Int, tool: LLMToolCall) {
+    fun onToolUse(sessionId: String, iteration: Int, tool: LLMToolCall) {
         append(
-            id,
+            sessionId,
             Session(
                 iteration = iteration,
                 role = Role.TOOL_USE,
@@ -89,9 +90,9 @@ class SessionLog : Resource {
         )
     }
 
-    fun onToolResult(id: String, iteration: Int, tool: LLMToolCall, result: String) {
+    fun onToolResult(sessionId: String, iteration: Int, tool: LLMToolCall, result: String) {
         append(
-            id,
+            sessionId,
             Session(
                 iteration = iteration,
                 role = Role.TOOL_RESULT,
@@ -106,9 +107,9 @@ class SessionLog : Resource {
         )
     }
 
-    fun onLLMResponse(id: String, iteration: Int, response: LLMResponse, memory: List<String>) {
+    fun onLLMResponse(sessionId: String, iteration: Int, response: LLMResponse, memory: List<String>) {
         append(
-            id,
+            sessionId,
             Session(
                 iteration = iteration,
                 role = Role.ASSISTANT,
@@ -142,33 +143,51 @@ class SessionLog : Resource {
         )
     }
 
-    fun get(id: String): List<Session> {
-        val file = getFile(id)
+    fun get(sessionId: String): List<Session> {
+        val file = getFile(sessionId)
         if (!file.exists()) {
             return emptyList()
         }
 
         return file.readText().lines().mapIndexedNotNull { i, line ->
             try {
-                context.jsonMapper.readValue(line, Session::class.java)
+                if (line.isNotEmpty()) {
+                    context.jsonMapper.readValue(line, Session::class.java)
+                } else {
+                    null
+                }
             } catch (ex: Exception) {
-                LOGGER.warn("Line ${i + 1} - Failure", ex)
+                LOGGER.warn("Line ${i + 1} - Failure: $line", ex)
                 null
             }
         }
     }
 
-    private fun append(id: String, session: Session) {
-        val file = getFile(id)
+    fun pause(userId: String?, channelId: String?, sessionId: String) {
+        val key = pauseSessionKey(userId, channelId)
+        pausedSessionId[key] = sessionId
+    }
+
+    fun resume(userId: String?, channelId: String?): String? {
+        val key = pauseSessionKey(userId, channelId)
+        return pausedSessionId.remove(key)
+    }
+
+    private fun pauseSessionKey(userId: String?, channelId: String?): String {
+        return ((userId ?: "-") + "_" + (channelId ?: "-")).lowercase()
+    }
+
+    private fun append(sessionId: String, session: Session) {
+        val file = getFile(sessionId)
         file.appendText(context.jsonMapper.writeValueAsString(session) + "\n")
     }
 
-    private fun getFile(id: String): File {
+    private fun getFile(sessionId: String): File {
         val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
         val dir = File(context.home.absolutePath + "/memory/sessions/$today")
         if (!dir.exists()) {
             dir.mkdirs()
         }
-        return File(dir, "$id.jsonl")
+        return File(dir, "$sessionId.jsonl")
     }
 }

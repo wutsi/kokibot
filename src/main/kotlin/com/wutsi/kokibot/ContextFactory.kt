@@ -26,6 +26,7 @@ import com.wutsi.kokibot.tools.python.PythonTool
 import com.wutsi.kokibot.tools.shell.ShellTool
 import com.wutsi.kokibot.tools.skill.SkillActivationTool
 import com.wutsi.kokibot.tools.swarm.SwarmDelegateTool
+import com.wutsi.kokibot.tools.user.UserAskQuestionTool
 import com.wutsi.kokibot.tools.web.WebFetchTool
 import com.wutsi.kokibot.tools.web.WebSearchTool
 import com.wutsi.kokibot.util.MapUtil
@@ -89,6 +90,8 @@ class ContextFactory(
             SkillActivationTool(),
 
             SwarmDelegateTool(),
+
+            UserAskQuestionTool(),
 
             WebSearchTool(),
             WebFetchTool(),

@@ -278,7 +278,6 @@ class Assistant(val name: String = "") {
         return response
     }
 
-
     private fun decide(
         id: String,
         iteration: Int,
@@ -308,7 +307,6 @@ class Assistant(val name: String = "") {
         )
         return false
     }
-
 
     private fun take(text: String, n: Int = 200): String {
         val xtext = text.replace("\n", " ").take(n).trim()
@@ -456,5 +454,4 @@ class Assistant(val name: String = "") {
             .replace("{{USER_ID}}", userId)
             .replace("{{CHANNEL_ID}}", channelId.removePrefix("channel:"))
     }
-
 }

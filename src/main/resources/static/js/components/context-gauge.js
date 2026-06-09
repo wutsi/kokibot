@@ -1,6 +1,7 @@
 /**
- * Context Length Gauge
- * Displays and updates the context length meter
+ * Context Gauge Component (Legacy - Not Currently Used)
+ * Displays visual gauge for LLM context window usage
+ * Shows current tokens, max tokens, and percentage with color warnings
  */
 const ContextGauge = {
     agentName: null,
@@ -30,9 +31,18 @@ const ContextGauge = {
         }
 
         try {
-            const response = await fetch(`/assistants/${this.agentName}/context-length?channel-id=websocket`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+            const response = await fetch(
+                `/assistants/${this.agentName}/context-length?channel-id=websocket`,
+                { signal: controller.signal }
+            );
+
+            clearTimeout(timeoutId);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Failed to load context (${response.status})`);
             }
 
             const data = await response.json();
@@ -41,6 +51,14 @@ const ContextGauge = {
         } catch (error) {
             console.error('Error loading context length:', error);
             this.showError();
+
+            // Only show notification if it's not a timeout (timeouts are less critical)
+            if (error.name !== 'AbortError') {
+                Notifications.warning(
+                    'Failed to load context information. It will update after your next message.',
+                    { duration: 5000 }
+                );
+            }
         }
     },
 

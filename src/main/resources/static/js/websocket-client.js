@@ -117,16 +117,44 @@ class WebSocketClient {
         };
 
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify(message));
+            try {
+                this.ws.send(JSON.stringify(message));
+            } catch (error) {
+                console.error('Error sending message:', error);
+                this.handleSendFailure(message, error);
+            }
         } else {
             console.warn('WebSocket not open, queueing message');
             this.messageQueue.push(message);
+
+            // Show notification that message is queued
+            Notifications.warning(
+                'Connection unavailable. Your message will be sent when reconnected.',
+                { duration: 3000 }
+            );
 
             // Try to reconnect if not connected
             if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
                 this.connect();
             }
         }
+    }
+
+    handleSendFailure(message, error) {
+        // Show error with retry option
+        Notifications.error(`Failed to send message: ${error.message}`, {
+            retry: {
+                label: 'Retry',
+                callback: () => {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.sendMessage(message.query, message.userId, message.filePaths);
+                    } else {
+                        this.messageQueue.push(message);
+                        this.connect();
+                    }
+                }
+            }
+        });
     }
 
     flushMessageQueue() {

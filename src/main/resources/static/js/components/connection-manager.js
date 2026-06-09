@@ -6,6 +6,7 @@ class ConnectionManager {
     constructor(agentName) {
         this.agentName = agentName;
         this.wsClient = null;
+        this.connectionErrorNotificationId = null;
         this.handlers = {
             onOpen: null,
             onClose: null,
@@ -23,14 +24,36 @@ class ConnectionManager {
         this.wsClient = new WebSocketClient(this.agentName);
 
         this.wsClient.on('Open', (event) => {
+            // Clear any connection error notifications
+            if (this.connectionErrorNotificationId) {
+                Notifications.dismiss(this.connectionErrorNotificationId);
+                this.connectionErrorNotificationId = null;
+            }
+
             this.emit('open', event);
         });
 
         this.wsClient.on('Close', (event) => {
+            // Show reconnection notification if not already shown
+            if (!this.connectionErrorNotificationId) {
+                this.connectionErrorNotificationId = Notifications.warning(
+                    'Connection lost. Attempting to reconnect...',
+                    { dismissible: false }
+                );
+            }
+
             this.emit('close', event);
         });
 
         this.wsClient.on('Error', (error) => {
+            // Show persistent error notification
+            if (!this.connectionErrorNotificationId) {
+                this.connectionErrorNotificationId = Notifications.error(
+                    'Connection error. Please check your network and refresh the page.',
+                    { dismissible: true, duration: 0 }
+                );
+            }
+
             this.emit('error', error);
         });
 
@@ -46,8 +69,10 @@ class ConnectionManager {
             this.emit('finalResponse', content, finishReason, contextLength);
         });
 
-        this.wsClient.on('ErrorMessage', (error) => {
-            this.emit('error', error);
+        this.wsClient.on('ErrorMessage', (errorMessage) => {
+            // Show LLM error message to user
+            Notifications.error(`Assistant error: ${errorMessage}`, { duration: 0 });
+            this.emit('error', errorMessage);
         });
 
         this.wsClient.connect();

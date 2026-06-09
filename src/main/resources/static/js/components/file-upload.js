@@ -1,6 +1,7 @@
 /**
- * File Upload Manager
- * Handles file uploads and displays uploaded files
+ * File Upload Component
+ * Manages file uploads with validation, progress, and error handling
+ * Displays uploaded files with remove functionality
  */
 const FileUpload = {
     agentName: null,
@@ -39,45 +40,90 @@ const FileUpload = {
     },
 
     async uploadFiles(files) {
+        // Validate files before uploading
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const invalidFiles = files.filter(f => f.size > maxSize);
+
+        if (invalidFiles.length > 0) {
+            const names = invalidFiles.map(f => f.name).join(', ');
+            Notifications.error(`File(s) too large (max 10MB): ${names}`);
+            return;
+        }
+
         this.uploadButton.classList.add('uploading');
+        let successCount = 0;
+        let errorCount = 0;
 
         for (const file of files) {
             try {
                 await this.uploadFile(file);
+                successCount++;
             } catch (error) {
                 console.error(`Error uploading ${file.name}:`, error);
-                this.showError(`Failed to upload ${file.name}`);
+                errorCount++;
+
+                // Show error with retry option
+                Notifications.error(`Failed to upload ${file.name}: ${error.message}`, {
+                    retry: {
+                        label: 'Retry',
+                        callback: () => this.uploadFiles([file])
+                    }
+                });
             }
         }
 
         this.uploadButton.classList.remove('uploading');
+
+        // Show success summary if any succeeded
+        if (successCount > 0) {
+            const message = successCount === 1
+                ? 'File uploaded successfully'
+                : `${successCount} files uploaded successfully`;
+            Notifications.success(message);
+        }
     },
 
     async uploadFile(file) {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(`/upload?name=${encodeURIComponent(this.agentName)}`, {
-            method: 'POST',
-            body: formData
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-        if (!response.ok) {
-            throw new Error(`Upload failed: ${response.status}`);
+        try {
+            const response = await fetch(`/upload?name=${encodeURIComponent(this.agentName)}`, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => 'Unknown error');
+                throw new Error(`Upload failed (${response.status}): ${errorText}`);
+            }
+
+            const data = await response.json();
+
+            // Add to uploaded files list
+            const fileInfo = {
+                name: data.name,
+                path: data.path,
+                size: data.size,
+                extension: this.getFileExtension(data.name)
+            };
+
+            this.uploadedFiles.push(fileInfo);
+            this.renderUploadedFile(fileInfo);
+        } catch (error) {
+            clearTimeout(timeoutId);
+
+            if (error.name === 'AbortError') {
+                throw new Error('Upload timed out after 30 seconds');
+            }
+            throw error;
         }
-
-        const data = await response.json();
-
-        // Add to uploaded files list
-        const fileInfo = {
-            name: data.name,
-            path: data.path,
-            size: data.size,
-            extension: this.getFileExtension(data.name)
-        };
-
-        this.uploadedFiles.push(fileInfo);
-        this.renderUploadedFile(fileInfo);
     },
 
     renderUploadedFile(fileInfo) {
@@ -232,11 +278,6 @@ const FileUpload = {
         return iconMap[extension] || '📎';
     },
 
-    showError(message) {
-        // You can integrate this with your existing error display system
-        console.error(message);
-        // TODO: Show error notification to user
-    },
 
     setAgent(agentName) {
         this.agentName = agentName;

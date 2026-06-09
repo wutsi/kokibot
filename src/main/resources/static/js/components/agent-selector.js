@@ -1,6 +1,7 @@
 /**
- * Agent Selector UI
- * Handles displaying and switching between available agents
+ * Agent Selector Component
+ * Modal interface for viewing and switching between available agents
+ * Loads agent list from API and handles agent transitions
  */
 const AgentSelector = {
     modal: null,
@@ -60,20 +61,50 @@ const AgentSelector = {
         this.agentListContainer.innerHTML = '<div class="agent-list-loading">Loading agents...</div>';
 
         try {
-            const response = await fetch('/assistants');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+            const response = await fetch('/assistants', {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Failed to load agents (${response.status})`);
             }
 
             this.agents = await response.json();
             this.renderAgents();
         } catch (error) {
             console.error('Error loading agents:', error);
+
+            const errorMessage = error.name === 'AbortError'
+                ? 'Request timed out. Please try again.'
+                : `Failed to load agents: ${error.message}`;
+
             this.agentListContainer.innerHTML = `
                 <div class="agent-list-error">
-                    Failed to load agents. Please try again.
+                    ${errorMessage}
+                    <button class="notification-btn notification-btn-primary" style="margin-top: 12px;">
+                        Retry
+                    </button>
                 </div>
             `;
+
+            // Add retry handler
+            const retryBtn = this.agentListContainer.querySelector('button');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => this.loadAgents());
+            }
+
+            // Also show toast notification
+            Notifications.error(errorMessage, {
+                retry: {
+                    label: 'Retry',
+                    callback: () => this.loadAgents()
+                }
+            });
         }
     },
 

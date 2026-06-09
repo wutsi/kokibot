@@ -155,22 +155,18 @@ class ToolOrchestrator(
     }
 
     private fun sendToolStatus(query: Message, statusText: String, context: Context) {
-        try {
-            val userId = query.userId
-            val channelId = query.channelId
-            if (userId != null && channelId != null) {
-                val channel = context.channelRegistry.get(channelId)
-                channel.sendStatus(
-                    Message(
-                        text = statusText,
-                        role = Role.SYSTEM,
-                        userId = userId,
-                        channelId = channelId,
-                    )
+        val userId = query.userId
+        val channelId = query.channelId
+        if (userId != null && channelId != null) {
+            val channel = context.channelRegistry.get(channelId)
+            channel.sendStatus(
+                Message(
+                    text = statusText,
+                    role = Role.SYSTEM,
+                    userId = userId,
+                    channelId = channelId,
                 )
-            }
-        } catch (e: Exception) {
-            LOGGER.debug("Failed to send tool status: ${e.message}")
+            )
         }
     }
 

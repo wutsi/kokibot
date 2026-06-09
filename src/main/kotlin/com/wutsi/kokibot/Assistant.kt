@@ -1,12 +1,11 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.assistant.ToolOrchestrator
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.command.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
-import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.service.ExecutionContext
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.user.AskQuestionException
 import com.wutsi.kokibot.util.DurationUtil
@@ -14,9 +13,6 @@ import com.wutsi.kokibot.util.MapUtil
 import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.util.concurrent.Callable
-import java.util.concurrent.CancellationException
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -37,7 +33,7 @@ class Assistant(val name: String = "") {
     private lateinit var context: Context
     private var coordinator: Boolean = false
     private var threadPoolSize: Int = 4
-    private lateinit var toolExecutor: ExecutorService
+    private lateinit var toolOrchestrator: ToolOrchestrator
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
@@ -53,7 +49,7 @@ class Assistant(val name: String = "") {
             LOGGER.warn("thread-pool-size must be at least 2, using 2")
             threadPoolSize = 2
         }
-        toolExecutor = Executors.newFixedThreadPool(threadPoolSize)
+        toolOrchestrator = ToolOrchestrator(threadPoolSize = threadPoolSize)
 
         this.context = context
         context.assistantRegistry.register(this)
@@ -66,19 +62,9 @@ class Assistant(val name: String = "") {
     }
 
     fun destroy() {
-        if (::toolExecutor.isInitialized) {
-            LOGGER.info("Shutting down tool executor for assistant: $name")
-            toolExecutor.shutdown()
-            try {
-                if (!toolExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-                    LOGGER.warn("Tool executor did not terminate in 30s, forcing shutdown")
-                    toolExecutor.shutdownNow()
-                }
-            } catch (_: InterruptedException) {
-                LOGGER.warn("Interrupted while waiting for tool executor shutdown")
-                toolExecutor.shutdownNow()
-                Thread.currentThread().interrupt()
-            }
+        if (::toolOrchestrator.isInitialized) {
+            LOGGER.info("Shutting down tool orchestrator for assistant: $name")
+            toolOrchestrator.destroy()
         }
     }
 
@@ -292,42 +278,6 @@ class Assistant(val name: String = "") {
         return response
     }
 
-    private fun createToolCallable(
-        id: String,
-        iteration: Int,
-        call: LLMToolCall,
-        tools: Map<String, Tool>,
-        query: Message,
-    ): Callable<ToolExecutionResult> {
-        return Callable {
-            ExecutionContext.set(id, name, query.userId, query.channelId)
-            val startTime = System.currentTimeMillis()
-            LOGGER.info(
-                "$iteration $name TOOL ${call.name} " +
-                    call.arguments.map { entry ->
-                        "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
-                    }.joinToString(",")
-            )
-            context.sessionLog.onToolUse(id, iteration, call)
-
-            var exception: Exception? = null
-            val result = tools[call.name]?.let { tool ->
-                try {
-                    tool.exec(call.arguments)
-                } catch (e: Exception) {
-                    exception = e
-                    val duration = System.currentTimeMillis() - startTime
-                    LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
-                    "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
-                }
-            }
-            ToolExecutionResult(
-                call = call,
-                result = result ?: "Tool `${call.name}` not found",
-                error = exception,
-            )
-        }
-    }
 
     private fun decide(
         id: String,
@@ -345,86 +295,20 @@ class Assistant(val name: String = "") {
             return true // No tool calls, done
         }
 
-        // Execute all tool calls in parallel
-        execParallel(id, iteration, allToolCalls, memory, tools, query)
+        // Execute all tool calls in parallel using ToolOrchestrator
+        toolOrchestrator.executeTools(
+            id = id,
+            iteration = iteration,
+            assistantName = name,
+            toolCalls = allToolCalls,
+            memory = memory,
+            tools = tools,
+            query = query,
+            context = context
+        )
         return false
     }
 
-    private fun execParallel(
-        id: String,
-        iteration: Int,
-        toolCalls: List<LLMToolCall>,
-        memory: MutableList<String>,
-        tools: Map<String, Tool>,
-        query: Message,
-    ) {
-        if (toolCalls.isEmpty()) {
-            return
-        }
-
-        LOGGER.info("$iteration $name Executing ${toolCalls.size} tool calls in parallel")
-
-        // Send status before tool execution
-        sendToolStatus(query, toolCalls)
-
-        // Create callables for each tool call
-        val callables = toolCalls.map { call ->
-            createToolCallable(id, iteration, call, tools, query)
-        }
-
-        // Execute all in parallel and wait for completion
-        val futures = callables.map { callable ->
-            toolExecutor.submit(callable)
-        }
-
-        // Collect results (blocks until all complete)
-        val results = futures.mapIndexed { index, future ->
-            try {
-                future.get() // Blocks until this tool completes
-            } catch (e: Exception) {
-                val call = toolCalls.getOrNull(index) ?: LLMToolCall(name = "unknown", id = "error-$index")
-                LOGGER.error("Tool execution failed for ${call.name}: ${e.message}", e)
-                // Create error result
-                val errorMessage = when (e) {
-                    is TimeoutException ->
-                        "Tool `${call.name}` timed out"
-
-                    is CancellationException ->
-                        "Tool `${call.name}` was cancelled"
-
-                    else ->
-                        "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
-                }
-                ToolExecutionResult(
-                    call = call,
-                    result = errorMessage,
-                    error = e
-                )
-            }
-        }
-
-        // Update memory with all results
-        results.forEach { result ->
-            if (result.error is AskQuestionException) {
-                throw result.error // Force Human In the loop!
-            }
-
-            memory.add(
-                "Using tool `${result.call.name}` with arguments: " +
-                    result.call.arguments.map { entry ->
-                        "${entry.key}=" + entry.value?.let { value ->
-                            take(value.toString(), 200)
-                        }
-                    }.joinToString(",")
-            )
-            memory.add(result.result)
-
-            // Update session log
-            context.sessionLog.onToolResult(id, iteration, result.call, result.result)
-        }
-
-        LOGGER.info("$iteration $name Completed ${results.size} tool calls")
-    }
 
     private fun take(text: String, n: Int = 200): String {
         val xtext = text.replace("\n", " ").take(n).trim()
@@ -573,32 +457,4 @@ class Assistant(val name: String = "") {
             .replace("{{CHANNEL_ID}}", channelId.removePrefix("channel:"))
     }
 
-    private fun sendToolStatus(query: Message, toolCalls: List<LLMToolCall>) {
-        toolCalls.groupBy { toolCall -> toolCall.name }
-            .map { entry ->
-                val tool = context.toolRegistry.get(entry.key)
-                val statusText = "⚙\uFE0F " + tool.statusText(entry.value)
-                sendToolStatus(query, statusText)
-            }
-    }
-
-    private fun sendToolStatus(query: Message, statusText: String) {
-        try {
-            val userId = query.userId
-            val channelId = query.channelId
-            if (userId != null && channelId != null) {
-                val channel = context.channelRegistry.get(channelId)
-                channel.sendStatus(
-                    Message(
-                        text = statusText,
-                        role = Role.SYSTEM,
-                        userId = userId,
-                        channelId = channelId,
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            LOGGER.debug("Failed to send tool status: ${e.message}")
-        }
-    }
 }

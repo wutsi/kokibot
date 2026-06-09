@@ -36,7 +36,7 @@ const ContextGauge = {
             }
 
             const data = await response.json();
-            this.maxContextLength = data.max; // Store max for later use
+            this.maxContextLength = data.max;
             this.updateGauge(data.value, data.max);
         } catch (error) {
             console.error('Error loading context length:', error);

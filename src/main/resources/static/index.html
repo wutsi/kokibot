@@ -5,6 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Kokibot Chat</title>
     <link href="css/chat.css" rel="stylesheet">
+    <link href="css/errors.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" rel="stylesheet" media="(prefers-color-scheme: light)">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" rel="stylesheet" media="(prefers-color-scheme: dark)">
 </head>
@@ -108,8 +109,20 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="js/errors.bundle.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/websocket-client.js"></script>
+<!-- Chat UI Components (load in dependency order) -->
+<script src="js/components/message-formatter.js"></script>
+<script src="js/components/markdown-renderer.js"></script>
+<script src="js/components/reasoning-section.js"></script>
+<script src="js/components/tool-status-badge.js"></script>
+<script src="js/components/reasoning-view.js"></script>
+<script src="js/components/token-display.js"></script>
+<script src="js/components/message-renderer.js"></script>
+<script src="js/components/input-controller.js"></script>
+<script src="js/components/connection-manager.js"></script>
+<script src="js/components/assistant-info-loader.js"></script>
 <script src="js/chat-ui.js"></script>
 <script src="js/agent-selector.js"></script>
 <script src="js/context-gauge.js"></script>
@@ -118,7 +131,7 @@
 <script>
     // Initialize app on page load
     document.addEventListener('DOMContentLoaded', () => {
-        const agentName = getAgentNameFromURL(); // e.g., ?agent=my-agent
+        const agentName = getAgentNameFromURL();
         ChatUI.init(agentName);
         AgentSelector.init(agentName);
         ContextGauge.init(agentName);

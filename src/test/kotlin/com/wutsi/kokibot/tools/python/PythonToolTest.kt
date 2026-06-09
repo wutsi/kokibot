@@ -3,7 +3,6 @@ package com.wutsi.kokibot.tools.python
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.messaging.SendMessageTool
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -134,7 +133,7 @@ class PythonToolTest {
         val result = tool.statusText(
             listOf(
                 LLMToolCall(
-                    name = SendMessageTool.NAME,
+                    name = PythonTool.NAME,
                     arguments = mapOf(
                         "code" to "foo.py",
                     )

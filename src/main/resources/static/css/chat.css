@@ -558,7 +558,7 @@ ol, li {
 }
 
 .reasoning-content {
-    padding: 16px;
+    padding: 8px;
     background-color: var(--color-bg-tertiary);
     font-size: 14px;
     color: var(--color-text-secondary);
@@ -576,7 +576,8 @@ ol, li {
 
 /* Reasoning content blocks */
 .reasoning-content-block {
-    margin-bottom: 8px;
+    margin-bottom: 16px;
+    margin-left: 16px;
 }
 
 .reasoning-content-block:last-child {
@@ -1036,21 +1037,24 @@ ol, li {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px;
-    margin: 8px;
-    border-radius: 16px;
+    /*padding: 8px;*/
+    /*margin: 8px;*/
     background-color: var(--color-bg-tertiary);
     color: var(--color-text-secondary);
-    border: 1px solid var(--color-border-light);
+    /*border: 1px solid var(--color-border-light);*/
     width: fit-content;
     transition: opacity 0.3s ease, transform 0.3s ease;
+    white-space: nowrap;
+    font-weight: bold;
+    overflow: hidden;
 }
 
 .tool-status-badge.calling {
+/*
     background-color: #e3f2fd;
     color: var(--color-accent-blue);
     border-color: var(--color-accent-blue);
-    /*animation: pulse-badge 1.5s ease-in-out infinite;*/
+*/
 }
 
 .tool-status-badge.completed {
@@ -1078,9 +1082,11 @@ ol, li {
 /* Dark mode adjustments for tool status badge */
 @media (prefers-color-scheme: dark) {
     .tool-status-badge.calling {
+    /*
         background-color: #1e3a5f;
         color: #4c8bf5;
         border-color: #4c8bf5;
+        */
     }
 
     .tool-status-badge.completed {

@@ -168,6 +168,14 @@ Controls the core assistant behavior and reasoning loop.
 }
 ```
 
+**Context Length Calculation:**
+
+The assistant tracks context length (in tokens) for display in WebSocket clients:
+- Calculated as: `(prompt length + system instructions length) / 4`
+- Assumes approximately 4 bytes per token (common for English text)
+- Sent with `FINAL` messages as `contextLength` field
+- Used by web interface to display context gauge
+
 **Duration Format Examples:**
 
 - `"30s"` = 30 seconds
@@ -194,9 +202,10 @@ Configures the Large Language Model provider and its parameters.
 | `max-tokens`             | integer | ❌        | Maximum tokens in response                              |
 | `read-timeout-millis`    | integer | ❌        | API read timeout in milliseconds                        |
 | `connect-timeout-millis` | integer | ❌        | API connection timeout in milliseconds                  |
-| `streaming`              | boolean | `false`  | Enable streaming responses                              |
-| `thinking`               | boolean | `false`  | Enable extended thinking mode                           |
-| `reasoning-effort`       | string  | `null`   | Reasoning effort level. Values: `low`, `medium`, `high` |
+| `streaming`              | boolean | `false`  | Enable streaming responses (SSE). Enables real-time token usage display                  |
+| `stream-timeout-millis`  | integer | `120000` | Streaming timeout in milliseconds (default: 2 minutes). Prevents indefinite hangs        |
+| `thinking`               | boolean | `false`  | Enable extended thinking mode (Deepseek R1)                                              |
+| `reasoning-effort`       | string  | `null`   | Reasoning effort level. Values: `low`, `medium`, `high`                                  |
 
 **Deepseek Example:**
 
@@ -209,12 +218,27 @@ Configures the Large Language Model provider and its parameters.
         "temperature": 0.7,
         "max-tokens": 4096,
         "streaming": true,
+        "stream-timeout-millis": 120000,
         "thinking": false,
         "read-timeout-millis": 60000,
         "connect-timeout-millis": 5000
     }
 }
 ```
+
+**Streaming Configuration:**
+
+When `streaming: true`:
+- Responses stream in real-time via Server-Sent Events (SSE)
+- Token usage data included with each chunk
+- WebSocket clients display accumulated token usage with K-suffix formatting
+- Set `stream-timeout-millis` to prevent indefinite hangs (default: 2 minutes)
+
+**Token Usage Display (WebSocket):**
+- Accumulates across all LLM calls in a message
+- Formats numbers ≥1000 with K suffix (e.g., 1.5K, 10.1K)
+- Shows breakdown: prompt, completion, cached tokens
+- Example: `3.8K tokens (2.5K prompt, 1.3K completion) 💾 1.2K cached`
 
 **Kimi Example:**
 
@@ -384,34 +408,76 @@ The WebSocket channel uses JSON messages for communication:
 
 ```json
 {
-    "type": "query",
-    "content": "What is the weather today?"
+    "query": "What is the weather today?",
+    "userId": "user123",
+    "filePaths": []
 }
 ```
 
-**Server → Client:**
+**Server → Client (Streaming):**
 
 ```json
 {
-    "type": "stream",
-    "content": "The weather..."
+    "type": "REASONING_CHUNK",
+    "content": "Analyzing the request...",
+    "usage": {
+        "totalTokens": 150,
+        "promptTokens": 100,
+        "completionTokens": 50,
+        "promptCacheHitTokens": 20
+    }
 }
 ```
 
 ```json
 {
-    "type": "final",
-    "content": "The weather today is sunny with a high of 75°F."
+    "type": "TOOL_STATUS",
+    "content": "⚙️ Calling web_search..."
+}
+```
+
+```json
+{
+    "type": "FINAL",
+    "content": "The weather today is sunny with a high of 75°F.",
+    "finishReason": "DONE",
+    "contextLength": 2500
+}
+```
+
+```json
+{
+    "type": "ERROR",
+    "message": "An error occurred while processing your request"
 }
 ```
 
 **Message Types:**
 
-- `query` - User query from client
-- `stream` - Streaming response chunk from server
-- `final` - Final complete response from server
+- `REASONING_CHUNK` - Streaming reasoning content with optional token usage data
+- `TOOL_STATUS` - Tool execution status updates
+- `FINAL` - Final complete response with context length
+- `ERROR` - Error message
+
+**Token Usage Information:**
+
+The WebSocket channel streams token usage data in real-time with `REASONING_CHUNK` messages:
+
+- `totalTokens`: Total tokens consumed in this chunk
+- `promptTokens`: Tokens in the prompt
+- `completionTokens`: Tokens in the completion
+- `promptCacheHitTokens`: Cached tokens (cost savings)
+
+**Client-Side Display:**
+- Token counts accumulate across all chunks in a message
+- Numbers ≥1000 formatted with K suffix (1.5K, 10K, 100K)
+- Breakdown shown: prompt, completion, cached
+- Example: `3.8K tokens (2.5K prompt, 1.3K completion) 💾 1.2K cached`
 
 **Connection URL:** `ws://localhost:8080{path}`
+
+**Web Interface:**
+Access the built-in web interface at `http://localhost:8080/` to interact with agents via WebSocket.
 
 ---
 

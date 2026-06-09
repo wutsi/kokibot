@@ -1,6 +1,16 @@
 package com.wutsi.kokibot.util
 
+import com.vladsch.flexmark.html.HtmlRenderer
+import com.vladsch.flexmark.parser.Parser
+import com.vladsch.flexmark.util.data.MutableDataSet
+import org.jsoup.Jsoup
+import org.jsoup.nodes.TextNode
+
 object MarkdownUtil {
+    private val flexmarkOptions = MutableDataSet()
+    private val flexmarkParser = Parser.builder(flexmarkOptions).build()
+    private val flexmarkRenderer = HtmlRenderer.builder(flexmarkOptions).build()
+
     fun escape(text: String): String {
         // These characters MUST be escaped if they are intended to be plain text
         val reservedChars = listOf(
@@ -12,6 +22,40 @@ object MarkdownUtil {
             sanitized = sanitized.replace(char, "\\$char")
         }
         return sanitized
+    }
+
+    /**
+     * Converts a Markdown document into plain text.
+     *
+     * The Markdown is parsed and rendered to HTML by flexmark, then walked
+     * with jsoup to keep block-level structure (paragraphs, headings, list
+     * items, line breaks, horizontal rules) while stripping every formatting
+     * marker (bold, italic, code spans, links, etc.).
+     *
+     * @param markdown the Markdown source to convert
+     * @return the plain-text representation of [markdown]; empty string when
+     *         the input is blank
+     */
+    fun toText(markdown: String): String {
+        if (markdown.isBlank()) return ""
+
+        val html = flexmarkRenderer.render(flexmarkParser.parse(markdown))
+        val doc = Jsoup.parse(html)
+
+        // Inject text-node separators so block boundaries survive in the
+        // textual output produced by Element.wholeText().
+        doc.select("br").forEach { it.replaceWith(TextNode("\n")) }
+        doc.select("hr").forEach { it.replaceWith(TextNode("\n---\n")) }
+        doc.select("li").forEach {
+            it.prependChild(TextNode("- "))
+            it.appendChild(TextNode("\n"))
+        }
+        doc.select("p, h1, h2, h3, h4, h5, h6, blockquote, pre")
+            .forEach { it.appendChild(TextNode("\n\n")) }
+
+        return doc.body().wholeText()
+            .replace(Regex("\\n{3,}"), "\n\n")
+            .trim()
     }
 
     /**

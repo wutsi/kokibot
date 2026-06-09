@@ -10,9 +10,12 @@ import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.command.CommandNotFoundException
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
+import com.wutsi.kokibot.llm.LLMStreamData
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.user.AskQuestionException
+import com.wutsi.kokibot.util.MarkdownUtil
 import com.wutsi.kokibot.util.StringUtil
+import com.wutsi.kokibot.util.StringUtil.take
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -39,7 +42,7 @@ class ReActReasoningLoop(
 
     override fun execute(
         query: Message,
-        streamCallback: ((String) -> Unit)?,
+        streamCallback: ((LLMStreamData) -> Unit)?,
         startIteration: Int,
         memory: MutableList<String>,
         context: Context
@@ -74,7 +77,12 @@ class ReActReasoningLoop(
                         if (streamCallback != null) {
                             response.choices.forEach { choice ->
                                 if (!choice.content.isNullOrEmpty()) {
-                                    streamCallback(choice.content)
+                                    streamCallback(
+                                        LLMStreamData(
+                                            text = take(MarkdownUtil.toText(choice.content), 1024),
+                                            usage = response.usage
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -98,7 +106,7 @@ class ReActReasoningLoop(
         iteration: Int,
         query: Message,
         memory: MutableList<String>,
-        streamCallback: ((String) -> Unit)?,
+        streamCallback: ((LLMStreamData) -> Unit)?,
         context: Context
     ): LLMResponse {
         LOGGER.info("$iteration $assistantName LLM " + StringUtil.take(query.text, 200))
@@ -118,7 +126,12 @@ class ReActReasoningLoop(
                 tools = tools,
                 onChunk = { chunk ->
                     chunk.reasoningDelta?.let { delta ->
-                        streamCallback(delta)
+                        streamCallback(
+                            LLMStreamData(
+                                text = delta,
+                                usage = null // Usage only available at end of stream
+                            )
+                        )
                     }
                 }
             )

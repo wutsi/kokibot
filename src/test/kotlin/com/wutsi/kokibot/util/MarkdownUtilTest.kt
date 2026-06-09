@@ -115,4 +115,91 @@ class MarkdownUtilTest {
         assertEquals(5, chunks.size)
         chunks.forEach { assertEquals(10, it.length) }
     }
+
+    @Test
+    fun `toText returns empty when input is blank`() {
+        assertEquals("", MarkdownUtil.toText(""))
+        assertEquals("", MarkdownUtil.toText("   \n\t  "))
+    }
+
+    @Test
+    fun `toText strips inline formatting`() {
+        val markdown = "Hello **bold** and *italic* with `code` and ~~strike~~."
+        val text = MarkdownUtil.toText(markdown)
+
+        assertEquals("Hello bold and italic with code and ~~strike~~.", text)
+    }
+
+    @Test
+    fun `toText keeps link text and drops the URL`() {
+        val markdown = "Visit [our site](https://example.com) for more info."
+        val text = MarkdownUtil.toText(markdown)
+
+        assertEquals("Visit our site for more info.", text)
+    }
+
+    @Test
+    fun `toText preserves paragraph boundaries`() {
+        val markdown = "First paragraph.\n\nSecond paragraph."
+        val text = MarkdownUtil.toText(markdown)
+
+        assertEquals("First paragraph.\n\nSecond paragraph.", text)
+    }
+
+    @Test
+    fun `toText renders headings as plain lines`() {
+        val markdown = "# Title\n\n## Subtitle\n\nBody."
+        val text = MarkdownUtil.toText(markdown)
+
+        assertEquals("Title\n\nSubtitle\n\nBody.", text)
+    }
+
+    @Test
+    fun `toText renders unordered list items with dashes`() {
+        val markdown = "- one\n- two\n- three"
+        val text = MarkdownUtil.toText(markdown)
+
+        assertTrue(text.contains("- one"), "missing first item: $text")
+        assertTrue(text.contains("- two"), "missing second item: $text")
+        assertTrue(text.contains("- three"), "missing third item: $text")
+    }
+
+    @Test
+    fun `toText renders ordered list items with dashes`() {
+        val markdown = "1. one\n2. two\n3. three"
+        val text = MarkdownUtil.toText(markdown)
+
+        assertTrue(text.contains("- one"), "missing first item: $text")
+        assertTrue(text.contains("- two"), "missing second item: $text")
+        assertTrue(text.contains("- three"), "missing third item: $text")
+    }
+
+    @Test
+    fun `toText preserves fenced code block content`() {
+        val markdown = "Intro.\n\n```kotlin\nval x = 1\n```\n\nOutro."
+        val text = MarkdownUtil.toText(markdown)
+
+        assertTrue(text.contains("Intro."))
+        assertTrue(text.contains("val x = 1"))
+        assertTrue(text.contains("Outro."))
+        assertTrue(!text.contains("```"))
+    }
+
+    @Test
+    fun `toText renders horizontal rule as dashes`() {
+        val markdown = "Above.\n\n---\n\nBelow."
+        val text = MarkdownUtil.toText(markdown)
+
+        assertTrue(text.contains("Above."))
+        assertTrue(text.contains("---"))
+        assertTrue(text.contains("Below."))
+    }
+
+    @Test
+    fun `toText collapses excessive blank lines`() {
+        val markdown = "First.\n\n\n\n\nSecond."
+        val text = MarkdownUtil.toText(markdown)
+
+        assertEquals("First.\n\nSecond.", text)
+    }
 }

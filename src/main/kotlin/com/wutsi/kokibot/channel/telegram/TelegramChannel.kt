@@ -247,8 +247,8 @@ class TelegramChannel(
                     userId = userId,
                     channelId = id(),
                 ),
-                streamCallback = { delta ->
-                    streamBuffer.append(delta)
+                streamCallback = { data ->
+                    streamBuffer.append(data.text)
                     val now = System.currentTimeMillis()
                     val delay = streamUpdateDelayMillis.get()
 

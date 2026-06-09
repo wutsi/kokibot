@@ -7,6 +7,7 @@ const ChatUI = {
     currentMessageId: null,
     reasoningChunks: [],
     currentToolStatus: null,
+    accumulatedUsage: null,  // Accumulated token usage for current message
 
     init(agentName) {
         this.agentName = agentName || 'thoth';
@@ -91,8 +92,8 @@ const ChatUI = {
             this.updateConnectionStatus('error', 'Connection Error');
         });
 
-        this.wsClient.on('ReasoningChunk', (chunk) => {
-            this.handleReasoningChunk(chunk);
+        this.wsClient.on('ReasoningChunk', (chunk, usage) => {
+            this.handleReasoningChunk(chunk, usage);
         });
 
         this.wsClient.on('ToolStatus', (status) => {
@@ -146,6 +147,7 @@ const ChatUI = {
         // Reset for new response
         this.reasoningChunks = [];
         this.currentToolStatus = null;
+        this.accumulatedUsage = null;
     },
 
     addUserMessage(text, filesInfo = []) {
@@ -154,7 +156,7 @@ const ChatUI = {
         this.scrollToBottom();
     },
 
-    handleReasoningChunk(chunk) {
+    handleReasoningChunk(chunk, usage) {
         this.reasoningChunks.push(chunk);
 
         // Get the assistant message (should already exist from handleSend)
@@ -200,19 +202,93 @@ const ChatUI = {
 
             // Update the current block
             const text = this.reasoningChunks.join('');
-            currentBlock.innerHTML = this.renderMarkdown(text);
+            currentBlock.innerHTML = this.renderReasoningText(text);
         } else {
             // No tool calls yet, update initial reasoning block
             const initialBlock = reasoningContent.querySelector('.reasoning-content-block');
             if (initialBlock) {
                 const text = this.reasoningChunks.join('');
-                initialBlock.innerHTML = this.renderMarkdown(text);
+                initialBlock.innerHTML = this.renderReasoningText(text);
             }
+        }
+
+        // Update token usage display if available
+        if (usage && usage.totalTokens > 0) {
+            this.updateTokenDisplay(assistantMessage, usage);
         }
 
         // Auto-scroll reasoning content to bottom
         reasoningContent.scrollTop = reasoningContent.scrollHeight;
         this.scrollToBottom();
+    },
+
+    updateTokenDisplay(messageElement, usage) {
+        // Accumulate usage across all updates
+        if (!this.accumulatedUsage) {
+            this.accumulatedUsage = {
+                totalTokens: 0,
+                promptTokens: 0,
+                completionTokens: 0,
+                promptCacheHitTokens: 0
+            };
+        }
+
+        // Add new usage to accumulated totals
+        this.accumulatedUsage.totalTokens += usage.totalTokens || 0;
+        this.accumulatedUsage.promptTokens += usage.promptTokens || 0;
+        this.accumulatedUsage.completionTokens += usage.completionTokens || 0;
+        this.accumulatedUsage.promptCacheHitTokens += (usage.promptCacheHitTokens || 0);
+
+        const contentDiv = messageElement.querySelector('.message-content');
+
+        // Get or create token display section
+        let tokenDisplay = contentDiv.querySelector('.token-display');
+        if (!tokenDisplay) {
+            tokenDisplay = document.createElement('div');
+            tokenDisplay.className = 'token-display';
+
+            // Insert before timestamp or at the end
+            const timestamp = contentDiv.querySelector('.message-timestamp');
+            if (timestamp) {
+                contentDiv.insertBefore(tokenDisplay, timestamp);
+            } else {
+                contentDiv.appendChild(tokenDisplay);
+            }
+        }
+
+        // Build token display HTML with accumulated usage
+        const parts = [];
+
+        if (this.accumulatedUsage.totalTokens > 0) {
+            parts.push(`<span class="token-total">${this.formatTokenCount(this.accumulatedUsage.totalTokens)} tokens</span>`);
+        }
+
+        if (this.accumulatedUsage.promptTokens > 0 || this.accumulatedUsage.completionTokens > 0) {
+            const details = [];
+            if (this.accumulatedUsage.promptTokens > 0) {
+                details.push(`${this.formatTokenCount(this.accumulatedUsage.promptTokens)} prompt`);
+            }
+            if (this.accumulatedUsage.completionTokens > 0) {
+                details.push(`${this.formatTokenCount(this.accumulatedUsage.completionTokens)} completion`);
+            }
+            parts.push(`<span class="token-details">(${details.join(', ')})</span>`);
+        }
+
+        if (this.accumulatedUsage.promptCacheHitTokens > 0) {
+            parts.push(`<span class="token-cached">💾 ${this.formatTokenCount(this.accumulatedUsage.promptCacheHitTokens)} cached</span>`);
+        }
+
+        tokenDisplay.innerHTML = parts.join(' ');
+    },
+
+    formatTokenCount(count) {
+        if (count >= 1000) {
+            const k = count / 1000;
+            // Format with 1 decimal place, but remove .0 if it's a round number
+            const formatted = k.toFixed(1);
+            return formatted.endsWith('.0') ? formatted.slice(0, -2) + 'K' : formatted + 'K';
+        }
+        return count.toString();
     },
 
     handleToolStatus(status) {
@@ -515,6 +591,30 @@ const ChatUI = {
             console.error('Error rendering markdown:', error);
             return escapeHtml(text);
         }
+    },
+
+    renderReasoningText(text) {
+        // Reasoning text is plain text (not markdown), so we need to:
+        // 1. Escape HTML to prevent XSS
+        // 2. Preserve line breaks by converting \n to <br>
+        // 3. Preserve spaces (especially leading/trailing)
+
+        if (!text) {
+            return '';
+        }
+
+        // Escape HTML characters
+        const escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+        // Convert line breaks to <br> tags
+        const withBreaks = escaped.replace(/\n/g, '<br>');
+
+        return withBreaks;
     },
 
     showTypingIndicator() {

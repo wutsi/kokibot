@@ -578,6 +578,9 @@ ol, li {
 .reasoning-content-block {
     margin-bottom: 16px;
     margin-left: 16px;
+    white-space: pre-wrap;  /* Preserve line breaks and spaces */
+    word-wrap: break-word;  /* Wrap long lines */
+    overflow-wrap: break-word;  /* Break long words if needed */
 }
 
 .reasoning-content-block:last-child {
@@ -1278,5 +1281,52 @@ ol, li {
         /* Error states */
         --color-error-bg: #3d1a1a;
         --color-error-text: #f28b82;
+    }
+}
+
+/* ===== Token Display ===== */
+.token-display {
+    margin-bottom: 16px;
+    padding: 6px 10px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    font-size: 0.85em;
+    color: #666;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.token-total {
+    font-weight: 600;
+    color: #333;
+}
+
+.token-details {
+    color: #888;
+    font-size: 0.95em;
+}
+
+.token-cached {
+    color: #4CAF50;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+/* Dark mode token display */
+@media (prefers-color-scheme: dark) {
+    .token-display {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #9aa0a6;
+    }
+
+    .token-total {
+        color: #e8eaed;
+    }
+
+    .token-details {
+        color: #9aa0a6;
+    }
+
+    .token-cached {
+        color: #81c995;
     }
 }

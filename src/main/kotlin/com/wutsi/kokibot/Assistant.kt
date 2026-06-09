@@ -4,6 +4,7 @@ import com.wutsi.kokibot.assistant.PromptBuilder
 import com.wutsi.kokibot.assistant.ReActReasoningLoop
 import com.wutsi.kokibot.assistant.ReasoningLoop
 import com.wutsi.kokibot.assistant.ToolOrchestrator
+import com.wutsi.kokibot.llm.LLMStreamData
 import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.StringUtil
@@ -16,6 +17,7 @@ class Assistant(val name: String = "") {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
         private const val DEFAULT_ITERATIONS = 10
+        private const val BYTES_PER_TOKENS = 4
         const val DEFAULT_MAX_DURATION_MINUTES = 5L
         const val ERROR_TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
         const val ERROR_TIMEOUT = "Oups, the request has been cancelled because it took too much time to process."
@@ -78,13 +80,13 @@ class Assistant(val name: String = "") {
             userId = userId,
             channelId = channelId,
         )
-        return promptBuilder.buildPrompt(query, emptyList(), context).length +
-            promptBuilder.buildSystemInstructions(query, coordinator, context).length
+        return (promptBuilder.buildPrompt(query, emptyList(), context).length +
+            promptBuilder.buildSystemInstructions(query, coordinator, context).length) / BYTES_PER_TOKENS
     }
 
     fun process(
         query: Message,
-        streamCallback: ((String) -> Unit)? = null,
+        streamCallback: ((LLMStreamData) -> Unit)? = null,
     ): Message {
         // Restore session if exists
         val now = System.currentTimeMillis()
@@ -165,7 +167,7 @@ class Assistant(val name: String = "") {
 
     private fun doProcessAsync(
         query: Message,
-        streamCallback: ((String) -> Unit)? = null,
+        streamCallback: ((LLMStreamData) -> Unit)? = null,
         iteration: Int,
         memory: MutableList<String>,
     ): Message {

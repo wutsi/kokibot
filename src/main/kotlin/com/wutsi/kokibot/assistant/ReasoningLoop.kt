@@ -2,6 +2,7 @@ package com.wutsi.kokibot.assistant
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.llm.LLMStreamData
 
 /**
  * Interface for reasoning loop strategies.
@@ -17,7 +18,7 @@ interface ReasoningLoop {
      * Execute the reasoning loop to process a query.
      *
      * @param query The user query to process
-     * @param streamCallback Optional callback for streaming responses
+     * @param streamCallback Optional callback for streaming responses with usage data
      * @param startIteration Starting iteration number (for resumed sessions)
      * @param memory Mutable list of iteration memory (reasoning steps and observations)
      * @param context The execution context
@@ -25,7 +26,7 @@ interface ReasoningLoop {
      */
     fun execute(
         query: Message,
-        streamCallback: ((String) -> Unit)?,
+        streamCallback: ((LLMStreamData) -> Unit)?,
         startIteration: Int,
         memory: MutableList<String>,
         context: Context

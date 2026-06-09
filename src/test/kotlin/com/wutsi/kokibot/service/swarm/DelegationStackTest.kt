@@ -2,6 +2,7 @@ package com.wutsi.kokibot.service.swarm
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.llm.LLMStreamData
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -228,7 +229,7 @@ class DelegationStackTest {
 
     @Test
     fun `push stores stream callback`() {
-        val callback: (String) -> Unit = { _ -> }
+        val callback: (LLMStreamData) -> Unit = { _ -> }
 
         stack.push("session1", "agent-a", callback)
 
@@ -250,7 +251,7 @@ class DelegationStackTest {
 
     @Test
     fun `getCurrentStreamCallback returns current callback`() {
-        val callback: (String) -> Unit = { _ -> }
+        val callback: (LLMStreamData) -> Unit = { _ -> }
 
         stack.push("session1", "agent-a", callback)
 
@@ -271,8 +272,8 @@ class DelegationStackTest {
 
     @Test
     fun `getCurrentStreamCallback returns latest callback in multi-level stack`() {
-        val callback1: (String) -> Unit = { _ -> }
-        val callback2: (String) -> Unit = { _ -> }
+        val callback1: (LLMStreamData) -> Unit = { _ -> }
+        val callback2: (LLMStreamData) -> Unit = { _ -> }
 
         stack.push("session1", "agent-a", callback1)
         stack.push("session1", "agent-b", callback2)
@@ -283,8 +284,8 @@ class DelegationStackTest {
 
     @Test
     fun `getParentStreamCallback returns parent callback`() {
-        val parentCallback: (String) -> Unit = { _ -> }
-        val childCallback: (String) -> Unit = { _ -> }
+        val parentCallback: (LLMStreamData) -> Unit = { _ -> }
+        val childCallback: (LLMStreamData) -> Unit = { _ -> }
 
         stack.push("session1", "agent-a", parentCallback)
         stack.push("session1", "agent-b", childCallback)
@@ -295,7 +296,7 @@ class DelegationStackTest {
 
     @Test
     fun `getParentStreamCallback returns null when no parent`() {
-        val callback: (String) -> Unit = { _ -> }
+        val callback: (LLMStreamData) -> Unit = { _ -> }
         stack.push("session1", "agent-a", callback)
 
         // No parent, should return null
@@ -309,7 +310,7 @@ class DelegationStackTest {
 
     @Test
     fun `getParentStreamCallback returns null when parent has no callback`() {
-        val childCallback: (String) -> Unit = { _ -> }
+        val childCallback: (LLMStreamData) -> Unit = { _ -> }
 
         stack.push("session1", "agent-a", null) // Parent with no callback
         stack.push("session1", "agent-b", childCallback)

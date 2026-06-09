@@ -2,6 +2,7 @@ package com.wutsi.kokibot.service.swarm
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Resource
+import com.wutsi.kokibot.llm.LLMStreamData
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -17,7 +18,7 @@ import kotlin.concurrent.write
  * - Cycle detection: Prevents circular delegation like A→B→C→A
  * - Thread-safe: Uses ReentrantReadWriteLock for concurrent access
  * - Session isolation: Each session (request) has independent stack
- * - Stream callback propagation: Maintains stream callback for each delegation level
+ * - Stream callback propagation: Maintains LLMStreamData callback for each delegation level
  *
  * Configuration (via swarm section in settings.json):
  * - max-depth: Maximum delegation depth (default: 5)
@@ -37,7 +38,7 @@ class DelegationStack : Resource {
      */
     data class DelegationEntry(
         val agentName: String,
-        val streamCallback: ((String) -> Unit)?
+        val streamCallback: ((LLMStreamData) -> Unit)?
     )
 
     // Configuration
@@ -73,10 +74,10 @@ class DelegationStack : Resource {
      *
      * @param sessionId The session (request) ID
      * @param agentName The agent being delegated to
-     * @param streamCallback Optional callback for streaming responses
+     * @param streamCallback Optional callback for streaming responses with usage data
      * @throws DelegationException if validation fails (max depth or cycle)
      */
-    fun push(sessionId: String, agentName: String, streamCallback: ((String) -> Unit)? = null) {
+    fun push(sessionId: String, agentName: String, streamCallback: ((LLMStreamData) -> Unit)? = null) {
         lock.write {
             val stack = stacks.getOrPut(sessionId) { mutableListOf() }
 
@@ -157,7 +158,7 @@ class DelegationStack : Resource {
      * @param sessionId The session (request) ID
      * @return The stream callback from the current delegation, or null if stack is empty or no callback
      */
-    fun getCurrentStreamCallback(sessionId: String): ((String) -> Unit)? {
+    fun getCurrentStreamCallback(sessionId: String): ((LLMStreamData) -> Unit)? {
         return lock.read {
             val stack = stacks[sessionId]
             stack?.lastOrNull()?.streamCallback
@@ -170,7 +171,7 @@ class DelegationStack : Resource {
      * @param sessionId The session (request) ID
      * @return The stream callback from the parent delegation, or null if no parent or no callback
      */
-    fun getParentStreamCallback(sessionId: String): ((String) -> Unit)? {
+    fun getParentStreamCallback(sessionId: String): ((LLMStreamData) -> Unit)? {
         return lock.read {
             val stack = stacks[sessionId]
             if (stack.isNullOrEmpty() || stack.size < 2) {

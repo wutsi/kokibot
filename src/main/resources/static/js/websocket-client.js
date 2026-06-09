@@ -82,7 +82,7 @@ class WebSocketClient {
         switch (response.type) {
             case 'REASONING_CHUNK':
                 if (this.handlers.onReasoningChunk) {
-                    this.handlers.onReasoningChunk(response.content);
+                    this.handlers.onReasoningChunk(response.content, response.usage);
                 }
                 break;
 

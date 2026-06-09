@@ -5,6 +5,7 @@ import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
+import com.wutsi.kokibot.llm.LLMUsage
 import org.slf4j.LoggerFactory
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
@@ -111,16 +112,7 @@ class WebSocketChannel : Channel() {
 
             // Create message
             val message = Message(
-                text = request.query + "\n\n" +
-                    """
-                        When your refer to a file in the agent working directory (${context.home.absolutePath}/workspace), always format it as hyperlink in markdown format (instead of plain text or code format).
-                        This allows the user to click and open the file directly from the message.
-
-                        A message contains a file names `foo.pdf`, located in directory `${context.home.absolutePath}/workspace/a/b` convert it to
-                         `[file.pdf](/files/${context.assistant.name}|workspace|a|b|foo.pdf)`.
-
-                        For security reason, never hyperlink any file outside of the working directory.
-                    """.trimIndent(),
+                text = decorateQuery(request.query),
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),
@@ -130,8 +122,8 @@ class WebSocketChannel : Channel() {
             // Process with streaming callback (always enabled)
             val response = context.assistant.process(
                 query = message,
-                streamCallback = { delta ->
-                    sendReasoningChunk(session, delta)
+                streamCallback = { data ->
+                    sendReasoningChunk(session, data.text, data.usage)
                 },
             )
 
@@ -147,6 +139,23 @@ class WebSocketChannel : Channel() {
         }
     }
 
+    private fun decorateQuery(query: String): String {
+        return if (query.startsWith("/")) {
+            query
+        } else {
+            query + "\n\n" +
+                """
+                    When your refer to a file in the agent working directory (${context.home.absolutePath}/workspace), always format it as hyperlink in markdown format (instead of plain text or code format).
+                    This allows the user to click and open the file directly from the message.
+
+                    A message contains a file names `foo.pdf`, located in directory `${context.home.absolutePath}/workspace/a/b` convert it to
+                     `[file.pdf](/files/${context.assistant.name}|workspace|a|b|foo.pdf)`.
+
+                    For security reason, never hyperlink any file outside of the working directory.
+                """.trimIndent()
+        }
+    }
+
     internal fun handleConnectionEstablished(session: WebSocketSession) {
         LOGGER.info("WebSocket connection established: ${session.id}")
     }
@@ -156,12 +165,13 @@ class WebSocketChannel : Channel() {
         sessions.values.removeIf { it.id == session.id }
     }
 
-    private fun sendReasoningChunk(session: WebSocketSession, delta: String) {
+    private fun sendReasoningChunk(session: WebSocketSession, delta: String, usage: LLMUsage?) {
         sendMessage(
             session,
             WebSocketResponse(
                 type = WebSocketResponseType.REASONING_CHUNK,
                 content = delta,
+                usage = usage,
             ),
         )
     }

@@ -1,5 +1,6 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.assistant.PromptBuilder
 import com.wutsi.kokibot.assistant.ToolOrchestrator
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
@@ -10,7 +11,6 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.user.AskQuestionException
 import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
-import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.Executors
@@ -34,6 +34,7 @@ class Assistant(val name: String = "") {
     private var coordinator: Boolean = false
     private var threadPoolSize: Int = 4
     private lateinit var toolOrchestrator: ToolOrchestrator
+    private lateinit var promptBuilder: PromptBuilder
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
@@ -50,6 +51,7 @@ class Assistant(val name: String = "") {
             threadPoolSize = 2
         }
         toolOrchestrator = ToolOrchestrator(threadPoolSize = threadPoolSize)
+        promptBuilder = PromptBuilder(assistantName = name)
 
         this.context = context
         context.assistantRegistry.register(this)
@@ -73,7 +75,8 @@ class Assistant(val name: String = "") {
             userId = userId,
             channelId = channelId,
         )
-        return buildPrompt(query, emptyList()).length + buildSystemInstructions(query).length
+        return promptBuilder.buildPrompt(query, emptyList(), context).length +
+            promptBuilder.buildSystemInstructions(query, coordinator, context).length
     }
 
     fun process(
@@ -240,8 +243,8 @@ class Assistant(val name: String = "") {
 
         // Call LLM
         val request = LLMRequest(
-            prompt = buildPrompt(query, memory),
-            systemInstructions = buildSystemInstructions(query),
+            prompt = promptBuilder.buildPrompt(query, memory, context),
+            systemInstructions = promptBuilder.buildSystemInstructions(query, coordinator, context),
             files = query.filePaths.map { path -> File(path) }
         )
 
@@ -358,100 +361,4 @@ class Assistant(val name: String = "") {
         )
     }
 
-    private fun buildPrompt(query: Message, memory: List<String>): String {
-        val sb = StringBuilder()
-        sb.append("Query: ${query.text}\n")
-
-        // Long-term memory
-        val longTermMemory = context.memory.get()
-        if (longTermMemory != null) {
-            sb.append("\n---\n")
-            sb.append("# Long-Term Memory\n")
-            sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
-            sb.append("```markdown\n$longTermMemory\n```\n")
-        }
-
-        // Short-term memory (conversation history)
-        val shortTermMemory = context.dailyLog.get()
-        if (shortTermMemory != null) {
-            sb.append("\n---\n\n")
-            sb.append("# Short-Term Memory\n")
-            sb.append("Here are information that you have stored in your short-term memory in Markdown format:\n")
-            sb.append("```markdown\n$shortTermMemory\n```\n")
-        }
-
-        // Reasoning steps and observations
-        if (memory.isNotEmpty()) {
-            sb.append("\n---\n\n")
-            sb.append("# Previous reasoning steps and observations\n")
-            memory.forEach { line -> sb.append("$line\n\n") }
-        }
-
-        return sb.toString()
-    }
-
-    private fun buildSystemInstructions(query: Message): String {
-        val entries = listOfNotNull(
-            loadIdentify(),
-            if (coordinator) coordinatorInstructions() else null,
-            dailyLogInstructions(),
-            chatHistoryInstructions(query),
-            skillsInstructions(),
-            securityInstructions(),
-        )
-        return entries.joinToString("\n\n---\n\n")
-    }
-
-    private fun loadIdentify(): String? {
-        val file = File(context.home, "ASSISTANT.md")
-        return if (file.exists()) {
-            file.readText()
-                .replace("{{ASSISTANT_NAME}}", name)
-        } else {
-            null
-        }
-    }
-
-    private fun skillsInstructions(): String? {
-        val skills = context.skillRegistry
-            .all()
-            .filter { skill -> skill.health().up }
-            .joinToString("\n") { skill ->
-                listOfNotNull(
-                    "## Skill: ${skill.metadata.name}\n\n" +
-                        "**Home Directory:** ${skill.metadata.home}\n\n" +
-                        "**Description:** ${skill.metadata.description}"
-                ).joinToString("\n\n")
-            }
-            .ifEmpty { null }
-
-        return skills?.let { "# Available skills\n\nHere are the skills available:\n\n$skills" }
-    }
-
-    private fun securityInstructions(): String {
-        return IOUtils.toString(Assistant::class.java.getResource("/instructions/SECURITY.md"), "utf-8")
-            .replace("{{HOME}}", context.home.absolutePath)
-    }
-
-    private fun coordinatorInstructions(): String {
-        return IOUtils.toString(Assistant::class.java.getResource("/instructions/COORDINATOR.md"), "utf-8")
-            .replace("{{HOME}}", context.home.absolutePath)
-    }
-
-    private fun dailyLogInstructions(): String {
-        return IOUtils.toString(Assistant::class.java.getResourceAsStream("/instructions/DAILY_LOG.md"), "utf-8")
-            .replace("{{HOME}}", context.home.absolutePath)
-    }
-
-    private fun chatHistoryInstructions(query: Message): String? {
-        val userId = query.userId
-        val channelId = query.channelId
-        if (userId == null || channelId == null) {
-            return null
-        }
-        return IOUtils.toString(Assistant::class.java.getResourceAsStream("/instructions/CHAT_HISTORY.md"), "utf-8")
-            .replace("{{HOME}}", context.home.absolutePath)
-            .replace("{{USER_ID}}", userId)
-            .replace("{{CHANNEL_ID}}", channelId.removePrefix("channel:"))
-    }
 }

@@ -892,6 +892,55 @@ export LOG_LEVEL=DEBUG
 
 ---
 
+## Technical Details
+
+### Streaming Architecture
+
+The streaming system uses a layered architecture to pass token usage data from the LLM to the UI:
+
+**Data Flow:**
+
+```
+LLM Provider (Deepseek/Kimi/Gemini)
+    ↓ streams text + usage
+LLMStreamData { text, usage }
+    ↓
+ReasoningLoop (ReActReasoningLoop)
+    ↓ wraps in StreamData
+Assistant.process()
+    ↓ delegates callback
+Channel (WebSocket/Telegram)
+    ↓ extracts and formats
+WebSocketResponse { type, content, usage }
+    ↓ sends JSON over WebSocket
+Web Client (chat-ui.js)
+    ↓ accumulates and formats
+UI Display: "3.8K tokens (2.5K prompt, 1.3K completion)"
+```
+
+**Key Components:**
+
+1. **LLMStreamData**: Data class containing `text` + `usage` (backend)
+2. **StreamData callback**: `((LLMStreamData) -> Unit)?` passed through call chain
+3. **WebSocketResponse**: JSON message with `usage` field
+4. **Token Accumulator**: JavaScript state tracking cumulative usage
+5. **K-Formatter**: Display helper for human-readable numbers
+
+**Reasoning Text Rendering:**
+
+Reasoning content blocks preserve line breaks using:
+- HTML escaping for security (`<`, `>`, `&`, etc.)
+- `\n` → `<br>` conversion for line breaks
+- CSS `white-space: pre-wrap` for proper formatting
+- Separate rendering from final response (which uses Markdown)
+
+**Security:**
+- All user content HTML-escaped to prevent XSS
+- Only safe HTML (`<br>` tags) injected
+- No eval() or innerHTML without sanitization
+
+---
+
 ## See Also
 
 - [README.md](../README.md) - Project overview and quick start

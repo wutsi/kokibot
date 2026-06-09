@@ -13,6 +13,7 @@ import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.llm.LLMStreamData
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
@@ -87,9 +88,9 @@ class WebSocketChannelTest {
     @Test
     fun `streaming sends multiple chunks`() {
         doAnswer { invocation ->
-            val callback = invocation.getArgument<(String) -> Unit>(1)
-            callback("Thinking...")
-            callback("Analyzing...")
+            val callback = invocation.getArgument<(LLMStreamData) -> Unit>(1)
+            callback(LLMStreamData(text = "Thinking..."))
+            callback(LLMStreamData(text = "Analyzing..."))
             Message(text = "Final answer", role = Role.ASSISTANT)
         }.whenever(assistant).process(any(), any())
 

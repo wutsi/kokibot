@@ -357,7 +357,8 @@ const ChatUI = {
 
         const textDiv = document.createElement('div');
         textDiv.className = 'message-text';
-        textDiv.textContent = text;
+        // Convert newlines to <br> tags for proper display
+        textDiv.innerHTML = this.escapeAndPreserveNewlines(text);
 
         const timestamp = document.createElement('div');
         timestamp.className = 'message-timestamp';
@@ -593,12 +594,8 @@ const ChatUI = {
         }
     },
 
-    renderReasoningText(text) {
-        // Reasoning text is plain text (not markdown), so we need to:
-        // 1. Escape HTML to prevent XSS
-        // 2. Preserve line breaks by converting \n to <br>
-        // 3. Preserve spaces (especially leading/trailing)
-
+    escapeAndPreserveNewlines(text) {
+        // Escape HTML to prevent XSS and preserve line breaks
         if (!text) {
             return '';
         }
@@ -615,6 +612,14 @@ const ChatUI = {
         const withBreaks = escaped.replace(/\n/g, '<br>');
 
         return withBreaks;
+    },
+
+    renderReasoningText(text) {
+        // Reasoning text is plain text (not markdown), so we need to:
+        // 1. Escape HTML to prevent XSS
+        // 2. Preserve line breaks by converting \n to <br>
+        // 3. Preserve spaces (especially leading/trailing)
+        return this.escapeAndPreserveNewlines(text);
     },
 
     showTypingIndicator() {

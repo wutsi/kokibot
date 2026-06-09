@@ -8,6 +8,7 @@ import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.service.ExecutionContext
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.user.AskQuestionException
+import com.wutsi.kokibot.util.StringUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
@@ -90,7 +91,7 @@ class ToolOrchestrator(
                 "Using tool `${result.call.name}` with arguments: " +
                     result.call.arguments.map { entry ->
                         "${entry.key}=" + entry.value?.let { value ->
-                            take(value.toString(), 200)
+                            StringUtil.take(value.toString(), 200)
                         }
                     }.joinToString(",")
             )
@@ -117,7 +118,7 @@ class ToolOrchestrator(
             LOGGER.info(
                 "$iteration $assistantName TOOL ${call.name} " +
                     call.arguments.map { entry ->
-                        "${entry.key}=" + entry.value?.let { value -> take(value.toString(), 200) }
+                        "${entry.key}=" + entry.value?.let { value -> StringUtil.take(value.toString(), 200) }
                     }.joinToString(",")
             )
             context.sessionLog.onToolUse(id, iteration, call)
@@ -167,15 +168,6 @@ class ToolOrchestrator(
                     channelId = channelId,
                 )
             )
-        }
-    }
-
-    private fun take(text: String, n: Int = 200): String {
-        val xtext = text.replace("\n", " ").take(n).trim()
-        return if (text.length > n) {
-            "$xtext..."
-        } else {
-            xtext
         }
     }
 }

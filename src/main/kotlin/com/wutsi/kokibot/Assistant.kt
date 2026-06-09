@@ -1,18 +1,13 @@
 package com.wutsi.kokibot
 
 import com.wutsi.kokibot.assistant.PromptBuilder
+import com.wutsi.kokibot.assistant.ReActReasoningLoop
+import com.wutsi.kokibot.assistant.ReasoningLoop
 import com.wutsi.kokibot.assistant.ToolOrchestrator
-import com.wutsi.kokibot.command.Command
-import com.wutsi.kokibot.command.CommandMetadata
-import com.wutsi.kokibot.command.CommandNotFoundException
-import com.wutsi.kokibot.llm.LLMRequest
-import com.wutsi.kokibot.llm.LLMResponse
-import com.wutsi.kokibot.tools.Tool
-import com.wutsi.kokibot.tools.user.AskQuestionException
 import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
+import com.wutsi.kokibot.util.StringUtil
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -35,6 +30,7 @@ class Assistant(val name: String = "") {
     private var threadPoolSize: Int = 4
     private lateinit var toolOrchestrator: ToolOrchestrator
     private lateinit var promptBuilder: PromptBuilder
+    private lateinit var reasoningLoop: ReasoningLoop
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
@@ -52,6 +48,13 @@ class Assistant(val name: String = "") {
         }
         toolOrchestrator = ToolOrchestrator(threadPoolSize = threadPoolSize)
         promptBuilder = PromptBuilder(assistantName = name)
+        reasoningLoop = ReActReasoningLoop(
+            assistantName = name,
+            maxIterations = maxIterations,
+            coordinator = coordinator,
+            promptBuilder = promptBuilder,
+            toolOrchestrator = toolOrchestrator
+        )
 
         this.context = context
         context.assistantRegistry.register(this)
@@ -114,7 +117,7 @@ class Assistant(val name: String = "") {
 
         LOGGER.info(
             "${xquery.id} $name ${xquery.userId ?: "-"}@${xquery.channelId ?: "-"} files=${xquery.filePaths} " +
-                take(xquery.text, 200)
+                StringUtil.take(xquery.text, 200)
         )
         context.sessionLog.onQuery(xquery.id, iteration, xquery)
 
@@ -153,7 +156,7 @@ class Assistant(val name: String = "") {
         // Result
         val duration = DurationUtil.hms(System.currentTimeMillis() - now)
         LOGGER.info(
-            "${query.id} $name FINAL ANSWER ($duration): " + take(response.text, 200)
+            "${query.id} $name FINAL ANSWER ($duration): " + StringUtil.take(response.text, 200)
         )
         context.chatHistory.append(query, response)
         context.sessionLog.onResponse(query.id, response)
@@ -167,7 +170,7 @@ class Assistant(val name: String = "") {
         memory: MutableList<String>,
     ): Message {
         return try {
-            doProcess(query, streamCallback, iteration, memory)
+            reasoningLoop.execute(query, streamCallback, iteration, memory, context)
         } catch (e: TooManyIterationException) {
             LOGGER.error("Too many iterations!", e)
             Message(ERROR_TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
@@ -176,189 +179,4 @@ class Assistant(val name: String = "") {
             Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)
         }
     }
-
-    private fun doProcess(
-        query: Message,
-        streamCallback: ((String) -> Unit)?,
-        iter: Int,
-        memory: MutableList<String>,
-    ): Message {
-        var iteration = iter
-        val tools = mutableMapOf<String, Tool>()
-        context.toolRegistry.all().map { tool -> tools[tool.metadata().name] = tool }
-
-        while (true) {
-            if (iteration++ > maxIterations) {
-                throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
-            }
-
-            val command = getCommand(query)
-            if (command != null) {
-                val result = exec(iteration, query, command)
-                return Message(
-                    text = result,
-                    role = Role.COMMAND,
-                    finishReason = FinishReason.DONE,
-                )
-            } else {
-                try {
-                    val response = ask(iteration, query, memory, streamCallback)
-                    if (decide(query.id, iteration, response, memory, tools, query)) {
-                        return Message(
-                            text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
-                            role = Role.ASSISTANT,
-                            finishReason = FinishReason.DONE,
-                        )
-                    } else {
-                        if (streamCallback != null) {
-                            response.choices.forEach { choice ->
-                                if (!choice.content.isNullOrEmpty()) {
-                                    streamCallback(choice.content)
-                                }
-                            }
-                        }
-                    }
-                } catch (ex: AskQuestionException) {
-                    // Pause the current session
-                    context.sessionLog.pause(query.userId, query.channelId, query.id)
-
-                    // Return the question to ask to the user, the session will be resumed when the user answers
-                    return Message(
-                        text = ex.question,
-                        role = Role.ASSISTANT,
-                        finishReason = FinishReason.DONE,
-                    )
-                }
-            }
-        }
-    }
-
-    private fun ask(
-        iteration: Int,
-        query: Message,
-        memory: MutableList<String>,
-        streamCallback: ((String) -> Unit)?,
-    ): LLMResponse {
-        LOGGER.info("$iteration $name LLM " + take(query.text, 200))
-
-        // Call LLM
-        val request = LLMRequest(
-            prompt = promptBuilder.buildPrompt(query, memory, context),
-            systemInstructions = promptBuilder.buildSystemInstructions(query, coordinator, context),
-            files = query.filePaths.map { path -> File(path) }
-        )
-
-        val tools = context.toolRegistry.all()
-        val streamingEnabled = context.llm.supportsStreaming()
-        val response = if (streamingEnabled && streamCallback != null) {
-            context.llm.completionStream(
-                request = request,
-                tools = tools,
-                onChunk = { chunk ->
-                    chunk.reasoningDelta?.let { delta ->
-                        streamCallback(delta)
-                    }
-                }
-            )
-        } else {
-            context.llm.completion(
-                request = request,
-                tools
-            )
-        }
-
-        // Record the result
-        LOGGER.info("$iteration $name LLM - tokens=" + response.usage?.totalTokens + ", cached=" + response.usage?.promptCacheHitTokens)
-        context.sessionLog.onLLMResponse(query.id, iteration, response, memory)
-
-        // Update memory with reasoning content
-        response.choices.forEach { choice ->
-            if (!choice.content.isNullOrEmpty()) {
-                LOGGER.info(take(choice.content, 200))
-                memory.add(choice.content)
-            }
-        }
-        return response
-    }
-
-    private fun decide(
-        id: String,
-        iteration: Int,
-        response: LLMResponse,
-        memory: MutableList<String>,
-        tools: Map<String, Tool>,
-        query: Message,
-    ): Boolean {
-        // Collect all tool calls from all choices
-        val allToolCalls = response.choices
-            .flatMap { choice -> choice.toolCalls }
-
-        if (allToolCalls.isEmpty()) {
-            return true // No tool calls, done
-        }
-
-        // Execute all tool calls in parallel using ToolOrchestrator
-        toolOrchestrator.executeTools(
-            id = id,
-            iteration = iteration,
-            assistantName = name,
-            toolCalls = allToolCalls,
-            memory = memory,
-            tools = tools,
-            query = query,
-            context = context
-        )
-        return false
-    }
-
-    private fun take(text: String, n: Int = 200): String {
-        val xtext = text.replace("\n", " ").take(n).trim()
-        return if (text.length > n) {
-            "$xtext..."
-        } else {
-            xtext
-        }
-    }
-
-    private fun getCommand(query: Message): Command? {
-        val text = query.text.trim()
-        if (!text.startsWith("/")) {
-            return null
-        }
-
-        val name = text.split(" ").firstOrNull() ?: return null
-        try {
-            return context.commandRegistry.get(name)
-        } catch (ex: CommandNotFoundException) {
-            LOGGER.warn("Command not found: $name", ex)
-            return object : Command {
-                override fun metadata(): CommandMetadata {
-                    return CommandMetadata(name = "")
-                }
-
-                override fun exec(input: Message, context: Context): String {
-                    return "Invalid command: ${
-                        input.text.split(" ").first()
-                    }.\nUse /help to get the list of available commands."
-                }
-            }
-        }
-    }
-
-    private fun exec(iteration: Int, query: Message, command: Command): String {
-        val text = query.text.trim()
-        val name = command.metadata().name
-        val commandText = if (text.equals(name, ignoreCase = true)) {
-            ""
-        } else {
-            text.substring(name.length).trim()
-        }
-
-        LOGGER.info("$iteration - COMMAND: {} {}", name, commandText)
-        return command.exec(
-            query.copy(text = commandText),
-            context
-        )
-    }
-
 }

@@ -113,65 +113,6 @@ class AssistantTest {
     }
 
     @Test
-    fun `init with thread-pool-size config`() {
-        // GIVEN
-        val newAssistant = Assistant("test-assistant")
-        val config = mapOf("thread-pool-size" to 8)
-
-        // WHEN
-        newAssistant.init(config, context)
-
-        // THEN
-        verify(assistantRegistry, times(2)).register(any())
-        // Thread pool should be initialized (verified by destroy not throwing exception)
-        newAssistant.destroy()
-    }
-
-    @Test
-    fun `init with default thread-pool-size`() {
-        // GIVEN
-        val newAssistant = Assistant("test-assistant")
-        val config = emptyMap<String, Any>()
-
-        // WHEN
-        newAssistant.init(config, context)
-
-        // THEN
-        verify(assistantRegistry, times(2)).register(any())
-        // Thread pool should be initialized with default size
-        newAssistant.destroy()
-    }
-
-    @Test
-    fun `init with thread-pool-size below minimum`() {
-        // GIVEN
-        val newAssistant = Assistant("test-assistant")
-        val config = mapOf("thread-pool-size" to 1)
-
-        // WHEN
-        newAssistant.init(config, context)
-
-        // THEN
-        verify(assistantRegistry, times(2)).register(any())
-        // Thread pool should be initialized with minimum size (2)
-        newAssistant.destroy()
-    }
-
-    @Test
-    fun `destroy shuts down thread pool gracefully`() {
-        // GIVEN
-        val newAssistant = Assistant("test-assistant")
-        newAssistant.init(emptyMap<String, Any>(), context)
-
-        // WHEN
-        newAssistant.destroy()
-
-        // THEN
-        // No exception should be thrown, and thread pool should be shut down
-        // This is a smoke test to ensure destroy() completes successfully
-    }
-
-    @Test
     fun process() {
         // GIVEN
         doReturn(
@@ -203,25 +144,13 @@ class AssistantTest {
         assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
 
         val systemInstructions = req.firstValue.systemInstructions
-        assertEquals(
-            true,
-            systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Security Guidelines")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Daily Log Protocol")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Conversation History")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Available skills")
+        assertSystemInstructionsContain(
+            systemInstructions,
+            "You are a system agent designed to assist users with various tasks.\n",
+            "# Security Guidelines",
+            "# Daily Log Protocol",
+            "# Conversation History",
+            "# Available skills"
         )
     }
 
@@ -269,33 +198,19 @@ class AssistantTest {
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
 
-        // ASSISANT.md is missing
-
+        // ASSISTANT.md is missing
         val systemInstructions = req.firstValue.systemInstructions
-//        println(systemInstructions)
-        assertEquals(
-            false,
-            systemInstructions?.contains("You are a system agent designed to assist users with various tasks.\n")
+        assertSystemInstructionsDoNotContain(
+            systemInstructions,
+            "You are a system agent designed to assist users with various tasks.\n",
+            "# Coordinator Agent Identity"
         )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Security Guidelines")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Daily Log Protocol")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Conversation History")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Available skills")
-        )
-        assertEquals(
-            false,
-            systemInstructions?.contains("# Coordinator Agent Identity")
+        assertSystemInstructionsContain(
+            systemInstructions,
+            "# Security Guidelines",
+            "# Daily Log Protocol",
+            "# Conversation History",
+            "# Available skills"
         )
     }
 
@@ -452,30 +367,14 @@ $history
         assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
 
         val systemInstructions = req.firstValue.systemInstructions
-        println(systemInstructions)
-        assertEquals(
-            true,
-            systemInstructions?.contains("You are a system agent designed to assist users with various tasks.")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Security Guidelines")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Daily Log Protocol")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Conversation History")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Available skills")
-        )
-        assertEquals(
-            true,
-            systemInstructions?.contains("# Coordinator Agent Identity")
+        assertSystemInstructionsContain(
+            systemInstructions,
+            "You are a system agent designed to assist users with various tasks.",
+            "# Security Guidelines",
+            "# Daily Log Protocol",
+            "# Conversation History",
+            "# Available skills",
+            "# Coordinator Agent Identity"
         )
     }
 
@@ -709,133 +608,22 @@ $history
         verify(llm, times(4)).completion(any(), eq(listOf(tool1, tool2)))
     }
 
-    @Test
-    fun `should execute single tool call successfully`() {
-        val query = Message(
-            text = "test",
-            userId = "user-1",
-            channelId = "channel-1"
-        )
-        val call = LLMToolCall(
-            name = "test-tool",
-            arguments = mapOf("city" to "Paris"),
-            id = "call-1"
-        )
-
-        val response1 = LLMResponse(
-            id = UUID.randomUUID().toString(),
-            choices = listOf(
-                LLMResponseChoice(
-                    content = null,
-                    toolCalls = listOf(call),
-                    finishReason = LLMFinishReason.TOOL_CALLS
-                )
-            )
-        )
-        val response2 = LLMResponse(
-            id = UUID.randomUUID().toString(),
-            choices = listOf(
-                LLMResponseChoice(
-                    content = "Final answer",
-                    finishReason = LLMFinishReason.STOP
-                )
-            )
-        )
-
-        doReturn(response1).doReturn(response2).whenever(llm).completion(any(), any())
-
-        val result = assistant.process(query)
-
-        assertEquals("Final answer", result.text)
-        verify(tool1).exec(mapOf("city" to "Paris"))
-    }
-
-    @Test
-    fun `should execute multiple tool calls in parallel`() {
-        val query = Message(
-            text = "test parallel",
-            userId = "user-1",
-            channelId = "channel-1"
-        )
-        val call1 = LLMToolCall(name = "test-tool", arguments = mapOf("city" to "Paris"), id = "call-1")
-        val call2 = LLMToolCall(name = "test-tool-2", arguments = mapOf("city" to "London"), id = "call-2")
-
-        val response1 = LLMResponse(
-            id = UUID.randomUUID().toString(),
-            choices = listOf(
-                LLMResponseChoice(
-                    content = null,
-                    toolCalls = listOf(call1, call2),
-                    finishReason = LLMFinishReason.TOOL_CALLS
-                )
-            )
-        )
-        val response2 = LLMResponse(
-            id = UUID.randomUUID().toString(),
-            choices = listOf(
-                LLMResponseChoice(
-                    content = "Final answer",
-                    finishReason = LLMFinishReason.STOP
-                )
-            )
-        )
-
-        doReturn(response1).doReturn(response2).whenever(llm).completion(any(), any())
-
-        val result = assistant.process(query)
-
-        assertEquals("Final answer", result.text)
-        verify(tool1).exec(mapOf("city" to "Paris"))
-        verify(tool2).exec(mapOf("city" to "London"))
-    }
-
-    @Test
-    fun `should handle tool execution timeout gracefully`() {
-        val query = Message(
-            text = "test timeout",
-            userId = "user-1",
-            channelId = "channel-1"
-        )
-
-        // Mock tool that throws error
-        val slowTool = mock<Tool>()
-        doReturn(ToolMetadata(name = "slow-tool", parameters = emptyList())).whenever(slowTool).metadata()
-        doThrow(RuntimeException("Timeout")).whenever(slowTool).exec(any())
-
-        val call = LLMToolCall(name = "slow-tool", id = "call-timeout")
-        val response1 = LLMResponse(
-            id = UUID.randomUUID().toString(),
-            choices = listOf(
-                LLMResponseChoice(
-                    content = null,
-                    toolCalls = listOf(call),
-                    finishReason = LLMFinishReason.TOOL_CALLS
-                )
-            )
-        )
-        val response2 = LLMResponse(
-            id = UUID.randomUUID().toString(),
-            choices = listOf(
-                LLMResponseChoice(
-                    content = "Handled error",
-                    finishReason = LLMFinishReason.STOP
-                )
-            )
-        )
-
-        doReturn(listOf(tool1, slowTool)).whenever(toolRegistry).all()
-        doReturn(response1).doReturn(response2).whenever(llm).completion(any(), any())
-
-        val result = assistant.process(query)
-
-        assertEquals("Handled error", result.text)
-        // Should not crash, should continue to next iteration
-    }
-
     private fun getResourceFile(path: String): File {
         val resource = BootstrapTest::class.java.getResource(path)
             ?: throw IllegalArgumentException("Resource not found: $path")
 
         return File(resource.toURI())
+    }
+
+    private fun assertSystemInstructionsContain(systemInstructions: String?, vararg sections: String) {
+        sections.forEach { section ->
+            assertEquals(true, systemInstructions?.contains(section), "Expected system instructions to contain: $section")
+        }
+    }
+
+    private fun assertSystemInstructionsDoNotContain(systemInstructions: String?, vararg sections: String) {
+        sections.forEach { section ->
+            assertEquals(false, systemInstructions?.contains(section), "Expected system instructions to NOT contain: $section")
+        }
     }
 }

@@ -52,6 +52,152 @@ open target/site/jacoco/index.html
 - **Class coverage:** 90% minimum (jacoco.threshold.class)
 - Application.kt is excluded from coverage
 
+## Source Code Structure
+
+```
+src/main/kotlin/com/wutsi/kokibot/
+├── Application.kt                    # Spring Boot entry point
+├── Bootstrap.kt                      # Single agent initialization
+├── MultiBootstrap.kt                 # Multi-agent discovery and initialization
+├── Context.kt                        # Dependency injection container
+├── ContextFactory.kt                 # Context creation and tool/command registration
+├── Resource.kt                       # Base interface for lifecycle management
+├── Assistant.kt                      # Main orchestration engine
+├── AssistantRegistry.kt              # Multi-agent registry
+├── ConfigurationException.kt         # Configuration error exception
+├── InitializationException.kt        # Fail-fast initialization exception
+├── Message.kt                        # Message data model
+├── Health.kt                         # Health check data model
+│
+├── assistant/                        # Assistant orchestration
+│   ├── PromptBuilder.kt              # Constructs prompts with memory/history
+│   ├── ReasoningLoop.kt              # Interface for reasoning loop strategies
+│   ├── ReActReasoningLoop.kt         # ReAct pattern implementation
+│   └── ToolOrchestrator.kt           # Parallel tool execution coordinator
+│
+├── llm/                              # LLM provider integrations
+│   ├── LLM.kt                        # LLM interface
+│   ├── LLMFactory.kt                 # LLM provider factory
+│   ├── LLMRequest.kt                 # Request data model
+│   ├── LLMResponse.kt                # Response data model
+│   ├── deepseek/
+│   │   ├── Deepseek.kt               # Deepseek LLM implementation
+│   │   ├── DeepseekClient.kt         # HTTP client with streaming
+│   │   └── StreamResponseAccumulator.kt
+│   ├── gemini/
+│   │   └── Gemini.kt                 # Google Gemini implementation
+│   ├── kimi/
+│   │   └── Kimi.kt                   # Moonshot Kimi implementation
+│   └── none/
+│       └── NoneLLM.kt                # Null object pattern
+│
+├── tools/                            # Tool implementations
+│   ├── Tool.kt                       # Tool interface
+│   ├── ToolRegistry.kt               # Tool registration and lookup
+│   ├── ToolCommand.kt                # /tool command
+│   ├── ToolMetadata.kt               # Tool metadata model
+│   ├── file/
+│   │   ├── AbstractFileTool.kt       # Base class for file tools
+│   │   ├── FileReadTool.kt           # Read files (text, PDF, Office)
+│   │   ├── FileWriteTool.kt          # Write files
+│   │   └── FileEditTool.kt           # Edit files
+│   ├── python/
+│   │   └── PythonTool.kt             # Execute Python code
+│   ├── shell/
+│   │   └── ShellTool.kt              # Execute shell commands (with security)
+│   ├── web/
+│   │   ├── WebSearchTool.kt          # DuckDuckGo search
+│   │   └── WebFetchTool.kt           # HTTP fetch with file download
+│   ├── skill/
+│   │   └── SkillActivationTool.kt    # Activate skills on demand
+│   ├── swarm/
+│   │   └── SwarmDelegateTool.kt      # Multi-agent task delegation
+│   └── user/
+│       └── UserAskQuestionTool.kt    # Interactive user questions
+│
+├── skill/                            # Skill system
+│   ├── Skill.kt                      # Skill data model
+│   ├── SkillRegistry.kt              # Skill discovery and registration
+│   ├── SkillParser.kt                # SKILL.md parser
+│   ├── SkillCommand.kt               # /skill command
+│   ├── SkillMatcher.kt               # Keyword-based skill activation
+│   └── SkillTool.kt                  # Wrapper for skill-defined tools
+│
+├── channel/                          # Communication channels
+│   ├── Channel.kt                    # Channel abstract class
+│   ├── ChannelFactory.kt             # Channel factory
+│   ├── ChannelRegistry.kt            # Channel registration
+│   ├── telegram/
+│   │   ├── TelegramChannel.kt        # Telegram bot integration
+│   │   └── TelegramMessage.kt        # Telegram message model
+│   ├── email/
+│   │   └── EmailChannel.kt           # IMAP/SMTP integration
+│   └── websocket/
+│       └── WebSocketChannel.kt       # WebSocket server
+│
+├── service/                          # Services
+│   ├── ExecutionContext.kt           # ThreadLocal context for tool execution
+│   ├── FileService.kt                # File operations
+│   ├── memory/
+│   │   ├── Memory.kt                 # Long-term memory (MEMORY.md)
+│   │   ├── DailyLog.kt               # Daily activity journal
+│   │   ├── SessionLog.kt             # Detailed execution trace (JSONL)
+│   │   ├── ChatHistory.kt            # Conversation messages
+│   │   ├── ClearCommand.kt           # /clear command
+│   │   └── CompactCommand.kt         # /compact command
+│   ├── swarm/
+│   │   ├── DelegationStack.kt        # Track delegation chains
+│   │   └── DelegationException.kt    # Delegation errors
+│   ├── heartbeat/
+│   │   ├── Heartbeat.kt              # Periodic health checks
+│   │   └── HeartbeatCommand.kt       # /heartbeat command
+│   └── file/
+│       ├── MarkdownConverter.kt      # Convert files to markdown
+│       └── extractor/                # Document extractors (PDF, Office)
+│
+├── marketplace/                      # Skill marketplace system
+│   ├── Marketplace.kt                # Marketplace data model
+│   ├── MarketplaceRegistry.kt        # Marketplace management
+│   └── GitSkillFinder.kt             # Clone/update Git skill repos
+│
+├── command/                          # Command system
+│   ├── Command.kt                    # Command interface
+│   ├── CommandRegistry.kt            # Command registration
+│   ├── HelpCommand.kt                # /help command
+│   └── HealthCommand.kt              # /health command
+│
+├── controller/                       # REST API controllers
+│   └── WebSocketController.kt        # WebSocket endpoint
+│
+├── config/                           # Spring configuration
+│   └── ApplicationConfig.kt          # Application beans
+│
+└── util/                             # Utilities
+    ├── MapUtil.kt                    # Map manipulation helpers
+    ├── StringUtil.kt                 # String utilities
+    ├── DurationUtil.kt               # Duration parsing
+    ├── RestBuilder.kt                # RestTemplate factory
+    ├── SensitiveDataSanitizer.kt     # Log sanitization
+    ├── retry/
+    │   ├── Retrier.kt                # Retry with exponential backoff
+    │   ├── RetryPolicy.kt            # Retry configuration
+    │   └── RetryClassifier.kt        # Determine if error is retryable
+    └── html/
+        └── MarkdownToHtmlConverter.kt # Markdown to HTML
+```
+
+**Key Directories:**
+
+- **`assistant/`** - Orchestration engine (prompt building, reasoning loop, tool coordination)
+- **`llm/`** - LLM provider integrations (Deepseek, Gemini, Kimi)
+- **`tools/`** - Tool implementations organized by domain (file, web, python, shell, swarm)
+- **`skill/`** - Skill system (discovery, parsing, activation, custom tools)
+- **`channel/`** - Communication channels (Telegram, Email, WebSocket)
+- **`service/memory/`** - Memory subsystem (SessionLog, DailyLog, ChatHistory, Memory)
+- **`service/swarm/`** - Multi-agent delegation infrastructure
+- **`marketplace/`** - Git-based skill marketplace integration
+- **`util/`** - Shared utilities (retry, sanitization, REST, parsing)
+
 ## Architecture
 
 ### Core Request Flow
@@ -133,6 +279,13 @@ The assistant executes independent tool calls in parallel to reduce response tim
 - Supported providers: Deepseek, Kimi, Gemini (all implement `LLM` interface)
 - All LLMs initialized with config map and ToolRegistry for function calling
 - `LLM.completion(request)` returns `LLMResponse` with text or tool calls
+- **Streaming Support**: Deepseek supports SSE streaming with configurable timeout
+  - Default timeout: 120 seconds (configurable via `stream-timeout-millis`)
+  - Prevents indefinite hangs if LLM connection stalls mid-response
+- **Debug Logging**: Full request/response logging at DEBUG level
+  - Automatically sanitizes API keys in logs (replaces with `sk-***`, `ds-***`)
+  - Enable with: `<logger name="com.wutsi.kokibot.llm.deepseek" level="DEBUG"/>`
+  - Includes: model, prompt length, tool count, token usage, response details
 
 **Tools System** (`tools/`)
 
@@ -478,7 +631,11 @@ Environment variables are substituted via `${VAR_NAME}` syntax in agent settings
         "api-key": "${DEEPSEEK_API_KEY}",
         "model": "deepseek-chat",
         "temperature": 0.7,
-        "max-tokens": 2048
+        "max-tokens": 2048,
+        "streaming": true,
+        "stream-timeout-millis": 120000,
+        "read-timeout-millis": 60000,
+        "connect-timeout-millis": 5000
     },
     "channels": [
         {
@@ -498,13 +655,32 @@ Environment variables are substituted via `${VAR_NAME}` syntax in agent settings
 
 **Configuration Options:**
 
+**Assistant:**
 - `assistant.coordinator` (boolean): Enable coordinator mode with swarm delegation capabilities
 - `assistant.max-iterations` (integer): Max reasoning loop iterations (default: 10)
 - `assistant.max-duration` (string): Max processing time per request (e.g., "5m", default: 5 minutes)
-- `assistant.thread-pool-size` (integer): Thread pool size (default: 4, min: 2)
+- `assistant.thread-pool-size` (integer): Thread pool size for parallel tool execution (default: 4, min: 2)
 - `assistant.description` (string): Agent description (for documentation)
-- `memory.window` (string): History window for memory compaction (e.g., "3d" = 3 days)
+
+**LLM:**
+- `llm.type` (string): LLM provider (deepseek, gemini, kimi)
+- `llm.api-key` (string): API key (use `${ENV_VAR}` for environment variable substitution)
+- `llm.model` (string): Model name (e.g., "deepseek-chat", "deepseek-reasoner")
+- `llm.temperature` (double): Sampling temperature (0.0-2.0, default: 0.7)
+- `llm.max-tokens` (integer): Maximum tokens to generate
+- `llm.streaming` (boolean): Enable SSE streaming (Deepseek only, default: false)
+- `llm.stream-timeout-millis` (long): Streaming timeout in milliseconds (default: 120000 = 2 minutes)
+- `llm.read-timeout-millis` (long): HTTP read timeout (default: 60000 = 1 minute)
+- `llm.connect-timeout-millis` (long): HTTP connect timeout (default: 5000 = 5 seconds)
+- `llm.thinking` (boolean): Enable reasoning mode for compatible models (Deepseek R1, default: false)
+- `llm.reasoning-effort` (string): Reasoning effort level ("low", "medium", "high", "max")
+
+**Memory:**
+- `memory.window` (string): History window for memory compaction (e.g., "3d" = 3 days, default: 7 days)
 - `memory.compaction-frequency` (string): How often to compact memory (e.g., "6h" = 6 hours)
+- `memory.max-length` (integer): Maximum memory file length in characters (default: 10240)
+
+**Heartbeat:**
 - `heartbeat.frequency` (string): Health check frequency (e.g., "30m" = 30 minutes)
 
 ## Technology Stack
@@ -600,6 +776,56 @@ Environment variables are substituted via `${VAR_NAME}` syntax in agent settings
 3. **New Channels** - Extend `Channel` abstract class, register in `ChannelFactory.create()`
 4. **New LLM Providers** - Implement `LLM` interface, register in `LLMFactory.create()`
 5. **New Commands** - Implement `Command` interface, register in `ContextFactory.discoverCommands()`
+
+## Architectural Considerations
+
+### Known Design Issues
+
+The following architectural issues have been identified and documented for future refactoring:
+
+1. **Context Service Locator Pattern** (Critical)
+   - **Issue**: `Context.kt` acts as an omnibus service locator passed to all components
+   - **Impact**: Creates tight coupling, hidden dependencies, difficult testing
+   - **Example**: `SwarmDelegateTool` receives full Context but only needs AssistantRegistry and DelegationStack
+   - **Plan**: Refactor to constructor dependency injection with specific context interfaces
+   - **Status**: Implementation plan available in `docs/superpowers/plans/2026-06-09-context-service-locator-refactoring.md`
+
+2. **Memory → Assistant Circular Dependency** (Major)
+   - **Issue**: `Memory.compact()` calls `Assistant.process()` which calls `PromptBuilder.buildPrompt()` which reads `Memory.get()`
+   - **Current State**: No infinite loop (Memory.get() only reads file, doesn't trigger compaction)
+   - **Risk**: Future modifications could introduce infinite loop if Memory.get() triggers auto-compaction
+   - **Mitigation**: Use event-driven architecture or mediator pattern to break circular dependency
+   - **Note**: This is an architectural smell that increases maintenance risk, not a current bug
+
+3. **Silent Initialization Failures** (Major)
+   - **Issue**: Some components catch initialization exceptions and log warnings instead of failing fast
+   - **Locations**: `Context.initLLM()`, `ChannelRegistry.init()`, `MultiBootstrap.initialize()`
+   - **Impact**: System continues in degraded state with uninitialized resources
+   - **Fix**: Replace silent catches with `InitializationException` (fail-fast)
+   - **Status**: Partially fixed for Context.initLLM() - remaining locations need updates
+
+4. **Interface Segregation Violations** (Minor)
+   - **Issue**: `Resource` interface forces all implementations to depend on full Context in `init()`
+   - **Impact**: Components expose more dependencies than needed
+   - **Fix**: Split into smaller interfaces (ToolContext, ServiceContext, AgentContext)
+   - **Status**: Interfaces created, implementation pending
+
+### Recent Improvements
+
+**Production Readiness (2026-06-09)**
+- ✅ Added streaming timeout protection to prevent indefinite hangs (DeepseekClient)
+- ✅ Added debug-level request/response logging with API key sanitization
+- ✅ Created SensitiveDataSanitizer utility for safe logging
+- 📋 Plans created for:
+  - Context service locator refactoring (5-7 hours estimated)
+  - Full observability (structured logging, metrics, correlation IDs)
+  - Fail-fast initialization across all components
+
+**Code Quality**
+- All tool implementations use consistent error handling patterns
+- Retry logic with exponential backoff and jitter (Retrier utility)
+- Thread pool management with graceful shutdown
+- Comprehensive test coverage (90% line/class coverage required)
 
 # Coding Guidelines
 

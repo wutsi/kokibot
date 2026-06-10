@@ -183,10 +183,6 @@ class WebSocketChannel : Channel() {
                 type = WebSocketResponseType.FINAL,
                 content = content,
                 finishReason = "DONE",
-                contextLength = context.assistant.contextLength(
-                    channelId = id(),
-                    userId = userId
-                ),
             ),
         )
     }

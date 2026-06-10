@@ -23,10 +23,17 @@ class AssistantController(private val multi: MultiBootstrap) {
             ?: return ResponseEntity.notFound().build()
 
         val context = bootstrap.getContext()
+        val llm = context.llm
         return ResponseEntity.ok(
             mapOf(
                 "name" to context.assistant.name,
                 "description" to context.assistant.description,
+                "workspaceDirectory" to "${context.home.absolutePath}/workspace",
+                "llm" to mapOf(
+                    "name" to llm.name(),
+                    "model" to llm.model(),
+                    "maxContextWindow" to llm.maxContextWindow()
+                )
             )
         )
     }
@@ -85,16 +92,29 @@ class AssistantController(private val multi: MultiBootstrap) {
         )
     }
 
-    @GetMapping("/{name}/llm")
-    fun llm(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
+    @GetMapping("/{name}/skills")
+    fun llm(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val llm = bootstrap.getContext().llm
+
+        val context = bootstrap.getContext()
         return ResponseEntity.ok(
-            mapOf(
-                "name" to llm.name(),
-                "model" to llm.model(),
-                "maxContextWindow" to llm.maxContextWindow()
-            )
+            context.skillRegistry.all()
+                .filter { skill -> skill.activate() }
+                .map { skill ->
+                    mapOf(
+                        "name" to skill.metadata.name,
+                        "description" to skill.metadata.description,
+                    )
+                }
+                +
+                context.marketplaceRegistry.all().flatMap { marketplace -> marketplace.getSkills() }
+                    .filter { skill -> skill.activate() }
+                    .map { skill ->
+                        mapOf(
+                            "name" to skill.metadata.name,
+                            "description" to skill.metadata.description,
+                        )
+                    }
         )
     }
 

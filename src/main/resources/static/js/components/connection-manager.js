@@ -65,8 +65,8 @@ class ConnectionManager {
             this.emit('toolStatus', status);
         });
 
-        this.wsClient.on('FinalResponse', (content, finishReason, contextLength) => {
-            this.emit('finalResponse', content, finishReason, contextLength);
+        this.wsClient.on('FinalResponse', (content, finishReason) => {
+            this.emit('finalResponse', content, finishReason);
         });
 
         this.wsClient.on('ErrorMessage', (errorMessage) => {

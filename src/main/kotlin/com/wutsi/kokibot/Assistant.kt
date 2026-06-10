@@ -75,15 +75,6 @@ class Assistant(val name: String = "") {
         }
     }
 
-    fun contextLength(userId: String?, channelId: String?): Int {
-        val query = Message(
-            userId = userId,
-            channelId = channelId,
-        )
-        return (promptBuilder.buildPrompt(query, emptyList(), context).length +
-            promptBuilder.buildSystemInstructions(query, coordinator, context).length) / BYTES_PER_TOKENS
-    }
-
     fun getInstructions(): String? {
         return promptBuilder.loadIdentity(context)
     }

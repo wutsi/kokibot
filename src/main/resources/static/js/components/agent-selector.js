@@ -157,11 +157,6 @@ const AgentSelector = {
             return;
         }
 
-        // Update context gauge before reloading
-        if (typeof ContextGauge !== 'undefined') {
-            ContextGauge.setAgent(agentName);
-        }
-
         // Clear uploaded files before reloading
         if (typeof FileUpload !== 'undefined') {
             FileUpload.setAgent(agentName);

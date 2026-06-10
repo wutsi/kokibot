@@ -120,6 +120,10 @@ const Settings = {
         }
 
         switch (tabName) {
+            case 'general':
+                this.loadGeneral();
+                this.loadedTabs.add(tabName);
+                break;
             case 'instructions':
                 this.loadInstructions();
                 this.loadedTabs.add(tabName);
@@ -128,8 +132,8 @@ const Settings = {
                 this.loadHeartbeat();
                 this.loadedTabs.add(tabName);
                 break;
-            case 'llm':
-                this.loadLLM();
+            case 'skills':
+                this.loadSkills();
                 this.loadedTabs.add(tabName);
                 break;
         }
@@ -222,6 +226,116 @@ const Settings = {
         return name.split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
+    },
+
+    async loadGeneral() {
+        if (!this.agentName) {
+            this.showGeneralError('No agent selected');
+            return;
+        }
+
+        const contentElement = document.getElementById('general-content');
+        if (!contentElement) {
+            return;
+        }
+
+        // Show loading state
+        contentElement.innerHTML = `
+            <div class="general-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading general information...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}`, {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Failed to load general information (${response.status})`);
+            }
+
+            const data = await response.json();
+
+            // Display general info
+            this.displayGeneralInfo(data);
+        } catch (error) {
+            console.error('Error loading general information:', error);
+
+            if (error.name === 'AbortError') {
+                this.showGeneralError('Request timed out. Please try again.');
+            } else {
+                this.showGeneralError('Failed to load general information. Please try again.');
+            }
+
+            Notifications.error('Failed to load general information', {
+                duration: 5000
+            });
+        }
+    },
+
+    displayGeneralInfo(data) {
+        const contentElement = document.getElementById('general-content');
+        if (!contentElement) return;
+
+        const workspace = data.workspaceDirectory || 'Unknown';
+        const llmName = data.llm?.name || 'Unknown';
+        const llmModel = data.llm?.model || 'Unknown';
+        const maxContextWindow = this.formatContextLength(data.llm?.maxContextWindow || 0);
+
+        contentElement.innerHTML = `
+            <div class="general-info">
+                <div class="general-section">
+                    <h3 class="general-section-title">Workspace</h3>
+                    <div class="general-item">
+                        <p class="general-item-label">Workspace Directory</p>
+                        <p class="general-item-value">${workspace}</p>
+                    </div>
+                </div>
+                <div class="general-section">
+                    <h3 class="general-section-title">Language Model</h3>
+                    <div class="general-item">
+                        <p class="general-item-label">Provider</p>
+                        <div class="general-llm-provider">
+                            <img src="/assets/${llmName}.png" alt="${llmName}" class="general-llm-icon"
+                                 onerror="this.style.display='none'">
+                            <p class="general-llm-name">${this.formatLLMName(llmName)}</p>
+                        </div>
+                    </div>
+                    <div class="general-item">
+                        <p class="general-item-label">Model</p>
+                        <p class="general-item-value">${llmModel}</p>
+                    </div>
+                    <div class="general-item">
+                        <p class="general-item-label">Max Context Window</p>
+                        <p class="general-item-value">${maxContextWindow}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    showGeneralError(message) {
+        const contentElement = document.getElementById('general-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="general-error">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <h3>Error Loading General Information</h3>
+                <p>${message}</p>
+            </div>
+        `;
     },
 
     async loadInstructions() {
@@ -799,5 +913,118 @@ const Settings = {
                 <p>${message}</p>
             </div>
         `;
+    },
+
+    async loadSkills() {
+        if (!this.agentName) {
+            this.showSkillsError('No agent selected');
+            return;
+        }
+
+        const contentElement = document.getElementById('skills-content');
+        if (!contentElement) {
+            return;
+        }
+
+        // Show loading state
+        contentElement.innerHTML = `
+            <div class="skills-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading skills...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/skills`, {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Failed to load skills (${response.status})`);
+            }
+
+            const skills = await response.json();
+
+            if (!skills || skills.length === 0) {
+                this.showSkillsEmpty();
+                return;
+            }
+
+            // Display skills
+            this.displaySkills(skills);
+        } catch (error) {
+            console.error('Error loading skills:', error);
+
+            if (error.name === 'AbortError') {
+                this.showSkillsError('Request timed out. Please try again.');
+            } else {
+                this.showSkillsError('Failed to load skills. Please try again.');
+            }
+
+            Notifications.error('Failed to load skills', {
+                duration: 5000
+            });
+        }
+    },
+
+    displaySkills(skills) {
+        const contentElement = document.getElementById('skills-content');
+        if (!contentElement) return;
+
+        const skillsHtml = skills.map(skill => `
+            <div class="skill-item">
+                <h3 class="skill-name">${this.escapeHtml(skill.name)}</h3>
+                <p class="skill-description">${this.escapeHtml(skill.description || 'No description available')}</p>
+            </div>
+        `).join('');
+
+        contentElement.innerHTML = `
+            <div class="skills-list">
+                ${skillsHtml}
+            </div>
+        `;
+    },
+
+    showSkillsEmpty() {
+        const contentElement = document.getElementById('skills-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="skills-empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
+                </svg>
+                <h3>No Skills Available</h3>
+                <p>This assistant has no skills configured</p>
+            </div>
+        `;
+    },
+
+    showSkillsError(message) {
+        const contentElement = document.getElementById('skills-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="skills-error">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <h3>Error Loading Skills</h3>
+                <p>${message}</p>
+            </div>
+        `;
+    },
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 };

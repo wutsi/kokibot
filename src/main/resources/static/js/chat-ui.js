@@ -76,8 +76,8 @@ const ChatUI = {
             this.handleToolStatus(status);
         });
 
-        this.connectionManager.on('finalResponse', (content, finishReason, contextLength) => {
-            this.handleFinalResponse(content, finishReason, contextLength);
+        this.connectionManager.on('finalResponse', (content, finishReason) => {
+            this.handleFinalResponse(content, finishReason);
         });
     },
 
@@ -129,7 +129,7 @@ const ChatUI = {
         this.messageRenderer.scrollToBottom();
     },
 
-    handleFinalResponse(content, finishReason, contextLength) {
+    handleFinalResponse(content, finishReason) {
         const messageElement = document.getElementById(this.currentMessageId);
         if (!messageElement) {
             console.error('Assistant message not found for final response');
@@ -138,10 +138,6 @@ const ChatUI = {
 
         this.messageRenderer.updateFinalResponse(messageElement, content);
         this.inputController.enable();
-
-        if (typeof ContextGauge !== 'undefined' && contextLength !== null && contextLength !== undefined) {
-            ContextGauge.updateContextLength(contextLength);
-        }
     },
 
     updateConnectionStatus(status, text) {

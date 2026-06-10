@@ -94,7 +94,7 @@ class WebSocketClient {
 
             case 'FINAL':
                 if (this.handlers.onFinalResponse) {
-                    this.handlers.onFinalResponse(response.content, response.finishReason, response.contextLength);
+                    this.handlers.onFinalResponse(response.content, response.finishReason);
                 }
                 break;
 

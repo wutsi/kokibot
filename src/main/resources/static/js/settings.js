@@ -253,20 +253,23 @@ const Settings = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const response = await fetch(`/assistants/${this.agentName}`, {
-                signal: controller.signal
-            });
+            // Fetch both agent info and LLM info in parallel
+            const [agentResponse, llmResponse] = await Promise.all([
+                fetch(`/assistants/${this.agentName}`, { signal: controller.signal }),
+                fetch(`/assistants/${this.agentName}/llm`, { signal: controller.signal })
+            ]);
 
             clearTimeout(timeoutId);
 
-            if (!response.ok) {
-                throw new Error(`Failed to load general information (${response.status})`);
+            if (!agentResponse.ok || !llmResponse.ok) {
+                throw new Error('Failed to load general information');
             }
 
-            const data = await response.json();
+            const agentData = await agentResponse.json();
+            const llmData = await llmResponse.json();
 
             // Display general info
-            this.displayGeneralInfo(data);
+            this.displayGeneralInfo(agentData, llmData);
         } catch (error) {
             console.error('Error loading general information:', error);
 
@@ -282,14 +285,25 @@ const Settings = {
         }
     },
 
-    displayGeneralInfo(data) {
+    displayGeneralInfo(agentData, llmData) {
         const contentElement = document.getElementById('general-content');
         if (!contentElement) return;
 
-        const workspace = data.workspaceDirectory || 'Unknown';
-        const llmName = data.llm?.name || 'Unknown';
-        const llmModel = data.llm?.model || 'Unknown';
-        const maxContextWindow = this.formatContextLength(data.llm?.maxContextWindow || 0);
+        const workspace = agentData.workspaceDirectory || 'Unknown';
+        const llmName = llmData.name || 'Unknown';
+        const llmModel = llmData.model || 'Unknown';
+        const maxContextWindow = this.formatContextLength(llmData.maxContextWindow || 0);
+        const balance = llmData.availableBalance;
+
+        let balanceHtml = '';
+        if (balance) {
+            balanceHtml = `
+                <div class="general-item">
+                    <p class="general-item-label">Available Balance</p>
+                    <p class="general-item-value">${this.escapeHtml(balance.text)}</p>
+                </div>
+            `;
+        }
 
         contentElement.innerHTML = `
             <div class="general-info">
@@ -318,6 +332,7 @@ const Settings = {
                         <p class="general-item-label">Max Context Window</p>
                         <p class="general-item-value">${maxContextWindow}</p>
                     </div>
+                    ${balanceHtml}
                 </div>
             </div>
         `;

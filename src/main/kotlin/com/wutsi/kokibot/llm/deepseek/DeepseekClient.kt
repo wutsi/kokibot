@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.llm.deepseek
 
+import com.wutsi.kokibot.llm.LLMBalance
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
@@ -17,6 +18,7 @@ import com.wutsi.kokibot.util.retry.RetryPolicy
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.http.MediaTypeFactory
 import tools.jackson.databind.json.JsonMapper
@@ -44,7 +46,6 @@ open class DeepseekClient(
 ) {
     companion object {
         private val EMPTY_MAP = emptyMap<String, Any>()
-        const val COMPLETION_ENDPOINT = "/chat/completions"
     }
 
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -53,6 +54,14 @@ open class DeepseekClient(
 
     protected open fun getBaseUrl(): String {
         return "https://api.deepseek.com"
+    }
+
+    protected open fun getCompletionUrl(): String {
+        return getBaseUrl() + "/chat/completions"
+    }
+
+    protected open fun getBalanceUrl(): String? {
+        return getBaseUrl() + "/user/balance"
     }
 
     protected open fun supportsMimeType(mimeType: String): Boolean {
@@ -69,7 +78,7 @@ open class DeepseekClient(
         val entity = HttpEntity(body, headers)
         val resp = retrier.execute(operationName = "${this::class.java.simpleName}.completion") {
             rest.postForEntity(
-                getBaseUrl() + COMPLETION_ENDPOINT,
+                getCompletionUrl(),
                 entity,
                 Map::class.java
             ).body
@@ -111,7 +120,7 @@ open class DeepseekClient(
             shouldRetry = { ex -> !firstChunkEmitted.get() && RetryClassifier.isRetryable(ex) },
         ) {
             rest.execute(
-                getBaseUrl() + COMPLETION_ENDPOINT,
+                getCompletionUrl(),
                 org.springframework.http.HttpMethod.POST,
                 { clientRequest ->
                     clientRequest.headers.putAll(headers)
@@ -124,6 +133,47 @@ open class DeepseekClient(
                 }
             )
         } ?: throw IllegalStateException("No response from streaming LLM")
+    }
+
+    /**
+     * See https://api-docs.deepseek.com/api/get-user-balance
+     */
+    fun balance(): LLMBalance? {
+        val url = getBalanceUrl() ?: return null
+        val headers = HttpHeaders()
+        headers.setContentType(MediaType.APPLICATION_JSON)
+        headers.set("Authorization", "Bearer $apiKey")
+
+        val resp = retrier.execute(operationName = "${this::class.java.simpleName}.balance") {
+            rest.exchange(
+                url,
+                HttpMethod.GET,
+                HttpEntity<Any>(headers),
+                Map::class.java,
+                EMPTY_MAP
+            )
+        }.body ?: throw IllegalStateException("No response from LLM")
+
+        return toLLMBalance(resp as Map<String, *>)
+    }
+
+    protected open fun toLLMBalance(resp: Map<String, *>): LLMBalance? {
+        val available = MapUtil.toBoolean("is_available", resp) ?: false
+        if (!available) {
+            return null
+        }
+
+        return MapUtil.toList("balance_infos", resp)?.let { infos ->
+            val info = infos.firstOrNull()
+            if (info is Map<*, *>) {
+                return LLMBalance(
+                    currency = MapUtil.toString("currency", info) ?: "USD",
+                    total = MapUtil.toDouble("total_balance", info) ?: 0.0,
+                )
+            } else {
+                null
+            }
+        }
     }
 
     /**

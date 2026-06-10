@@ -4,6 +4,7 @@ import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.llm.LLMBalance
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMStreamChunk
@@ -92,6 +93,10 @@ open class Deepseek : LLM {
         onChunk: (LLMStreamChunk) -> Unit,
     ): LLMResponse {
         return client.completionStream(request, tools, onChunk)
+    }
+
+    override fun balance(): LLMBalance? {
+        return client.balance()
     }
 
     protected open fun createClient(apiKey: String, model: String, config: Map<*, *>): DeepseekClient {

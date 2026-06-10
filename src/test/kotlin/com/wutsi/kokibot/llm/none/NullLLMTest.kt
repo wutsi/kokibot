@@ -4,6 +4,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -30,6 +31,11 @@ class NullLLMTest {
         assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
         assertEquals(NullLLM.Companion.MESSAGE, choices[0].content)
         assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    @Test
+    fun balance() {
+        assertNull(llm.balance())
     }
 
     @Test

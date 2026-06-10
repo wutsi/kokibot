@@ -4,6 +4,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
@@ -23,6 +24,13 @@ class GeminiTest {
     @Test
     fun id() {
         assertEquals("llm:gemini", llm.id())
+    }
+
+    @Test
+    fun balance() {
+        llm.init(config, context)
+
+        assertNull(llm.balance())
     }
 
     //    @Test

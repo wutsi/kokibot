@@ -1,6 +1,6 @@
 package com.wutsi.kokibot.llm
 
-data class LLMAccountBalance(
-    val total: Double = 0.0,
-    val currency: String = ""
+data class LLMBalance(
+    val total: Double,
+    val currency: String,
 )

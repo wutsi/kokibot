@@ -20,6 +20,13 @@ interface LLM : Resource {
     fun model(): String
 
     /**
+     * Returns the maximum context length (in tokens) that this LLM can handle.
+     * This is used to determine how much of the conversation history and tool outputs can be included
+     * in the prompt when calling the LLM.
+     */
+    fun maxContextWindow(): Int
+
+    /**
      * Synchronous completion (existing method, unchanged).
      */
     fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse
@@ -38,10 +45,5 @@ interface LLM : Resource {
         onChunk: (LLMStreamChunk) -> Unit,
     ): LLMResponse
 
-    /**
-     * Returns the maximum context length (in tokens) that this LLM can handle.
-     * This is used to determine how much of the conversation history and tool outputs can be included
-     * in the prompt when calling the LLM.
-     */
-    fun maxContextWindow(): Int
+    fun balance(): LLMBalance?
 }

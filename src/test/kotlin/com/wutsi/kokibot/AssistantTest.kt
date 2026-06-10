@@ -152,7 +152,7 @@ class AssistantTest {
             "# Available skills"
         )
     }
-    
+
     @Test
     fun `process with tool call`() {
         // GIVEN

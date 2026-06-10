@@ -4,9 +4,11 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class KimiTest {
     private val llm = Kimi()
@@ -19,6 +21,11 @@ class KimiTest {
         llm = mock(),
         config = mapOf("xx" to "yy"),
     )
+
+    @Test
+    fun contextLength() {
+        assertEquals(1024 * 1024, llm.maxContextWindow())
+    }
 
     @Test
     fun id() {
@@ -65,7 +72,14 @@ class KimiTest {
     }
 
     @Test
-    fun contextLength() {
-        assertEquals(1024 * 1024, llm.maxContextWindow())
+    fun balance() {
+        llm.init(config, context)
+
+        val response = llm.balance()
+        println(response)
+
+        assertNotNull(response)
+        assertTrue(response.total >= 0.0)
+        assertEquals("USD", response.currency)
     }
 }

@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.text.NumberFormat
+import java.util.Currency
 
 @RequestMapping("/assistants")
 @RestController
@@ -28,12 +30,7 @@ class AssistantController(private val multi: MultiBootstrap) {
             mapOf(
                 "name" to context.assistant.name,
                 "description" to context.assistant.description,
-                "workspaceDirectory" to "${context.home.absolutePath}/workspace",
-                "llm" to mapOf(
-                    "name" to llm.name(),
-                    "model" to llm.model(),
-                    "maxContextWindow" to llm.maxContextWindow()
-                )
+                "workspaceDirectory" to "${context.home.absolutePath}/workspace"
             )
         )
     }
@@ -92,8 +89,39 @@ class AssistantController(private val multi: MultiBootstrap) {
         )
     }
 
+    @GetMapping("/{name}/llm")
+    fun llm(@PathVariable name: String): ResponseEntity<Map<String, Any?>> {
+        val bootstrap = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }
+            ?: return ResponseEntity.notFound().build()
+
+        val context = bootstrap.getContext()
+        val llm = context.llm
+        val balance = llm.balance()
+        return ResponseEntity.ok(
+            mapOf(
+                "name" to llm.name(),
+                "model" to llm.model(),
+                "maxContextWindow" to llm.maxContextWindow(),
+                "availableBalance" to balance?.let {
+                    mapOf(
+                        "amount" to balance.total,
+                        "currency" to balance.currency,
+                        "text" to formatMoney(balance.total, balance.currency)
+                    )
+                }
+            )
+        )
+    }
+
+    private fun formatMoney(amount: Double, currencyCode: String): String {
+        val format = NumberFormat.getCurrencyInstance()
+        val currency = Currency.getInstance(currencyCode)
+        format.currency = currency
+        return format.format(amount)
+    }
+
     @GetMapping("/{name}/skills")
-    fun llm(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
+    fun skills(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
 
         val context = bootstrap.getContext()

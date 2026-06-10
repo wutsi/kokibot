@@ -8,6 +8,7 @@ import com.wutsi.kokibot.Bootstrap
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.llm.LLMBalance
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -19,6 +20,7 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpMethod
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.util.AssertionErrors.assertNull
 import java.io.File
 import kotlin.test.assertEquals
 
@@ -236,15 +238,53 @@ class AssistantControllerTest {
         assertEquals(404, response.statusCode.value())
     }
 
+    @Test
+    fun llm() {
+        val balance = LLMBalance(currency = "USD", total = 100.0)
+        doReturn(
+            listOf(createBootstrap("007", balance = balance))
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/llm", Map::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals("deepseek", response.body!!["name"])
+        assertEquals("deepseek-v4.0", response.body!!["model"])
+        assertEquals(MAX_CONTEXT_WINDOW, response.body!!["maxContextWindow"])
+
+        val availableBalance = response.body!!["availableBalance"] as Map<String, *>
+        assertEquals(100.0, availableBalance["amount"])
+        assertEquals("USD", availableBalance["currency"])
+        assertEquals("US\$100.00", availableBalance["text"])
+    }
+
+    @Test
+    fun `llm no balance`() {
+        doReturn(
+            listOf(createBootstrap("007", balance = null))
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/llm", Map::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals("deepseek", response.body!!["name"])
+        assertEquals("deepseek-v4.0", response.body!!["model"])
+        assertEquals(MAX_CONTEXT_WINDOW, response.body!!["maxContextWindow"])
+        assertNull("availableBalance", response.body!!["availableBalance"])
+    }
+
     private fun createBootstrap(
         name: String,
         description: String? = null,
-        contextLength: Int = 1024,
         instructions: String? = null,
         heartbeatInstructions: String? = null,
+        balance: LLMBalance? = null
     ): Bootstrap {
         val llm = mock<LLM>()
+        doReturn("deepseek").whenever(llm).name()
+        doReturn("deepseek-v4.0").whenever(llm).model()
         doReturn(MAX_CONTEXT_WINDOW).whenever(llm).maxContextWindow()
+        doReturn(balance).whenever(llm).balance()
 
         val assistant = mock<Assistant>()
         doReturn(name).whenever(assistant).name

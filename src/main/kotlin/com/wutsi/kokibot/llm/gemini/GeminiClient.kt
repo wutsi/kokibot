@@ -33,6 +33,10 @@ class GeminiClient(
         return "https://generativelanguage.googleapis.com/v1beta/openai"
     }
 
+    override fun getBalanceUrl(): String? {
+        return null
+    }
+
     override fun supportsMimeType(mimeType: String): Boolean {
         return mimeType.startsWith("image/") ||
             mimeType.startsWith("application/pdf")

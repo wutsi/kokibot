@@ -1,6 +1,8 @@
 package com.wutsi.kokibot.llm.kimi
 
+import com.wutsi.kokibot.llm.LLMBalance
 import com.wutsi.kokibot.llm.deepseek.DeepseekClient
+import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
 import tools.jackson.databind.json.JsonMapper
 
@@ -34,7 +36,25 @@ class KimiClient(
         return "https://api.moonshot.ai/v1"
     }
 
+    override fun getBalanceUrl(): String? {
+        return getBaseUrl() + "/users/me/balance"
+    }
+
     override fun supportsMimeType(mimeType: String): Boolean {
         return mimeType.startsWith("image/")
+    }
+
+    override fun toLLMBalance(resp: Map<String, *>): LLMBalance? {
+        val code = MapUtil.toInt("code", resp)
+        if (code != 0) {
+            return null
+        }
+
+        return MapUtil.toMap("data", resp)?.let { data ->
+            return LLMBalance(
+                currency = "USD",
+                total = MapUtil.toDouble("available_balance", data) ?: 0.0,
+            )
+        }
     }
 }

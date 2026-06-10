@@ -17,6 +17,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class DeepseekTest {
     private val llm = Deepseek()
@@ -68,6 +69,22 @@ class DeepseekTest {
             "api-key" to "ds-000001",
         )
         assertThrows<ConfigurationException> { llm.init(config, context) }
+    }
+
+    @Test
+    fun balance() {
+        val config = mapOf(
+            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
+            "model" to "deepseek-v4-flash",
+        )
+        llm.init(config, context)
+
+        val response = llm.balance()
+        println(response)
+
+        assertNotNull(response)
+        assertTrue(response.total >= 0.0)
+        assertEquals("USD", response.currency)
     }
 
     @Test

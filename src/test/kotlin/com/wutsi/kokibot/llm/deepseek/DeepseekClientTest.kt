@@ -14,8 +14,11 @@ import com.wutsi.kokibot.util.RestBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito.mock
 import org.springframework.http.HttpEntity
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
@@ -506,6 +509,127 @@ class DeepseekClientTest {
             ),
             body["messages"]
         )
+    }
+
+    @Test
+    fun balance() {
+        // GIVEN
+        doReturn(
+            ResponseEntity(
+                mapOf(
+                    "is_available" to true,
+                    "balance_infos" to listOf(
+                        mapOf(
+                            "total_balance" to "10.00",
+                            "currency" to "USD"
+                        )
+                    )
+                ),
+                HttpStatus.OK
+            )
+        )
+            .whenever(rest)
+            .exchange(
+                eq("https://api.deepseek.com/user/balance"),
+                eq(HttpMethod.GET),
+                any<HttpEntity<Any>>(),
+                eq(Map::class.java),
+                any(),
+            )
+
+        // WHEN
+        val client = createClient()
+        val response = client.balance()
+
+        // THEN
+        assertNotNull(response)
+        assertEquals(10.0, response.total)
+        assertEquals("USD", response.currency)
+    }
+
+    @Test
+    fun `balance - not available`() {
+        // GIVEN
+        doReturn(
+            ResponseEntity(
+                mapOf(
+                    "is_available" to false,
+                ),
+                HttpStatus.OK
+            )
+        )
+            .whenever(rest)
+            .exchange(
+                eq("https://api.deepseek.com/user/balance"),
+                eq(HttpMethod.GET),
+                any<HttpEntity<Any>>(),
+                eq(Map::class.java),
+                any(),
+            )
+
+        // WHEN
+        val client = createClient()
+        val response = client.balance()
+
+        // THEN
+        assertNull(response)
+    }
+
+    @Test
+    fun `balance - no balance info`() {
+        // GIVEN
+        doReturn(
+            ResponseEntity(
+                mapOf(
+                    "is_available" to true,
+                ),
+                HttpStatus.OK
+            )
+        )
+            .whenever(rest)
+            .exchange(
+                eq("https://api.deepseek.com/user/balance"),
+                eq(HttpMethod.GET),
+                any<HttpEntity<Any>>(),
+                eq(Map::class.java),
+                any(),
+            )
+
+        // WHEN
+        val client = createClient()
+        val response = client.balance()
+
+        // THEN
+        assertNull(response)
+    }
+
+    @Test
+    fun `balance - empty balance info`() {
+        // GIVEN
+        doReturn(
+            ResponseEntity(
+                mapOf(
+                    "is_available" to true,
+                    "balance_infos" to emptyList<Any>()
+                ),
+                HttpStatus.OK
+            )
+        )
+            .whenever(rest)
+            .exchange(
+                eq("https://api.deepseek.com/user/balance"),
+                eq(HttpMethod.GET),
+                any<HttpEntity<Any>>(),
+                eq(Map::class.java),
+                any(),
+            )
+
+        // WHEN
+        val client = createClient()
+        val response = client.balance()
+
+        // THEN
+        assertNull(response)
     }
 
     private fun createClient(): DeepseekClient {

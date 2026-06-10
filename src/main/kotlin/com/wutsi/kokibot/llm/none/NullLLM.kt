@@ -3,6 +3,7 @@ package com.wutsi.kokibot.llm.none
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.llm.LLMBalance
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
@@ -36,6 +37,10 @@ class NullLLM : LLM {
                 )
             ),
         )
+    }
+
+    override fun balance(): LLMBalance? {
+        return null
     }
 
     override fun completionStream(

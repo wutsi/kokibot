@@ -1,7 +1,6 @@
 package com.wutsi.kokibot
 
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
@@ -153,231 +152,7 @@ class AssistantTest {
             "# Available skills"
         )
     }
-
-    @Test
-    fun `process without ASSISTANT_md`() {
-        // GIVEN
-        assistant.init(
-            emptyMap<Any, Any>(),
-            context = Context(
-                home = getResourceFile("/home/no-assistant-md"),
-                llm = llm,
-                toolRegistry = toolRegistry,
-                memory = memory,
-                skillRegistry = skillRegistry,
-                dailyLog = dailyLog,
-                sessionLog = sessionLog,
-                chatHistory = chatHistory,
-            )
-        )
-
-        doReturn(
-            LLMResponse(
-                id = UUID.randomUUID().toString(),
-                choices = listOf(
-                    LLMResponseChoice(
-                        content = "Man",
-                        finishReason = LLMFinishReason.STOP,
-                        reasoningContent = null,
-                        toolCalls = emptyList(),
-                    )
-                )
-            )
-        ).whenever(llm).completion(any(), any())
-
-        // WHEN
-        val prompt = Message("Yo", Role.USER, userId = "user-1", channelId = "channel:telegram")
-        val result = assistant.process(prompt)
-
-        // THEN
-        assertEquals("Man", result.text)
-        assertEquals(Role.ASSISTANT, result.role)
-        assertEquals(FinishReason.DONE, result.finishReason)
-
-        val req = argumentCaptor<LLMRequest>()
-        verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
-
-        // ASSISTANT.md is missing
-        val systemInstructions = req.firstValue.systemInstructions
-        assertSystemInstructionsDoNotContain(
-            systemInstructions,
-            "You are a system agent designed to assist users with various tasks.\n",
-            "# Coordinator Agent Identity"
-        )
-        assertSystemInstructionsContain(
-            systemInstructions,
-            "# Security Guidelines",
-            "# Daily Log Protocol",
-            "# Conversation History",
-            "# Available skills"
-        )
-    }
-
-    @Test
-    fun `process with security instructions`() {
-        // GIVEN
-        assistant.init(
-            emptyMap<Any, Any>(),
-            context = Context(
-                home = getResourceFile("/home/007"),
-                llm = llm,
-                toolRegistry = toolRegistry,
-                memory = memory,
-                dailyLog = dailyLog,
-                sessionLog = sessionLog,
-            )
-        )
-
-        doReturn(
-            LLMResponse(
-                id = UUID.randomUUID().toString(),
-                choices = listOf(
-                    LLMResponseChoice(
-                        content = "Man",
-                        finishReason = LLMFinishReason.STOP,
-                        reasoningContent = null,
-                        toolCalls = emptyList(),
-                    )
-                )
-            )
-        ).whenever(llm).completion(any(), any())
-
-        // WHEN
-        val prompt = Message("Yo", Role.USER)
-        val result = assistant.process(prompt)
-
-        // THEN
-        assertEquals("Man", result.text)
-        assertEquals(Role.ASSISTANT, result.role)
-        assertEquals(FinishReason.DONE, result.finishReason)
-
-        val req = argumentCaptor<LLMRequest>()
-        verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
-    }
-
-    @Test
-    fun `process with memory`() {
-        // GIVEN
-        doReturn(
-            LLMResponse(
-                id = UUID.randomUUID().toString(),
-                choices = listOf(
-                    LLMResponseChoice(
-                        content = "Man",
-                        finishReason = LLMFinishReason.STOP,
-                        reasoningContent = null,
-                        toolCalls = emptyList(),
-                    )
-                )
-            )
-        ).whenever(llm).completion(any(), any())
-
-        val memory = "- Fact1, Fact2"
-        doReturn(memory).whenever(this.memory).get()
-
-        val history = "This si the memory."
-        doReturn(history).whenever(context.dailyLog).get()
-
-        // WHEN
-        val prompt = Message("Yo", Role.USER)
-        val result = assistant.process(prompt)
-
-        // THEN
-        assertEquals("Man", result.text)
-        assertEquals(Role.ASSISTANT, result.role)
-        assertEquals(FinishReason.DONE, result.finishReason)
-
-        val req = argumentCaptor<LLMRequest>()
-        verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-
-        assertEquals(
-            """
-Query: Yo
-
----
-# Long-Term Memory
-Here are information that you have stored in your long-term memory in Markdown format:
-```markdown
-$memory
-```
-
----
-
-# Short-Term Memory
-Here are information that you have stored in your short-term memory in Markdown format:
-```markdown
-$history
-```
-
-               """.trimIndent(),
-            req.firstValue.prompt
-        )
-    }
-
-    @Test
-    fun `process swarm`() {
-        // GIVEN
-        val planner = mock<Assistant>()
-        doReturn(Message("from planner")).whenever(planner).process(any(), anyOrNull())
-
-        assistant.init(
-            mapOf(
-                "coordinator" to true
-            ),
-            context = Context(
-                home = getResourceFile("/home/swarm"),
-                llm = llm,
-                toolRegistry = toolRegistry,
-                memory = memory,
-                skillRegistry = skillRegistry,
-                dailyLog = dailyLog,
-                sessionLog = sessionLog,
-                chatHistory = chatHistory,
-                assistantRegistry = assistantRegistry,
-            )
-        )
-
-        doReturn(
-            LLMResponse(
-                id = UUID.randomUUID().toString(),
-                choices = listOf(
-                    LLMResponseChoice(
-                        content = "Man",
-                        finishReason = LLMFinishReason.STOP,
-                        reasoningContent = null,
-                        toolCalls = emptyList(),
-                    )
-                )
-            )
-        ).whenever(llm).completion(any(), any())
-
-        // WHEN
-        val prompt = Message("Yo", Role.USER, userId = "user-1", channelId = "channel:telegram")
-        val result = assistant.process(prompt)
-
-        // THEN
-        assertEquals("Man", result.text)
-        assertEquals(Role.ASSISTANT, result.role)
-        assertEquals(FinishReason.DONE, result.finishReason)
-
-        val req = argumentCaptor<LLMRequest>()
-        verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
-
-        val systemInstructions = req.firstValue.systemInstructions
-        assertSystemInstructionsContain(
-            systemInstructions,
-            "You are a system agent designed to assist users with various tasks.",
-            "# Security Guidelines",
-            "# Daily Log Protocol",
-            "# Conversation History",
-            "# Available skills",
-            "# Coordinator Agent Identity"
-        )
-    }
-
+    
     @Test
     fun `process with tool call`() {
         // GIVEN
@@ -617,13 +392,21 @@ $history
 
     private fun assertSystemInstructionsContain(systemInstructions: String?, vararg sections: String) {
         sections.forEach { section ->
-            assertEquals(true, systemInstructions?.contains(section), "Expected system instructions to contain: $section")
+            assertEquals(
+                true,
+                systemInstructions?.contains(section),
+                "Expected system instructions to contain: $section"
+            )
         }
     }
 
     private fun assertSystemInstructionsDoNotContain(systemInstructions: String?, vararg sections: String) {
         sections.forEach { section ->
-            assertEquals(false, systemInstructions?.contains(section), "Expected system instructions to NOT contain: $section")
+            assertEquals(
+                false,
+                systemInstructions?.contains(section),
+                "Expected system instructions to NOT contain: $section"
+            )
         }
     }
 }

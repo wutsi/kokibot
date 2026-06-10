@@ -105,8 +105,7 @@ class AssistantController(private val multi: MultiBootstrap) {
                         "name" to skill.metadata.name,
                         "description" to skill.metadata.description,
                     )
-                }
-                +
+                } +
                 context.marketplaceRegistry.all().flatMap { marketplace -> marketplace.getSkills() }
                     .filter { skill -> skill.activate() }
                     .map { skill ->

@@ -4,10 +4,22 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import org.apache.commons.io.IOUtils
 import java.io.File
+import java.time.Clock
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class PromptBuilder(
-    private val assistantName: String
+    private val assistantName: String,
+    private val clock: Clock = Clock.systemDefaultZone()
 ) {
+    companion object {
+        private val DATE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern(
+            "EEEE, MMMM d, yyyy 'at' HH:mm:ss zzz",
+            Locale.ENGLISH
+        )
+    }
+
     fun buildPrompt(
         query: Message,
         iterationMemory: List<String>,
@@ -15,6 +27,11 @@ class PromptBuilder(
     ): String {
         val sb = StringBuilder()
         sb.append("Query: ${query.text}\n")
+
+        sb.append("\n---\n")
+        sb.append("# Current Date and Time\n")
+        val now = ZonedDateTime.now(clock)
+        sb.append("The current date and time is: ${now.format(DATE_TIME_FORMATTER)} (${now.toOffsetDateTime()})\n")
 
         val longTermMemory = context.memory.get()
         if (longTermMemory != null) {

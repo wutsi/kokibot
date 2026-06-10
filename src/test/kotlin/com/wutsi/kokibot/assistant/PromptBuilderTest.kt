@@ -16,6 +16,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
 class PromptBuilderTest {
     private fun getResourceFile(path: String): File {
@@ -27,6 +30,12 @@ class PromptBuilderTest {
     private val dailyLog = mock<DailyLog>()
     private val skillRegistry = mock<SkillRegistry>()
     private val context = mock<Context>()
+
+    // Fixed clock for deterministic date/time assertions: 2026-06-09T14:30:15Z
+    private val fixedClock: Clock = Clock.fixed(
+        Instant.parse("2026-06-09T14:30:15Z"),
+        ZoneId.of("UTC")
+    )
     private lateinit var builder: PromptBuilder
 
     @BeforeEach
@@ -40,7 +49,7 @@ class PromptBuilderTest {
         doReturn(null).whenever(dailyLog).get()
         doReturn(emptyList<Skill>()).whenever(skillRegistry).all()
 
-        builder = PromptBuilder(assistantName = "test-assistant")
+        builder = PromptBuilder(assistantName = "test-assistant", clock = fixedClock)
     }
 
     @Test
@@ -51,6 +60,19 @@ class PromptBuilderTest {
         val prompt = builder.buildPrompt(query, iterationMemory, context)
 
         assertTrue(prompt.contains("Query: What is the weather?"))
+    }
+
+    @Test
+    fun `should include current date and time in prompt`() {
+        val query = Message(text = "Test query")
+
+        val prompt = builder.buildPrompt(query, emptyList(), context)
+
+        assertTrue(prompt.contains("# Current Date and Time"))
+        // Fixed clock is 2026-06-09T14:30:15Z (UTC)
+        assertTrue(prompt.contains("Tuesday, June 9, 2026"))
+        assertTrue(prompt.contains("14:30:15"))
+        assertTrue(prompt.contains("2026-06-09T14:30:15Z"))
     }
 
     @Test

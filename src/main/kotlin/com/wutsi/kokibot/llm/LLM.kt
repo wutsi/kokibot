@@ -7,9 +7,17 @@ interface LLM : Resource {
     override fun destroy() {
     }
 
+    override fun id(): String {
+        return "llm:" + name()
+    }
+
     fun supportsStreaming(): Boolean {
         return false
     }
+
+    fun name(): String
+
+    fun model(): String
 
     /**
      * Synchronous completion (existing method, unchanged).
@@ -35,5 +43,5 @@ interface LLM : Resource {
      * This is used to determine how much of the conversation history and tool outputs can be included
      * in the prompt when calling the LLM.
      */
-    fun maxContextLength(): Int
+    fun maxContextWindow(): Int
 }

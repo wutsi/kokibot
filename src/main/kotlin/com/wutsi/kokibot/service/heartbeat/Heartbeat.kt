@@ -43,13 +43,8 @@ class Heartbeat() : Resource {
     fun tick() {
         LOGGER.info("Tick")
 
-        val file = File(context.home, "HEARTBEAT.md")
-        if (!file.exists()) {
-            return
-        }
-
-        val query = file.readText()
-        if (query.isNotEmpty()) {
+        val query = getInstructions()
+        if (!query.isNullOrEmpty()) {
             context.assistant.process(
                 Message(
                     userId = id(),
@@ -58,6 +53,20 @@ class Heartbeat() : Resource {
                 )
             )
         }
+    }
+
+    fun getInstructions(): String? {
+        val file = File(context.home, "HEARTBEAT.md")
+        return if (file.exists()) {
+            file.readText()
+        } else {
+            null
+        }
+    }
+
+    fun saveInstructions(content: String) {
+        val file = File(context.home, "HEARTBEAT.md")
+        file.writeText(content)
     }
 
     private fun launchJob(frequency: String): ScheduledFuture<*> {

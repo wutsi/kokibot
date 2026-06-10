@@ -31,8 +31,12 @@ open class Deepseek : LLM {
     internal var thinking: Boolean = false
     internal var reasoningEffort: String? = null
 
-    override fun id(): String {
-        return "llm:deepseek"
+    override fun name(): String {
+        return "deepseek"
+    }
+
+    override fun model(): String {
+        return client.model
     }
 
     /**
@@ -104,5 +108,5 @@ open class Deepseek : LLM {
         )
     }
 
-    override fun maxContextLength() = 1024 * 1024
+    override fun maxContextWindow() = 1024 * 1024
 }

@@ -13,7 +13,7 @@ class NullLLMTest {
 
     @Test
     fun id() {
-        assertEquals("llm", llm.id())
+        assertEquals("llm:null", llm.id())
     }
 
     @Test
@@ -40,7 +40,7 @@ class NullLLMTest {
     }
 
     @Test
-    fun maxContextLength() {
-        assertEquals(0, llm.maxContextLength())
+    fun maxContextWindow() {
+        assertEquals(-1, llm.maxContextWindow())
     }
 }

@@ -47,7 +47,7 @@ class PromptBuilder(
         context: Context
     ): String {
         val entries = listOfNotNull(
-            loadIdentity(context.home),
+            loadIdentity(context),
             if (coordinator) coordinatorInstructions(context.home) else null,
             dailyLogInstructions(context.home),
             chatHistoryInstructions(query, context.home),
@@ -55,6 +55,15 @@ class PromptBuilder(
             securityInstructions(context.home),
         )
         return entries.joinToString("\n\n---\n\n")
+    }
+
+    internal fun loadIdentity(context: Context): String? {
+        return loadIdentity(context.home)
+    }
+
+    internal fun saveIdentity(content: String, context: Context) {
+        val file = File(context.home, "ASSISTANT.md")
+        file.writeText(content)
     }
 
     private fun loadIdentity(home: File): String? {

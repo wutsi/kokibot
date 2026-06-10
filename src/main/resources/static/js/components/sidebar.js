@@ -6,7 +6,6 @@
 const Sidebar = {
     sidebar: null,
     toggleButton: null,
-    newChatButton: null,
     historyButton: null,
     settingsButton: null,
     storageKey: 'kokibot_sidebar_collapsed',
@@ -20,7 +19,6 @@ const Sidebar = {
     setupElements() {
         this.sidebar = document.getElementById('sidebar');
         this.toggleButton = document.getElementById('sidebar-toggle');
-        this.newChatButton = document.getElementById('new-chat-btn');
         this.historyButton = document.getElementById('history-btn');
         this.settingsButton = document.getElementById('settings-btn');
     },
@@ -39,20 +37,19 @@ const Sidebar = {
             this.toggle();
         });
 
-        // New Chat button
-        this.newChatButton.addEventListener('click', () => {
-            this.handleNewChat();
-        });
-
         // History button (disabled for now)
-        this.historyButton.addEventListener('click', () => {
-            this.handleHistory();
-        });
+        if (this.historyButton) {
+            this.historyButton.addEventListener('click', () => {
+                this.handleHistory();
+            });
+        }
 
-        // Settings button (disabled for now)
-        this.settingsButton.addEventListener('click', () => {
-            this.handleSettings();
-        });
+        // Settings button
+        if (this.settingsButton) {
+            this.settingsButton.addEventListener('click', () => {
+                this.handleSettings();
+            });
+        }
     },
 
     toggle() {
@@ -71,38 +68,14 @@ const Sidebar = {
         localStorage.setItem(this.storageKey, 'true');
     },
 
-    handleNewChat() {
-        // Clear chat history and reload page
-        if (confirm('Start a new chat? Current conversation will be cleared.')) {
-            // Get current agent from URL
-            const agentName = getAgentNameFromURL();
-
-            // Clear chat history via API
-            fetch(`/assistants/${agentName}/clear`, {
-                method: 'POST'
-            })
-            .then(response => {
-                if (response.ok) {
-                    // Reload page to start fresh
-                    window.location.reload();
-                } else {
-                    throw new Error('Failed to clear chat');
-                }
-            })
-            .catch(error => {
-                console.error('Error clearing chat:', error);
-                Notifications.error('Failed to start new chat. Please refresh the page manually.');
-            });
-        }
-    },
-
     handleHistory() {
         // Placeholder for future history feature
         Notifications.info('Chat history feature coming soon!');
     },
 
     handleSettings() {
-        // Placeholder for future settings feature
-        Notifications.info('Settings feature coming soon!');
+        // Navigate to settings page with agent parameter
+        const agentName = getAgentNameFromURL();
+        window.location.href = `/settings.html?agent=${agentName}`;
     }
 };

@@ -271,7 +271,7 @@ class DeepseekTest {
     }
 
     @Test
-    fun maxContextLength() {
-        assertEquals(1024 * 1024, llm.maxContextLength())
+    fun maxContextWindow() {
+        assertEquals(1024 * 1024, llm.maxContextWindow())
     }
 }

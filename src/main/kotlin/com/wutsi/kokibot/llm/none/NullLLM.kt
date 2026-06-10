@@ -15,8 +15,12 @@ class NullLLM : LLM {
         const val MESSAGE = "This is a null LLM. It does not generate any response."
     }
 
-    override fun id(): String {
-        return "llm"
+    override fun model(): String {
+        return "-"
+    }
+
+    override fun name(): String {
+        return "null"
     }
 
     override fun init(config: Map<*, *>, context: Context) {
@@ -46,7 +50,7 @@ class NullLLM : LLM {
         return Health(up = false, id = id())
     }
 
-    override fun maxContextLength(): Int {
-        return 0
+    override fun maxContextWindow(): Int {
+        return -1
     }
 }

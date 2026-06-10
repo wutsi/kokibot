@@ -21,6 +21,11 @@ class KimiTest {
     )
 
     @Test
+    fun id() {
+        assertEquals("llm:kimi", llm.id())
+    }
+
+    @Test
     fun completion() {
         llm.init(config, context)
 
@@ -61,6 +66,6 @@ class KimiTest {
 
     @Test
     fun contextLength() {
-        assertEquals(1024 * 1024, llm.maxContextLength())
+        assertEquals(1024 * 1024, llm.maxContextWindow())
     }
 }

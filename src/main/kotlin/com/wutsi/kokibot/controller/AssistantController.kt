@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RequestMapping("/assistants")
@@ -31,41 +31,72 @@ class AssistantController(private val multi: MultiBootstrap) {
         )
     }
 
-    @GetMapping("/{name}/context-length")
-    fun contextLength(
-        @PathVariable name: String,
-        @RequestParam("user-id", required = false) userId: String? = null,
-        @RequestParam("channel-id", required = false) channelId: String? = null,
-    ): ResponseEntity<Map<String, Any>> {
-        val bootstrap = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }
-            ?: return ResponseEntity.notFound().build()
-
+    @GetMapping("/{name}/assistant.md")
+    fun assistant(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()
+        val identity = context.assistant.getInstructions()
         return ResponseEntity.ok(
             mapOf(
-                "value" to context.assistant.contextLength(userId, channelId),
-                "max" to context.llm.maxContextLength(),
+                "content" to (identity ?: "")
             )
         )
     }
 
-    @PostMapping("/{name}/clear")
-    fun clear(
+    @PostMapping("/{name}/assistant.md")
+    fun assistant(
         @PathVariable name: String,
-        @RequestParam("user-id", required = false) userId: String? = null,
-        @RequestParam("channel-id", required = false) channelId: String? = null,
+        @RequestBody body: Map<String, Any>
     ): ResponseEntity<Map<String, Any>> {
-        val bootstrap = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }
-            ?: return ResponseEntity.notFound().build()
-
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()
-        context.chatHistory.clear(userId, channelId)
-
+        context.assistant.saveInstructions(body["content"] as? String ?: "")
         return ResponseEntity.ok(
             mapOf(
-                "success" to true,
-                "message" to "Chat history cleared"
+                "success" to true
             )
         )
     }
+
+    @GetMapping("/{name}/heartbeat.md")
+    fun heartbeat(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val context = bootstrap.getContext()
+        val identity = context.heartbeat.getInstructions()
+        return ResponseEntity.ok(
+            mapOf(
+                "content" to (identity ?: "")
+            )
+        )
+    }
+
+    @PostMapping("/{name}/heartbeat.md")
+    fun heartbeat(
+        @PathVariable name: String,
+        @RequestBody body: Map<String, Any>
+    ): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val context = bootstrap.getContext()
+        context.heartbeat.saveInstructions(body["content"] as? String ?: "")
+        return ResponseEntity.ok(
+            mapOf(
+                "success" to true
+            )
+        )
+    }
+
+    @GetMapping("/{name}/llm")
+    fun llm(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val llm = bootstrap.getContext().llm
+        return ResponseEntity.ok(
+            mapOf(
+                "name" to llm.name(),
+                "model" to llm.model(),
+                "maxContextWindow" to llm.maxContextWindow()
+            )
+        )
+    }
+
+    private fun getBootstrap(name: String) = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }
 }

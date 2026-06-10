@@ -84,6 +84,14 @@ class Assistant(val name: String = "") {
             promptBuilder.buildSystemInstructions(query, coordinator, context).length) / BYTES_PER_TOKENS
     }
 
+    fun getInstructions(): String? {
+        return promptBuilder.loadIdentity(context)
+    }
+
+    fun saveInstructions(content: String) {
+        promptBuilder.saveIdentity(content, context)
+    }
+
     fun process(
         query: Message,
         streamCallback: ((LLMStreamData) -> Unit)? = null,

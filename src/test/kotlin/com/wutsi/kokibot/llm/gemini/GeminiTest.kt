@@ -20,6 +20,11 @@ class GeminiTest {
         config = mapOf("xx" to "yy")
     )
 
+    @Test
+    fun id() {
+        assertEquals("llm:gemini", llm.id())
+    }
+
     //    @Test
     fun completion() {
         llm.init(config, context)
@@ -83,6 +88,6 @@ class GeminiTest {
 
     @Test
     fun contextLength() {
-        assertEquals(1024 * 1024, llm.maxContextLength())
+        assertEquals(1024 * 1024, llm.maxContextWindow())
     }
 }

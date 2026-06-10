@@ -12,6 +12,10 @@ import com.wutsi.kokibot.util.MapUtil
  * - chat completion: https://platform.kimi.ai/docs/api/chat
  */
 class Kimi : Deepseek() {
+    override fun name(): String {
+        return "kimi"
+    }
+
     override fun createClient(apiKey: String, model: String, config: Map<*, *>): DeepseekClient {
         return KimiClient(
             apiKey = apiKey,

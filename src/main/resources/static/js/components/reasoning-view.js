@@ -94,6 +94,6 @@ class ReasoningView {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
 
-        return escaped.replace(/\n/g, '<br>');
+        return escaped.replace(/\r\n/g, '<br>').replace(/[\r\n]/g, '<br>');
     }
 }

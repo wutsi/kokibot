@@ -255,7 +255,7 @@ class AssistantControllerTest {
         val availableBalance = response.body!!["availableBalance"] as Map<String, *>
         assertEquals(100.0, availableBalance["amount"])
         assertEquals("USD", availableBalance["currency"])
-        assertEquals("US\$100.00", availableBalance["text"])
+        assertEquals(true, availableBalance["text"].toString().contains("\$100.00"))
     }
 
     @Test

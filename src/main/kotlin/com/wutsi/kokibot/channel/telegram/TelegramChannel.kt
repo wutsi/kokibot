@@ -387,18 +387,20 @@ class TelegramChannel(
     }
 
     private fun send(chatId: String, message: Message) {
-        // Send message in parts if it exceeds Telegram's limit
-        val parts = MarkdownUtil.split(message.text, MESSAGE_MAX_LENGTH)
-        parts.forEachIndexed { index, part ->
-            val html = MarkdownToTelegramHTML.convert(part)
-            val sendMessage = SendMessage
-                .builder()
-                .chatId(chatId)
-                .text(html)
-                .parseMode(ParseMode.HTML)
-                .disableNotification(index == 0)
-                .build()
-            client.execute(sendMessage)
+        // Send text in parts if it exceeds Telegram's limit
+        if (message.text.ifEmpty { null } != null) {
+            val parts = MarkdownUtil.split(message.text, MESSAGE_MAX_LENGTH)
+            parts.forEachIndexed { index, part ->
+                val html = MarkdownToTelegramHTML.convert(part)
+                val sendMessage = SendMessage
+                    .builder()
+                    .chatId(chatId)
+                    .text(html)
+                    .parseMode(ParseMode.HTML)
+                    .disableNotification(index == 0)
+                    .build()
+                client.execute(sendMessage)
+            }
         }
 
         // Send files after the message, since Telegram does not support attachments

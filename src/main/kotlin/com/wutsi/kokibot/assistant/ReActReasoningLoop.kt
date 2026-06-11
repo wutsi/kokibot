@@ -118,7 +118,7 @@ class ReActReasoningLoop(
             files = query.filePaths.map { path -> File(path) }
         )
 
-        val tools = context.toolRegistry.all()
+        val tools = context.toolRegistry.all().filter { tool -> tool.activate() }
         val streamingEnabled = context.llm.supportsStreaming()
         val response = if (streamingEnabled && streamCallback != null) {
             context.llm.completionStream(

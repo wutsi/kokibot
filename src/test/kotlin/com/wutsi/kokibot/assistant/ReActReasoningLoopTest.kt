@@ -53,6 +53,8 @@ class ReActReasoningLoopTest {
         doReturn(commandRegistry).whenever(context).commandRegistry
         doReturn(sessionLog).whenever(context).sessionLog
 
+        doReturn(true).whenever(tool1).activate()
+        doReturn(true).whenever(tool2).activate()
         doReturn(ToolMetadata(name = "tool1", parameters = emptyList())).whenever(tool1).metadata()
         doReturn(ToolMetadata(name = "tool2", parameters = emptyList())).whenever(tool2).metadata()
         doReturn(listOf(tool1, tool2)).whenever(toolRegistry).all()

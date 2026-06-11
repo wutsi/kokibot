@@ -41,9 +41,12 @@ class DailyLog : Resource {
     }
 
     fun clear() = lock.write {
-        val file = getFile(LocalDate.now())
-        if (file.exists()) {
-            file.delete()
+        lock.write {
+            val file = getFile(LocalDate.now())
+            if (file.exists()) {
+                val bak = File(file.parentFile, file.nameWithoutExtension + "." + System.currentTimeMillis() + ".md")
+                file.renameTo(bak)
+            }
         }
     }
 

@@ -11,6 +11,7 @@ import java.io.File
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ChatHistoryTest {
@@ -95,6 +96,20 @@ class ChatHistoryTest {
         val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")
         assertFalse(file.exists())
+    }
+
+    @Test
+    fun get() {
+        chatHistory.append(query, response)
+
+        val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")
+        assertEquals(file.readText(), chatHistory.get(query.userId!!, query.channelId!!))
+    }
+
+    @Test
+    fun `get - not found`() {
+        assertNull(chatHistory.get(query.userId!!, query.channelId!!))
     }
 
     @Test

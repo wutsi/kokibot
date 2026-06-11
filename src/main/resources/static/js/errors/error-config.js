@@ -6,7 +6,7 @@ export const ERROR_CONFIG = {
         MAX_ATTEMPTS: {
             CONNECTION: 3,
             TIMEOUT: 2,
-            SERVER_ERROR: 3,
+            SERVER_ERROR: 100,
             RATE_LIMIT: 1,
             DEFAULT: 3
         },

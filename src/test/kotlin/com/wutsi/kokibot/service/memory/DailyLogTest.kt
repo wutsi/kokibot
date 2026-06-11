@@ -8,13 +8,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito.mock
-import tools.jackson.databind.json.JsonMapper
 import java.io.File
 import java.time.LocalDate
 import kotlin.test.assertTrue
 
 class DailyLogTest {
-    private val jsonMapper = JsonMapper()
     private val home = File("target/test-data/home/daily-log-test")
     val context = Context(
         home = home,

@@ -7,6 +7,7 @@ import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 class ChatHistory : Resource {
@@ -44,14 +45,27 @@ class ChatHistory : Resource {
         }
     }
 
+    fun get(userId: String?, channelId: String?): String? {
+        userId ?: return null
+        channelId ?: return null
+
+        lock.read {
+            val file = getFile(userId, channelId)
+            if (!file.exists()) {
+                return null
+            }
+            return file.readText()
+        }
+    }
+
     fun clear(userId: String?, channelId: String?) {
         userId ?: return
         channelId ?: return
 
-        val file = getFile(userId, channelId)
-        if (file.exists()) {
-            val bak = File(file.parentFile, file.nameWithoutExtension + "." + System.currentTimeMillis() + ".md")
-            lock.write {
+        lock.write {
+            val file = getFile(userId, channelId)
+            if (file.exists()) {
+                val bak = File(file.parentFile, file.nameWithoutExtension + "." + System.currentTimeMillis() + ".md")
                 file.renameTo(bak)
             }
         }

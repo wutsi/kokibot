@@ -119,16 +119,22 @@ class WebSocketChannel : Channel() {
                 filePaths = request.filePaths,
             )
 
+            // Track the last usage from streaming
+            var lastUsage: LLMUsage? = null
+
             // Process with streaming callback (always enabled)
             val response = context.assistant.process(
                 query = message,
                 streamCallback = { data ->
+                    if (data.usage != null) {
+                        lastUsage = data.usage
+                    }
                     sendReasoningChunk(session, data.text, data.usage)
                 },
             )
 
-            // Send final response
-            sendFinalResponse(session, response.text, userId)
+            // Send final response with the last usage received
+            sendFinalResponse(session, response.text, lastUsage)
         } catch (e: Exception) {
             LOGGER.error("Error processing WebSocket message", e)
             try {
@@ -176,13 +182,14 @@ class WebSocketChannel : Channel() {
         )
     }
 
-    private fun sendFinalResponse(session: WebSocketSession, content: String, userId: String) {
+    private fun sendFinalResponse(session: WebSocketSession, content: String, usage: LLMUsage?) {
         sendMessage(
             session,
             WebSocketResponse(
                 type = WebSocketResponseType.FINAL,
                 content = content,
                 finishReason = "DONE",
+                usage = usage,
             ),
         )
     }

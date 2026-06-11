@@ -7,6 +7,7 @@ class MessageRenderer {
         this.container = container;
         this.formatter = new MessageFormatter();
         this.markdownRenderer = new MarkdownRenderer();
+        this.copyButton = new CopyButton();
     }
 
     /**
@@ -76,6 +77,9 @@ class MessageRenderer {
         }
         timestamp.textContent = this.formatter.formatTime(new Date());
 
+        // Add copy button
+        this.copyButton.setupCopy(messageElement);
+
         this.scrollToBottom();
     }
 
@@ -127,6 +131,9 @@ class MessageRenderer {
 
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(contentWrapper);
+
+        // Add copy button for both user and assistant messages
+        this.copyButton.setupCopy(messageDiv);
 
         return messageDiv;
     }

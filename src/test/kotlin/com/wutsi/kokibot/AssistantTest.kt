@@ -40,6 +40,7 @@ class AssistantTest {
     private val home = getResourceFile("/home/007")
     private val tool1 = mock<Tool>()
     private val tool2 = mock<Tool>()
+    private val tool3 = mock<Tool>()
     private val llm = mock<LLM>()
     private val toolRegistry = mock<ToolRegistry>()
     private val memory = mock<Memory>()
@@ -71,24 +72,19 @@ class AssistantTest {
     fun setup() {
         assistant.init(emptyMap<Any, Any>(), context)
 
-        doReturn(
-            ToolMetadata(
-                name = "test-tool",
-                parameters = emptyList()
-            )
-        ).whenever(tool1).metadata()
+        doReturn(true).whenever(tool1).activate()
+        doReturn(ToolMetadata(name = "test-tool")).whenever(tool1).metadata()
         doReturn("Yaounde").whenever(tool1).exec(any())
 
-        doReturn(
-            ToolMetadata(
-                name = "test-tool-2",
-                parameters = emptyList()
-            )
-        ).whenever(tool2).metadata()
+        doReturn(true).whenever(tool2).activate()
+        doReturn(ToolMetadata(name = "test-tool-2")).whenever(tool2).metadata()
         doReturn("Paris").whenever(tool2).exec(any())
 
+        doReturn(false).whenever(tool3).activate()
+        doReturn(ToolMetadata(name = "test-tool3")).whenever(tool3).metadata()
+
         doReturn(tool1).whenever(toolRegistry).get(any())
-        doReturn(listOf(tool1, tool2)).whenever(toolRegistry).all()
+        doReturn(listOf(tool1, tool2, tool3)).whenever(toolRegistry).all()
 
         val skill1 = mock<Skill>()
         doReturn(Health(up = true, id = "xxx")).whenever(skill1).health()

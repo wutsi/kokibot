@@ -14,6 +14,7 @@ const Sidebar = {
         this.setupElements();
         this.loadState();
         this.setupEventListeners();
+        ConversationHistory.init(getAgentNameFromURL());
     },
 
     setupElements() {

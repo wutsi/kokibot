@@ -196,6 +196,7 @@ const ChatUI = {
         if (conversationId) {
             this.conversationId = conversationId;
             localStorage.setItem(`kokibot_conv_${this.agentName}`, conversationId);
+            ConversationHistory.setActiveConversation(conversationId);
         }
     },
 

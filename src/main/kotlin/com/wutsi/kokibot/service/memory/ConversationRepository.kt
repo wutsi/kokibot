@@ -46,12 +46,14 @@ class ConversationRepository : Resource {
         }
     }
 
-    fun getConversations(userId: String, channelId: String? = null): List<Conversation> {
+    fun getConversations(userId: String, channelId: String? = null, limit: Int = Int.MAX_VALUE, offset: Int = 0): List<Conversation> {
         lock.read {
             val sanitized = channelId?.let { sanitizeId(it) }
             return readIndex(userId)
                 .filter { sanitized == null || it.channelId == sanitized }
                 .sortedByDescending { it.startDate }
+                .drop(offset)
+                .take(limit)
         }
     }
 

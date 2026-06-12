@@ -133,6 +133,28 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun `getConversations respects limit`() {
+        repeat(5) { i -> repo.createConversation("user-1", "telegram", "Conv $i") }
+
+        val result = repo.getConversations("user-1", limit = 3)
+
+        assertEquals(3, result.size)
+    }
+
+    @Test
+    fun `getConversations respects offset`() {
+        repeat(5) { i ->
+            Thread.sleep(5)
+            repo.createConversation("user-1", "telegram", "Conv $i")
+        }
+        val all = repo.getConversations("user-1")
+        val paginated = repo.getConversations("user-1", offset = 2)
+
+        assertEquals(all.size - 2, paginated.size)
+        assertEquals(all[2].id, paginated[0].id)
+    }
+
+    @Test
     fun `getMessages ignores blocks from other conversations`() {
         val conv1 = repo.createConversation("user-1", "telegram", "First")
         val conv2 = repo.createConversation("user-1", "telegram", "Second")

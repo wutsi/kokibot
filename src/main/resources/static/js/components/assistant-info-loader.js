@@ -18,7 +18,7 @@ class AssistantInfoLoader {
         try {
             const response = await fetch(`/assistants/${agentName}`);
             if (!response.ok) {
-                console.warn('Failed to load assistant info, using defaults');
+                document.dispatchEvent(new CustomEvent('agent-not-found'));
                 return;
             }
 

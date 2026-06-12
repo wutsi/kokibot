@@ -46,6 +46,11 @@ const AgentSelector = {
                 this.closeModal();
             }
         });
+
+        // Auto-open when the current agent is not found
+        document.addEventListener('agent-not-found', () => {
+            this.openModal();
+        });
     },
 
     async openModal() {

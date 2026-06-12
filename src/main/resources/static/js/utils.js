@@ -4,7 +4,12 @@
 
 function getAgentNameFromURL() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('agent') || 'thoth';
+    const agentFromURL = params.get('agent');
+    if (agentFromURL) {
+        localStorage.setItem('kokibot-agent', agentFromURL);
+        return agentFromURL;
+    }
+    return localStorage.getItem('kokibot-agent') || 'thoth';
 }
 
 function debounce(func, wait) {

@@ -298,7 +298,6 @@ class TelegramChannel(
         }
     }
 
-
     private fun toUserId(update: Update): String {
         val chat = update.message.chat
         return chat.userName ?: chat.id.toString()

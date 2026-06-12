@@ -441,7 +441,8 @@ The WebSocket channel uses JSON messages for communication:
     "type": "FINAL",
     "content": "The weather today is sunny with a high of 75°F.",
     "finishReason": "DONE",
-    "contextLength": 2500
+    "contextLength": 2500,
+    "conversationId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -454,10 +455,30 @@ The WebSocket channel uses JSON messages for communication:
 
 **Message Types:**
 
-- `REASONING_CHUNK` - Streaming reasoning content with optional token usage data
-- `TOOL_STATUS` - Tool execution status updates
-- `FINAL` - Final complete response with context length
-- `ERROR` - Error message
+| Type | Description |
+|------|-------------|
+| `REASONING_CHUNK` | Streaming reasoning content with optional token usage data |
+| `TOOL_STATUS` | Tool execution status updates |
+| `FINAL` | Final complete response with context length and conversation id |
+| `ERROR` | Error message |
+
+**Conversation Navigation:**
+
+The web client uses the `conversationId` from `FINAL` messages to enable conversation history navigation:
+
+- The id is persisted in `localStorage` as `kokibot_conv_{agentName}`
+- On page load, `?conv=<id>` in the URL loads a specific conversation via `GET /assistants/{name}/conversations/{id}`
+- After loading, the param is cleaned from the URL with `history.replaceState` (preserving the `agent` param)
+- Navigating to `/index.html?agent=<agent>&conv=<id>` via the sidebar triggers a full page load with that conversation
+
+**Conversation History REST Endpoints:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/assistants/{name}/conversations` | List conversations (`limit`, `offset`, `channelId` params) |
+| `GET` | `/assistants/{name}/conversations/{id}` | Conversation detail with messages |
+
+Default `limit` is 30. `userId` is always `"anonymous"` — never a request parameter. `startDate` is returned as an ISO-8601 string.
 
 **Token Usage Information:**
 
@@ -478,6 +499,17 @@ The WebSocket channel streams token usage data in real-time with `REASONING_CHUN
 
 **Web Interface:**
 Access the built-in web interface at `http://localhost:8080/` to interact with agents via WebSocket.
+
+The web UI includes a **conversation history sidebar** listing the last 30 conversations grouped by date:
+
+| Group | Condition |
+|---|---|
+| Today | conversations started today |
+| Yesterday | conversations started yesterday |
+| Previous 30 days | 2–30 days ago |
+| `yyyy-MM` (e.g. `2026-05`) | older, one group per calendar month |
+
+Clicking a conversation navigates to `/index.html?agent=<agent>&conv=<id>`, loading its full message history. The `settings.html` page shares the same sidebar layout but does not show the conversation history zone.
 
 ---
 

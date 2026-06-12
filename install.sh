@@ -22,8 +22,8 @@ check_java() {
     fi
 }
 
-installing_dependencies(){
-    echo "INSTALLING DEPENDENCIES"
+install_python(){
+    echo "INSTALLING PYTHON"
 
     # Python
     if ! command -v python3 >/dev/null 2>&1; then
@@ -182,7 +182,7 @@ cleanup() {
 main() {
     echo "Installing kokibot v$KOKIBOT_VERSION"
     check_java
-    installing_dependencies
+    install_python
     install_files
     install_service
     cleanup

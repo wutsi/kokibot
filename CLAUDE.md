@@ -143,6 +143,8 @@ src/main/kotlin/com/wutsi/kokibot/
 │   │   ├── DailyLog.kt               # Daily activity journal
 │   │   ├── SessionLog.kt             # Detailed execution trace (JSONL)
 │   │   ├── ChatHistory.kt            # Conversation messages
+│   │   ├── Conversation.kt           # Conversation & ConversationMessage data models
+│   │   ├── ConversationRepository.kt # Conversation index storage and message retrieval
 │   │   ├── ClearCommand.kt           # /clear command
 │   │   └── CompactCommand.kt         # /compact command
 │   ├── swarm/
@@ -167,10 +169,12 @@ src/main/kotlin/com/wutsi/kokibot/
 │   └── HealthCommand.kt              # /health command
 │
 ├── controller/                       # REST API controllers
-│   └── WebSocketController.kt        # WebSocket endpoint
+│   ├── WebSocketController.kt        # WebSocket endpoint
+│   └── ConversationController.kt     # Conversation history REST API
 │
 ├── config/                           # Spring configuration
-│   └── ApplicationConfig.kt          # Application beans
+│   ├── ApplicationConfig.kt          # Application beans
+│   └── JacksonConfiguration.kt       # Jackson: ISO-8601 dates, lenient parsing
 │
 └── util/                             # Utilities
     ├── MapUtil.kt                    # Map manipulation helpers
@@ -382,7 +386,18 @@ Multi-tier persistence and logging system for conversation tracking and knowledg
     - Commands: `/clear` to reset
     - Used for maintaining conversation continuity
 
-4. **Memory** - Long-term fact extraction and compaction
+4. **ConversationRepository** - Conversation index and message retrieval
+    - Index location: `~/kokibot/agents/{agent}/memory/chat/{userId}/conversations.json`
+    - Messages location: `~/kokibot/agents/{agent}/memory/chat/{userId}/{channelId}/YYYY-MM-DD.md`
+    - Format: JSON array index of `Conversation` objects; messages read from ChatHistory markdown files
+    - Stores: id, channelId, title (first 60 chars of message), startDate
+    - Operations: `createConversation()`, `getConversations(userId, channelId?, limit, offset)`, `getMessages(conversationId, userId)`
+    - Pagination: `limit` (default `Int.MAX_VALUE`) and `offset` applied after descending sort by `startDate`
+    - Exposed via REST: `GET /assistants/{name}/conversations?limit=30&offset=0` and `GET /assistants/{name}/conversations/{id}`
+    - `userId` is always hardcoded to `"anonymous"` (WebSocket channel value) — never a request parameter
+    - `LocalDateTime` fields serialize as ISO-8601 strings (Jackson `DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS` disabled)
+
+5. **Memory** - Long-term fact extraction and compaction
     - Location: `~/kokibot/agents/{agent}/workspace/memory/MEMORY.md`
     - Format: Markdown document with key facts and insights
     - Automatic compaction scheduled at configured intervals (e.g., every 6 hours)
@@ -406,6 +421,8 @@ SessionLog (detailed trace)
 DailyLog (daily journal)
     ↓ feeds into
 ChatHistory (conversation messages)
+    ↓ indexed by
+ConversationRepository (conversation index + message retrieval)
     ↓ compacted by LLM
 Memory (long-term facts)
 ```
@@ -415,7 +432,16 @@ Memory (long-term facts)
 - **SessionLog**: Debug tool calls, analyze token usage, audit execution paths
 - **DailyLog**: Track daily progress, maintain context within a day, capture insights
 - **ChatHistory**: Multi-turn conversations, immediate context
+- **ConversationRepository**: Paginated conversation history browsing via REST API
 - **Memory**: Long-term knowledge retention, prevent context window overflow
+
+**REST Controllers** (`controller/`)
+
+**`ConversationController`** (`controller/ConversationController.kt`)
+- `GET /assistants/{name}/conversations?channelId=&limit=30&offset=0` — paginated list of past conversations, sorted by `startDate` descending
+- `GET /assistants/{name}/conversations/{id}` — full conversation with messages
+- `userId` is always `"anonymous"` (hardcoded); never a request parameter
+- Returns `List<Conversation>` and `ConversationDetail` respectively
 
 **Commands System** (`command/`)
 

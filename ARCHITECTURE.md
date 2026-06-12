@@ -689,6 +689,20 @@ classDiagram
 - Streaming support via chunks
 - Dynamic path configuration
 
+**Web Interface:**
+
+The built-in web interface (`/index.html`) provides a full chat UI including:
+
+- **Conversation sidebar** — lists the last 30 conversations grouped by date (Today / Yesterday / Previous 30 days / `yyyy-MM`)
+- **Conversation navigation** — clicking a sidebar entry navigates to `/index.html?agent=<agent>&conv=<id>`, loading that conversation's messages
+- **URL-driven loading** — on page load, `?conv=<id>` query param overrides localStorage to restore a specific conversation; param is cleaned from URL after loading via `history.replaceState`
+- **Active highlight** — the current conversation is highlighted in the sidebar after history loads or after a new reply arrives
+
+**Key frontend components:**
+- `js/components/conversation-history.js` — async sidebar list: fetch, group, render, navigate
+- `js/components/sidebar.js` — sidebar toggle and state persistence
+- `js/chat-ui.js` — orchestrator: WebSocket, message rendering, conversation loading
+
 **Configuration:**
 ```json
 {
@@ -729,8 +743,9 @@ classDiagram
 graph TB
     SessionLog[SessionLog<br/>Detailed Execution Trace] -->|Feeds| DailyLog[DailyLog<br/>Daily Activity Journal]
     DailyLog -->|Summarizes| ChatHistory[ChatHistory<br/>User Conversations]
+    ChatHistory -->|Indexed by| ConvRepo[ConversationRepository<br/>Conversation Index]
     ChatHistory -->|Compaction| Memory[Memory<br/>Long-Term Facts]
-    
+    ConvRepo -->|REST API| WebUI[Web Interface]
     Memory -->|Loaded into| Prompt[LLM Prompt]
     DailyLog -->|Loaded into| Prompt
 ```
@@ -840,7 +855,34 @@ The weather is sunny.
 
 ---
 
-#### 4. Memory (`service/memory/Memory.kt`)
+#### 4. ConversationRepository (`service/memory/ConversationRepository.kt`)
+
+**Purpose:** Conversation index and message retrieval for the web UI
+
+- **Index storage:** `~/kokibot/agents/{agent}/memory/chat/{userId}/conversations.json`
+- **Message storage:** Reads from existing ChatHistory markdown files (`~/kokibot/agents/{agent}/memory/chat/{userId}/{channelId}/YYYY-MM-DD.md`)
+- **Format:** JSON array of `Conversation` objects (id, channelId, title, startDate)
+- **Thread-safety:** ReentrantReadWriteLock
+- **Atomic writes:** write-to-tmp + rename to prevent partial reads
+
+**Operations:**
+- `createConversation(userId, channelId, firstMessage)` — Creates a new conversation entry (title = first 60 chars of message)
+- `getConversations(userId, channelId?, limit, offset)` — Returns paginated list sorted by `startDate` descending
+- `getMessages(conversationId, userId)` — Reconstructs message list from ChatHistory markdown files
+
+**REST API:**
+
+| Endpoint | Description |
+|---|---|
+| `GET /assistants/{name}/conversations?limit=30&offset=0` | Paginated conversation list |
+| `GET /assistants/{name}/conversations/{id}` | Conversation detail with messages |
+
+- `userId` is always hardcoded to `"anonymous"` — never a request parameter
+- `startDate` serialized as ISO-8601 string (Jackson `DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS` disabled)
+
+---
+
+#### 5. Memory (`service/memory/Memory.kt`)
 
 **Purpose:** Long-term fact extraction and compaction
 

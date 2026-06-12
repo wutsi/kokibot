@@ -74,3 +74,25 @@ python3 scripts/convert.py <inpu>
 ```
 
 The extracted markdown will be printed to the console.
+
+---
+
+## Installation
+
+Install `markitdown` using `pipx`.
+`markitdown` has dependencies on `tesseract` and `opencv` for OCR functionality, so those need to be installed
+separately.
+
+```bash
+pipx install "markitdown[all]"
+
+# Install system dependencies for OCR
+brew install tesseract
+brew install opencv
+
+# Install Python dependencies for OCR
+pipx install --include-deps pytesseract
+pipx install --include-deps opencv-python
+pipx install --include-deps numpy
+```
+

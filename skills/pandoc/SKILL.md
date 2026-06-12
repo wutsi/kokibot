@@ -67,6 +67,8 @@ pandoc input.md -s --metadata title="Document Title" -o output.docx
 
 ## Installation
 
+Install `pandoc` and `tectonic` using Homebrew:
+
 ```bash
 brew install pandoc
 brew install tectonic

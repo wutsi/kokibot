@@ -37,41 +37,6 @@ installing_dependencies(){
         brew install pipx
         pipx ensurepath
     fi
-
-    # pandoc
-    if ! command -v pandoc >/dev/null 2>&1; then
-        echo "Installing pandoc..."
-        brew install pandoc
-    fi
-
-    # pandoc
-    if ! command -v tectonic >/dev/null 2>&1; then
-        echo "Installing tectonic..."
-        brew install tectonic
-    fi
-
-    # markitdown
-    # For markitdown:
-    # - we include tesseract and opencv so that it can use OCR to extract text from images
-    # - we include the python dependencies: pytesseract, opencv-python and numpy
-    if ! command -v markitdown >/dev/null 2>&1; then
-        echo "Installing markitdown..."
-        pipx install markitdown[all]
-    fi
-    if ! command -v tesseract >/dev/null 2>&1; then
-        echo "Installing tesseract..."
-        brew install tesseract
-    fi
-    if ! brew list --formula opencv >/dev/null 2>&1; then
-        echo "Installing opencv..."
-        brew install opencv
-    fi
-    for pkg in pytesseract opencv-python numpy; do
-        if ! pipx list --short 2>/dev/null | awk '{print $1}' | grep -qx "$pkg"; then
-            echo "Installing $pkg..."
-            pipx install --include-deps "$pkg"
-        fi
-    done
 }
 
 install_files() {
@@ -217,7 +182,6 @@ cleanup() {
 main() {
     echo "Installing kokibot v$KOKIBOT_VERSION"
     check_java
-    check_python
     installing_dependencies
     install_files
     install_service

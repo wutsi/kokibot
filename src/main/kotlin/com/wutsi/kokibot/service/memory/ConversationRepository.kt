@@ -2,6 +2,7 @@ package com.wutsi.kokibot.service.memory
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Resource
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -18,6 +19,7 @@ class ConversationRepository : Resource {
         private const val CONV_MARKER_PREFIX = "<!-- kokibot:conv:"
         private const val CONV_MARKER_SUFFIX = " -->"
         private val DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        private val LOGGER = LoggerFactory.getLogger(ConversationRepository::class.java)
     }
 
     private lateinit var context: Context
@@ -84,7 +86,7 @@ class ConversationRepository : Resource {
             val marker = "$CONV_MARKER_PREFIX$conversationId$CONV_MARKER_SUFFIX"
             if (!trimmed.startsWith(marker)) continue
 
-            val dateTime = extractDateTime(trimmed)
+            val dateTime = extractDateTime(trimmed) ?: continue
             val userText = extractSection(trimmed, "### Query:")
             val assistantText = extractSection(trimmed, "### Response:")
 
@@ -108,31 +110,40 @@ class ConversationRepository : Resource {
         return block.substring(contentStart, end)
     }
 
-    private fun extractDateTime(block: String): LocalDateTime {
-        val line = block.lines().firstOrNull { it.startsWith("# ") } ?: return LocalDateTime.now()
+    private fun extractDateTime(block: String): LocalDateTime? {
+        val line = block.lines().firstOrNull { it.startsWith("# ") } ?: return null
         return runCatching {
             LocalDateTime.parse(line.removePrefix("# ").substringBefore(": Session "))
-        }.getOrDefault(LocalDateTime.now())
+        }.getOrNull()
     }
 
     private fun getIndexFile(userId: String): File {
-        val dir = File("${context.home.absolutePath}/memory/chat/${sanitizeId(userId)}")
-        if (!dir.exists()) dir.mkdirs()
-        return File(dir, "conversations.json")
+        return File("${context.home.absolutePath}/memory/chat/${sanitizeId(userId)}", "conversations.json")
     }
 
     private fun readIndex(userId: String): List<Conversation> {
         val file = getIndexFile(userId)
         if (!file.exists()) return emptyList()
-        val listType = context.jsonMapper.typeFactory.constructCollectionType(List::class.java, Conversation::class.java)
-        return context.jsonMapper.readValue(file, listType)
+        return try {
+            context.jsonMapper.readValue(
+                file.readText(),
+                context.jsonMapper.typeFactory.constructCollectionType(List::class.java, Conversation::class.java),
+            )
+        } catch (e: Exception) {
+            LOGGER.warn("Failed to read conversation index for user $userId: ${e.message}")
+            emptyList()
+        }
     }
 
     private fun writeIndex(userId: String, conversations: List<Conversation>) {
         val file = getIndexFile(userId)
+        file.parentFile.mkdirs()
         val tmp = File(file.parentFile, "${file.name}.tmp")
         tmp.writeText(context.jsonMapper.writeValueAsString(conversations))
-        tmp.renameTo(file)
+        if (!tmp.renameTo(file)) {
+            tmp.delete()
+            throw IllegalStateException("Failed to write conversation index for user $userId")
+        }
     }
 
     private fun sanitizeId(id: String): String =

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -101,11 +102,12 @@ class ConversationRepositoryTest {
     fun `getMessages parses messages from markdown file`() {
         val conv = repo.createConversation("user-1", "telegram", "Weather query")
         val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val now = LocalDateTime.now().withNano(0)
         val mdFile = File(home, "memory/chat/user-1/telegram/$today.md")
         mdFile.parentFile.mkdirs()
         mdFile.writeText(
             "<!-- kokibot:conv:${conv.id} -->\n" +
-                "# 2026-06-12T10:00:00: Session abc\n" +
+                "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
                 "```markdown\n" +
@@ -135,11 +137,13 @@ class ConversationRepositoryTest {
         val conv1 = repo.createConversation("user-1", "telegram", "First")
         val conv2 = repo.createConversation("user-1", "telegram", "Second")
         val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val now = LocalDateTime.now().withNano(0)
+        val later = now.plusHours(1)
         val mdFile = File(home, "memory/chat/user-1/telegram/$today.md")
         mdFile.parentFile.mkdirs()
         mdFile.writeText(
             "<!-- kokibot:conv:${conv1.id} -->\n" +
-                "# 2026-06-12T10:00:00: Session abc\n" +
+                "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
                 "```markdown\n" +
@@ -152,7 +156,7 @@ class ConversationRepositoryTest {
                 "```\n\n" +
                 "---\n\n" +
                 "<!-- kokibot:conv:${conv2.id} -->\n" +
-                "# 2026-06-12T11:00:00: Session def\n" +
+                "# $later: Session def\n" +
                 "## user\n" +
                 "### Query:\n" +
                 "```markdown\n" +

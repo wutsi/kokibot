@@ -19,9 +19,11 @@ const ChatUI = {
     statusText: null,
     agentNameElement: null,
     agentDescriptionElement: null,
+    conversationId: null,
 
     init(agentName) {
         this.agentName = agentName || 'Koki';
+        this.conversationId = null;
         this.setupElements();
         this.initializeComponents();
         this.setupConnectionHandlers();
@@ -29,6 +31,49 @@ const ChatUI = {
 
         this.assistantInfoLoader.load(agentName);
         this.connectionManager.connect();
+        this.loadConversationHistory();
+    },
+
+    async loadConversationHistory() {
+        const storedId = localStorage.getItem(`kokibot_conv_${this.agentName}`);
+        if (!storedId) return;
+
+        this.conversationId = storedId;
+
+        const placeholder = document.createElement('div');
+        placeholder.id = 'history-loading';
+        placeholder.className = 'history-loading';
+        placeholder.textContent = 'Loading conversation…';
+        this.chatContainer.appendChild(placeholder);
+
+        try {
+            const response = await fetch(
+                `/assistants/${this.agentName}/conversations/${storedId}?userId=anonymous`
+            );
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const detail = await response.json();
+            placeholder.remove();
+
+            for (const message of detail.messages) {
+                if (message.role === 'user') {
+                    this.messageRenderer.addUserMessage(message.text);
+                } else if (message.role === 'assistant') {
+                    this.messageRenderer.addAssistantMessage(message.text);
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to load conversation history:', e);
+            placeholder.remove();
+            localStorage.removeItem(`kokibot_conv_${this.agentName}`);
+            this.conversationId = null;
+        }
+    },
+
+    newChat() {
+        localStorage.removeItem(`kokibot_conv_${this.agentName}`);
+        this.conversationId = null;
+        this.chatContainer.innerHTML = '';
     },
 
     setupElements() {
@@ -76,8 +121,8 @@ const ChatUI = {
             this.handleToolStatus(status);
         });
 
-        this.connectionManager.on('finalResponse', (content, finishReason) => {
-            this.handleFinalResponse(content, finishReason);
+        this.connectionManager.on('finalResponse', (content, finishReason, conversationId) => {
+            this.handleFinalResponse(content, finishReason, conversationId);
         });
     },
 
@@ -91,7 +136,7 @@ const ChatUI = {
         this.messageRenderer.addUserMessage(text, filesInfo);
 
         const filePaths = filesInfo.map(f => f.path);
-        this.connectionManager.sendMessage(text, filePaths);
+        this.connectionManager.sendMessage(text, filePaths, this.conversationId);
 
         this.inputController.disable();
 
@@ -129,7 +174,7 @@ const ChatUI = {
         this.messageRenderer.scrollToBottom();
     },
 
-    handleFinalResponse(content, finishReason) {
+    handleFinalResponse(content, finishReason, conversationId) {
         const messageElement = document.getElementById(this.currentMessageId);
         if (!messageElement) {
             console.error('Assistant message not found for final response');
@@ -138,6 +183,11 @@ const ChatUI = {
 
         this.messageRenderer.updateFinalResponse(messageElement, content);
         this.inputController.enable();
+
+        if (conversationId) {
+            this.conversationId = conversationId;
+            localStorage.setItem(`kokibot_conv_${this.agentName}`, conversationId);
+        }
     },
 
     updateConnectionStatus(status, text) {

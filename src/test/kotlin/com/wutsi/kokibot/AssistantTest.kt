@@ -86,6 +86,8 @@ class AssistantTest {
         doReturn(tool1).whenever(toolRegistry).get(any())
         doReturn(listOf(tool1, tool2, tool3)).whenever(toolRegistry).all()
 
+        doReturn("conv-test-123").whenever(chatHistory).append(any(), any())
+
         val skill1 = mock<Skill>()
         doReturn(Health(up = true, id = "xxx")).whenever(skill1).health()
         doReturn(

@@ -159,9 +159,9 @@ class Assistant(val name: String = "") {
         LOGGER.info(
             "${query.id} $name FINAL ANSWER ($duration): " + StringUtil.take(response.text, 200)
         )
-        context.chatHistory.append(query, response)
+        val conversationId = context.chatHistory.append(query, response)
         context.sessionLog.onResponse(query.id, response)
-        return response
+        return response.copy(conversationId = conversationId)
     }
 
     private fun doProcessAsync(

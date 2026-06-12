@@ -48,7 +48,7 @@ const ConversationHistory = {
             html += `<div class="conv-group-label">${label}</div>`;
             for (const conv of items) {
                 const safe = this._esc(conv.title);
-                html += `<button class="conv-item" data-id="${conv.id}" title="${safe}">${safe}</button>`;
+                html += `<button class="conv-item" data-id="${this._esc(conv.id)}" title="${safe}">${safe}</button>`;
             }
         }
         this.listEl.innerHTML = html;
@@ -92,6 +92,7 @@ const ConversationHistory = {
     },
 
     _esc(str) {
+        if (!str) return '';
         return str
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')

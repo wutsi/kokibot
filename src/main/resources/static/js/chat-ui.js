@@ -51,13 +51,6 @@ const ChatUI = {
             const response = await fetch(
                 `/assistants/${this.agentName}/conversations/${storedId}`
             );
-            if (response.status === 404) {
-                // Conversation no longer exists — discard the stale ID
-                placeholder.remove();
-                localStorage.removeItem(`kokibot_conv_${this.agentName}`);
-                this.conversationId = null;
-                return;
-            }
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const detail = await response.json();
@@ -71,9 +64,9 @@ const ChatUI = {
                 }
             }
         } catch (e) {
-            // Transient failure (network, 5xx) — keep the ID so we can retry next load
             console.warn('Failed to load conversation history:', e);
             placeholder.remove();
+            Notifications.error('Failed to load conversation history. Reload the page to try again.', { duration: 0 });
         }
     },
 

@@ -52,12 +52,21 @@ ol, li {
 /* ===== App Container ===== */
 .app-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     height: 100vh;
     width: 100%;
     margin: 0 auto;
     background-color: var(--color-bg-primary);
     box-shadow: var(--shadow-md);
+}
+
+/* ===== Content Area (header + chat + input) ===== */
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
 }
 
 /* ===== Header ===== */
@@ -145,7 +154,7 @@ ol, li {
     }
 }
 
-/* ===== Main Content Area ===== */
+/* ===== Main Content Area (kept for backwards compat) ===== */
 .main-content {
     flex: 1;
     display: flex;
@@ -169,7 +178,7 @@ ol, li {
     border-right: 1px solid var(--color-border-light);
     overflow: hidden;
     transition: width 0.3s ease;
-    order: -1; /* Place sidebar before chat container */
+    flex-shrink: 0;
 }
 
 .sidebar.collapsed {
@@ -888,7 +897,7 @@ ol, li {
 }
 
 @media (max-width: 768px) {
-    .main-content {
+    .app-container {
         flex-direction: column;
     }
 
@@ -897,7 +906,6 @@ ol, li {
         border-right: none;
         border-bottom: 1px solid var(--color-border-light);
         max-height: 180px;
-        order: 0; /* Reset order on mobile */
     }
 
     .sidebar.collapsed {

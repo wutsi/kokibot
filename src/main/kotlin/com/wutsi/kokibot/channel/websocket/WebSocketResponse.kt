@@ -8,4 +8,5 @@ data class WebSocketResponse(
     val message: String? = null,
     val finishReason: String? = null,
     val usage: LLMUsage? = null,
+    val conversationId: String? = null,
 )

@@ -118,6 +118,7 @@ class WebSocketChannel : Channel() {
                 userId = userId,
                 channelId = id(),
                 filePaths = request.filePaths,
+                conversationId = request.conversationId,
             )
 
             // Track the last usage from streaming
@@ -135,7 +136,7 @@ class WebSocketChannel : Channel() {
             )
 
             // Send final response with the last usage received
-            sendFinalResponse(session, response.text, lastUsage)
+            sendFinalResponse(session, response.text, response.conversationId, lastUsage)
         } catch (e: Exception) {
             LOGGER.error("Error processing WebSocket message", e)
             try {
@@ -183,7 +184,7 @@ class WebSocketChannel : Channel() {
         )
     }
 
-    private fun sendFinalResponse(session: WebSocketSession, content: String, usage: LLMUsage?) {
+    private fun sendFinalResponse(session: WebSocketSession, content: String, conversationId: String?, usage: LLMUsage?) {
         sendMessage(
             session,
             WebSocketResponse(
@@ -191,6 +192,7 @@ class WebSocketChannel : Channel() {
                 content = content,
                 finishReason = "DONE",
                 usage = usage,
+                conversationId = conversationId,
             ),
         )
     }

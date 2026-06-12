@@ -109,10 +109,9 @@ class WebSocketClient {
         }
     }
 
-    sendMessage(query, userId = null, filePaths = []) {
+    sendMessage(query, filePaths = []) {
         const message = {
             query: query,
-            userId: userId || this.generateUserId(),
             filePaths: filePaths
         };
 
@@ -147,7 +146,7 @@ class WebSocketClient {
                 label: 'Retry',
                 callback: () => {
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        this.sendMessage(message.query, message.userId, message.filePaths);
+                        this.sendMessage(message.query, message.filePaths);
                     } else {
                         this.messageQueue.push(message);
                         this.connect();
@@ -185,16 +184,6 @@ class WebSocketClient {
         if (this.handlers.onError) {
             this.handlers.onError(error);
         }
-    }
-
-    generateUserId() {
-        // Get or create user ID from localStorage
-        let userId = localStorage.getItem('kokibot_user_id');
-        if (!userId) {
-            userId = 'user_' + Math.random().toString(36).substring(2, 15);
-            localStorage.setItem('kokibot_user_id', userId);
-        }
-        return userId;
     }
 
     disconnect() {

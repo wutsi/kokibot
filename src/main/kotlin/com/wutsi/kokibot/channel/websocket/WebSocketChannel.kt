@@ -17,6 +17,7 @@ class WebSocketChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebSocketChannel::class.java)
         const val ID = "channel:websocket"
+        const val ANONYMOUS_USER = "anonymous"
     }
 
     private lateinit var context: Context
@@ -105,7 +106,7 @@ class WebSocketChannel : Channel() {
     internal fun handleMessage(session: WebSocketSession, payload: String) {
         try {
             val request = jsonMapper.readValue(payload, WebSocketRequest::class.java)
-            val userId = request.userId ?: session.id
+            val userId = ANONYMOUS_USER
 
             // Register session for responses
             sessions[userId] = session

@@ -81,8 +81,8 @@ class ConnectionManager {
     /**
      * Send message
      */
-    sendMessage(query, userId = null, filePaths = []) {
-        this.wsClient.sendMessage(query, userId, filePaths);
+    sendMessage(query, filePaths = []) {
+        this.wsClient.sendMessage(query, filePaths);
     }
 
     /**

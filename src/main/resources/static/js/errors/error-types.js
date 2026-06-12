@@ -10,7 +10,7 @@ class KokibotError extends Error {
      * @param {string} [options.code] - Error code for programmatic handling
      * @param {boolean} [options.recoverable=true] - Can user recover from this?
      * @param {boolean} [options.retryable=false] - Should we auto-retry?
-     * @param {Object} [options.context] - Additional context (userId, agentName, etc.)
+     * @param {Object} [options.context] - Additional context (agentName, etc.)
      * @param {number} [options.timestamp] - When error occurred
      */
     constructor(message, options = {}) {

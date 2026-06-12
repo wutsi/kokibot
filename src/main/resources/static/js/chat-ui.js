@@ -91,7 +91,7 @@ const ChatUI = {
         this.messageRenderer.addUserMessage(text, filesInfo);
 
         const filePaths = filesInfo.map(f => f.path);
-        this.connectionManager.sendMessage(text, null, filePaths);
+        this.connectionManager.sendMessage(text, filePaths);
 
         this.inputController.disable();
 

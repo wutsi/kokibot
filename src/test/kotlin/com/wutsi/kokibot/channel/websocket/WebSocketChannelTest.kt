@@ -13,6 +13,7 @@ import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.channel.websocket.WebSocketChannel.Companion.ANONYMOUS_USER
 import com.wutsi.kokibot.llm.LLMStreamData
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -51,6 +52,7 @@ class WebSocketChannelTest {
             Message(
                 text = "Hello, world!",
                 role = Role.ASSISTANT,
+                userId = ANONYMOUS_USER,
             ),
         )
 
@@ -62,13 +64,12 @@ class WebSocketChannelTest {
                 """
                 {
                     "query": "Hello",
-                    "userId": "user123",
                     "filePaths": ["/path/to/file1.txt", "/path/to/file2.txt"]
                 }
                 """.trimIndent(),
             )
 
-            assertEquals(session, channel.getSession("user123"))
+            assertEquals(session, channel.getSession(ANONYMOUS_USER))
 
             verify(session).sendMessage(
                 argThat { message ->
@@ -100,7 +101,7 @@ class WebSocketChannelTest {
         channel.handleMessage(
             session,
             """
-            {"query": "Complex question", "userId": "user123", "filePaths": []}
+            {"query": "Complex question", "filePaths": []}
             """.trimIndent(),
         )
 
@@ -150,7 +151,7 @@ class WebSocketChannelTest {
         channel.handleMessage(
             session,
             """
-            {"query": "Complex question", "userId": "user123", "filePaths": []}
+            {"query": "Complex question", "filePaths": []}
             """.trimIndent(),
         )
 
@@ -248,10 +249,10 @@ class WebSocketChannelTest {
         val message = Message(
             text = "Hello",
             channelId = "channel:websocket",
-            userId = "user123",
+            userId = ANONYMOUS_USER,
             filePaths = emptyList(),
         )
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123", "filePaths": []}""")
+        channel.handleMessage(session, """{"query": "Hello", "filePaths": []}""")
         assertTrue(channel.send(message))
 
         verify(session).sendMessage(
@@ -270,7 +271,7 @@ class WebSocketChannelTest {
     fun `send returns false if session failed`() {
         val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123", "filePaths": []}""")
+        channel.handleMessage(session, """{"query": "Hello", "filePaths": []}""")
 
         doThrow(RuntimeException("Failed")).whenever(session).sendMessage(any())
         val message = Message(
@@ -285,7 +286,7 @@ class WebSocketChannelTest {
     fun `send returns false if channel is not the same`() {
         val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+        channel.handleMessage(session, """{"query": "Hello"}""")
 
         val message = Message(
             text = "Hello",
@@ -320,7 +321,7 @@ class WebSocketChannelTest {
         val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
         channel.init(mapOf("path" to "/ws/test"), context)
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123"}""")
+        channel.handleMessage(session, """{"query": "Hello"}""")
 
         channel.handleConnectionClosed(session, CloseStatus.NORMAL)
 
@@ -332,13 +333,13 @@ class WebSocketChannelTest {
         val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
 
-        channel.handleMessage(session, """{"query": "Hello", "userId": "user123", "filePaths": []}""")
+        channel.handleMessage(session, """{"query": "Hello", "filePaths": []}""")
         reset(session)
 
         val message = Message(
             text = "🔧 Calling 2 tools: web_search, file_read",
             channelId = "channel:websocket",
-            userId = "user123",
+            userId = ANONYMOUS_USER,
             role = Role.SYSTEM,
         )
         channel.sendStatus(message)

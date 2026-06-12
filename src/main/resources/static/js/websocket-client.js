@@ -145,7 +145,7 @@ class WebSocketClient {
                 label: 'Retry',
                 callback: () => {
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        this.sendMessage(message.query, message.filePaths);
+                        this.sendMessage(message.query, message.filePaths, message.conversationId);
                     } else {
                         this.messageQueue.push(message);
                         this.connect();

@@ -20,6 +20,16 @@ class MessageRenderer {
     }
 
     /**
+     * Add a complete (non-streaming) assistant message — used for history rendering
+     */
+    addAssistantMessage(text) {
+        const id = 'hist_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const element = this.createAssistantMessage(id);
+        this.updateFinalResponse(element, text);
+        return element;
+    }
+
+    /**
      * Create assistant message placeholder
      * @returns {HTMLElement} Message element with thinking avatar
      */

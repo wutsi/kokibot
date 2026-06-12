@@ -42,7 +42,7 @@ class WebSocketChannelTest {
         whenever(session.id).doReturn("session-123")
         whenever(session.isOpen).doReturn(true)
 
-        val msg = Message(text = "Final answer", role = Role.ASSISTANT)
+        val msg = Message(text = "Final answer", role = Role.ASSISTANT, conversationId = "conv-test-123")
         doReturn(msg).whenever(assistant).process(any(), any())
     }
 
@@ -53,6 +53,7 @@ class WebSocketChannelTest {
                 text = "Hello, world!",
                 role = Role.ASSISTANT,
                 userId = ANONYMOUS_USER,
+                conversationId = "conv-test-123",
             ),
         )
 
@@ -78,7 +79,8 @@ class WebSocketChannelTest {
                         WebSocketResponse::class.java,
                     )
                     response.type == WebSocketResponseType.FINAL &&
-                        response.content == "Hello, world!"
+                        response.content == "Hello, world!" &&
+                        response.conversationId == "conv-test-123"
                 },
             )
         } finally {

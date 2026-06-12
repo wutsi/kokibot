@@ -20,10 +20,12 @@ const ChatUI = {
     agentNameElement: null,
     agentDescriptionElement: null,
     conversationId: null,
+    historyLoaded: false,
 
     init(agentName) {
         this.agentName = agentName || 'Koki';
         this.conversationId = null;
+        this.historyLoaded = false;
         this.setupElements();
         this.initializeComponents();
         this.setupConnectionHandlers();
@@ -72,6 +74,7 @@ const ChatUI = {
     newChat() {
         localStorage.removeItem(`kokibot_conv_${this.agentName}`);
         this.conversationId = null;
+        this.historyLoaded = true;
         this.chatContainer.innerHTML = '';
     },
 
@@ -99,10 +102,16 @@ const ChatUI = {
     },
 
     setupConnectionHandlers() {
-        this.connectionManager.on('open', async () => {
+        this.connectionManager.on('open', () => {
             this.updateConnectionStatus('connected', 'Connected');
-            await this.loadConversationHistory();
-            this.inputController.enable();
+            if (!this.historyLoaded) {
+                this.loadConversationHistory().then(() => {
+                    this.historyLoaded = true;
+                    this.inputController.enable();
+                });
+            } else {
+                this.inputController.enable();
+            }
         });
 
         this.connectionManager.on('close', () => {

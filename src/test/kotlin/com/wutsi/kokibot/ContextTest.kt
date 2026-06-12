@@ -8,6 +8,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.marketplace.Marketplace
+import com.wutsi.kokibot.service.memory.ConversationRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -37,6 +38,7 @@ class ContextTest {
         fileService = mock(),
         heartbeat = mock(),
         chatHistory = mock(),
+        conversationRepository = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
@@ -68,6 +70,7 @@ class ContextTest {
         doReturn(Health(id = "-", up = true)).whenever(context.sessionLog).health()
         doReturn(Health(id = "-", up = true)).whenever(context.memory).health()
         doReturn(Health(id = "-", up = true)).whenever(context.chatHistory).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.conversationRepository).health()
         doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
         doReturn(Health(id = "-", up = true)).whenever(context.heartbeat).health()
     }
@@ -87,6 +90,7 @@ class ContextTest {
         verify(context.sessionLog).destroy()
         verify(context.fileService).destroy()
         verify(context.chatHistory).destroy()
+        verify(context.conversationRepository).destroy()
         verify(context.heartbeat).destroy()
         verify(channel).destroy()
     }
@@ -101,6 +105,7 @@ class ContextTest {
         verify(context.memory).init(memoryConfig, context)
         verify(context.dailyLog).init(memoryConfig, context)
         verify(context.sessionLog).init(memoryConfig, context)
+        verify(context.conversationRepository).init(memoryConfig, context)
         verify(context.heartbeat).init(heartbeatConfig, context)
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
@@ -134,7 +139,7 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(10, health.children.size) // LLM, Memory, DailyLog, SessionLog, ChatHistory, FileService, Heartbeat, DelegationStack, 2 channels
+        assertEquals(11, health.children.size) // LLM, Memory, DailyLog, SessionLog, ChatHistory, ConversationRepository, FileService, Heartbeat, DelegationStack, 2 channels
     }
 
     private fun getResourceFile(path: String): File {

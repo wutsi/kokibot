@@ -9,6 +9,7 @@ import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.service.memory.ChatHistory
+import com.wutsi.kokibot.service.memory.ConversationRepository
 import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.service.memory.SessionLog
@@ -35,6 +36,7 @@ class Context(
     val dailyLog: DailyLog = DailyLog(),
     val sessionLog: SessionLog = SessionLog(),
     val chatHistory: ChatHistory = ChatHistory(),
+    val conversationRepository: ConversationRepository = ConversationRepository(),
     val fileService: FileService = FileService(),
     val heartbeat: Heartbeat = Heartbeat(),
     val delegationStack: DelegationStack = DelegationStack(),
@@ -81,7 +83,7 @@ class Context(
             toolRegistry.all() +
             channelRegistry.all() +
             marketplaceRegistry.all() +
-            listOf(llm, memory, dailyLog, sessionLog, chatHistory, fileService, heartbeat, delegationStack)
+            listOf(llm, memory, dailyLog, sessionLog, chatHistory, conversationRepository, fileService, heartbeat, delegationStack)
     }
 
     private fun initAssistant(config: Map<*, *>) {
@@ -117,6 +119,7 @@ class Context(
         memory.init(root, this)
         dailyLog.init(root, this)
         sessionLog.init(root, this)
+        conversationRepository.init(root, this)
         chatHistory.init(root, this)
     }
 

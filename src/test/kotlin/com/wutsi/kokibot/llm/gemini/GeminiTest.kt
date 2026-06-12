@@ -33,6 +33,11 @@ class GeminiTest {
         assertNull(llm.balance())
     }
 
+    @Test
+    fun contextLength() {
+        assertEquals(1024 * 1024, llm.maxContextWindow())
+    }
+
     //    @Test
     fun completion() {
         llm.init(config, context)
@@ -92,10 +97,5 @@ class GeminiTest {
         assertEquals(0, choices[0].toolCalls.size)
         assertEquals(false, choices[0].content.isNullOrEmpty())
         println(choices[0].content)
-    }
-
-    @Test
-    fun contextLength() {
-        assertEquals(1024 * 1024, llm.maxContextWindow())
     }
 }

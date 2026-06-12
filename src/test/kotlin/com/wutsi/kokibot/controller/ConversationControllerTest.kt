@@ -1,11 +1,15 @@
 package com.wutsi.kokibot.controller
 
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Bootstrap
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
+import com.wutsi.kokibot.channel.websocket.WebSocketChannel
 import com.wutsi.kokibot.service.memory.Conversation
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import com.wutsi.kokibot.service.memory.ConversationRepository
@@ -59,11 +63,12 @@ class ConversationControllerTest {
                 startDate = LocalDateTime.of(2026, 6, 12, 10, 0),
             ),
         )
-        doReturn(conversations).whenever(conversationRepository).getConversations("user-1", null)
-        doReturn(conversations).whenever(conversationRepository).getConversations("user-1")
+        doReturn(conversations)
+            .whenever(conversationRepository)
+            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())
 
         val response = rest.getForEntity(
-            "/assistants/my-agent/conversations?userId=user-1",
+            "/assistants/my-agent/conversations",
             List::class.java,
         )
 
@@ -72,9 +77,23 @@ class ConversationControllerTest {
     }
 
     @Test
+    fun `list passes limit and offset to repository`() {
+        doReturn(emptyList<Conversation>())
+            .whenever(conversationRepository)
+            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), eq(5), eq(10))
+
+        val response = rest.getForEntity(
+            "/assistants/my-agent/conversations?limit=5&offset=10",
+            List::class.java,
+        )
+
+        assertEquals(200, response.statusCode.value())
+    }
+
+    @Test
     fun `list returns 404 when assistant not found`() {
         val response = rest.getForEntity(
-            "/assistants/unknown/conversations?userId=user-1",
+            "/assistants/unknown/conversations",
             Any::class.java,
         )
         assertEquals(404, response.statusCode.value())
@@ -92,12 +111,13 @@ class ConversationControllerTest {
             ConversationMessage("user", "What's the weather?", LocalDateTime.of(2026, 6, 12, 10, 0)),
             ConversationMessage("assistant", "Sunny, 22°C.", LocalDateTime.of(2026, 6, 12, 10, 0)),
         )
-        doReturn(listOf(conversation)).whenever(conversationRepository).getConversations("user-1", null)
-        doReturn(listOf(conversation)).whenever(conversationRepository).getConversations("user-1")
+        doReturn(listOf(conversation)).whenever(conversationRepository)
+            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())
+
         doReturn(messages).whenever(conversationRepository).getMessages("conv-001", "user-1")
 
         val response = rest.getForEntity(
-            "/assistants/my-agent/conversations/conv-001?userId=user-1",
+            "/assistants/my-agent/conversations/conv-001",
             Map::class.java,
         )
 
@@ -109,11 +129,11 @@ class ConversationControllerTest {
 
     @Test
     fun `get returns 404 when conversation not found`() {
-        doReturn(emptyList<Conversation>()).whenever(conversationRepository).getConversations("user-1", null)
-        doReturn(emptyList<Conversation>()).whenever(conversationRepository).getConversations("user-1")
+        doReturn(emptyList<Conversation>()).whenever(conversationRepository)
+            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())
 
         val response = rest.getForEntity(
-            "/assistants/my-agent/conversations/unknown?userId=user-1",
+            "/assistants/my-agent/conversations/unknown",
             Any::class.java,
         )
         assertEquals(404, response.statusCode.value())
@@ -122,7 +142,7 @@ class ConversationControllerTest {
     @Test
     fun `get returns 404 when assistant not found`() {
         val response = rest.getForEntity(
-            "/assistants/unknown/conversations/conv-001?userId=user-1",
+            "/assistants/unknown/conversations/conv-001",
             Any::class.java,
         )
         assertEquals(404, response.statusCode.value())

@@ -40,6 +40,7 @@ class ChatHistoryTest {
     @BeforeEach
     fun setup() {
         context.home.deleteRecursively()
+        context.conversationRepository.init(emptyMap<String, Any>(), context)
         chatHistory.init(emptyMap<String, Any>(), context)
     }
 
@@ -50,34 +51,59 @@ class ChatHistoryTest {
 
     @Test
     fun append() {
-        chatHistory.append(query, response)
+        val conversationId = chatHistory.append(query, response)
 
-        val expectedContent = """
-            # ${query.dateTime}: Session ${query.id}
-            ## ${query.role}
-            ### Query:
-            ```markdown
-            ${query.text}
-            ```
-            ### Files:
-            - file1.txt
-            - file2.txt
+        assertTrue(conversationId.isNotBlank())
 
-            ## ${response.role}
-            ### Response:
-            ```markdown
-            ${response.text}
-            ```
-
-            ---
-
-
-        """.trimIndent()
+        val expectedContent =
+            "<!-- kokibot:conv:$conversationId -->\n" +
+                "# ${query.dateTime}: Session ${query.id}\n" +
+                "## ${query.role}\n" +
+                "### Query:\n" +
+                "```markdown\n" +
+                "${query.text}\n" +
+                "```\n" +
+                "### Files:\n" +
+                "- file1.txt\n" +
+                "- file2.txt\n\n" +
+                "## ${response.role}\n" +
+                "### Response:\n" +
+                "```markdown\n" +
+                "${response.text}\n" +
+                "```\n\n" +
+                "---\n\n"
 
         val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")
         assertTrue(file.exists())
         assertEquals(expectedContent, file.readText())
+    }
+
+    @Test
+    fun `append creates new conversation when conversationId is null`() {
+        val conversationId = chatHistory.append(query, response)
+
+        assertTrue(conversationId.isNotBlank())
+        val indexFile = File(context.home.absolutePath + "/memory/chat/user-1/conversations.json")
+        assertTrue(indexFile.exists())
+    }
+
+    @Test
+    fun `append reuses conversationId when provided`() {
+        val existingId = "existing-conv-123"
+        val queryWithConv = query.copy(conversationId = existingId)
+
+        val returned = chatHistory.append(queryWithConv, response)
+
+        assertEquals(existingId, returned)
+        val indexFile = File(context.home.absolutePath + "/memory/chat/user-1/conversations.json")
+        assertFalse(indexFile.exists())
+    }
+
+    @Test
+    fun `append returns empty string when userId is null`() {
+        val result = chatHistory.append(query.copy(userId = null), response)
+        assertEquals("", result)
     }
 
     @Test

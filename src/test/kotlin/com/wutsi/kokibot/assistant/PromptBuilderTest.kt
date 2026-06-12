@@ -3,6 +3,7 @@ package com.wutsi.kokibot.assistant
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
@@ -29,6 +30,7 @@ class PromptBuilderTest {
     private val memory = mock<Memory>()
     private val dailyLog = mock<DailyLog>()
     private val skillRegistry = mock<SkillRegistry>()
+    private val assistant = mock<Assistant>()
     private val context = mock<Context>()
 
     // Fixed clock for deterministic date/time assertions: 2026-06-09T14:30:15Z
@@ -44,6 +46,8 @@ class PromptBuilderTest {
         doReturn(memory).whenever(context).memory
         doReturn(dailyLog).whenever(context).dailyLog
         doReturn(skillRegistry).whenever(context).skillRegistry
+        doReturn(assistant).whenever(context).assistant
+        doReturn("test-assistant").whenever(assistant).name
 
         doReturn(null).whenever(memory).get()
         doReturn(null).whenever(dailyLog).get()
@@ -311,5 +315,28 @@ class PromptBuilderTest {
 
         // Should still have other instructions even without ASSISTANT.md
         assertTrue(instructions.contains("# Security"))
+    }
+
+    @Test
+    fun `should append telegram channel instructions to prompt text`() {
+        val query = Message(text = "Hello", channelId = "channel:telegram")
+
+        val prompt = builder.buildPrompt(query, emptyList(), context)
+
+        assertTrue(prompt.contains("Hello"))
+        assertTrue(prompt.contains("communication channel is a chat"))
+        assertTrue(prompt.contains("50 words"))
+    }
+
+    @Test
+    fun `should append websocket channel instructions to prompt text`() {
+        val query = Message(text = "Hello", channelId = "channel:websocket")
+
+        val prompt = builder.buildPrompt(query, emptyList(), context)
+
+        assertTrue(prompt.contains("Hello"))
+        assertTrue(prompt.contains("working directory"))
+        assertTrue(prompt.contains(home.absolutePath))
+        assertTrue(prompt.contains("test-assistant"))
     }
 }

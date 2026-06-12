@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration
 import tools.jackson.core.json.JsonReadFeature
 import tools.jackson.databind.DeserializationFeature
 import tools.jackson.databind.MapperFeature
+import tools.jackson.databind.cfg.DateTimeFeature
 import tools.jackson.databind.json.JsonMapper
 
 @Configuration
@@ -28,7 +29,8 @@ open class JacksonConfiguration {
             // Mapper
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
-            // Serialization: include only non-null
+            // Serialization
+            .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
             .changeDefaultPropertyInclusion { it.withValueInclusion(JsonInclude.Include.NON_NULL) }
             .build()
     }

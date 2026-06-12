@@ -26,22 +26,29 @@ class ChatHistory : Resource {
         this.context = context
     }
 
-    fun append(query: Message, response: Message) {
+    fun append(query: Message, response: Message): String {
         lock.write {
-            val userId = query.userId ?: return
-            val channelId = query.channelId ?: return
+            val userId = query.userId ?: return ""
+            val channelId = query.channelId ?: return ""
+
+            val conversationId = query.conversationId
+                ?: context.conversationRepository.createConversation(userId, channelId, query.text).id
+
             val files = query.filePaths.joinToString("\n") { file -> "- $file" }
 
-            val content = "# ${query.dateTime}: Session ${query.id}\n" +
+            val content = "<!-- kokibot:conv:$conversationId -->\n" +
+                "# ${query.dateTime}: Session ${query.id}\n" +
                 "## ${query.role}\n" +
                 "### Query:\n" +
-                "```markdown\n${query.text}\n```" +
-                (if (files.isNotEmpty()) "\n### Files:\n$files" else "") +
-                "\n\n## ${response.role}\n" +
+                "```markdown\n${query.text}\n```\n" +
+                (if (files.isNotEmpty()) "### Files:\n$files\n\n" else "\n") +
+                "## ${response.role}\n" +
                 "### Response:\n" +
-                "```markdown\n${response.text}\n```\n\n---\n\n"
+                "```markdown\n${response.text}\n```\n\n" +
+                "---\n\n"
 
             getFile(userId, channelId).appendText(content)
+            return conversationId
         }
     }
 

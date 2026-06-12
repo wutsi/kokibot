@@ -113,11 +113,12 @@ class WebSocketChannel : Channel() {
 
             // Create message
             val message = Message(
-                text = decorateQuery(request.query),
+                text = request.query,
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),
                 filePaths = request.filePaths,
+                conversationId = request.conversationId,
             )
 
             // Track the last usage from streaming
@@ -135,7 +136,7 @@ class WebSocketChannel : Channel() {
             )
 
             // Send final response with the last usage received
-            sendFinalResponse(session, response.text, lastUsage)
+            sendFinalResponse(session, response.text, response.conversationId, lastUsage)
         } catch (e: Exception) {
             LOGGER.error("Error processing WebSocket message", e)
             try {
@@ -143,23 +144,6 @@ class WebSocketChannel : Channel() {
             } catch (ex: Exception) {
                 LOGGER.error("Error sending error '${e.message}' to WebSocket", ex)
             }
-        }
-    }
-
-    private fun decorateQuery(query: String): String {
-        return if (query.startsWith("/")) {
-            query
-        } else {
-            query + "\n\n" +
-                """
-                    When your refer to a file in the agent working directory (${context.home.absolutePath}/workspace), always format it as hyperlink in markdown format (instead of plain text or code format).
-                    This allows the user to click and open the file directly from the message.
-
-                    A message contains a file names `foo.pdf`, located in directory `${context.home.absolutePath}/workspace/a/b` convert it to
-                     `[file.pdf](/files/${context.assistant.name}|workspace|a|b|foo.pdf)`.
-
-                    For security reason, never hyperlink any file outside of the working directory.
-                """.trimIndent()
         }
     }
 
@@ -183,7 +167,12 @@ class WebSocketChannel : Channel() {
         )
     }
 
-    private fun sendFinalResponse(session: WebSocketSession, content: String, usage: LLMUsage?) {
+    private fun sendFinalResponse(
+        session: WebSocketSession,
+        content: String,
+        conversationId: String?,
+        usage: LLMUsage?
+    ) {
         sendMessage(
             session,
             WebSocketResponse(
@@ -191,6 +180,7 @@ class WebSocketChannel : Channel() {
                 content = content,
                 finishReason = "DONE",
                 usage = usage,
+                conversationId = conversationId,
             ),
         )
     }

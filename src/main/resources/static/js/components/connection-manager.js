@@ -65,8 +65,8 @@ class ConnectionManager {
             this.emit('toolStatus', status);
         });
 
-        this.wsClient.on('FinalResponse', (content, finishReason) => {
-            this.emit('finalResponse', content, finishReason);
+        this.wsClient.on('FinalResponse', (content, finishReason, conversationId) => {
+            this.emit('finalResponse', content, finishReason, conversationId);
         });
 
         this.wsClient.on('ErrorMessage', (errorMessage) => {
@@ -81,8 +81,8 @@ class ConnectionManager {
     /**
      * Send message
      */
-    sendMessage(query, filePaths = []) {
-        this.wsClient.sendMessage(query, filePaths);
+    sendMessage(query, filePaths = [], conversationId = null) {
+        this.wsClient.sendMessage(query, filePaths, conversationId);
     }
 
     /**

@@ -76,14 +76,10 @@ class PromptBuilder(
 
         val channelId = query.channelId.removePrefix("channel:")
 
-        val instructions = IOUtils.toString(
-            javaClass.getResourceAsStream("/instructions/channel/$channelId.md"),
-            "utf-8"
-        ) ?: return query.text
-
+        val input = javaClass.getResourceAsStream("/instructions/channel/$channelId.md") ?: return query.text
         return query.text +
             "\n\n" +
-            instructions
+            IOUtils.toString(input, "utf-8")
                 .replace("{{HOME}}", context.home.absolutePath)
                 .replace("{{ASSISTANT_NAME}}", context.assistant.name)
     }

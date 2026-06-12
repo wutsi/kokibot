@@ -19,6 +19,7 @@ const Sidebar = {
     setupElements() {
         this.sidebar = document.getElementById('sidebar');
         this.toggleButton = document.getElementById('sidebar-toggle');
+        this.newChatButton = document.getElementById('new-chat-btn');
         this.historyButton = document.getElementById('history-btn');
         this.settingsButton = document.getElementById('settings-btn');
     },
@@ -36,6 +37,13 @@ const Sidebar = {
         this.toggleButton.addEventListener('click', () => {
             this.toggle();
         });
+
+        // New Chat button
+        if (this.newChatButton) {
+            this.newChatButton.addEventListener('click', () => {
+                ChatUI.newChat();
+            });
+        }
 
         // History button (disabled for now)
         if (this.historyButton) {

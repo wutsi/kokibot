@@ -31,7 +31,6 @@ const ChatUI = {
 
         this.assistantInfoLoader.load(agentName);
         this.connectionManager.connect();
-        this.loadConversationHistory();
     },
 
     async loadConversationHistory() {
@@ -78,6 +77,7 @@ const ChatUI = {
 
     setupElements() {
         this.chatContainer = document.getElementById('chat-container');
+        if (!this.chatContainer) throw new Error('Required element #chat-container not found');
         this.messageInput = document.getElementById('message-input');
         this.sendButton = document.getElementById('send-button');
         this.statusIndicator = document.getElementById('status-indicator');
@@ -99,8 +99,9 @@ const ChatUI = {
     },
 
     setupConnectionHandlers() {
-        this.connectionManager.on('open', () => {
+        this.connectionManager.on('open', async () => {
             this.updateConnectionStatus('connected', 'Connected');
+            await this.loadConversationHistory();
             this.inputController.enable();
         });
 

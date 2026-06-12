@@ -36,8 +36,16 @@ const ChatUI = {
     },
 
     async loadConversationHistory() {
-        const storedId = localStorage.getItem(`kokibot_conv_${this.agentName}`);
+        const params = new URLSearchParams(window.location.search);
+        const convFromURL = params.get('conv');
+        const storedId = convFromURL || localStorage.getItem(`kokibot_conv_${this.agentName}`);
         if (!storedId) return;
+
+        if (convFromURL) {
+            localStorage.setItem(`kokibot_conv_${this.agentName}`, convFromURL);
+            params.delete('conv');
+            history.replaceState(null, '', '/index.html?' + params.toString());
+        }
 
         this.conversationId = storedId;
 
@@ -63,6 +71,8 @@ const ChatUI = {
                     this.messageRenderer.addAssistantMessage(message.text);
                 }
             }
+
+            ConversationHistory.setActiveConversation(this.conversationId);
         } catch (e) {
             console.warn('Failed to load conversation history:', e);
             placeholder.remove();

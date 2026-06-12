@@ -20,13 +20,10 @@ class PromptBuilder(
         )
     }
 
-    fun buildPrompt(
-        query: Message,
-        iterationMemory: List<String>,
-        context: Context
-    ): String {
+    fun buildPrompt(query: Message, iterationMemory: List<String>, context: Context): String {
         val sb = StringBuilder()
-        sb.append("Query: ${query.text}\n")
+        val text = buildText(query, context)
+        sb.append("Query: $text\n")
 
         sb.append("\n---\n")
         sb.append("# Current Date and Time\n")
@@ -72,6 +69,23 @@ class PromptBuilder(
             securityInstructions(context.home),
         )
         return entries.joinToString("\n\n---\n\n")
+    }
+
+    internal fun buildText(query: Message, context: Context): String {
+        query.channelId ?: return query.text
+
+        val channelId = query.channelId.removePrefix("channel:")
+
+        val instructions = IOUtils.toString(
+            javaClass.getResourceAsStream("/instructions/channel/$channelId.md"),
+            "utf-8"
+        ) ?: return query.text
+
+        return query.text +
+            "\n\n" +
+            instructions
+                .replace("{{HOME}}", context.home.absolutePath)
+                .replace("{{ASSISTANT_NAME}}", context.assistant.name)
     }
 
     internal fun loadIdentity(context: Context): String? {

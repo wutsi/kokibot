@@ -12,7 +12,18 @@ const ConversationHistory = {
         this.agentName = agentName;
         this.listEl = document.getElementById('conversation-history');
         if (!this.listEl) return;
+        this.listEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('.conv-item');
+            if (btn && btn.dataset.id) this._navigate(btn.dataset.id);
+        });
         this._load();
+    },
+
+    _navigate(id) {
+        const params = new URLSearchParams();
+        params.set('agent', this.agentName);
+        params.set('conv', id);
+        window.location.href = '/index.html?' + params.toString();
     },
 
     setActiveConversation(id) {
@@ -66,29 +77,39 @@ const ConversationHistory = {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
-        const weekAgo = new Date(today);
-        weekAgo.setDate(today.getDate() - 7);
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
 
         const todayGroup = [];
         const yesterdayGroup = [];
-        const weekGroup = [];
-        const olderGroup = [];
+        const recentGroup = [];
+        const monthGroups = new Map();
 
         for (const conv of convs) {
             const d = new Date(conv.startDate);
             const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-            if (day >= today) todayGroup.push(conv);
-            else if (day >= yesterday) yesterdayGroup.push(conv);
-            else if (day >= weekAgo) weekGroup.push(conv);
-            else olderGroup.push(conv);
+            if (day >= today) {
+                todayGroup.push(conv);
+            } else if (day >= yesterday) {
+                yesterdayGroup.push(conv);
+            } else if (day >= thirtyDaysAgo) {
+                recentGroup.push(conv);
+            } else {
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthGroups.has(key)) monthGroups.set(key, []);
+                monthGroups.get(key).push(conv);
+            }
         }
 
-        return [
+        const groups = [
             ['Today', todayGroup],
             ['Yesterday', yesterdayGroup],
-            ['Previous 7 days', weekGroup],
-            ['Older', olderGroup],
+            ['Previous 30 days', recentGroup],
         ];
+        for (const [key, items] of monthGroups) {
+            groups.push([key, items]);
+        }
+        return groups;
     },
 
     _esc(str) {

@@ -94,7 +94,7 @@ class WebSocketClient {
 
             case 'FINAL':
                 if (this.handlers.onFinalResponse) {
-                    this.handlers.onFinalResponse(response.content, response.finishReason);
+                    this.handlers.onFinalResponse(response.content, response.finishReason, response.conversationId);
                 }
                 break;
 
@@ -109,10 +109,11 @@ class WebSocketClient {
         }
     }
 
-    sendMessage(query, filePaths = []) {
+    sendMessage(query, filePaths = [], conversationId = null) {
         const message = {
             query: query,
-            filePaths: filePaths
+            filePaths: filePaths,
+            conversationId: conversationId,
         };
 
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -126,13 +127,11 @@ class WebSocketClient {
             console.warn('WebSocket not open, queueing message');
             this.messageQueue.push(message);
 
-            // Show notification that message is queued
             Notifications.warning(
                 'Connection unavailable. Your message will be sent when reconnected.',
                 { duration: 3000 }
             );
 
-            // Try to reconnect if not connected
             if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
                 this.connect();
             }

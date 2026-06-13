@@ -69,7 +69,7 @@ const AgentSelector = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-            const response = await fetch('/assistants', {
+            const response = await fetch('/assistants?channel-id=websocket', {
                 signal: controller.signal
             });
 

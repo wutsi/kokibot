@@ -1,12 +1,17 @@
 package com.wutsi.kokibot.controller
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Bootstrap
+import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
+import com.wutsi.kokibot.channel.Channel
+import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMBalance
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
@@ -48,6 +53,36 @@ class AssistantControllerTest {
 
         assertEquals(2, response.body!!.size)
         assertEquals(listOf("007", "008"), response.body)
+    }
+
+    @Test
+    fun `list - by channelId`() {
+        doReturn(
+            listOf(
+                createBootstrap("007"),
+                createBootstrap("008", channelIds = listOf("channel:123"))
+            )
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants?channel-id=channel:123", List::class.java)
+
+        assertEquals(1, response.body!!.size)
+        assertEquals(listOf("008"), response.body)
+    }
+
+    @Test
+    fun `list - by channelId suffix`() {
+        doReturn(
+            listOf(
+                createBootstrap("007"),
+                createBootstrap("008", channelIds = listOf("channel:123"))
+            )
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants?channel-id=123", List::class.java)
+
+        assertEquals(1, response.body!!.size)
+        assertEquals(listOf("008"), response.body)
     }
 
     @Test
@@ -278,7 +313,8 @@ class AssistantControllerTest {
         description: String? = null,
         instructions: String? = null,
         heartbeatInstructions: String? = null,
-        balance: LLMBalance? = null
+        balance: LLMBalance? = null,
+        channelIds: List<String> = emptyList(),
     ): Bootstrap {
         val llm = mock<LLM>()
         doReturn("deepseek").whenever(llm).name()
@@ -294,11 +330,23 @@ class AssistantControllerTest {
         val heartbeat = mock<Heartbeat>()
         doReturn(heartbeatInstructions).whenever(heartbeat).getInstructions()
 
+        val channelRegistry = mock<ChannelRegistry>()
+        if (channelIds.isEmpty()) {
+            doThrow(ChannelNotFoundException::class).whenever(channelRegistry).get(any())
+        } else {
+            channelIds.forEach { id ->
+                val channel = mock<Channel>()
+                doReturn(id).whenever(channel).id()
+                doReturn(channel).whenever(channelRegistry).get(id)
+            }
+        }
+
         val context = Context(
             assistant = assistant,
             home = File("target/assistant-controller/$name"),
             llm = llm,
             heartbeat = heartbeat,
+            channelRegistry = channelRegistry,
         )
         val bootstrap = mock(Bootstrap::class.java)
         doReturn(context).whenever(bootstrap).getContext()

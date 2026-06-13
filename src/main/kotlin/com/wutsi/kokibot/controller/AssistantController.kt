@@ -1,5 +1,7 @@
 package com.wutsi.kokibot.controller
 
+import com.wutsi.kokibot.ChannelNotFoundException
+import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -7,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.text.NumberFormat
 import java.util.Currency
@@ -15,8 +18,22 @@ import java.util.Currency
 @RestController
 class AssistantController(private val multi: MultiBootstrap) {
     @GetMapping
-    fun list(): List<String> {
-        return multi.bootstraps.map { bootstrap -> bootstrap.getContext().assistant.name }
+    fun list(
+        @RequestParam(required = false, name = "channel-id") channelId: String? = null,
+    ): List<String> {
+        return multi.bootstraps
+            .filter { bootstrap -> channelId == null || hasChannel(bootstrap.getContext(), channelId) }
+            .map { bootstrap -> bootstrap.getContext().assistant.name }
+    }
+
+    private fun hasChannel(context: Context, channelId: String): Boolean {
+        try {
+            val name = if (channelId.startsWith("channel:")) channelId else "channel:$channelId"
+            context.channelRegistry.get(name)
+            return true
+        } catch (_: ChannelNotFoundException) {
+            return false
+        }
     }
 
     @GetMapping("/{name}")
@@ -25,7 +42,6 @@ class AssistantController(private val multi: MultiBootstrap) {
             ?: return ResponseEntity.notFound().build()
 
         val context = bootstrap.getContext()
-        val llm = context.llm
         return ResponseEntity.ok(
             mapOf(
                 "name" to context.assistant.name,

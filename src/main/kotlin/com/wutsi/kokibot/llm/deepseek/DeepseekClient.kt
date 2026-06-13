@@ -176,6 +176,60 @@ open class DeepseekClient(
         }
     }
 
+
+    protected open fun toLLMResponse(resp: Map<*, *>): LLMResponse {
+        val choices = (resp["choices"]
+            ?: throw IllegalStateException("No choices in the response")) as List<*>
+        val usage = MapUtil.toMap("usage", resp)
+
+        return LLMResponse(
+            id = MapUtil.toString("id", resp) ?: UUID.randomUUID().toString(),
+            model = resp["model"] as? String,
+            choices = choices.mapNotNull { choice ->
+                val message = MapUtil.toMap("message", (choice as Map<*, *>))
+                val toolCalls = message?.get("tool_calls") as? List<*>?
+                val finishReason = MapUtil.toString("finish_reason", choice)
+
+                LLMResponseChoice(
+                    index = MapUtil.toInt("index", choice) ?: 0,
+                    finishReason = finishReason?.let { reason -> LLMFinishReason.valueOf(reason.uppercase()) },
+                    content = message?.let { MapUtil.toString("content", message) },
+                    reasoningContent = message?.let { MapUtil.toString("reasoning_content", message) },
+
+                    toolCalls = toolCalls?.mapNotNull { call ->
+                        val function = MapUtil.toMap("function", (call as Map<*, *>))
+                        val arguments = function?.let { MapUtil.toString("arguments", function) }
+
+                        function?.let {
+                            LLMToolCall(
+                                id = MapUtil.toString("id", function) ?: UUID.randomUUID().toString(),
+                                name = MapUtil.toString("name", function) ?: "__invalid_function__",
+                                arguments = arguments?.let { args ->
+                                    try {
+                                        jsonMapper.readValue(args, Map::class.java)
+                                    } catch (ex: Exception) {
+                                        logger.warn("Failed to parse tool call arguments. arguments=$args", ex)
+                                        EMPTY_MAP
+                                    }
+                                } ?: EMPTY_MAP
+                            )
+                        }
+                    } ?: emptyList(),
+                )
+            },
+            usage = usage?.let { toLLMUsage(usage) }
+        )
+    }
+
+    protected open fun toLLMUsage(usage: Map<*, *>): LLMUsage {
+        return LLMUsage(
+            promptTokens = MapUtil.toInt("prompt_tokens", usage) ?: 0,
+            completionTokens = MapUtil.toInt("completion_tokens", usage) ?: 0,
+            totalTokens = MapUtil.toInt("total_tokens", usage) ?: 0,
+            promptCacheHitTokens = MapUtil.toInt("prompt_cache_hit_tokens", usage),
+        )
+    }
+
     /**
      * Parses Server-Sent Events stream from LLM API.
      *
@@ -241,7 +295,7 @@ open class DeepseekClient(
             finishReason = (firstChoice?.get("finish_reason") as? String)
                 ?.let { LLMFinishReason.valueOf(it.uppercase()) },
             isDone = firstChoice?.get("finish_reason") != null,
-            usage = usage?.let { toUsage(usage) }
+            usage = usage?.let { toLLMUsage(usage) }
         )
     }
 
@@ -317,59 +371,6 @@ open class DeepseekClient(
             }.ifEmpty { null },
             "parallel_tool_calls" to true
         ).filter { entry -> entry.value != null }
-    }
-
-    private fun toLLMResponse(resp: Map<*, *>): LLMResponse {
-        val choices = (resp["choices"]
-            ?: throw IllegalStateException("No choices in the response")) as List<*>
-        val usage = MapUtil.toMap("usage", resp)
-
-        return LLMResponse(
-            id = MapUtil.toString("id", resp) ?: UUID.randomUUID().toString(),
-            model = resp["model"] as? String,
-            choices = choices.mapNotNull { choice ->
-                val message = MapUtil.toMap("message", (choice as Map<*, *>))
-                val toolCalls = message?.get("tool_calls") as? List<*>?
-                val finishReason = MapUtil.toString("finish_reason", choice)
-
-                LLMResponseChoice(
-                    index = MapUtil.toInt("index", choice) ?: 0,
-                    finishReason = finishReason?.let { reason -> LLMFinishReason.valueOf(reason.uppercase()) },
-                    content = message?.let { MapUtil.toString("content", message) },
-                    reasoningContent = message?.let { MapUtil.toString("reasoning_content", message) },
-
-                    toolCalls = toolCalls?.mapNotNull { call ->
-                        val function = MapUtil.toMap("function", (call as Map<*, *>))
-                        val arguments = function?.let { MapUtil.toString("arguments", function) }
-
-                        function?.let {
-                            LLMToolCall(
-                                id = MapUtil.toString("id", function) ?: UUID.randomUUID().toString(),
-                                name = MapUtil.toString("name", function) ?: "__invalid_function__",
-                                arguments = arguments?.let { args ->
-                                    try {
-                                        jsonMapper.readValue(args, Map::class.java)
-                                    } catch (ex: Exception) {
-                                        logger.warn("Failed to parse tool call arguments. arguments=$args", ex)
-                                        EMPTY_MAP
-                                    }
-                                } ?: EMPTY_MAP
-                            )
-                        }
-                    } ?: emptyList(),
-                )
-            },
-            usage = usage?.let { toUsage(usage) }
-        )
-    }
-
-    private fun toUsage(usage: Map<*, *>): LLMUsage {
-        return LLMUsage(
-            promptTokens = MapUtil.toInt("prompt_tokens", usage) ?: 0,
-            completionTokens = MapUtil.toInt("completion_tokens", usage) ?: 0,
-            totalTokens = MapUtil.toInt("total_tokens", usage) ?: 0,
-            promptCacheHitTokens = MapUtil.toInt("prompt_cache_hit_tokens", usage),
-        )
     }
 
     private fun toMessages(request: LLMRequest): List<Map<String, Any>> {

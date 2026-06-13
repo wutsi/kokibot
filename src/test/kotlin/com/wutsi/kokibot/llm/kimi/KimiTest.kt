@@ -67,7 +67,8 @@ class KimiTest {
         assertEquals(1, choices.size)
         assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
         assertEquals(0, choices[0].toolCalls.size)
-        assertEquals(false, choices[0].content.isNullOrEmpty())
+        assertEquals(true, choices[0].content?.contains("Driver's License", true))
+        assertEquals(true, choices[0].content?.contains("353 826 386", true))
         println(choices[0].content)
     }
 

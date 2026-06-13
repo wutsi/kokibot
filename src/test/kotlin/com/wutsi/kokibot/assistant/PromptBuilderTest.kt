@@ -324,8 +324,7 @@ class PromptBuilderTest {
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("Hello"))
-        assertTrue(prompt.contains("communication channel is a chat"))
-        assertTrue(prompt.contains("50 words"))
+        assertTrue(prompt.contains("200 words"))
     }
 
     @Test
@@ -335,7 +334,6 @@ class PromptBuilderTest {
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("Hello"))
-        assertTrue(prompt.contains("working directory"))
         assertTrue(prompt.contains(home.absolutePath))
         assertTrue(prompt.contains("test-assistant"))
     }

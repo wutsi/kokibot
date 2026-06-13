@@ -52,7 +52,7 @@ class PromptBuilder(
             iterationMemory.forEach { line -> sb.append("$line\n\n") }
         }
 
-        return sb.toString()
+        return applyVariables(sb.toString(), query, context)
     }
 
     fun buildSystemInstructions(
@@ -62,13 +62,13 @@ class PromptBuilder(
     ): String {
         val entries = listOfNotNull(
             loadIdentity(context),
-            if (coordinator) coordinatorInstructions(context.home) else null,
-            dailyLogInstructions(context.home),
-            chatHistoryInstructions(query, context.home),
+            if (coordinator) coordinatorInstructions() else null,
+            dailyLogInstructions(),
+            chatHistoryInstructions(query),
             skillsInstructions(context),
-            securityInstructions(context.home),
+            securityInstructions(),
         )
-        return entries.joinToString("\n\n---\n\n")
+        return applyVariables(entries.joinToString("\n\n---\n\n"), query, context)
     }
 
     internal fun buildText(query: Message, context: Context): String {
@@ -80,8 +80,6 @@ class PromptBuilder(
         return query.text +
             "\n\n" +
             IOUtils.toString(input, "utf-8")
-                .replace("{{HOME}}", context.home.absolutePath)
-                .replace("{{ASSISTANT_NAME}}", context.assistant.name)
     }
 
     internal fun loadIdentity(context: Context): String? {
@@ -96,7 +94,7 @@ class PromptBuilder(
     private fun loadIdentity(home: File): String? {
         val file = File(home, "ASSISTANT.md")
         return if (file.exists()) {
-            file.readText().replace("{{ASSISTANT_NAME}}", assistantName)
+            file.readText()
         } else {
             null
         }
@@ -118,28 +116,28 @@ class PromptBuilder(
         return skills?.let { "# Available skills\n\nHere are the skills available:\n\n$skills" }
     }
 
-    private fun securityInstructions(home: File): String {
+    private fun securityInstructions(): String {
         return IOUtils.toString(
             javaClass.getResource("/instructions/SECURITY.md"),
             "utf-8"
-        ).replace("{{HOME}}", home.absolutePath)
+        )
     }
 
-    private fun coordinatorInstructions(home: File): String {
+    private fun coordinatorInstructions(): String {
         return IOUtils.toString(
             javaClass.getResource("/instructions/COORDINATOR.md"),
             "utf-8"
-        ).replace("{{HOME}}", home.absolutePath)
+        )
     }
 
-    private fun dailyLogInstructions(home: File): String {
+    private fun dailyLogInstructions(): String {
         return IOUtils.toString(
             javaClass.getResourceAsStream("/instructions/DAILY_LOG.md"),
             "utf-8"
-        ).replace("{{HOME}}", home.absolutePath)
+        )
     }
 
-    private fun chatHistoryInstructions(query: Message, home: File): String? {
+    private fun chatHistoryInstructions(query: Message): String? {
         val userId = query.userId
         val channelId = query.channelId
         if (userId == null || channelId == null) {
@@ -149,7 +147,14 @@ class PromptBuilder(
             javaClass.getResourceAsStream("/instructions/CHAT_HISTORY.md"),
             "utf-8"
         )
-            .replace("{{HOME}}", home.absolutePath)
+    }
+
+    private fun applyVariables(text: String, query: Message, context: Context): String {
+        val userId = query.userId ?: "-"
+        val channelId = query.channelId?.removePrefix("channel:") ?: "-"
+
+        return text.replace("{{ASSISTANT_NAME}}", assistantName)
+            .replace("{{HOME}}", context.home.absolutePath)
             .replace("{{USER_ID}}", userId)
             .replace("{{CHANNEL_ID}}", channelId.removePrefix("channel:"))
     }

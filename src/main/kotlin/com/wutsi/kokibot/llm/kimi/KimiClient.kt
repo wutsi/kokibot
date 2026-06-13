@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.llm.kimi
 
 import com.wutsi.kokibot.llm.LLMBalance
+import com.wutsi.kokibot.llm.LLMUsage
 import com.wutsi.kokibot.llm.deepseek.DeepseekClient
 import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.RestBuilder
@@ -56,5 +57,14 @@ class KimiClient(
                 total = MapUtil.toDouble("available_balance", data) ?: 0.0,
             )
         }
+    }
+
+    override fun toLLMUsage(usage: Map<*, *>): LLMUsage {
+        return LLMUsage(
+            promptTokens = MapUtil.toInt("prompt_tokens", usage) ?: 0,
+            completionTokens = MapUtil.toInt("completion_tokens", usage) ?: 0,
+            totalTokens = MapUtil.toInt("total_tokens", usage) ?: 0,
+            promptCacheHitTokens = MapUtil.toInt("cached_tokens", usage),
+        )
     }
 }

@@ -486,7 +486,7 @@ ol, li {
 
 .message.user .message-content {
    max-width: 80%;
-   min-width: 200px;
+   min-width: 400px;
 }
 
 .message.user .message-file {

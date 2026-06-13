@@ -63,7 +63,7 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
                     null
                 }
             } catch (ex: Exception) {
-                LOGGER.warn("Failed to parse skill ${md.name} in marketplace $name", ex)
+                LOGGER.warn("Failed to parse skill $md in marketplace $name", ex)
                 null
             }
         }

@@ -176,7 +176,6 @@ open class DeepseekClient(
         }
     }
 
-
     protected open fun toLLMResponse(resp: Map<*, *>): LLMResponse {
         val choices = (resp["choices"]
             ?: throw IllegalStateException("No choices in the response")) as List<*>

@@ -6,6 +6,10 @@ import com.wutsi.kokibot.Resource
 abstract class Channel : Resource {
     abstract fun send(message: Message): Boolean
 
+    abstract fun name(): String
+
+    override fun id() = "channel:${name()}"
+
     /**
      * Send status update (non-blocking, intermediate feedback).
      * Used for showing tool execution progress.

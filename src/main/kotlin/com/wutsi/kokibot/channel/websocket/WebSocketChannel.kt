@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSocketChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebSocketChannel::class.java)
-        const val ID = "channel:websocket"
         const val ANONYMOUS_USER = "anonymous"
     }
 
@@ -26,7 +25,7 @@ class WebSocketChannel : Channel() {
     private val sessions = ConcurrentHashMap<String, WebSocketSession>() // userId -> session
     private val jsonMapper = JsonMapper()
 
-    override fun id(): String = ID
+    override fun name(): String = "websocket"
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context

@@ -68,7 +68,7 @@ class TelegramChannelTest {
 
     @Test
     fun id() {
-        assertEquals(TelegramChannel.ID, telegram.id())
+        assertEquals("channel:telegram", telegram.id())
     }
 
     @Test
@@ -139,7 +139,7 @@ class TelegramChannelTest {
         assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("ray.sponsible", prompt.firstValue.userId)
-        assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)
+        assertEquals("channel:telegram", prompt.firstValue.channelId)
         assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
 
         val sendAction = argumentCaptor<SendChatAction>()
@@ -173,7 +173,7 @@ class TelegramChannelTest {
         assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("123", prompt.firstValue.userId)
-        assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)
+        assertEquals("channel:telegram", prompt.firstValue.channelId)
         assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
 
         val sendMessage = argumentCaptor<SendMessage>()
@@ -206,7 +206,7 @@ class TelegramChannelTest {
         assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("ray.sponsible", prompt.firstValue.userId)
-        assertEquals(TelegramChannel.ID, prompt.firstValue.channelId)
+        assertEquals("channel:telegram", prompt.firstValue.channelId)
         assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
 
         val sendAction = argumentCaptor<SendChatAction>()
@@ -420,7 +420,7 @@ class TelegramChannelTest {
 
         val message = Message(
             userId = "ray.sponsible",
-            channelId = TelegramChannel.ID,
+            channelId = "channel:telegram",
             text = "Hello"
         )
         telegram.init(config, context)
@@ -443,7 +443,7 @@ class TelegramChannelTest {
 
         val message = Message(
             userId = "ray.sponsible",
-            channelId = TelegramChannel.ID,
+            channelId = "channel:telegram",
             text = "Hello",
             filePaths = listOf("/path/to/file.pdf", "/path/to/file.docx")
         )
@@ -469,7 +469,7 @@ class TelegramChannelTest {
     fun `send - no userId`() {
         val message = Message(
             userId = null,
-            channelId = TelegramChannel.ID,
+            channelId = "channel:telegram",
             text = "Hello"
         )
         telegram.init(config, context)
@@ -486,7 +486,7 @@ class TelegramChannelTest {
 
         val message = Message(
             userId = "xxxx",
-            channelId = TelegramChannel.ID,
+            channelId = "channel:telegram",
             text = "Hello"
         )
         telegram.init(config, context)
@@ -524,7 +524,7 @@ class TelegramChannelTest {
         val result = telegram.health()
 
         assertEquals(true, result.up)
-        assertEquals(TelegramChannel.ID, result.id)
+        assertEquals("channel:telegram", result.id)
         assertEquals(0, result.children.size)
     }
 
@@ -538,7 +538,7 @@ class TelegramChannelTest {
         val result = telegram.health()
 
         assertEquals(false, result.up)
-        assertEquals(TelegramChannel.ID, result.id)
+        assertEquals("channel:telegram", result.id)
         assertEquals(0, result.children.size)
     }
 
@@ -551,7 +551,7 @@ class TelegramChannelTest {
         val result = telegram.health()
 
         assertEquals(false, result.up)
-        assertEquals(TelegramChannel.ID, result.id)
+        assertEquals("channel:telegram", result.id)
         assertEquals(0, result.children.size)
     }
 

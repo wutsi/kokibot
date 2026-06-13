@@ -113,6 +113,12 @@
                     </svg>
                     Skills
                 </button>
+                <button class="settings-tab" data-tab="marketplaces">
+                    <svg fill="currentColor" height="18" viewBox="0 0 24 24" width="18">
+                        <path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/>
+                    </svg>
+                    Marketplaces
+                </button>
             </div>
 
             <!-- Tab Content -->
@@ -249,6 +255,23 @@
                                     <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
                                 </svg>
                                 <p>Loading skills...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marketplaces Tab -->
+                <div class="settings-tab-content" data-content="marketplaces">
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">Marketplaces</h2>
+                        <p class="settings-section-description">Skill marketplaces connected to your assistant</p>
+
+                        <div id="marketplaces-content" class="marketplaces-content">
+                            <div class="marketplaces-loading">
+                                <svg class="loading-spinner" fill="currentColor" height="48" viewBox="0 0 24 24" width="48">
+                                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                                </svg>
+                                <p>Loading marketplaces...</p>
                             </div>
                         </div>
                     </div>

@@ -72,7 +72,7 @@ class EmailChannelTest {
 
     @Test
     fun id() {
-        assertEquals(EmailChannel.ID, channel.id())
+        assertEquals("channel:email", channel.id())
     }
 
     @Test
@@ -82,7 +82,7 @@ class EmailChannelTest {
 
         // THEN
         assertEquals(true, result.up)
-        assertEquals(EmailChannel.ID, result.id)
+        assertEquals("channel:email", result.id)
     }
 
     @Test
@@ -96,7 +96,7 @@ class EmailChannelTest {
 
         // THEN
         assertEquals(false, result.up)
-        assertEquals(EmailChannel.ID, result.id)
+        assertEquals("channel:email", result.id)
     }
 
     @Test
@@ -110,7 +110,7 @@ class EmailChannelTest {
 
         // THEN
         assertEquals(false, result.up)
-        assertEquals(EmailChannel.ID, result.id)
+        assertEquals("channel:email", result.id)
     }
 
     @Test
@@ -209,7 +209,7 @@ class EmailChannelTest {
 
         assertEquals(message.messageID, prompt.firstValue.id)
         assertEquals("ray.sponsible@gmail.com", prompt.firstValue.userId)
-        assertEquals(EmailChannel.ID, prompt.firstValue.channelId)
+        assertEquals("channel:email", prompt.firstValue.channelId)
         assertEquals("${message.subject}\nHello\n\nCan you send me my daily debriefing?", prompt.firstValue.text)
         assertEquals(message.subject, prompt.firstValue.subject)
         assertEquals(Role.USER, prompt.firstValue.role)
@@ -266,7 +266,7 @@ class EmailChannelTest {
 
         assertEquals(message.messageID, prompt.firstValue.id)
         assertEquals("ray.sponsible@gmail.com", prompt.firstValue.userId)
-        assertEquals(EmailChannel.ID, prompt.firstValue.channelId)
+        assertEquals("channel:email", prompt.firstValue.channelId)
         assertEquals(
             """
                 ${message.subject}

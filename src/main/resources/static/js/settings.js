@@ -136,6 +136,10 @@ const Settings = {
                 this.loadSkills();
                 this.loadedTabs.add(tabName);
                 break;
+            case 'marketplaces':
+                this.loadMarketplaces();
+                this.loadedTabs.add(tabName);
+                break;
         }
     },
 
@@ -319,7 +323,7 @@ const Settings = {
                     <div class="general-item">
                         <p class="general-item-label">Provider</p>
                         <div class="general-llm-provider">
-                            <img src="/assets/${llmName}.png" alt="${llmName}" class="general-llm-icon"
+                            <img src="/assets/llm/${llmName}.png" alt="${llmName}" class="general-llm-icon"
                                  onerror="this.style.display='none'">
                             <p class="general-llm-name">${this.formatLLMName(llmName)}</p>
                         </div>
@@ -882,7 +886,7 @@ const Settings = {
         contentElement.innerHTML = `
             <div class="llm-info">
                 <div class="llm-provider">
-                    <img src="/assets/${llmName}.png" alt="${llmName}" class="llm-provider-icon"
+                    <img src="/assets/llm/${llmName}.png" alt="${llmName}" class="llm-provider-icon"
                          onerror="this.style.display='none'">
                     <div class="llm-provider-info">
                         <h3 class="llm-provider-name">${this.formatLLMName(llmName)}</h3>
@@ -1032,6 +1036,110 @@ const Settings = {
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
                 <h3>Error Loading Skills</h3>
+                <p>${message}</p>
+            </div>
+        `;
+    },
+
+    async loadMarketplaces() {
+        if (!this.agentName) {
+            this.showMarketplacesError('No agent selected');
+            return;
+        }
+
+        const contentElement = document.getElementById('marketplaces-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="marketplaces-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading marketplaces...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            console.log(`fetching /assistants/${this.agentName}/marketplaces`);
+            const response = await fetch(`/assistants/${this.agentName}/marketplaces`, {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const marketplaces = await response.json();
+
+            if (!marketplaces || marketplaces.length === 0) {
+                this.showMarketplacesEmpty();
+                return;
+            }
+
+            this.displayMarketplaces(marketplaces);
+        } catch (error) {
+            console.error('Error loading marketplaces:', error);
+            if (error.name === 'AbortError') {
+                this.showMarketplacesError('Request timed out. Please try again.');
+            } else {
+                this.showMarketplacesError('Failed to load marketplaces. Please try again.');
+            }
+            Notifications.error('Failed to load marketplaces', { duration: 5000 });
+        }
+    },
+
+    displayMarketplaces(marketplaces) {
+        const contentElement = document.getElementById('marketplaces-content');
+        if (!contentElement) return;
+
+        const html = marketplaces.map(mp => {
+            const skillsHtml = mp.skills && mp.skills.length > 0
+                ? mp.skills.map(s => `<span class="marketplace-skill-tag">${this.escapeHtml(s)}</span>`).join('')
+                : '<span class="marketplace-no-skills">No skills</span>';
+
+            return `
+                <div class="marketplace-item">
+                    <div class="marketplace-header">
+                        <h3 class="marketplace-name">${this.escapeHtml(mp.name)}</h3>
+                        <span class="marketplace-skill-count">${mp.skills ? mp.skills.length : 0} skill${mp.skills && mp.skills.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <p class="marketplace-url">${this.escapeHtml(mp.repoUrl)}</p>
+                    <div class="marketplace-skills">${skillsHtml}</div>
+                </div>
+            `;
+        }).join('');
+
+        contentElement.innerHTML = `<div class="marketplaces-list">${html}</div>`;
+    },
+
+    showMarketplacesEmpty() {
+        const contentElement = document.getElementById('marketplaces-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="marketplaces-empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/>
+                </svg>
+                <h3>No Marketplaces</h3>
+                <p>This assistant has no skill marketplaces configured</p>
+            </div>
+        `;
+    },
+
+    showMarketplacesError(message) {
+        const contentElement = document.getElementById('marketplaces-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="marketplaces-error">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <h3>Error Loading Marketplaces</h3>
                 <p>${message}</p>
             </div>
         `;

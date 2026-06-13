@@ -1,0 +1,126 @@
+package com.wutsi.kokibot.controller
+
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.Bootstrap
+import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.MultiBootstrap
+import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.marketplace.Marketplace
+import com.wutsi.kokibot.marketplace.MarketplaceRegistry
+import com.wutsi.kokibot.skill.Skill
+import com.wutsi.kokibot.skill.SkillMetadata
+import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.resttestclient.TestRestTemplate
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.io.File
+import kotlin.test.assertEquals
+
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestRestTemplate
+class MarketplaceControllerTest {
+    @MockitoBean
+    private lateinit var multi: MultiBootstrap
+
+    @Autowired
+    protected lateinit var rest: TestRestTemplate
+
+    @Test
+    fun marketplaces() {
+        val skills = listOf(
+            createSkill("crm"),
+            createSkill("weather"),
+        )
+        val marketplaces = listOf(
+            createMarketplace("acme", "https://github.com/acme/skills", skills),
+        )
+        doReturn(listOf(createBootstrap("007", marketplaces = marketplaces))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/marketplaces", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        val body = response.body!!
+        assertEquals(1, body.size)
+
+        val mp = body[0] as Map<*, *>
+        assertEquals("acme", mp["name"])
+        assertEquals("https://github.com/acme/skills", mp["repoUrl"])
+
+        @Suppress("UNCHECKED_CAST")
+        val skillNames = mp["skills"] as List<*>
+        assertEquals(2, skillNames.size)
+        assertEquals("crm", skillNames[0])
+        assertEquals("weather", skillNames[1])
+    }
+
+    @Test
+    fun `marketplaces returns multiple marketplaces`() {
+        val marketplaces = listOf(
+            createMarketplace("acme", "https://github.com/acme/skills", listOf(createSkill("crm"))),
+            createMarketplace("beta", "https://github.com/beta/skills", emptyList()),
+        )
+        doReturn(listOf(createBootstrap("007", marketplaces = marketplaces))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/marketplaces", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(2, response.body!!.size)
+    }
+
+    @Test
+    fun `marketplaces returns empty list when no marketplaces`() {
+        doReturn(listOf(createBootstrap("007", marketplaces = emptyList()))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/marketplaces", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(0, response.body!!.size)
+    }
+
+    @Test
+    fun `marketplaces returns 404 when agent not found`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/xxx/marketplaces", List::class.java)
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    private fun createSkill(name: String): Skill {
+        val metadata = SkillMetadata(name = name, home = File("."))
+        return Skill(metadata, "")
+    }
+
+    private fun createMarketplace(name: String, repoUrl: String, skills: List<Skill>): Marketplace {
+        val marketplace = mock<Marketplace>()
+        doReturn(name).whenever(marketplace).getName()
+        doReturn(repoUrl).whenever(marketplace).getRepoUrl()
+        doReturn(skills).whenever(marketplace).getSkills()
+        return marketplace
+    }
+
+    private fun createBootstrap(name: String, marketplaces: List<Marketplace> = emptyList()): Bootstrap {
+        val assistant = mock<Assistant>()
+        doReturn(name).whenever(assistant).name
+
+        val marketplaceRegistry = mock<MarketplaceRegistry>()
+        doReturn(marketplaces).whenever(marketplaceRegistry).all()
+
+        val context = Context(
+            assistant = assistant,
+            home = File("target/marketplace-controller/$name"),
+            llm = mock<LLM>(),
+            marketplaceRegistry = marketplaceRegistry,
+        )
+        val bootstrap = mock<Bootstrap>()
+        doReturn(context).whenever(bootstrap).getContext()
+        return bootstrap
+    }
+}

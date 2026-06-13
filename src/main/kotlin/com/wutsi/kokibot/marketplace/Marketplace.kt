@@ -35,6 +35,14 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
         this.context = context
     }
 
+    fun getName(): String {
+        return name
+    }
+
+    fun getRepoUrl(): String {
+        return repoUrl
+    }
+
     fun getSkills(): List<Skill> {
         if (skills.isEmpty()) {
             skills.addAll(loadSkills())

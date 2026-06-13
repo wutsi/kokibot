@@ -136,22 +136,5 @@ class AssistantController(private val multi: MultiBootstrap) {
         return format.format(amount)
     }
 
-    @GetMapping("/{name}/skills")
-    fun skills(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
-        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-
-        val context = bootstrap.getContext()
-        return ResponseEntity.ok(
-            context.skillRegistry.all()
-                .filter { skill -> skill.activate() }
-                .map { skill ->
-                    mapOf(
-                        "name" to skill.metadata.name,
-                        "description" to skill.metadata.description,
-                    )
-                }
-        )
-    }
-
     private fun getBootstrap(name: String) = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }
 }

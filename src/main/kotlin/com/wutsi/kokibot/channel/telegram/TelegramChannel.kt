@@ -41,7 +41,6 @@ class TelegramChannel(
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TelegramChannel::class.java)
 
-        const val ID = "channel:telegram"
         const val TYPING_DELAY_MILLIS = 2000L
         const val STREAM_MAX_LENGTH = 1024
         const val MESSAGE_MAX_LENGTH = 3900 // Telegram max is 4096, but we reserve some for HTML tags
@@ -71,7 +70,7 @@ class TelegramChannel(
      */
     private val streamUpdateDelayMillis = AtomicLong(STREAM_INITIAL_DELAY_MILLIS)
 
-    override fun id(): String = ID
+    override fun name(): String = "telegram"
 
     @Synchronized
     override fun init(config: Map<*, *>, context: Context) {

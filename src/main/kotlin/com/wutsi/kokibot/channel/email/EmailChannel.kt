@@ -34,7 +34,6 @@ class EmailChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(EmailChannel::class.java)
 
-        const val ID = "channel:email"
         const val DEFAULT_FREQUENCY_SECONDS = 15L * 60L // 15 minutes
     }
 
@@ -54,8 +53,8 @@ class EmailChannel : Channel() {
     private lateinit var senderWhitelist: List<String>
     private lateinit var job: ScheduledFuture<*>
 
-    override fun id(): String {
-        return ID
+    override fun name(): String {
+        return "email"
     }
 
     override fun init(config: Map<*, *>, context: Context) {

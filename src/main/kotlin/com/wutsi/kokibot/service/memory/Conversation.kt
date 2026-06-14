@@ -12,6 +12,7 @@ data class Conversation(
 data class ConversationMessage(
     val role: String = "",
     val text: String = "",
+    val files: List<String> = emptyList(),
     val dateTime: LocalDateTime = LocalDateTime.now(),
 )
 

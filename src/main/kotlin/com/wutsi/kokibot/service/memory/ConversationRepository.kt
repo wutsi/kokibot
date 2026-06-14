@@ -18,6 +18,7 @@ class ConversationRepository : Resource {
         const val TITLE_MAX_LENGTH = 60
         private const val CONV_MARKER_PREFIX = "<!-- kokibot:conv:"
         private const val CONV_MARKER_SUFFIX = " -->"
+        const val BLOCK_SEPARATOR = "\n\n<!-- kokibot:end -->\n\n"
         private val DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         private val LOGGER = LoggerFactory.getLogger(ConversationRepository::class.java)
     }
@@ -46,7 +47,12 @@ class ConversationRepository : Resource {
         }
     }
 
-    fun getConversations(userId: String, channelId: String? = null, limit: Int = Int.MAX_VALUE, offset: Int = 0): List<Conversation> {
+    fun getConversations(
+        userId: String,
+        channelId: String? = null,
+        limit: Int = Int.MAX_VALUE,
+        offset: Int = 0
+    ): List<Conversation> {
         lock.read {
             val sanitized = channelId?.let { sanitizeId(it) }
             return readIndex(userId)
@@ -70,7 +76,12 @@ class ConversationRepository : Resource {
 
             return channelDir.listFiles { f -> f.extension == "md" }
                 ?.filter { f ->
-                    runCatching { LocalDate.parse(f.nameWithoutExtension, DATE_FORMAT) >= startDate }.getOrDefault(false)
+                    runCatching {
+                        LocalDate.parse(
+                            f.nameWithoutExtension,
+                            DATE_FORMAT
+                        ) >= startDate
+                    }.getOrDefault(false)
                 }
                 ?.sortedBy { f -> f.nameWithoutExtension }
                 ?.flatMap { f -> parseMessages(f, conversationId) }
@@ -79,27 +90,35 @@ class ConversationRepository : Resource {
     }
 
     private fun parseMessages(file: File, conversationId: String): List<ConversationMessage> {
-        val content = file.readText()
-        val blocks = content.split("\n\n---\n\n")
         val messages = mutableListOf<ConversationMessage>()
-
-        for (block in blocks) {
-            val trimmed = block.trim()
-            val marker = "$CONV_MARKER_PREFIX$conversationId$CONV_MARKER_SUFFIX"
-            if (!trimmed.startsWith(marker)) continue
-
-            val dateTime = extractDateTime(trimmed) ?: continue
-            val userText = extractSection(trimmed, "### Query:")
-            val assistantText = extractSection(trimmed, "### Response:")
-
-            if (userText != null) {
-                messages.add(ConversationMessage(role = "user", text = userText, dateTime = dateTime))
+        file.readText()
+            .split(CONV_MARKER_PREFIX)
+            .filter { it.startsWith("$conversationId$CONV_MARKER_SUFFIX") }
+            .forEach { block ->
+                val trimmed = block.trim()
+                val dateTime = extractDateTime(trimmed) ?: return@forEach
+                val userText = extractSection(trimmed, "### Query:") ?: return@forEach
+                val assistantText = extractSection(trimmed, "### Response:")
+                val files = extractFiles(trimmed)
+                messages.add(ConversationMessage(role = "user", text = userText, files = files, dateTime = dateTime))
+                if (assistantText != null) {
+                    messages.add(ConversationMessage(role = "assistant", text = assistantText, dateTime = dateTime))
+                }
             }
-            if (assistantText != null) {
-                messages.add(ConversationMessage(role = "assistant", text = assistantText, dateTime = dateTime))
-            }
-        }
         return messages
+    }
+
+    private fun extractFiles(block: String): List<String> {
+        val header = "### Files:\n"
+        val start = block.indexOf(header)
+        if (start == -1) return emptyList()
+        val contentStart = start + header.length
+        val end = block.indexOf("\n\n", contentStart)
+        val section = if (end == -1) block.substring(contentStart) else block.substring(contentStart, end)
+        return section.lines()
+            .filter { it.startsWith("- ") }
+            .map { it.removePrefix("- ").trim() }
+            .filter { it.isNotEmpty() }
     }
 
     private fun extractSection(block: String, header: String): String? {
@@ -107,9 +126,26 @@ class ConversationRepository : Resource {
         val start = block.indexOf(marker)
         if (start == -1) return null
         val contentStart = start + marker.length
-        val end = block.indexOf("\n```", contentStart)
-        if (end == -1) return null
+        val end = closingFence(block, contentStart, header)
+        if (end < contentStart) return null
         return block.substring(contentStart, end)
+    }
+
+    // Finds the position of the closing \n``` for a section.
+    // Response is always the last section in the block, so its fence is the last \n``` in the block.
+    // Query ends at a known boundary: \n```\n\n## (no files) or \n```\n### Files: (with files).
+    // Using these exact patterns avoids false matches on ## headings or code fences inside LLM content.
+    private fun closingFence(block: String, contentStart: Int, header: String): Int {
+        if (header == "### Response:") {
+            return block.lastIndexOf("\n```")
+        }
+        val beforeFiles = block.indexOf("\n```\n### Files:", contentStart).takeIf { it >= contentStart }
+        val beforeRole = block.indexOf("\n```\n\n## ", contentStart).takeIf { it >= contentStart }
+        return when {
+            beforeFiles != null && (beforeRole == null || beforeFiles < beforeRole) -> beforeFiles
+            beforeRole != null -> beforeRole
+            else -> block.lastIndexOf("\n```")
+        }
     }
 
     private fun extractDateTime(block: String): LocalDateTime? {

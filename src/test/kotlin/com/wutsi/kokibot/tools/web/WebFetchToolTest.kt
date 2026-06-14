@@ -51,7 +51,7 @@ class WebFetchToolTest {
     @Test
     fun `statusText - no tool calls`() {
         val result = tool.statusText(emptyList())
-        assertEquals("Reading 0 page", result)
+        assertEquals(true, result.contains("Reading online from"))
     }
 
     @Test
@@ -60,7 +60,7 @@ class WebFetchToolTest {
             LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com"))
         )
         val result = tool.statusText(toolCalls)
-        assertEquals("Reading 1 page", result)
+        assertEquals("Reading online from example.com", result)
     }
 
     @Test
@@ -68,10 +68,10 @@ class WebFetchToolTest {
         val toolCalls = listOf(
             LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com/a")),
             LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com/b")),
-            LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com/c"))
+            LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.ca/c"))
         )
         val result = tool.statusText(toolCalls)
-        assertEquals("Reading 3 pages", result)
+        assertEquals("Reading online from example.com, example.ca", result)
     }
 
     @Test

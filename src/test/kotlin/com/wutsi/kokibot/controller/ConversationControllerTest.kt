@@ -108,8 +108,8 @@ class ConversationControllerTest {
             startDate = LocalDateTime.of(2026, 6, 12, 10, 0),
         )
         val messages = listOf(
-            ConversationMessage("user", "What's the weather?", LocalDateTime.of(2026, 6, 12, 10, 0)),
-            ConversationMessage("assistant", "Sunny, 22°C.", LocalDateTime.of(2026, 6, 12, 10, 0)),
+            ConversationMessage("user", "What's the weather?", dateTime = LocalDateTime.of(2026, 6, 12, 10, 0)),
+            ConversationMessage("assistant", "Sunny, 22°C.", dateTime = LocalDateTime.of(2026, 6, 12, 10, 0)),
         )
         doReturn(listOf(conversation)).whenever(conversationRepository)
             .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())

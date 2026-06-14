@@ -66,7 +66,12 @@ const ChatUI = {
 
             for (const message of detail.messages) {
                 if (message.role === 'user') {
-                    this.messageRenderer.addUserMessage(message.text);
+                    const filesInfo = (message.files || []).map(path => {
+                        const name = path.split('/').pop();
+                        const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+                        return { path, name, extension: ext, size: 0 };
+                    });
+                    this.messageRenderer.addUserMessage(message.text, filesInfo);
                 } else if (message.role === 'assistant') {
                     this.messageRenderer.addAssistantMessage(message.text);
                 }

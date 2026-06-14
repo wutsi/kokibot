@@ -30,7 +30,7 @@ class FileService : Resource {
         if (!dir.exists()) {
             dir.mkdirs()
         }
-        return File(dir, "${filename}.${extension.removePrefix(".")}")
+        return File(dir, "$filename.${extension.removePrefix(".")}")
     }
 
     fun urlPath(path: String): String? {

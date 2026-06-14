@@ -3,6 +3,7 @@ package com.wutsi.kokibot.service.memory
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
+import com.wutsi.kokibot.service.memory.ConversationRepository.Companion.BLOCK_SEPARATOR
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -44,8 +45,8 @@ class ChatHistory : Resource {
                 (if (files.isNotEmpty()) "### Files:\n$files\n\n" else "\n") +
                 "## ${response.role}\n" +
                 "### Response:\n" +
-                "```markdown\n${response.text}\n```\n\n" +
-                "---\n\n"
+                "```markdown\n${response.text}\n```" +
+                BLOCK_SEPARATOR
 
             getFile(userId, channelId).appendText(content)
             return conversationId

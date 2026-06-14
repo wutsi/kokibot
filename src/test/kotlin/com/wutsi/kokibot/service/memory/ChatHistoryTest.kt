@@ -3,6 +3,7 @@ package com.wutsi.kokibot.service.memory
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.memory.ConversationRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -70,8 +71,8 @@ class ChatHistoryTest {
                 "### Response:\n" +
                 "```markdown\n" +
                 "${response.text}\n" +
-                "```\n\n" +
-                "---\n\n"
+                "```" +
+                ConversationRepository.BLOCK_SEPARATOR
 
         val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         val file = File(context.home.absolutePath + "/memory/chat/user-1/telegram/$today.md")

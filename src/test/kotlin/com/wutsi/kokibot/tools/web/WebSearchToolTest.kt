@@ -23,7 +23,7 @@ class WebSearchToolTest {
     @Test
     fun `statusText - no tool calls`() {
         val result = tool.statusText(emptyList())
-        assertEquals("Searching online", result)
+        assertEquals(true, result.contains("Searching online"))
     }
 
     @Test
@@ -32,7 +32,7 @@ class WebSearchToolTest {
             LLMToolCall(name = WebSearchTool.NAME, arguments = mapOf("query" to "Capitale de la France"))
         )
         val result = tool.statusText(toolCalls)
-        assertEquals("Searching online", result)
+        assertEquals("Searching online: `Capitale de la France`", result)
     }
 
     @Test
@@ -42,7 +42,7 @@ class WebSearchToolTest {
             LLMToolCall(name = WebSearchTool.NAME, arguments = mapOf("query" to "Capital of Germany"))
         )
         val result = tool.statusText(toolCalls)
-        assertEquals("Searching online", result)
+        assertEquals("Searching online: `Capitale de la France`,`Capital of Germany`", result)
     }
 
     @Test

@@ -7,6 +7,8 @@
     <link href="css/chat.css" rel="stylesheet">
     <link href="css/notifications.css" rel="stylesheet">
     <link href="css/settings.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" rel="stylesheet" media="(prefers-color-scheme: light)">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" rel="stylesheet" media="(prefers-color-scheme: dark)">
 </head>
 <body>
 <div class="app-container">
@@ -282,8 +284,11 @@
     </div><!-- end .content-area -->
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/components/notification-manager.js"></script>
+<script src="js/components/markdown-renderer.js"></script>
 <script src="js/components/agent-selector.js"></script>
 <script src="js/components/conversation-history.js"></script>
 <script src="js/components/sidebar.js"></script>

@@ -404,13 +404,12 @@ const Settings = {
                 return;
             }
 
-            // Display as plain text
-            const pre = document.createElement('pre');
-            pre.className = 'instructions-text';
-            pre.textContent = textContent;
+            const div = document.createElement('div');
+            div.className = 'instructions-text markdown-body';
+            div.innerHTML = new MarkdownRenderer().render(textContent);
 
             contentElement.innerHTML = '';
-            contentElement.appendChild(pre);
+            contentElement.appendChild(div);
 
             // Show edit button
             this.showInstructionsEditButton();
@@ -577,12 +576,12 @@ const Settings = {
         if (!this.instructionsOriginalContent || !this.instructionsOriginalContent.trim()) {
             this.showInstructionsEmpty();
         } else {
-            const pre = document.createElement('pre');
-            pre.className = 'instructions-text';
-            pre.textContent = this.instructionsOriginalContent;
+            const div = document.createElement('div');
+            div.className = 'instructions-text markdown-body';
+            div.innerHTML = new MarkdownRenderer().render(this.instructionsOriginalContent);
 
             contentElement.innerHTML = '';
-            contentElement.appendChild(pre);
+            contentElement.appendChild(div);
         }
 
         // Show edit button
@@ -636,13 +635,12 @@ const Settings = {
                 return;
             }
 
-            // Display as plain text
-            const pre = document.createElement('pre');
-            pre.className = 'heartbeat-text';
-            pre.textContent = textContent;
+            const div = document.createElement('div');
+            div.className = 'heartbeat-text markdown-body';
+            div.innerHTML = new MarkdownRenderer().render(textContent);
 
             contentElement.innerHTML = '';
-            contentElement.appendChild(pre);
+            contentElement.appendChild(div);
 
             // Show edit button
             this.showHeartbeatEditButton();
@@ -809,12 +807,12 @@ const Settings = {
         if (!this.heartbeatOriginalContent || !this.heartbeatOriginalContent.trim()) {
             this.showHeartbeatEmpty();
         } else {
-            const pre = document.createElement('pre');
-            pre.className = 'heartbeat-text';
-            pre.textContent = this.heartbeatOriginalContent;
+            const div = document.createElement('div');
+            div.className = 'heartbeat-text markdown-body';
+            div.innerHTML = new MarkdownRenderer().render(this.heartbeatOriginalContent);
 
             contentElement.innerHTML = '';
-            contentElement.appendChild(pre);
+            contentElement.appendChild(div);
         }
 
         // Show edit button

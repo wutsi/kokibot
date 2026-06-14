@@ -15,6 +15,7 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.websocket.WebSocketChannel.Companion.ANONYMOUS_USER
 import com.wutsi.kokibot.llm.LLMStreamData
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
@@ -44,6 +45,14 @@ class WebSocketChannelTest {
 
         val msg = Message(text = "Final answer", role = Role.ASSISTANT, conversationId = "conv-test-123")
         doReturn(msg).whenever(assistant).process(any(), any())
+    }
+
+    @Test
+    fun source() {
+        val channel = WebSocketChannel()
+        channel.init(mapOf("path" to "/ws/test"), context)
+
+        Assertions.assertEquals("/ws/test", channel.source())
     }
 
     @Test

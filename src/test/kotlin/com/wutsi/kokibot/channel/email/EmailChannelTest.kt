@@ -76,6 +76,11 @@ class EmailChannelTest {
     }
 
     @Test
+    fun source() {
+        assertEquals(email, channel.source())
+    }
+
+    @Test
     fun health() {
         // WHEN
         val result = channel.health()

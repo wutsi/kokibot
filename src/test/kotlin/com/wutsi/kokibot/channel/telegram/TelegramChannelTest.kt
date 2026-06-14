@@ -49,7 +49,10 @@ class TelegramChannelTest {
     private val rest = mock<RestTemplate>()
     private val restBuilder = mock<RestBuilder>()
     private val botToken = "13200493:AAH-abc123def456ghi789jkl012mno345pqr"
-    private val config = mapOf("token" to botToken)
+    private val config = mapOf(
+        "token" to botToken,
+        "bot-name" to "test-bot",
+    )
     private val context = Context(
         home = File("target/test-data/telegram"),
         llm = mock(),
@@ -69,6 +72,13 @@ class TelegramChannelTest {
     @Test
     fun id() {
         assertEquals("channel:telegram", telegram.id())
+    }
+
+    @Test
+    fun source() {
+        telegram.init(config, context)
+
+        assertEquals("test-bot", telegram.source())
     }
 
     @Test

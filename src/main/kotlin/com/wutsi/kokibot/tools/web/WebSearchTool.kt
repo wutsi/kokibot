@@ -68,6 +68,8 @@ class WebSearchTool : Tool {
     }
 
     override fun statusText(toolCalls: List<LLMToolCall>): String {
-        return "Searching online"
+        val queries = toolCalls.mapNotNull { tool -> tool.arguments["query"]?.toString() }
+            .joinToString(",") { query -> "`$query`" }
+        return "Searching online: $queries"
     }
 }

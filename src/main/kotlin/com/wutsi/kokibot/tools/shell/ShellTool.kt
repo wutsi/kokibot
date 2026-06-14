@@ -81,7 +81,7 @@ class ShellTool : Tool {
         return "Bash:" +
             if (toolCalls.size == 1) {
                 val cmd = toolCalls[0].arguments["command"].toString()
-                if (cmd.length > 100) " ${cmd.take(100)}..." else " $cmd"
+                if (cmd.length > 200) " ${cmd.take(200)}..." else " $cmd"
             } else {
                 " ${toolCalls.size} commands"
             }

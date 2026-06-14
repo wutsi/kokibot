@@ -15,6 +15,7 @@ import org.jsoup.Jsoup
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URL
 import java.util.Arrays
 
 class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
@@ -54,7 +55,11 @@ class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
     )
 
     override fun statusText(toolCalls: List<LLMToolCall>): String {
-        return "Reading ${toolCalls.size} page" + (if (toolCalls.size > 1) "s" else "")
+        val hosts = toolCalls.mapNotNull { tool -> tool.arguments["url"]?.toString() }
+            .map { url -> URL(url).host }
+            .distinct()
+            .joinToString(", ")
+        return "Reading online from $hosts"
     }
 
     override fun exec(arguments: Map<*, *>): String {

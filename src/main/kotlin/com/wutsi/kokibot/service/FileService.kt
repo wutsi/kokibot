@@ -30,7 +30,7 @@ class FileService : Resource {
         if (!dir.exists()) {
             dir.mkdirs()
         }
-        return File(dir, "${filename}_${UUID.randomUUID()}.${extension.removePrefix(".")}")
+        return File(dir, "${filename}.${extension.removePrefix(".")}")
     }
 
     fun urlPath(path: String): String? {
@@ -46,6 +46,6 @@ class FileService : Resource {
     }
 
     private fun getTempDir(): File {
-        return File(context.home.absolutePath, "workspace/tmp")
+        return File(context.home.absolutePath, "workspace/tmp/" + UUID.randomUUID())
     }
 }

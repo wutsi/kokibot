@@ -106,6 +106,7 @@ Refer to the [Configuration Guide](docs/CONFIGURATION.md) for configuring the ag
                  {session-id}.log           # Conversation session log file
          chat/                              # Directory for conversation history with users
            {user-id}/
+             conversation.json              # Conversation history with a user. Maintained by the system
              {channel-id}/
                {yyyy}-{MM}-{dd}.md          # Daily conversation history with a user in a channel. Maintained by the system
        workspace/                           # Working directory

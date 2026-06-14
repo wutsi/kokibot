@@ -28,15 +28,6 @@
   },
   "marketplaces": [
     {
-      "name": "obsidian",
-      "repo-url": "https://github.com/kepano/obsidian-skills.git",
-      "skill-whitelist": [
-        "obsidian-markdown",
-        "obsidian-bases",
-        "json-canvas"
-      ]
-    },
-    {
       "name": "anthropics",
       "repo-url": "https://github.com/anthropics/skills.git",
       "skill-whitelist": [
@@ -44,6 +35,21 @@
         "docx",
         "pptx",
         "xlsx"
+      ]
+    },
+    {
+      "name": "vercel-labs",
+      "repo-url": "https://github.com/vercel-labs/agent-browser.git",
+      "skill-whitelist": [
+        "agent-browser"
+      ]
+    },
+    {
+      "name": "kokibot",
+      "repo-url": "https://github.com/wutsi/kokibot-skills.git",
+      "skill-whitelist": [
+        "markitdown",
+        "pandoc"
       ]
     }
   ]

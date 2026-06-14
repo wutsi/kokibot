@@ -136,6 +136,10 @@ const Settings = {
                 this.loadSkills();
                 this.loadedTabs.add(tabName);
                 break;
+            case 'channels':
+                this.loadChannels();
+                this.loadedTabs.add(tabName);
+                break;
             case 'marketplaces':
                 this.loadMarketplaces();
                 this.loadedTabs.add(tabName);
@@ -1034,6 +1038,106 @@ const Settings = {
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
                 <h3>Error Loading Skills</h3>
+                <p>${message}</p>
+            </div>
+        `;
+    },
+
+    async loadChannels() {
+        if (!this.agentName) {
+            this.showChannelsError('No agent selected');
+            return;
+        }
+
+        const contentElement = document.getElementById('channels-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="channels-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading channels...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/channels`, {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const channels = await response.json();
+
+            if (!channels || channels.length === 0) {
+                this.showChannelsEmpty();
+                return;
+            }
+
+            this.displayChannels(channels);
+        } catch (error) {
+            console.error('Error loading channels:', error);
+            if (error.name === 'AbortError') {
+                this.showChannelsError('Request timed out. Please try again.');
+            } else {
+                this.showChannelsError('Failed to load channels. Please try again.');
+            }
+            Notifications.error('Failed to load channels', { duration: 5000 });
+        }
+    },
+
+    displayChannels(channels) {
+        const contentElement = document.getElementById('channels-content');
+        if (!contentElement) return;
+
+        const html = channels.map(ch => {
+            const name = ch.name || '';
+            const displayName = name.split('-')
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ');
+            return `
+                <div class="channel-item">
+                    <img src="/assets/channel/${this.escapeHtml(name)}.png" alt="${this.escapeHtml(displayName)}"
+                         class="channel-icon" onerror="this.style.display='none'">
+                    <span class="channel-name">${this.escapeHtml(displayName)}</span>
+                </div>
+            `;
+        }).join('');
+
+        contentElement.innerHTML = `<div class="channels-list">${html}</div>`;
+    },
+
+    showChannelsEmpty() {
+        const contentElement = document.getElementById('channels-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="channels-empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                </svg>
+                <h3>No Channels</h3>
+                <p>This assistant has no channels configured</p>
+            </div>
+        `;
+    },
+
+    showChannelsError(message) {
+        const contentElement = document.getElementById('channels-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="channels-error">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <h3>Error Loading Channels</h3>
                 <p>${message}</p>
             </div>
         `;

@@ -15,7 +15,7 @@ class ShellToolTest {
     fun metadata() {
         val meta = tool.metadata()
         assertEquals(ShellTool.Companion.NAME, meta.name)
-        assertEquals(3, meta.parameters.size)
+        assertEquals(2, meta.parameters.size)
 
         assertEquals("command", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
@@ -24,10 +24,6 @@ class ShellToolTest {
         assertEquals("directory", meta.parameters[1].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[1].type)
         assertFalse(meta.parameters[1].required)
-
-        assertEquals("timeout", meta.parameters[2].name)
-        assertEquals(ToolParameterType.STRING, meta.parameters[2].type)
-        assertFalse(meta.parameters[2].required)
     }
 
     @Test
@@ -75,24 +71,6 @@ class ShellToolTest {
     @Test
     fun `exec - no command`() {
         assertThrows<IllegalArgumentException> { tool.exec(emptyMap<String, String>()) }
-    }
-
-    @Test
-    fun `exec - timeout`() {
-        val started = System.currentTimeMillis()
-        val result = tool.exec(
-            mapOf(
-                "command" to "sleep 30",
-                "timeout" to "1",
-            )
-        )
-        val elapsedMs = System.currentTimeMillis() - started
-
-        assertTrue(
-            result.contains("timed out after 1 seconds"),
-            "Unexpected result: $result"
-        )
-        assertTrue(elapsedMs < 10_000, "Command did not terminate promptly: ${elapsedMs}ms")
     }
 
     @Test

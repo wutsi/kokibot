@@ -1067,3 +1067,100 @@
         background-color: #2d2d2d;
     }
 }
+
+/* ===== Channels Tab ===== */
+.channels-content {
+    min-height: 400px;
+}
+
+.channels-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    color: var(--color-text-secondary);
+}
+
+.channels-loading p {
+    font-size: 14px;
+    margin: 0;
+}
+
+.channels-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.channel-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background-color: var(--color-bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--color-border-light);
+    transition: border-color 0.2s;
+}
+
+.channel-item:hover {
+    border-color: var(--color-accent-blue);
+}
+
+.channel-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.channel-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.channels-empty,
+.channels-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    text-align: center;
+}
+
+.channels-empty svg {
+    margin-bottom: 16px;
+    color: var(--color-text-tertiary);
+    opacity: 0.3;
+}
+
+.channels-error svg {
+    margin-bottom: 16px;
+    color: var(--color-accent-red);
+    opacity: 0.5;
+}
+
+.channels-empty h3,
+.channels-error h3 {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin: 0 0 8px 0;
+}
+
+.channels-empty p,
+.channels-error p {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .channel-item {
+        background-color: #2d2d2d;
+    }
+}

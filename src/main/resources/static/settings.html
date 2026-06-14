@@ -108,6 +108,12 @@
                     </svg>
                     Heartbeat
                 </button>
+                <button class="settings-tab" data-tab="channels">
+                    <svg fill="currentColor" height="18" viewBox="0 0 24 24" width="18">
+                        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                    </svg>
+                    Channels
+                </button>
                 <button class="settings-tab" data-tab="skills">
                     <svg fill="currentColor" height="18" viewBox="0 0 24 24" width="18">
                         <path
@@ -239,6 +245,23 @@
                                     <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
                                 </svg>
                                 <p>Loading heartbeat instructions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Channels Tab -->
+                <div class="settings-tab-content" data-content="channels">
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">Channels</h2>
+                        <p class="settings-section-description">Communication channels connected to your assistant</p>
+
+                        <div id="channels-content" class="channels-content">
+                            <div class="channels-loading">
+                                <svg class="loading-spinner" fill="currentColor" height="48" viewBox="0 0 24 24" width="48">
+                                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                                </svg>
+                                <p>Loading channels...</p>
                             </div>
                         </div>
                     </div>

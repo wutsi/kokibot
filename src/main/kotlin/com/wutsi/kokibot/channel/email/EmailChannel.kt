@@ -57,6 +57,10 @@ class EmailChannel : Channel() {
         return "email"
     }
 
+    override fun source(): String {
+        return email
+    }
+
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
 

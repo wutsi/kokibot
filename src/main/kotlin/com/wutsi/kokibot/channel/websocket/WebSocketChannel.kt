@@ -27,6 +27,8 @@ class WebSocketChannel : Channel() {
 
     override fun name(): String = "websocket"
 
+    override fun source(): String = path
+
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
         this.path = config["path"]?.toString() ?: "/ws/${context.assistant.name}"

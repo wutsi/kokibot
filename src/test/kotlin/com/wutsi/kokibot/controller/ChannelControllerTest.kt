@@ -32,7 +32,17 @@ class ChannelControllerTest {
 
     @Test
     fun channels() {
-        doReturn(listOf(createBootstrap("007", channels = listOf("telegram", "email")))).whenever(multi).bootstraps
+        doReturn(
+            listOf(
+                createBootstrap(
+                    "007",
+                    channels = listOf(
+                        "telegram" to "@mybot",
+                        "email" to "bot@example.com",
+                    ),
+                ),
+            ),
+        ).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/007/channels", List::class.java)
 
@@ -40,12 +50,14 @@ class ChannelControllerTest {
         val body = response.body!!
         assertEquals(2, body.size)
         assertEquals("telegram", (body[0] as Map<*, *>)["name"])
+        assertEquals("@mybot", (body[0] as Map<*, *>)["source"])
         assertEquals("email", (body[1] as Map<*, *>)["name"])
+        assertEquals("bot@example.com", (body[1] as Map<*, *>)["source"])
     }
 
     @Test
     fun `channels returns empty list when no channels`() {
-        doReturn(listOf(createBootstrap("007", channels = emptyList()))).whenever(multi).bootstraps
+        doReturn(listOf(createBootstrap("007", channels = emptyList<Pair<String, String>>()))).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/007/channels", List::class.java)
 
@@ -55,20 +67,23 @@ class ChannelControllerTest {
 
     @Test
     fun `channels returns 404 when agent not found`() {
-        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+        doReturn(listOf(createBootstrap("007", channels = emptyList()))).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/xxx/channels", List::class.java)
 
         assertEquals(404, response.statusCode.value())
     }
 
-    private fun createBootstrap(name: String, channels: List<String> = emptyList()): Bootstrap {
+    private fun createBootstrap(name: String, channels: List<Pair<String, String>> = emptyList()): Bootstrap {
         val assistant = mock<Assistant>()
         doReturn(name).whenever(assistant).name
 
         val channelRegistry = mock<ChannelRegistry>()
-        doReturn(channels.map { channelName ->
-            mock<Channel>().also { doReturn(channelName).whenever(it).name() }
+        doReturn(channels.map { (channelName, channelSource) ->
+            mock<Channel>().also {
+                doReturn(channelName).whenever(it).name()
+                doReturn(channelSource).whenever(it).source()
+            }
         }).whenever(channelRegistry).all()
 
         val context = Context(

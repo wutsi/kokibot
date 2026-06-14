@@ -20,6 +20,7 @@ class ChannelController(private val multi: MultiBootstrap) {
                 .map { channel ->
                     mapOf(
                         "name" to channel.name(),
+                        "source" to channel.source(),
                     )
                 }
         )

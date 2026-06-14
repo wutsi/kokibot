@@ -1101,11 +1101,15 @@ const Settings = {
             const displayName = name.split('-')
                 .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                 .join(' ');
+            const source = ch.source ? `<span class="channel-source">${this.escapeHtml(ch.source)}</span>` : '';
             return `
                 <div class="channel-item">
                     <img src="/assets/channel/${this.escapeHtml(name)}.png" alt="${this.escapeHtml(displayName)}"
                          class="channel-icon" onerror="this.style.display='none'">
-                    <span class="channel-name">${this.escapeHtml(displayName)}</span>
+                    <div class="channel-info">
+                        <span class="channel-name">${this.escapeHtml(displayName)}</span>
+                        ${source}
+                    </div>
                 </div>
             `;
         }).join('');

@@ -54,6 +54,7 @@ class TelegramChannel(
 
     private var threadPoolSize: Int = DEFAULT_THREAD_POOL_SIZE
     private var botToken: String? = null
+    private lateinit var botName: String
     private lateinit var app: TelegramBotsLongPollingApplication
     private lateinit var client: TelegramClient
     private lateinit var context: Context
@@ -72,10 +73,13 @@ class TelegramChannel(
 
     override fun name(): String = "telegram"
 
+    override fun source(): String = botName
+
     @Synchronized
     override fun init(config: Map<*, *>, context: Context) {
         val token = config["token"]?.toString() ?: throw ConfigurationException("token is required")
         this.botToken = token
+        this.botName = config["bot-name"]?.toString() ?: "-"
         this.threadPoolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_THREAD_POOL_SIZE
         val queueCapacity = MapUtil.toInt("queue-capacity", config) ?: DEFAULT_QUEUE_CAPACITY
 
@@ -96,6 +100,7 @@ class TelegramChannel(
 
         // Log  configuration
         LOGGER.info("Channel: telegram")
+        LOGGER.info("  bot-name: $botName")
         LOGGER.info("  thread-pool-size: $threadPoolSize")
         LOGGER.info("  queue-capacity: $queueCapacity")
         LOGGER.info("  sender-whitelist: $senderWhitelist")

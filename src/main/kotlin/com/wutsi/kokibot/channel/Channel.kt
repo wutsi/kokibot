@@ -8,6 +8,8 @@ abstract class Channel : Resource {
 
     abstract fun name(): String
 
+    abstract fun source(): String
+
     override fun id() = "channel:${name()}"
 
     /**

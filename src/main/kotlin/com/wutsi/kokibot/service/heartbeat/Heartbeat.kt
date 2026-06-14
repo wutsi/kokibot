@@ -47,7 +47,8 @@ class Heartbeat() : Resource {
         if (!query.isNullOrEmpty()) {
             context.assistant.process(
                 Message(
-                    userId = id(),
+                    userId = System.getProperty("user.name"),
+                    channelId = id(),
                     text = query,
                     role = Role.SYSTEM,
                 )

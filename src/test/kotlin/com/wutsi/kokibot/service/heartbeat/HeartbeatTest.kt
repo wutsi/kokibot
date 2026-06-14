@@ -49,7 +49,8 @@ class HeartbeatTest {
 
         assertEquals(Role.SYSTEM, msg.firstValue.role)
         assertEquals("This is the heartbeat job\n", msg.firstValue.text)
-        assertEquals(heartbeat.id(), msg.firstValue.userId)
+        assertEquals(heartbeat.id(), msg.firstValue.channelId)
+        assertEquals(System.getProperty("user.name"), msg.firstValue.userId)
     }
 
     @Test

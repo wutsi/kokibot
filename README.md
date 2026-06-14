@@ -68,10 +68,9 @@ This will automatically
 
 ### Step 3: Access the assistant
 
-Open your navigator and go to `http://localhost:10807?agent=koki` to chat with the default assistant.
+Open your navigator and go to [http://localhost:10807](http://localhost:10807) to chat with the default assistant.
 
-You can also use Telegram or Email to communicate with the assistant, please refer to
-the [Configuration Guide](docs/CONFIGURATION.md) for details.
+Refer to the [Configuration Guide](docs/CONFIGURATION.md) for configuring the agent.
 
 ---
 

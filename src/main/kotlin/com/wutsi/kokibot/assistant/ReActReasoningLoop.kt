@@ -76,14 +76,14 @@ class ReActReasoningLoop(
                     } else {
                         if (streamCallback != null) {
                             response.choices.forEach { choice ->
-                                if (!choice.content.isNullOrEmpty()) {
-                                    streamCallback(
-                                        LLMStreamData(
-                                            text = take(MarkdownUtil.toText(choice.content), 1024),
-                                            usage = response.usage
-                                        )
+                                streamCallback(
+                                    LLMStreamData(
+                                        text = choice.content?.let { content ->
+                                            take(MarkdownUtil.toText(content), 1024)
+                                        } ?: "",
+                                        usage = response.usage
                                     )
-                                }
+                                )
                             }
                         }
                     }

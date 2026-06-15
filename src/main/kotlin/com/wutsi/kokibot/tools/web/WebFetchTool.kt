@@ -17,6 +17,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
 import java.util.Arrays
+import java.util.concurrent.TimeUnit
 
 class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
     private class FileTooLargeException(message: String) : RuntimeException(message)
@@ -90,6 +91,9 @@ class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
 
         val client = OkHttpClient.Builder()
             .protocols(Arrays.asList(Protocol.HTTP_1_1))
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
         val request = Request.Builder()
             .url(url)

@@ -86,6 +86,32 @@ class ToolOrchestratorTest {
     }
 
     @Test
+    fun `should execute a single tool`() {
+        val toolCalls = listOf(
+            LLMToolCall(id = "1", name = "tool1", arguments = mapOf("arg1" to "value1"))
+        )
+        val memory = mutableListOf<String>()
+        val tools = mapOf("tool1" to tool1)
+        val query = Message(id = "test-id", userId = "user1", channelId = "channel1")
+
+        orchestrator.executeTools(
+            id = query.id,
+            iteration = 1,
+            assistantName = "test-assistant",
+            toolCalls = toolCalls,
+            memory = memory,
+            tools = tools,
+            query = query,
+            context = context
+        )
+
+        verify(tool1).exec(mapOf("arg1" to "value1"))
+        assertEquals(2, memory.size) // 1 tool x (usage + result)
+        assertTrue(memory[0].contains("Using tool `tool1` with arguments"))
+        assertTrue(memory[1].contains("result1"))
+    }
+
+    @Test
     fun `should handle tool errors gracefully`() {
         val errorTool = mock<Tool>()
         doReturn(ToolMetadata(name = "error-tool", parameters = emptyList())).whenever(errorTool).metadata()

@@ -43,9 +43,10 @@ class FileEditTool : AbstractFileTool() {
     override fun statusText(toolCalls: List<LLMToolCall>): String {
         return if (accessingMemory(toolCalls)) {
             "Updating memory"
+        } else if (toolCalls.size == 1) {
+            "Updating " + toolCalls[0].arguments["path"]?.toString()
         } else {
-            "Updating ${toolCalls.size} file" + (if (toolCalls.size > 1) "s" else "") +
-                (if (toolCalls.size == 1) ": ${toolCalls[0].arguments["path"]}" else "")
+            "Updating ${toolCalls.size} files"
         }
     }
 

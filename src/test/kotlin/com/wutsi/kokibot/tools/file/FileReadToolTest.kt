@@ -134,7 +134,7 @@ class FileReadToolTest {
     }
 
     @Test
-    fun statusText() {
+    fun `statusText - 1 tool`() {
         val context = Context(
             home = File("target/file-read-tool"),
             llm = mock(),
@@ -144,13 +144,28 @@ class FileReadToolTest {
         val result = tool.statusText(
             listOf(
                 LLMToolCall(
-                    name = FileEditTool.NAME,
-                    arguments = mapOf(
-                        "path" to "/foo/bar.md",
-                    )
+                    name = FileReadTool.NAME,
+                    arguments = mapOf("path" to "/foo/bar.md")
                 )
             )
         )
-        Assertions.assertEquals(true, result.contains("/foo/bar.md"))
+        Assertions.assertEquals("Reading /foo/bar.md", result)
+    }
+
+    @Test
+    fun `statusText - multiple tools`() {
+        val context = Context(
+            home = File("target/file-read-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(name = FileReadTool.NAME, arguments = mapOf("path" to "/foo/bar.md")),
+                LLMToolCall(name = FileReadTool.NAME, arguments = mapOf("path" to "/foo/baz.md")),
+            )
+        )
+        Assertions.assertEquals("Reading 2 files", result)
     }
 }

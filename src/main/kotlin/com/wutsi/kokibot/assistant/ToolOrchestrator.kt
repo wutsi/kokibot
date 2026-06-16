@@ -55,33 +55,32 @@ class ToolOrchestrator(
             return
         }
 
-        LOGGER.info("$iteration $assistantName Executing ${toolCalls.size} tool calls in parallel")
-
-        sendToolStatus(query, toolCalls, context)
-
-        val callables = toolCalls.map { call ->
-            createToolCallable(id, iteration, assistantName, call, tools, query, context)
+        // Get results
+        val results = if (toolCalls.size == 1) {
+            listOf(
+                single(
+                    id = id,
+                    iteration = iteration,
+                    assistantName = assistantName,
+                    call = toolCalls[0],
+                    tools = tools,
+                    query = query,
+                    context = context
+                )
+            )
+        } else {
+            parallel(
+                id = id,
+                iteration = iteration,
+                assistantName = assistantName,
+                toolCalls = toolCalls,
+                tools = tools,
+                query = query,
+                context = context
+            )
         }
 
-        val futures = callables.map { callable ->
-            toolExecutor.submit(callable)
-        }
-
-        val results = futures.mapIndexed { index, future ->
-            try {
-                future.get()
-            } catch (e: Exception) {
-                val call = toolCalls.getOrNull(index) ?: LLMToolCall(name = "unknown", id = "error-$index")
-                LOGGER.error("Tool execution failed for ${call.name}: ${e.message}", e)
-                val errorMessage = when (e) {
-                    is TimeoutException -> "Tool `${call.name}` timed out"
-                    is CancellationException -> "Tool `${call.name}` was cancelled"
-                    else -> "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
-                }
-                ToolExecutionResult(call = call, result = errorMessage, error = e)
-            }
-        }
-
+        // Update memory
         results.forEach { result ->
             if (result.error is AskQuestionException) {
                 throw result.error
@@ -101,6 +100,60 @@ class ToolOrchestrator(
         }
 
         LOGGER.info("$iteration $assistantName Completed ${results.size} tool calls")
+    }
+
+    private fun single(
+        id: String,
+        iteration: Int,
+        assistantName: String,
+        call: LLMToolCall,
+        tools: Map<String, Tool>,
+        query: Message,
+        context: Context
+    ): ToolExecutionResult {
+        LOGGER.info("$iteration $assistantName Executing 1 tool calls")
+
+        sendToolStatus(query, call, context)
+
+        val callable = createToolCallable(id, iteration, assistantName, call, tools, query, context)
+        return callable.call()
+    }
+
+    private fun parallel(
+        id: String,
+        iteration: Int,
+        assistantName: String,
+        toolCalls: List<LLMToolCall>,
+        tools: Map<String, Tool>,
+        query: Message,
+        context: Context
+    ): List<ToolExecutionResult> {
+        LOGGER.info("$iteration $assistantName Executing ${toolCalls.size} tool calls in parallel")
+
+        sendToolStatus(query, toolCalls, context)
+
+        val callables = toolCalls.map { call ->
+            createToolCallable(id, iteration, assistantName, call, tools, query, context)
+        }
+
+        val futures = callables.map { callable ->
+            toolExecutor.submit(callable)
+        }
+
+        return futures.mapIndexed { index, future ->
+            try {
+                future.get()
+            } catch (e: Exception) {
+                val call = toolCalls.getOrNull(index) ?: LLMToolCall(name = "unknown", id = "error-$index")
+                LOGGER.error("Tool execution failed for ${call.name}: ${e.message}", e)
+                val errorMessage = when (e) {
+                    is TimeoutException -> "Tool `${call.name}` timed out"
+                    is CancellationException -> "Tool `${call.name}` was cancelled"
+                    else -> "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                }
+                ToolExecutionResult(call = call, result = errorMessage, error = e)
+            }
+        }
     }
 
     private fun createToolCallable(
@@ -140,6 +193,10 @@ class ToolOrchestrator(
                 error = exception,
             )
         }
+    }
+
+    private fun sendToolStatus(query: Message, call: LLMToolCall, context: Context) {
+        sendToolStatus(query, listOf(call), context)
     }
 
     private fun sendToolStatus(query: Message, toolCalls: List<LLMToolCall>, context: Context) {

@@ -625,8 +625,6 @@ ol, li {
 
 /* Reasoning content blocks */
 .reasoning-content-block {
-    margin-bottom: 16px;
-    margin-left: 16px;
     white-space: pre-wrap;  /* Preserve line breaks and spaces */
     word-wrap: break-word;  /* Wrap long lines */
     overflow-wrap: break-word;  /* Break long words if needed */
@@ -1438,6 +1436,9 @@ ol, li {
 
 /* ===== Token Display ===== */
 .token-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 16px;
     padding: 6px 10px;
     background-color: rgba(0, 0, 0, 0.05);
@@ -1445,6 +1446,33 @@ ol, li {
     font-size: 0.85em;
     color: #666;
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.token-section {
+    flex: 1;
+    min-width: 0;
+}
+
+.token-section-label {
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #999;
+    margin-bottom: 2px;
+}
+
+.token-section-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.token-section-divider {
+    width: 1px;
+    height: 32px;
+    background-color: rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
 }
 
 .token-total {
@@ -1460,7 +1488,6 @@ ol, li {
 .token-cached {
     color: #4CAF50;
     font-weight: 500;
-    margin-left: 8px;
 }
 
 /* Dark mode token display */
@@ -1468,6 +1495,14 @@ ol, li {
     .token-display {
         background-color: rgba(255, 255, 255, 0.08);
         color: #9aa0a6;
+    }
+
+    .token-section-label {
+        color: #6c7278;
+    }
+
+    .token-section-divider {
+        background-color: rgba(255, 255, 255, 0.15);
     }
 
     .token-total {

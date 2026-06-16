@@ -43,9 +43,10 @@ class FileWriteTool : AbstractFileTool() {
     override fun statusText(toolCalls: List<LLMToolCall>): String {
         return if (accessingMemory(toolCalls)) {
             "Saving memory"
+        } else if (toolCalls.size == 1) {
+            "Saving " + toolCalls[0].arguments["path"]?.toString()
         } else {
-            "Saving ${toolCalls.size} file" + (if (toolCalls.size > 1) "s" else "") +
-                (if (toolCalls.size == 1) ": ${toolCalls[0].arguments["path"]}" else "")
+            "Saving ${toolCalls.size} files"
         }
     }
 

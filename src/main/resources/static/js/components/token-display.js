@@ -1,9 +1,10 @@
 /**
  * Token usage display component
- * Accumulates and formats token metrics
+ * Shows current interaction tokens on left, accumulated total on right
  */
 class TokenDisplay {
     constructor() {
+        this.currentUsage = null;
         this.accumulatedUsage = null;
     }
 
@@ -11,6 +12,7 @@ class TokenDisplay {
      * Reset for new message
      */
     reset() {
+        this.currentUsage = null;
         this.accumulatedUsage = null;
     }
 
@@ -18,19 +20,20 @@ class TokenDisplay {
      * Update token display with new usage
      */
     update(messageElement, usage) {
-        if (!this.accumulatedUsage) {
-            this.accumulatedUsage = {
-                totalTokens: 0,
-                promptTokens: 0,
-                completionTokens: 0,
-                promptCacheHitTokens: 0
-            };
-        }
+        this.currentUsage = {
+            totalTokens: usage.totalTokens || 0,
+            promptTokens: usage.promptTokens || 0,
+            completionTokens: usage.completionTokens || 0,
+            promptCacheHitTokens: usage.promptCacheHitTokens || 0
+        };
 
-        this.accumulatedUsage.totalTokens += usage.totalTokens || 0;
-        this.accumulatedUsage.promptTokens += usage.promptTokens || 0;
-        this.accumulatedUsage.completionTokens += usage.completionTokens || 0;
-        this.accumulatedUsage.promptCacheHitTokens += (usage.promptCacheHitTokens || 0);
+        if (!this.accumulatedUsage) {
+            this.accumulatedUsage = { totalTokens: 0, promptTokens: 0, completionTokens: 0, promptCacheHitTokens: 0 };
+        }
+        this.accumulatedUsage.totalTokens += this.currentUsage.totalTokens;
+        this.accumulatedUsage.promptTokens += this.currentUsage.promptTokens;
+        this.accumulatedUsage.completionTokens += this.currentUsage.completionTokens;
+        this.accumulatedUsage.promptCacheHitTokens += this.currentUsage.promptCacheHitTokens;
 
         const contentDiv = messageElement.querySelector('.message-content');
 
@@ -51,28 +54,46 @@ class TokenDisplay {
     }
 
     /**
-     * Build token display HTML
+     * Build two-section token display HTML
      */
     buildDisplayHTML() {
+        const currentHTML = this.buildSectionHTML(this.currentUsage);
+        const accumulatedHTML = this.buildSectionHTML(this.accumulatedUsage);
+
+        return `
+            <div class="token-section token-section-current">
+                <div class="token-section-label">Interaction</div>
+                <div class="token-section-value">${currentHTML}</div>
+            </div>
+            <div class="token-section-divider"></div>
+            <div class="token-section token-section-accumulated">
+                <div class="token-section-label">Total</div>
+                <div class="token-section-value">${accumulatedHTML}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Build HTML for a single usage section
+     */
+    buildSectionHTML(usage) {
+        if (!usage) return '<span class="token-total">—</span>';
+
         const parts = [];
 
-        if (this.accumulatedUsage.totalTokens > 0) {
-            parts.push(`<span class="token-total">${this.formatTokenCount(this.accumulatedUsage.totalTokens)} tokens</span>`);
+        if (usage.totalTokens > 0) {
+            parts.push(`<span class="token-total">${this.formatTokenCount(usage.totalTokens)} tokens</span>`);
         }
 
-        if (this.accumulatedUsage.promptTokens > 0 || this.accumulatedUsage.completionTokens > 0) {
-            const details = [];
-            if (this.accumulatedUsage.promptTokens > 0) {
-                details.push(`${this.formatTokenCount(this.accumulatedUsage.promptTokens)} prompt`);
-            }
-            if (this.accumulatedUsage.completionTokens > 0) {
-                details.push(`${this.formatTokenCount(this.accumulatedUsage.completionTokens)} completion`);
-            }
+        const details = [];
+        if (usage.promptTokens > 0) details.push(`↑${this.formatTokenCount(usage.promptTokens)}`);
+        if (usage.completionTokens > 0) details.push(`↓${this.formatTokenCount(usage.completionTokens)}`);
+        if (details.length > 0) {
             parts.push(`<span class="token-details">(${details.join(', ')})</span>`);
         }
 
-        if (this.accumulatedUsage.promptCacheHitTokens > 0) {
-            parts.push(`<span class="token-cached">💾 ${this.formatTokenCount(this.accumulatedUsage.promptCacheHitTokens)} cached</span>`);
+        if (usage.promptCacheHitTokens > 0) {
+            parts.push(`<span class="token-cached">💾 ${this.formatTokenCount(usage.promptCacheHitTokens)} cached</span>`);
         }
 
         return parts.join(' ');
@@ -82,10 +103,15 @@ class TokenDisplay {
      * Format token count (1000 → 1K)
      */
     formatTokenCount(count) {
+        if (count >= 1_000_000) {
+            const m = count / 1_000_000;
+            const formatted = m.toFixed(1);
+            return (formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted) + 'M';
+        }
         if (count >= 1000) {
             const k = count / 1000;
             const formatted = k.toFixed(1);
-            return formatted.endsWith('.0') ? formatted.slice(0, -2) + 'K' : formatted + 'K';
+            return (formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted) + 'K';
         }
         return count.toString();
     }

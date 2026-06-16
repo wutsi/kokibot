@@ -56,11 +56,15 @@ class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
     )
 
     override fun statusText(toolCalls: List<LLMToolCall>): String {
-        val hosts = toolCalls.mapNotNull { tool -> tool.arguments["url"]?.toString() }
-            .map { url -> URL(url).host }
-            .distinct()
-            .joinToString(", ")
-        return "Reading online from $hosts"
+        val location = if (toolCalls.size == 1) {
+            toolCalls[0].arguments["url"]
+        } else {
+            toolCalls.mapNotNull { tool -> tool.arguments["url"]?.toString() }
+                .map { url -> URL(url).host }
+                .distinct()
+                .joinToString(", ")
+        }
+        return "Reading online from $location"
     }
 
     override fun exec(arguments: Map<*, *>): String {
@@ -69,9 +73,9 @@ class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
 
         try {
             val content = fetch(url)
-            return "BEGIN URL CONTENT - $url\n\n" +
-                content +
-                "\n\nEND URL CONTENT"
+            val file = context.fileService.createTempFile("web_fetch_result", ".md")
+            file.writeText(content)
+            return "Content fetched from $url and saved to ${file.absolutePath}"
         } catch (ex: UnsupportedMimeTypeException) {
             LOGGER.warn("Cannot extract the content from : {}", url, ex)
             return "Cannot extract the content from $url. Error= ${ex.message}"
@@ -92,8 +96,8 @@ class WebFetchTool(private val maxLength: Int = MAX_FILE_SIZE) : Tool {
         val client = OkHttpClient.Builder()
             .protocols(Arrays.asList(Protocol.HTTP_1_1))
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS)
             .build()
         val request = Request.Builder()
             .url(url)

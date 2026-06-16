@@ -60,7 +60,7 @@ class WebFetchToolTest {
             LLMToolCall(name = WebFetchTool.NAME, arguments = mapOf("url" to "https://example.com"))
         )
         val result = tool.statusText(toolCalls)
-        assertEquals("Reading online from example.com", result)
+        assertEquals("Reading online from https://example.com", result)
     }
 
     @Test
@@ -74,14 +74,22 @@ class WebFetchToolTest {
         assertEquals("Reading online from example.com, example.ca", result)
     }
 
+    // Helper: extract the saved file path from exec result and return its content
+    private fun getFileContent(result: String): String {
+        val path = result.substringAfter("and saved to ")
+        return File(path).readText()
+    }
+
     @Test
     fun exec() {
-        val args = mapOf("url" to "https://evendo.com/locations/cameroon/yaounde/odza")
-        val result = tool.exec(args)
+        val url = "https://evendo.com/locations/cameroon/yaounde/odza"
+        val result = tool.exec(mapOf("url" to url))
         println(result)
-        assertTrue(result.contains("Title: Odza: A Tranquil Retreat in the Bustling Heart of Yaoundé"))
-        assertTrue(result.contains("Odza is a charming neighborhood nestled in the southern part of Yaoundé, Cameroon. "))
-        assertTrue(result.contains("Image:"))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("Title: Odza: A Tranquil Retreat in the Bustling Heart of Yaoundé"))
+        assertTrue(content.contains("Odza is a charming neighborhood nestled in the southern part of Yaoundé, Cameroon. "))
+        assertTrue(content.contains("Image:"))
     }
 
     @Test
@@ -96,54 +104,66 @@ class WebFetchToolTest {
 
     @Test
     fun `exec PDF`() {
-        val args = mapOf("url" to "http://tybbot.free.fr/Tybbow/Livres/Autre/moby_dick.pdf")
-        val result = tool.exec(args)
+        val url = "http://tybbot.free.fr/Tybbow/Livres/Autre/moby_dick.pdf"
+        val result = tool.exec(mapOf("url" to url))
         println(result)
-        assertTrue(result.contains("Mais c’est une lourde tâche, un simple trieur de lettres à la"))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("La jambe d’Achab", true))
     }
 
     @Test
     fun `exec JSON`() {
-        val args =
-            mapOf("url" to "https://raw.githubusercontent.com/wutsi/kokibot/refs/heads/master/renovate.json")
-        val result = tool.exec(args)
-        assertTrue(result.contains("config:base"))
+        val url = "https://raw.githubusercontent.com/wutsi/kokibot/refs/heads/master/renovate.json"
+        val result = tool.exec(mapOf("url" to url))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("config:base"))
     }
 
     @Test
     fun `exec TXT`() {
-        val args =
-            mapOf("url" to "https://example-files.online-convert.com/document/txt/example.txt")
-        val result = tool.exec(args)
-        assertTrue(result.contains("The names \"John Doe\" for males, \"Jane Doe\" or \"Jane Roe\" for females"))
+        val url = "https://example-files.online-convert.com/document/txt/example.txt"
+        val result = tool.exec(mapOf("url" to url))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("The names \"John Doe\" for males, \"Jane Doe\" or \"Jane Roe\" for females"))
     }
 
     @Test
     fun `exec - DOCX`() {
-        val args = mapOf("url" to "https://calibre-ebook.com/downloads/demos/demo.docx")
-        val result = tool.exec(args)
-        assertTrue(result.contains("This document demonstrates the ability"))
+        val url = "https://calibre-ebook.com/downloads/demos/demo.docx"
+        val result = tool.exec(mapOf("url" to url))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("This document demonstrates the ability"))
     }
 
     @Test
     fun `exec - XLS`() {
-        val args = mapOf("url" to "https://www.cmu.edu/blackboard/files/evaluate/tests-example.xls")
-        val result = tool.exec(args)
-        assertTrue(result.contains("File Information"))
+        val url = "https://www.cmu.edu/blackboard/files/evaluate/tests-example.xls"
+        val result = tool.exec(mapOf("url" to url))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("File Information"))
     }
 
     @Test
     fun `exec - XLSX`() {
-        val args = mapOf("url" to "https://www.ou.edu/content/dam/cms/docs/sample-excel-file.xlsx")
-        val result = tool.exec(args)
-        assertTrue(result.contains("Sample Excel File"))
+        val url = "https://www.ou.edu/content/dam/cms/docs/sample-excel-file.xlsx"
+        val result = tool.exec(mapOf("url" to url))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("Sample Excel File"))
     }
 
     @Test
     fun `exec - XML`() {
-        val args = mapOf("url" to "https://raw.githubusercontent.com/wutsi/kokibot/refs/heads/master/pom.xml")
-        val result = tool.exec(args)
-        assertTrue(result.contains("<artifactId>kokibot</artifactId>"))
+        val url = "https://raw.githubusercontent.com/wutsi/kokibot/refs/heads/master/pom.xml"
+        val result = tool.exec(mapOf("url" to url))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("<artifactId>kokibot</artifactId>"))
     }
 
     @Test
@@ -166,17 +186,21 @@ class WebFetchToolTest {
 
     @Test
     fun `exec - invalid URL`() {
-        val args = mapOf("url" to "ftp://google.com")
-        val result = tool.exec(args)
-        assertTrue(result.contains("Invalid URL:"))
+        val url = "ftp://google.com"
+        val result = tool.exec(mapOf("url" to url))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("Invalid URL:"))
     }
 
     @Test
     fun `exec - not found`() {
-        val args = mapOf("url" to "https://www.microsoft.com/not-found-url-123456789")
-        val result = tool.exec(args)
+        val url = "https://www.microsoft.com/not-found-url-123456789"
+        val result = tool.exec(mapOf("url" to url))
         println(result)
-        assertTrue(result.contains("Failed to fetch content from https://www.microsoft.com/not-found-url-123456789"))
+        assertTrue(result.contains("Content fetched from $url and saved to"), result)
+        val content = getFileContent(result)
+        assertTrue(content.contains("Failed to fetch content from $url"))
     }
 
     @Test

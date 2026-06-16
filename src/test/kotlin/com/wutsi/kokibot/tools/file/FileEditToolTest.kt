@@ -149,6 +149,42 @@ class FileEditToolTest {
     }
 
     @Test
+    fun `statusText - 1 tool`() {
+        val context = Context(
+            home = File("target/file-edit-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(
+                    name = FileEditTool.NAME,
+                    arguments = mapOf("path" to "/foo/bar.md")
+                )
+            )
+        )
+        assertEquals("Updating /foo/bar.md", result)
+    }
+
+    @Test
+    fun `statusText - multiple tools`() {
+        val context = Context(
+            home = File("target/file-edit-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(name = FileEditTool.NAME, arguments = mapOf("path" to "/foo/bar.md")),
+                LLMToolCall(name = FileEditTool.NAME, arguments = mapOf("path" to "/foo/baz.md")),
+            )
+        )
+        assertEquals("Updating 2 files", result)
+    }
+
+    @Test
     fun statusText() {
         val context = Context(
             home = File("target/file-edit-tool"),

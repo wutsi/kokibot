@@ -178,7 +178,7 @@ class FileWriteToolTest {
     }
 
     @Test
-    fun statusText() {
+    fun `statusText - 1 tool`() {
         val context = Context(
             home = File("target/file-write-tool"),
             llm = mock(),
@@ -188,13 +188,28 @@ class FileWriteToolTest {
         val result = tool.statusText(
             listOf(
                 LLMToolCall(
-                    name = FileEditTool.NAME,
-                    arguments = mapOf(
-                        "path" to "/foo/bar.md",
-                    )
+                    name = FileWriteTool.NAME,
+                    arguments = mapOf("path" to "/foo/bar.md")
                 )
             )
         )
-        Assertions.assertEquals(true, result.contains("/foo/bar.md"))
+        Assertions.assertEquals("Saving /foo/bar.md", result)
+    }
+
+    @Test
+    fun `statusText - multiple tools`() {
+        val context = Context(
+            home = File("target/file-write-tool"),
+            llm = mock(),
+        )
+        tool.init(mapOf("" to ""), context)
+
+        val result = tool.statusText(
+            listOf(
+                LLMToolCall(name = FileWriteTool.NAME, arguments = mapOf("path" to "/foo/bar.md")),
+                LLMToolCall(name = FileWriteTool.NAME, arguments = mapOf("path" to "/foo/baz.md")),
+            )
+        )
+        Assertions.assertEquals("Saving 2 files", result)
     }
 }

@@ -37,9 +37,10 @@ class FileReadTool(private val maxLength: Int = WebFetchTool.MAX_FILE_SIZE) : Ab
     override fun statusText(toolCalls: List<LLMToolCall>): String {
         return if (accessingMemory(toolCalls)) {
             "Reading memory"
+        } else if (toolCalls.size == 1) {
+            "Reading " + toolCalls[0].arguments["path"]?.toString()
         } else {
-            "Reading ${toolCalls.size} file" + (if (toolCalls.size > 1) "s" else "") +
-                (if (toolCalls.size == 1) ": ${toolCalls[0].arguments["path"]}" else "")
+            "Reading ${toolCalls.size} files"
         }
     }
 

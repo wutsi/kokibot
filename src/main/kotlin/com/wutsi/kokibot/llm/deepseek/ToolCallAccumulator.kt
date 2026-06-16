@@ -38,7 +38,7 @@ class ToolCallAccumulator(private val jsonMapper: JsonMapper) {
             try {
                 jsonMapper.readValue(rawArgs, Map::class.java)
             } catch (ex: Exception) {
-                LOGGER.warn("Failed to parse accumulated tool-call arguments. raw=$rawArgs", ex)
+                LOGGER.warn("Failed to parse accumulated tool-call arguments. tool=$name arguments=$rawArgs", ex)
                 EMPTY_ARGS
             }
         }

@@ -8,6 +8,7 @@ import com.wutsi.kokibot.TooManyIterationException
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.command.CommandNotFoundException
+import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMStreamData
@@ -67,25 +68,12 @@ class ReActReasoningLoop(
             } else {
                 try {
                     val response = ask(iteration, query, memory, streamCallback, context)
-                    if (decide(query.id, iteration, response, memory, tools, query, context)) {
+                    if (decide(query.id, iteration, response, memory, tools, query, streamCallback, context)) {
                         return Message(
                             text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                             role = Role.ASSISTANT,
                             finishReason = FinishReason.DONE,
                         )
-                    } else {
-                        if (streamCallback != null) {
-                            response.choices.forEach { choice ->
-                                streamCallback(
-                                    LLMStreamData(
-                                        text = choice.content?.let { content ->
-                                            take(MarkdownUtil.toText(content), 1024)
-                                        } ?: "",
-                                        usage = response.usage
-                                    )
-                                )
-                            }
-                        }
                     }
                 } catch (ex: AskQuestionException) {
                     // Pause the current session
@@ -163,28 +151,53 @@ class ReActReasoningLoop(
         memory: MutableList<String>,
         tools: Map<String, Tool>,
         query: Message,
-        context: Context
+        streamCallback: ((LLMStreamData) -> Unit)?,
+        context: Context,
     ): Boolean {
-        // Collect all tool calls from all choices
-        val allToolCalls = response.choices
-            .flatMap { choice -> choice.toolCalls }
+        var stop = true
 
-        if (allToolCalls.isEmpty()) {
-            return true // No tool calls, done
+        response.choices.forEach { choice ->
+            // Send reasoning content
+            if (streamCallback != null) {
+                streamCallback(
+                    LLMStreamData(
+                        text = choice.content?.let { content ->
+                            take(MarkdownUtil.toText(content), 1024)
+                        } ?: "",
+                        usage = response.usage
+                    )
+                )
+            }
+
+            if (choice.finishReason == LLMFinishReason.TOOL_CALLS && choice.toolCalls.isNotEmpty()) { // Tool execution
+                stop = true
+
+                // Execute
+                toolOrchestrator.executeTools(
+                    id = id,
+                    iteration = iteration,
+                    assistantName = assistantName,
+                    toolCalls = choice.toolCalls,
+                    memory = memory,
+                    tools = tools,
+                    query = query,
+                    context = context
+                )
+            } else if (choice.finishReason == LLMFinishReason.LENGTH) { // Content cutoff
+                LOGGER.warn(
+                    "!!! LLM response cut off due to length limits. Iteration: $iteration, Response: ${
+                        take(
+                            choice.content ?: "",
+                            500
+                        )
+                    }"
+                )
+                memory.add("Your previous response was cut off due to length limits. Please continue from exactly where you left off.")
+                return false
+            }
         }
 
-        // Execute all tool calls in parallel using ToolOrchestrator
-        toolOrchestrator.executeTools(
-            id = id,
-            iteration = iteration,
-            assistantName = assistantName,
-            toolCalls = allToolCalls,
-            memory = memory,
-            tools = tools,
-            query = query,
-            context = context
-        )
-        return false
+        return stop
     }
 
     private fun getCommand(query: Message, context: Context): Command? {

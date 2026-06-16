@@ -218,6 +218,93 @@ class ReActReasoningLoopTest {
     }
 
     @Test
+    fun `should continue loop and return final answer when finish reason is LENGTH`() {
+        val query = Message(text = "Write a long essay", userId = "user1", channelId = "channel1")
+        val memory = mutableListOf<String>()
+
+        val llmResponse1 = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "This essay begins with a very long introduction...",
+                    finishReason = LLMFinishReason.LENGTH
+                )
+            )
+        )
+        val llmResponse2 = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "...and concludes here.",
+                    finishReason = LLMFinishReason.STOP
+                )
+            )
+        )
+        doReturn(llmResponse1, llmResponse2).whenever(llm).completion(any(), any())
+
+        val result = reasoningLoop.execute(query, null, 0, memory, context)
+
+        assertEquals("...and concludes here.", result.text)
+        assertEquals(Role.ASSISTANT, result.role)
+        assertEquals(FinishReason.DONE, result.finishReason)
+        verify(llm, times(2)).completion(any(), any())
+    }
+
+    @Test
+    fun `should inject continuation prompt into memory when finish reason is LENGTH`() {
+        val query = Message(text = "Write a long essay", userId = "user1", channelId = "channel1")
+        val memory = mutableListOf<String>()
+
+        val llmResponse1 = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "Partial content...",
+                    finishReason = LLMFinishReason.LENGTH
+                )
+            )
+        )
+        val llmResponse2 = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "Complete content.",
+                    finishReason = LLMFinishReason.STOP
+                )
+            )
+        )
+        doReturn(llmResponse1, llmResponse2).whenever(llm).completion(any(), any())
+
+        reasoningLoop.execute(query, null, 0, memory, context)
+
+        assertTrue(memory.any { it.contains("cut off due to length") })
+    }
+
+    @Test
+    fun `should not execute tools when finish reason is LENGTH`() {
+        val query = Message(text = "Write a long essay", userId = "user1", channelId = "channel1")
+        val memory = mutableListOf<String>()
+
+        val llmResponse1 = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "Partial content...",
+                    finishReason = LLMFinishReason.LENGTH
+                )
+            )
+        )
+        val llmResponse2 = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = "Complete content.",
+                    finishReason = LLMFinishReason.STOP
+                )
+            )
+        )
+        doReturn(llmResponse1, llmResponse2).whenever(llm).completion(any(), any())
+
+        reasoningLoop.execute(query, null, 0, memory, context)
+
+        verify(toolOrchestrator, times(0)).executeTools(any(), any(), any(), any(), any(), any(), any(), any())
+    }
+
+    @Test
     fun `should use coordinator instructions when coordinator mode enabled`() {
         val coordinatorLoop = ReActReasoningLoop(
             assistantName = "coordinator",

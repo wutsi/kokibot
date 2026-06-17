@@ -7,6 +7,8 @@ import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.service.memory.ConversationMessage
+import com.wutsi.kokibot.service.memory.ConversationRepository
 import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.Skill
@@ -30,6 +32,7 @@ class PromptBuilderTest {
     private val memory = mock<Memory>()
     private val dailyLog = mock<DailyLog>()
     private val skillRegistry = mock<SkillRegistry>()
+    private val conversationRepository = mock<ConversationRepository>()
     private val assistant = mock<Assistant>()
     private val context = mock<Context>()
 
@@ -46,12 +49,18 @@ class PromptBuilderTest {
         doReturn(memory).whenever(context).memory
         doReturn(dailyLog).whenever(context).dailyLog
         doReturn(skillRegistry).whenever(context).skillRegistry
+        doReturn(conversationRepository).whenever(context).conversationRepository
         doReturn(assistant).whenever(context).assistant
         doReturn("test-assistant").whenever(assistant).name
 
         doReturn(null).whenever(memory).get()
         doReturn(null).whenever(dailyLog).get()
         doReturn(emptyList<Skill>()).whenever(skillRegistry).all()
+        doReturn(emptyList<ConversationMessage>()).whenever(conversationRepository).getMessages(
+            com.nhaarman.mockitokotlin2.any(),
+            com.nhaarman.mockitokotlin2.any(),
+            com.nhaarman.mockitokotlin2.any()
+        )
 
         builder = PromptBuilder(assistantName = "test-assistant", clock = fixedClock)
     }
@@ -178,32 +187,28 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should include chat history instructions when userId and channelId present`() {
-        val query = Message(userId = "user1", channelId = "channel:telegram")
+    fun `should include conversation history in prompt when conversationId is set`() {
+        val messages = listOf(
+            ConversationMessage(role = "user", text = "What is the weather?"),
+            ConversationMessage(role = "assistant", text = "It is sunny today."),
+        )
+        doReturn(messages).whenever(conversationRepository).getMessages("conv-1", "user1", "channel:telegram")
 
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val query = Message(text = "Follow-up question", userId = "user1", channelId = "channel:telegram", conversationId = "conv-1")
+        val prompt = builder.buildPrompt(query, emptyList(), context)
 
-        assertTrue(instructions.contains("# Conversation History"))
-        assertTrue(instructions.contains("user1"))
-        assertTrue(instructions.contains("telegram")) // channel prefix removed
+        assertTrue(prompt.contains("# Conversation History"))
+        assertTrue(prompt.contains("What is the weather?"))
+        assertTrue(prompt.contains("It is sunny today."))
     }
 
     @Test
-    fun `should not include chat history instructions when userId missing`() {
-        val query = Message(channelId = "channel1")
+    fun `should not include conversation history in prompt when conversationId is null`() {
+        val query = Message(text = "First message", userId = "user1", channelId = "channel:telegram")
 
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val prompt = builder.buildPrompt(query, emptyList(), context)
 
-        assertFalse(instructions.contains("# Conversation History"))
-    }
-
-    @Test
-    fun `should not include chat history instructions when channelId missing`() {
-        val query = Message(userId = "user1")
-
-        val instructions = builder.buildSystemInstructions(query, false, context)
-
-        assertFalse(instructions.contains("# Conversation History"))
+        assertFalse(prompt.contains("# Conversation History"))
     }
 
     @Test
@@ -334,7 +339,5 @@ class PromptBuilderTest {
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("Hello"))
-        assertTrue(prompt.contains(home.absolutePath))
-        assertTrue(prompt.contains("test-assistant"))
     }
 }

@@ -2,6 +2,7 @@ package com.wutsi.kokibot.assistant
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.service.memory.ConversationMessage
 import org.apache.commons.io.IOUtils
 import java.io.File
 import java.time.Clock
@@ -29,6 +30,15 @@ class PromptBuilder(
         sb.append("# Current Date and Time\n")
         val now = ZonedDateTime.now(clock)
         sb.append("The current date and time is: ${now.format(DATE_TIME_FORMATTER)} (${now.toOffsetDateTime()})\n")
+
+        val conversationMessages = loadConversationMessages(query, context)
+        if (conversationMessages.isNotEmpty()) {
+            sb.append("\n---\n")
+            sb.append("# Conversation History\n")
+            conversationMessages.forEach { msg ->
+                sb.append("**${msg.role}** (${msg.dateTime}):\n${msg.text}\n\n")
+            }
+        }
 
         val longTermMemory = context.memory.get()
         if (longTermMemory != null) {
@@ -64,7 +74,6 @@ class PromptBuilder(
             loadIdentity(context),
             if (coordinator) coordinatorInstructions() else null,
             dailyLogInstructions(),
-            chatHistoryInstructions(query),
             skillsInstructions(context),
             securityInstructions(),
         )
@@ -100,6 +109,13 @@ class PromptBuilder(
         }
     }
 
+    private fun loadConversationMessages(query: Message, context: Context): List<ConversationMessage> {
+        val conversationId = query.conversationId ?: return emptyList()
+        val userId = query.userId ?: return emptyList()
+        val channelId = query.channelId ?: return emptyList()
+        return context.conversationRepository.getMessages(conversationId, userId, channelId)
+    }
+
     private fun skillsInstructions(context: Context): String? {
         val skills = context.skillRegistry
             .all()
@@ -133,18 +149,6 @@ class PromptBuilder(
     private fun dailyLogInstructions(): String {
         return IOUtils.toString(
             javaClass.getResourceAsStream("/instructions/DAILY_LOG.md"),
-            "utf-8"
-        )
-    }
-
-    private fun chatHistoryInstructions(query: Message): String? {
-        val userId = query.userId
-        val channelId = query.channelId
-        if (userId == null || channelId == null) {
-            return null
-        }
-        return IOUtils.toString(
-            javaClass.getResourceAsStream("/instructions/CHAT_HISTORY.md"),
             "utf-8"
         )
     }

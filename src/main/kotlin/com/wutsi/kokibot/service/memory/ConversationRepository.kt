@@ -34,15 +34,16 @@ class ConversationRepository : Resource {
 
     fun createConversation(userId: String, channelId: String, firstMessage: String): Conversation {
         lock.write {
+            val sanitizedChannel = sanitizeId(channelId)
             val conversation = Conversation(
                 id = UUID.randomUUID().toString(),
-                channelId = sanitizeId(channelId),
+                channelId = sanitizedChannel,
                 title = firstMessage.take(TITLE_MAX_LENGTH),
                 startDate = LocalDateTime.now(),
             )
-            val conversations = readIndex(userId).toMutableList()
+            val conversations = readIndex(userId, sanitizedChannel).toMutableList()
             conversations.add(conversation)
-            writeIndex(userId, conversations)
+            writeIndex(userId, sanitizedChannel, conversations)
             return conversation
         }
     }
@@ -54,23 +55,27 @@ class ConversationRepository : Resource {
         offset: Int = 0
     ): List<Conversation> {
         lock.read {
-            val sanitized = channelId?.let { sanitizeId(it) }
-            return readIndex(userId)
-                .filter { sanitized == null || it.channelId == sanitized }
+            val conversations = if (channelId != null) {
+                readIndex(userId, channelId)
+            } else {
+                readAllChannels(userId)
+            }
+            return conversations
                 .sortedByDescending { it.startDate }
                 .drop(offset)
                 .take(limit)
         }
     }
 
-    fun getMessages(conversationId: String, userId: String): List<ConversationMessage> {
+    fun getMessages(conversationId: String, userId: String, channelId: String): List<ConversationMessage> {
         lock.read {
-            val conversation = readIndex(userId).find { it.id == conversationId }
+            val sanitizedChannel = sanitizeId(channelId)
+            val conversation = readIndex(userId, sanitizedChannel).find { it.id == conversationId }
                 ?: return emptyList()
 
             val startDate = conversation.startDate.toLocalDate()
             val channelDir = File(
-                "${context.home.absolutePath}/memory/chat/${sanitizeId(userId)}/${conversation.channelId}"
+                "${context.home.absolutePath}/memory/chat/${sanitizeId(userId)}/$sanitizedChannel"
             )
             if (!channelDir.exists()) return emptyList()
 
@@ -155,12 +160,15 @@ class ConversationRepository : Resource {
         }.getOrNull()
     }
 
-    private fun getIndexFile(userId: String): File {
-        return File("${context.home.absolutePath}/memory/chat/${sanitizeId(userId)}", "conversations.json")
+    private fun getIndexFile(userId: String, channelId: String): File {
+        return File(
+            "${context.home.absolutePath}/memory/chat/${sanitizeId(userId)}/${sanitizeId(channelId)}",
+            "conversations.json"
+        )
     }
 
-    private fun readIndex(userId: String): List<Conversation> {
-        val file = getIndexFile(userId)
+    private fun readIndex(userId: String, channelId: String): List<Conversation> {
+        val file = getIndexFile(userId, channelId)
         if (!file.exists()) return emptyList()
         return try {
             context.jsonMapper.readValue(
@@ -168,20 +176,28 @@ class ConversationRepository : Resource {
                 context.jsonMapper.typeFactory.constructCollectionType(List::class.java, Conversation::class.java),
             )
         } catch (e: Exception) {
-            LOGGER.warn("Failed to read conversation index for user $userId: ${e.message}")
+            LOGGER.warn("Failed to read conversation index for user $userId channel $channelId: ${e.message}")
             emptyList()
         }
     }
 
-    private fun writeIndex(userId: String, conversations: List<Conversation>) {
-        val file = getIndexFile(userId)
+    private fun writeIndex(userId: String, channelId: String, conversations: List<Conversation>) {
+        val file = getIndexFile(userId, channelId)
         file.parentFile.mkdirs()
         val tmp = File(file.parentFile, "${file.name}.tmp")
         tmp.writeText(context.jsonMapper.writeValueAsString(conversations))
         if (!tmp.renameTo(file)) {
             tmp.delete()
-            throw IllegalStateException("Failed to write conversation index for user $userId")
+            throw IllegalStateException("Failed to write conversation index for user $userId channel $channelId")
         }
+    }
+
+    private fun readAllChannels(userId: String): List<Conversation> {
+        val userDir = File("${context.home.absolutePath}/memory/chat/${sanitizeId(userId)}")
+        if (!userDir.exists()) return emptyList()
+        return userDir.listFiles { f -> f.isDirectory }
+            ?.flatMap { dir -> readIndex(userId, dir.name) }
+            ?: emptyList()
     }
 
     private fun sanitizeId(id: String): String =

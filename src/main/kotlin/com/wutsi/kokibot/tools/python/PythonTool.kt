@@ -5,7 +5,6 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.util.MapUtil
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -16,9 +15,7 @@ class PythonTool : Tool {
         private val LOGGER = LoggerFactory.getLogger(PythonTool::class.java)
 
         const val NAME = "python"
-        const val DEFAULT_TIMEOUT_SECONDS = 60L
-        const val MAX_TIMEOUT_SECONDS = 3600L
-        const val MIN_TIMEOUT_SECONDS = 1L
+        const val DEFAULT_TIMEOUT_SECONDS = 3600L
     }
 
     private lateinit var context: com.wutsi.kokibot.Context
@@ -47,19 +44,7 @@ class PythonTool : Tool {
                 description = "Working directory for the Python code execution",
                 type = ToolParameterType.STRING,
                 required = false
-            ),
-            ToolParameter(
-                name = "timeout",
-                description = """
-                Optional timeout in seconds (default: 300, max: 3600).
-                 - For atomic tool calculation, it should up to 60s (The default value if not provided).
-                 - For complex code execution, it can be up to 300s.
-                 - For long-running code, it can be up to 1800s (30min).
-                 - If the code execution exceeds the timeout, it will be terminated and an error message will be returned.
-                """.trimIndent(),
-                type = ToolParameterType.INTEGER,
-                required = false
-            ),
+            )
         )
     )
 
@@ -69,8 +54,8 @@ class PythonTool : Tool {
         val workingDir = arguments["working_dir"]?.toString()
             ?.ifEmpty { null }
             ?.let { dir -> File(dir) }
-        val timeout = (MapUtil.toLong("timeout", arguments) ?: DEFAULT_TIMEOUT_SECONDS)
-            .coerceIn(MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS)
+        val timeout = DEFAULT_TIMEOUT_SECONDS
+
         try {
             return exec(path, workingDir, timeout)
         } catch (ex: TimeoutException) {

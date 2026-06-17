@@ -39,7 +39,7 @@ class ConversationRepositoryTest {
         assertEquals("Hello world", conv.title)
         assertNotNull(conv.startDate)
 
-        val indexFile = File(home, "memory/chat/user-1/conversations.json")
+        val indexFile = File(home, "memory/chat/user-1/telegram/conversations.json")
         assertTrue(indexFile.exists())
     }
 
@@ -95,7 +95,7 @@ class ConversationRepositoryTest {
 
     @Test
     fun `getMessages returns empty list when conversation not found`() {
-        val result = repo.getMessages("unknown-id", "user-1")
+        val result = repo.getMessages("unknown-id", "user-1", "telegram")
         assertTrue(result.isEmpty())
     }
 
@@ -122,7 +122,7 @@ class ConversationRepositoryTest {
                 "```" + ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv.id, "user-1")
+        val messages = repo.getMessages(conv.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         assertEquals("user", messages[0].role)
@@ -189,7 +189,7 @@ class ConversationRepositoryTest {
                 "```" + ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv1.id, "user-1")
+        val messages = repo.getMessages(conv1.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         assertEquals("First question", messages[0].text)
@@ -222,7 +222,7 @@ class ConversationRepositoryTest {
                 "```" + ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv.id, "user-1")
+        val messages = repo.getMessages(conv.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         val userMsg = messages[0]
@@ -254,7 +254,7 @@ class ConversationRepositoryTest {
                 "```" + ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv.id, "user-1")
+        val messages = repo.getMessages(conv.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         assertEquals(emptyList<String>(), messages[0].files)
@@ -289,7 +289,7 @@ class ConversationRepositoryTest {
                 ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv.id, "user-1")
+        val messages = repo.getMessages(conv.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         assertEquals("Here is the fix:\n```python\nx = 2\n```\nDone.", messages[1].text)
@@ -323,7 +323,7 @@ class ConversationRepositoryTest {
                 ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv.id, "user-1")
+        val messages = repo.getMessages(conv.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         assertEquals("Fix this:\n```python\nx = 1\n```\nPlease.", messages[0].text)
@@ -347,7 +347,7 @@ class ConversationRepositoryTest {
         )
         val convId = chatHistory.append(query, response)
 
-        val messages = context.conversationRepository.getMessages(convId, "anonymous")
+        val messages = context.conversationRepository.getMessages(convId, "anonymous", "channel:websocket")
 
         assertEquals(2, messages.size)
         assertEquals("user", messages[0].role)
@@ -384,7 +384,7 @@ class ConversationRepositoryTest {
                 ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv.id, "user-1")
+        val messages = repo.getMessages(conv.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         assertEquals("## Overview\nHere is the overview.\n\n## Details\nMore details here.", messages[1].text)
@@ -408,7 +408,7 @@ class ConversationRepositoryTest {
         )
         val convId = chatHistory.append(query, response)
 
-        val messages = context.conversationRepository.getMessages(convId, "anonymous")
+        val messages = context.conversationRepository.getMessages(convId, "anonymous", "channel:websocket")
 
         assertEquals(2, messages.size)
         assertEquals("Here is the code:\n```python\nprint('hello')\n```\nDone.", messages[1].text)
@@ -442,7 +442,7 @@ class ConversationRepositoryTest {
                 ConversationRepository.BLOCK_SEPARATOR
         )
 
-        val messages = repo.getMessages(conv.id, "user-1")
+        val messages = repo.getMessages(conv.id, "user-1", "telegram")
 
         assertEquals(2, messages.size)
         assertEquals("Part one.\n\n---\n\nPart two.", messages[1].text)

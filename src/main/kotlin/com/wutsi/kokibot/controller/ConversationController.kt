@@ -36,7 +36,7 @@ class ConversationController(private val multi: MultiBootstrap) {
         val repository = getRepository(name) ?: return ResponseEntity.notFound().build()
         val conversation = repository.getConversations(userId, limit = Int.MAX_VALUE).find { it.id == id }
             ?: return ResponseEntity.notFound().build()
-        val messages = repository.getMessages(id, userId)
+        val messages = repository.getMessages(id, userId, conversation.channelId)
         return ResponseEntity.ok(
             ConversationDetail(
                 id = conversation.id,

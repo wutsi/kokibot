@@ -154,8 +154,6 @@ class ReActReasoningLoop(
         streamCallback: ((LLMStreamData) -> Unit)?,
         context: Context,
     ): Boolean {
-        var stop = true
-
         response.choices.forEach { choice ->
             // Send reasoning content
             if (streamCallback != null) {
@@ -170,9 +168,6 @@ class ReActReasoningLoop(
             }
 
             if (choice.finishReason == LLMFinishReason.TOOL_CALLS && choice.toolCalls.isNotEmpty()) { // Tool execution
-                stop = true
-
-                // Execute
                 toolOrchestrator.executeTools(
                     id = id,
                     iteration = iteration,
@@ -194,10 +189,12 @@ class ReActReasoningLoop(
                 )
                 memory.add("Your previous response was cut off due to length limits. Please continue from exactly where you left off.")
                 return false
+            } else if (choice.finishReason == LLMFinishReason.STOP) { // Done
+                return true
             }
         }
 
-        return stop
+        return false
     }
 
     private fun getCommand(query: Message, context: Context): Command? {

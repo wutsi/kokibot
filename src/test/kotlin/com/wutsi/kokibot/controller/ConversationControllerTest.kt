@@ -114,7 +114,7 @@ class ConversationControllerTest {
         doReturn(listOf(conversation)).whenever(conversationRepository)
             .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())
 
-        doReturn(messages).whenever(conversationRepository).getMessages("conv-001", WebSocketChannel.ANONYMOUS_USER)
+        doReturn(messages).whenever(conversationRepository).getMessages("conv-001", WebSocketChannel.ANONYMOUS_USER, "telegram")
 
         val response = rest.getForEntity(
             "/assistants/my-agent/conversations/conv-001",

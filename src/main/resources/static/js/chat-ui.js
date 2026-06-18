@@ -12,6 +12,8 @@ const ChatUI = {
 
     agentName: null,
     currentMessageId: null,
+    messageStartTime: null,
+    elapsedTimer: null,
     chatContainer: null,
     messageInput: null,
     sendButton: null,
@@ -164,6 +166,11 @@ const ChatUI = {
 
         const filePaths = filesInfo.map(f => f.path);
         this.connectionManager.sendMessage(text, filePaths, this.conversationId);
+        this.messageStartTime = Date.now();
+        this.elapsedTimer = setInterval(() => {
+            const el = document.getElementById(this.currentMessageId);
+            if (el) this.tokenDisplay.updateLiveElapsed(el, Date.now() - this.messageStartTime);
+        }, 100);
 
         this.inputController.disable();
 
@@ -209,6 +216,13 @@ const ChatUI = {
         }
 
         this.messageRenderer.updateFinalResponse(messageElement, content);
+
+        clearInterval(this.elapsedTimer);
+        this.elapsedTimer = null;
+        const elapsed = this.messageStartTime ? Date.now() - this.messageStartTime : null;
+        this.messageStartTime = null;
+        if (elapsed !== null) this.tokenDisplay.finalize(messageElement, elapsed);
+
         this.inputController.enable();
 
         if (conversationId) {

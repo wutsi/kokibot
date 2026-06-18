@@ -97,7 +97,6 @@ class PromptBuilderTest {
 
         assertTrue(prompt.contains("# Long-Term Memory"))
         assertTrue(prompt.contains("User prefers concise answers"))
-        assertTrue(prompt.contains("```markdown"))
     }
 
     @Test
@@ -194,7 +193,12 @@ class PromptBuilderTest {
         )
         doReturn(messages).whenever(conversationRepository).getMessages("conv-1", "user1", "channel:telegram")
 
-        val query = Message(text = "Follow-up question", userId = "user1", channelId = "channel:telegram", conversationId = "conv-1")
+        val query = Message(
+            text = "Follow-up question",
+            userId = "user1",
+            channelId = "channel:telegram",
+            conversationId = "conv-1"
+        )
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("# Conversation History"))

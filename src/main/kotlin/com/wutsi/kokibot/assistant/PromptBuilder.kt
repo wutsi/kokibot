@@ -36,7 +36,7 @@ class PromptBuilder(
             sb.append("\n---\n")
             sb.append("# Conversation History\n")
             conversationMessages.forEach { msg ->
-                sb.append("**${msg.role}** (${msg.dateTime}):\n${msg.text}\n\n")
+                sb.append("<${msg.role}>\n(${msg.dateTime}):\n${msg.text}\n</${msg.role}>\n")
             }
         }
 
@@ -45,7 +45,7 @@ class PromptBuilder(
             sb.append("\n---\n")
             sb.append("# Long-Term Memory\n")
             sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
-            sb.append("```markdown\n$longTermMemory\n```\n")
+            sb.append("<memory>\n$longTermMemory\n</memory>\n")
         }
 
         val shortTermMemory = context.dailyLog.get()
@@ -53,13 +53,13 @@ class PromptBuilder(
             sb.append("\n---\n\n")
             sb.append("# Short-Term Memory\n")
             sb.append("Here are information that you have stored in your short-term memory in Markdown format:\n")
-            sb.append("```markdown\n$shortTermMemory\n```\n")
+            sb.append("<memory>\n$shortTermMemory\n</memory>\n")
         }
 
         if (iterationMemory.isNotEmpty()) {
             sb.append("\n---\n\n")
             sb.append("# Previous reasoning steps and observations\n")
-            iterationMemory.forEach { line -> sb.append("$line\n\n") }
+            iterationMemory.forEach { line -> sb.append("<observation>\n$line\n</observation>\n") }
         }
 
         return applyVariables(sb.toString(), query, context)

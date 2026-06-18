@@ -1530,6 +1530,11 @@ ol, li {
     font-weight: 500;
 }
 
+.token-elapsed {
+    color: #1976D2;
+    font-weight: 600;
+}
+
 /* Dark mode token display */
 @media (prefers-color-scheme: dark) {
     .token-display {
@@ -1555,6 +1560,10 @@ ol, li {
 
     .token-cached {
         color: #81c995;
+    }
+
+    .token-elapsed {
+        color: #64B5F6;
     }
 }
 

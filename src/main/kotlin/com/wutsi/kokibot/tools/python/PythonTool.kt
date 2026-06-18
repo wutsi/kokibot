@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.TimeoutException
 
-class PythonTool : Tool {
+class PythonTool(private val timeout: Long = DEFAULT_TIMEOUT_SECONDS) : Tool {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(PythonTool::class.java)
 
@@ -54,7 +54,6 @@ class PythonTool : Tool {
         val workingDir = arguments["working_dir"]?.toString()
             ?.ifEmpty { null }
             ?.let { dir -> File(dir) }
-        val timeout = DEFAULT_TIMEOUT_SECONDS
 
         try {
             return exec(path, workingDir, timeout)

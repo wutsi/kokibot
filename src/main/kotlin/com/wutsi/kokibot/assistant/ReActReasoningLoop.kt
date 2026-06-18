@@ -79,7 +79,7 @@ class ReActReasoningLoop(
                     // Pause the current session
                     context.sessionLog.pause(query.userId, query.channelId, query.id)
 
-                    // Return the question to ask to the user, the session will be resumed when the user answers
+                    // Return the question to ask the user, the session will be resumed when the user answers
                     return Message(
                         text = ex.question,
                         role = Role.ASSISTANT,

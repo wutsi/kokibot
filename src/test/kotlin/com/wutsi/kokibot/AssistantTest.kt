@@ -29,6 +29,7 @@ import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.tools.user.AskQuestionException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.doReturn
@@ -70,6 +71,8 @@ class AssistantTest {
 
     @BeforeEach
     fun setup() {
+        doReturn(65536).whenever(llm).maxContextWindow()
+        context.conversationRepository.init(emptyMap<Any, Any>(), context)
         assistant.init(emptyMap<Any, Any>(), context)
 
         doReturn(true).whenever(tool1).activate()
@@ -98,6 +101,22 @@ class AssistantTest {
             )
         ).whenever(skill1).metadata
         doReturn(listOf(skill1)).whenever(skillRegistry).all()
+    }
+
+    @Test
+    fun contextWindow() {
+        val window = assistant.contextWindow("anonymous", "channel:telegram")
+
+        assertTrue(window.baseline > 0)
+        assertTrue(window.max > 0)
+    }
+
+    @Test
+    fun `contextWindow with conversationId`() {
+        val window = assistant.contextWindow("anonymous", "channel:telegram", "conv-123")
+
+        assertTrue(window.baseline > 0)
+        assertTrue(window.max > 0)
     }
 
     @Test
@@ -146,9 +165,10 @@ class AssistantTest {
             "You are a system agent designed to assist users with various tasks.\n",
             "# Security Guidelines",
             "# Daily Log Protocol",
-            "# Conversation History",
             "# Available skills"
         )
+        // Conversation history is injected into the prompt only when conversationId is set
+        assertEquals(false, req.firstValue.prompt.contains("# Conversation History"))
     }
 
     @Test

@@ -34,7 +34,7 @@ class PythonToolTest {
     fun metadata() {
         val meta = tool.metadata()
         assertEquals(PythonTool.NAME, meta.name)
-        assertEquals(3, meta.parameters.size)
+        assertEquals(2, meta.parameters.size)
 
         assertEquals("path", meta.parameters[0].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[0].type)
@@ -43,10 +43,6 @@ class PythonToolTest {
         assertEquals("working_dir", meta.parameters[1].name)
         assertEquals(ToolParameterType.STRING, meta.parameters[1].type)
         assertFalse(meta.parameters[1].required)
-
-        assertEquals("timeout", meta.parameters[2].name)
-        assertEquals(ToolParameterType.INTEGER, meta.parameters[2].type)
-        assertFalse(meta.parameters[2].required)
     }
 
     @Test
@@ -119,12 +115,11 @@ class PythonToolTest {
                     """.trimIndent(),
         )
 
-        val result = tool.exec(
-            mapOf(
-                "path" to file.absolutePath,
-                "timeout" to 1, // 1 second timeout for testing
-            )
+        val result = PythonTool(1L).exec(
+            mapOf("path" to file.absolutePath)
         )
+
+        Thread.sleep(2000) // Wait for the timeout to occur
         assertEquals(true, result.contains("TIMEOUT"))
     }
 

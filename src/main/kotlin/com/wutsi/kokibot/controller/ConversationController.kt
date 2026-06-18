@@ -18,7 +18,7 @@ class ConversationController(private val multi: MultiBootstrap) {
     @GetMapping("/{name}/conversations")
     fun list(
         @PathVariable name: String,
-        @RequestParam channelId: String,
+        @RequestParam(required = false) channelId: String?,
         @RequestParam(defaultValue = "30") limit: Int,
         @RequestParam(defaultValue = "0") offset: Int,
     ): ResponseEntity<Any> {

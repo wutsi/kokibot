@@ -51,6 +51,23 @@ class AssistantController(private val multi: MultiBootstrap) {
         )
     }
 
+    @GetMapping("/{name}/context-window")
+    fun contextWindow(
+        @PathVariable name: String,
+        @RequestParam userId: String,
+        @RequestParam channelId: String,
+        @RequestParam(required = false) conversationId: String?,
+    ): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val cw = bootstrap.getContext().assistant.contextWindow(userId, channelId, conversationId)
+        return ResponseEntity.ok(
+            mapOf(
+                "baseline" to cw.baseline,
+                "max" to cw.max,
+            )
+        )
+    }
+
     @GetMapping("/{name}/assistant.md")
     fun assistant(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()

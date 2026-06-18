@@ -68,9 +68,18 @@
                 </div>
                 <span id="agent-description">AI Assistant</span>
             </div>
-            <div class="connection-status">
-                <span class="status-dot" id="status-indicator"></span>
-                <span id="status-text">Connecting...</span>
+            <div class="header-status">
+                <div class="connection-status">
+                    <span class="status-dot" id="status-indicator"></span>
+                    <span id="status-text">Connecting...</span>
+                </div>
+                <div class="context-window-status">
+                    <span id="context-window-baseline">—</span>
+                    <div class="context-window-bar-track">
+                        <div class="context-window-bar-fill" id="context-window-bar"></div>
+                    </div>
+                    <span id="context-window-text">—</span>
+                </div>
             </div>
         </header>
 
@@ -129,6 +138,7 @@
 <script src="js/components/conversation-history.js"></script>
 <script src="js/components/sidebar.js"></script>
 <script src="js/components/file-upload.js"></script>
+<script src="js/components/context-window.js"></script>
 <!-- Main orchestrator -->
 <script src="js/chat-ui.js"></script>
 <script>
@@ -139,6 +149,7 @@
         AgentSelector.init(agentName);
         Sidebar.init();
         FileUpload.init(agentName);
+        ContextWindowDisplay.init(agentName);
     });
 </script>
 </body>

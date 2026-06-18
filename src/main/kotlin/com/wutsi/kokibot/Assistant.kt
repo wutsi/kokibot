@@ -1,5 +1,6 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.assistant.ContextWindow
 import com.wutsi.kokibot.assistant.PromptBuilder
 import com.wutsi.kokibot.assistant.ReActReasoningLoop
 import com.wutsi.kokibot.assistant.ReasoningLoop
@@ -73,6 +74,17 @@ class Assistant(val name: String = "") {
             LOGGER.info("Shutting down tool orchestrator for assistant: $name")
             toolOrchestrator.destroy()
         }
+    }
+
+    fun contextWindow(userId: String, channelId: String, conversationId: String? = null): ContextWindow {
+        val message = Message(userId = userId, channelId = channelId, conversationId = conversationId)
+        val systemInstructions = promptBuilder.buildSystemInstructions(message, coordinator, context)
+        val prompt = promptBuilder.buildPrompt(message, emptyList(), context)
+        val baseline = (systemInstructions.length + prompt.length) / BYTES_PER_TOKENS
+        return ContextWindow(
+            baseline = baseline,
+            max = context.llm.maxContextWindow(),
+        )
     }
 
     fun getInstructions(): String? {

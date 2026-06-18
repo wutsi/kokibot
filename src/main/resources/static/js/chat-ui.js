@@ -90,6 +90,7 @@ const ChatUI = {
         this.conversationId = null;
         this.historyLoaded = true;
         this.chatContainer.innerHTML = '';
+        ContextWindowDisplay.reset();
     },
 
     setupElements() {
@@ -118,10 +119,12 @@ const ChatUI = {
     setupConnectionHandlers() {
         this.connectionManager.on('open', () => {
             this.updateConnectionStatus('connected', 'Connected');
+            ContextWindowDisplay.refresh();
             if (!this.historyLoaded) {
                 this.loadConversationHistory().then(() => {
                     this.historyLoaded = true;
                     this.inputController.enable();
+                    ContextWindowDisplay.refresh(this.conversationId);
                 });
             } else {
                 this.inputController.enable();
@@ -213,6 +216,7 @@ const ChatUI = {
             localStorage.setItem(`kokibot_conv_${this.agentName}`, conversationId);
             ConversationHistory.setActiveConversation(conversationId);
         }
+        ContextWindowDisplay.refresh(this.conversationId);
     },
 
     updateConnectionStatus(status, text) {

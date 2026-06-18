@@ -3,7 +3,6 @@ package com.wutsi.kokibot.service.memory
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
-import com.wutsi.kokibot.service.memory.ConversationRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -85,7 +84,7 @@ class ChatHistoryTest {
         val conversationId = chatHistory.append(query, response)
 
         assertTrue(conversationId.isNotBlank())
-        val indexFile = File(context.home.absolutePath + "/memory/chat/user-1/conversations.json")
+        val indexFile = File(context.home.absolutePath + "/memory/chat/user-1/telegram/conversations.json")
         assertTrue(indexFile.exists())
     }
 

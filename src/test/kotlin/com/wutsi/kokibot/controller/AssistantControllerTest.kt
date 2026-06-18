@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.controller
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
@@ -10,6 +11,7 @@ import com.wutsi.kokibot.Bootstrap
 import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
+import com.wutsi.kokibot.assistant.ContextWindow
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.llm.LLM
@@ -274,6 +276,32 @@ class AssistantControllerTest {
     }
 
     @Test
+    fun `context-window returns baseline and max`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity(
+            "/assistants/007/context-window?userId=user1&channelId=channel:telegram",
+            Map::class.java,
+        )
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(500, response.body!!["baseline"])
+        assertEquals(MAX_CONTEXT_WINDOW, response.body!!["max"])
+    }
+
+    @Test
+    fun `context-window returns 404 when assistant not found`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity(
+            "/assistants/unknown/context-window?userId=user1&channelId=channel:telegram",
+            Any::class.java,
+        )
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
     fun llm() {
         val balance = LLMBalance(currency = "USD", total = 100.0)
         doReturn(
@@ -326,6 +354,8 @@ class AssistantControllerTest {
         doReturn(name).whenever(assistant).name
         doReturn(description).whenever(assistant).description
         doReturn(instructions).whenever(assistant).getInstructions()
+        doReturn(ContextWindow(baseline = 500, max = MAX_CONTEXT_WINDOW)).whenever(assistant)
+            .contextWindow(any(), any(), anyOrNull())
 
         val heartbeat = mock<Heartbeat>()
         doReturn(heartbeatInstructions).whenever(heartbeat).getInstructions()

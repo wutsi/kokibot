@@ -148,18 +148,29 @@ const FileViewer = (() => {
         contentEl.appendChild(nav);
         contentEl.appendChild(wrap);
 
-        async function renderPage(n) {
-            currentPage = n;
-            pageInfo.textContent = `Page ${n} of ${totalPages}`;
-            prevBtn.disabled = n <= 1;
-            nextBtn.disabled = n >= totalPages;
+        let rendering = false;
 
-            const page = await pdfDoc.getPage(n);
-            const scale = wrap.clientWidth / page.getViewport({ scale: 1 }).width;
-            const viewport = page.getViewport({ scale });
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        async function renderPage(n) {
+            if (rendering) return;
+            rendering = true;
+            try {
+                currentPage = n;
+                pageInfo.textContent = `Page ${n} of ${totalPages}`;
+                prevBtn.disabled = n <= 1;
+                nextBtn.disabled = n >= totalPages;
+
+                const page = await pdfDoc.getPage(n);
+                const scale = wrap.clientWidth / page.getViewport({ scale: 1 }).width;
+                const viewport = page.getViewport({ scale });
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            } catch (err) {
+                contentEl.innerHTML =
+                    `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to render page ${n}: ${err.message}</div>`;
+            } finally {
+                rendering = false;
+            }
         }
 
         prevBtn.addEventListener('click', () => { if (currentPage > 1) renderPage(currentPage - 1); });

@@ -6,13 +6,13 @@
 
 **Architecture:** Load pdf.js from CDN as a global UMD script. Replace the `<iframe>` branch in `renderBinary()` with an async `renderPdf()` function that builds a nav bar (Prev / Page N of M / Next) and renders each page into a `<canvas>`. CSS additions provide styling for the nav bar and canvas container.
 
-**Tech Stack:** pdf.js 4.4.168 (unpkg CDN, UMD build), vanilla JS, CSS custom properties already defined in the app theme.
+**Tech Stack:** pdf.js 3.11.174 (unpkg CDN, UMD build), vanilla JS, CSS custom properties already defined in the app theme.
 
 ## Global Constraints
 
-- pdf.js CDN: `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.js` (UMD, no `type="module"`)
-- Worker CDN: `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.js`
-- Both CDN URLs must pin the same version (`4.4.168`)
+- pdf.js CDN: `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js` (UMD, no `type="module"`)
+- Worker CDN: `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`
+- Both CDN URLs must pin the same version (`3.11.174`)
 - No npm, no bundler — plain `<script>` tags and static JS files only
 - Follow existing code style in `file-viewer.js` (IIFE, no classes, `const`/`let`)
 - No backend changes
@@ -33,7 +33,7 @@
 In `src/main/resources/static/index.html`, add the script tag **before** the `file-viewer.js` line (currently line 162):
 
 ```html
-<script src="https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="js/components/file-viewer.js"></script>
 ```
 
@@ -41,7 +41,7 @@ The file around that area should look like:
 
 ```html
 <script src="js/components/context-window.js"></script>
-<script src="https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="js/components/file-viewer.js"></script>
 <!-- Main orchestrator -->
 <script src="js/chat-ui.js"></script>
@@ -178,7 +178,7 @@ Insert the following function immediately after the closing `}` of `renderBinary
 ```js
 async function renderPdf(url) {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.js';
+        'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
     contentEl.innerHTML = '<div class="viewer-text">Loading…</div>';
 

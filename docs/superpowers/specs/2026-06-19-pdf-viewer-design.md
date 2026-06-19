@@ -23,14 +23,14 @@ No backend changes. The existing `GET /files/preview/{path}` endpoint already se
 Load pdf.js from the unpkg CDN:
 
 ```html
-<script src="https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 ```
 
 The worker is configured inline in `file-viewer.js`:
 
 ```js
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
+    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs';
 ```
 
 ## UI Structure
@@ -80,7 +80,7 @@ Add a new `renderPdf(url)` function:
 ```js
 async function renderPdf(url) {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
+        'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs';
 
     // Loading indicator
     contentEl.innerHTML = '<div class="viewer-text">Loading…</div>';

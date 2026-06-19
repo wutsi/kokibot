@@ -113,63 +113,30 @@ const FileViewer = (() => {
             return;
         }
 
-        const totalPages = pdfDoc.numPages;
-        let currentPage = 1;
-
-        const nav = document.createElement('div');
-        nav.className = 'pdf-nav-bar';
-
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = '‹ Prev';
-
-        const pageInfo = document.createElement('span');
-
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = 'Next ›';
-
-        nav.appendChild(prevBtn);
-        nav.appendChild(pageInfo);
-        nav.appendChild(nextBtn);
-
         const wrap = document.createElement('div');
         wrap.className = 'pdf-canvas-wrap';
 
-        const canvas = document.createElement('canvas');
-        wrap.appendChild(canvas);
-
         contentEl.innerHTML = '';
-        contentEl.appendChild(nav);
         contentEl.appendChild(wrap);
 
-        let rendering = false;
-
-        async function renderPage(n) {
-            if (rendering) return;
-            rendering = true;
+        for (let n = 1; n <= pdfDoc.numPages; n++) {
             try {
-                currentPage = n;
-                pageInfo.textContent = `Page ${n} of ${totalPages}`;
-                prevBtn.disabled = n <= 1;
-                nextBtn.disabled = n >= totalPages;
-
                 const page = await pdfDoc.getPage(n);
                 const scale = wrap.clientWidth / page.getViewport({ scale: 1 }).width;
                 const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
+                wrap.appendChild(canvas);
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             } catch (err) {
-                contentEl.innerHTML =
-                    `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to render page ${n}: ${escapeHtml(err.message)}</div>`;
-            } finally {
-                rendering = false;
+                const errDiv = document.createElement('div');
+                errDiv.className = 'viewer-text';
+                errDiv.style.color = 'var(--color-accent-red)';
+                errDiv.textContent = `Failed to render page ${n}: ${err.message}`;
+                wrap.appendChild(errDiv);
             }
         }
-
-        prevBtn.addEventListener('click', () => { if (currentPage > 1) renderPage(currentPage - 1); });
-        nextBtn.addEventListener('click', () => { if (currentPage < totalPages) renderPage(currentPage + 1); });
-
-        await renderPage(1);
     }
 
     async function renderText(url, ext) {

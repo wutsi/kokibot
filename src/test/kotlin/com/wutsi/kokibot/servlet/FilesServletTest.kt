@@ -1,4 +1,4 @@
-package com.wutsi.kokibot.controller
+package com.wutsi.kokibot.servlet
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
@@ -24,7 +24,7 @@ import kotlin.test.assertNotNull
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-class FileControllerTest {
+class FilesServletTest {
     @MockitoBean
     private lateinit var multi: MultiBootstrap
 
@@ -46,7 +46,7 @@ class FileControllerTest {
 
         val testFile = createTestFile("007", "workspace/tmp/hello.txt", "Hello World")
 
-        val response = rest.getForEntity("/files/007|workspace|tmp|hello.txt", ByteArray::class.java)
+        val response = rest.getForEntity("/files/007/workspace/tmp/hello.txt", ByteArray::class.java)
 
         assertEquals(200, response.statusCode.value())
         assertEquals("Hello World", String(response.body!!))
@@ -59,7 +59,7 @@ class FileControllerTest {
 
         createTestFile("007", "workspace/tmp/report.txt", "Report contents")
 
-        val response = rest.getForEntity("/files/007|workspace|tmp|report.txt", ByteArray::class.java)
+        val response = rest.getForEntity("/files/007/workspace/tmp/report.txt", ByteArray::class.java)
 
         assertEquals(200, response.statusCode.value())
         val contentDisposition = response.headers.contentDisposition
@@ -74,7 +74,7 @@ class FileControllerTest {
 
         createTestFile("007", "workspace/tmp/note.txt", "Hello")
 
-        val response = rest.getForEntity("/files/007|workspace|tmp|note.txt", ByteArray::class.java)
+        val response = rest.getForEntity("/files/007/workspace/tmp/note.txt", ByteArray::class.java)
 
         assertEquals(200, response.statusCode.value())
         val contentType = response.headers.contentType
@@ -87,14 +87,13 @@ class FileControllerTest {
     fun `files - falls back to octet-stream for unknown content type`() {
         doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
 
-        // File with unknown extension
         val testFile = createTestFileBytes(
             "007",
             "workspace/tmp/data.kokibotxyz",
             byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05)
         )
 
-        val response = rest.getForEntity("/files/007|workspace|tmp|data.kokibotxyz", ByteArray::class.java)
+        val response = rest.getForEntity("/files/007/workspace/tmp/data.kokibotxyz", ByteArray::class.java)
 
         assertEquals(200, response.statusCode.value())
         assertEquals(MediaType.APPLICATION_OCTET_STREAM, response.headers.contentType)
@@ -105,7 +104,7 @@ class FileControllerTest {
     fun `files - returns 404 when assistant not found`() {
         doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
 
-        val response = rest.getForEntity("/files/xxx|workspace|tmp|hello.txt", ByteArray::class.java)
+        val response = rest.getForEntity("/files/xxx/workspace/tmp/hello.txt", ByteArray::class.java)
 
         assertEquals(404, response.statusCode.value())
     }
@@ -114,7 +113,7 @@ class FileControllerTest {
     fun `files - returns 404 when file does not exist`() {
         doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
 
-        val response = rest.getForEntity("/files/007|workspace|tmp|missing.txt", ByteArray::class.java)
+        val response = rest.getForEntity("/files/007/workspace/tmp/missing.txt", ByteArray::class.java)
 
         assertEquals(404, response.statusCode.value())
     }
@@ -125,7 +124,7 @@ class FileControllerTest {
 
         createTestFile("007", "workspace/a/b/c/deep.txt", "Deep file")
 
-        val response = rest.getForEntity("/files/007|workspace|a|b|c|deep.txt", ByteArray::class.java)
+        val response = rest.getForEntity("/files/007/workspace/a/b/c/deep.txt", ByteArray::class.java)
 
         assertEquals(200, response.statusCode.value())
         assertEquals("Deep file", String(response.body!!))
@@ -142,7 +141,7 @@ class FileControllerTest {
 
         createTestFile("008", "workspace/tmp/from-008.txt", "From 008")
 
-        val response = rest.getForEntity("/files/008|workspace|tmp|from-008.txt", ByteArray::class.java)
+        val response = rest.getForEntity("/files/008/workspace/tmp/from-008.txt", ByteArray::class.java)
 
         assertEquals(200, response.statusCode.value())
         assertEquals("From 008", String(response.body!!))

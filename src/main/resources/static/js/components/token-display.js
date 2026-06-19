@@ -7,12 +7,12 @@ class TokenDisplay {
         this.currentUsage = null;
         this.accumulatedUsage = null;
         this.currentElapsed = null;
-        this.accumulatedElapsed = 0;
     }
 
     reset() {
         this.currentUsage = null;
         this.currentElapsed = null;
+        this.accumulatedUsage = null;
     }
 
     /**
@@ -44,7 +44,6 @@ class TokenDisplay {
 
     finalize(messageElement, elapsedMs) {
         this.currentElapsed = elapsedMs;
-        this.accumulatedElapsed += elapsedMs;
         this._renderTo(messageElement);
     }
 

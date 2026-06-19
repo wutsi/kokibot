@@ -16,6 +16,7 @@ class MarkdownRenderer {
         marked.setOptions({
             breaks: true,
             gfm: true,
+            html: true,
             headerIds: false,
             mangle: false,
             highlight: (code, lang) => {

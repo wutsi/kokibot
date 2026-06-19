@@ -23,7 +23,7 @@ No backend changes. The existing `GET /files/preview/{path}` endpoint already se
 Load pdf.js from the unpkg CDN:
 
 ```html
-<script src="https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.mjs" type="module"></script>
+<script src="https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.js"></script>
 ```
 
 The worker is configured inline in `file-viewer.js`:
@@ -71,7 +71,7 @@ if (ext === 'pdf') {
 **After:**
 ```js
 if (ext === 'pdf') {
-    renderPdf(url);
+    renderPdf(url); // async, errors caught internally
 }
 ```
 

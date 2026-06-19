@@ -25,25 +25,20 @@ const FileViewer = (() => {
 
         document.getElementById('chat-container').addEventListener('click', (e) => {
             const link = e.target.closest('a');
-            console.log('[FileViewer] click | link:', link?.href);
             if (!link) return;
 
             let pathname;
             try { pathname = new URL(link.href).pathname; } catch (err) {
-                console.log('[FileViewer] URL parse failed:', err.message);
                 return;
             }
-            console.log('[FileViewer] pathname:', pathname);
 
             if (!pathname.startsWith('/files/') || pathname.startsWith('/files/preview/')) return;
 
             const ext = getExt(link.href);
-            console.log('[FileViewer] ext:', ext, '| supported:', SUPPORTED.has(ext));
             if (!SUPPORTED.has(ext)) return;
 
             e.preventDefault();
             const previewUrl = link.href.replace('/files/', '/files/preview/');
-            console.log('[FileViewer] opening:', previewUrl);
             openViewer(previewUrl, link.href, link.textContent.trim()).catch(err =>
                 console.error('[FileViewer] openViewer error:', err)
             );
@@ -51,7 +46,6 @@ const FileViewer = (() => {
     }
 
     async function openViewer(previewUrl, downloadUrl, filename) {
-        console.log('[FileViewer] openViewer | panel:', !!panel, 'chatBody:', !!chatBody);
         const ext = getExt(previewUrl);
         currentExt = ext;
         isCodeMode = false;
@@ -73,7 +67,6 @@ const FileViewer = (() => {
 
         panel.classList.remove('file-viewer--hidden');
         chatBody.classList.add('viewer-open');
-        console.log('[FileViewer] panel shown');
     }
 
     function close() {
@@ -116,7 +109,7 @@ const FileViewer = (() => {
             pdfDoc = await pdfjsLib.getDocument(url).promise;
         } catch (err) {
             contentEl.innerHTML =
-                `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to load PDF: ${err.message}</div>`;
+                `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to load PDF: ${escapeHtml(err.message)}</div>`;
             return;
         }
 
@@ -167,7 +160,7 @@ const FileViewer = (() => {
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             } catch (err) {
                 contentEl.innerHTML =
-                    `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to render page ${n}: ${err.message}</div>`;
+                    `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to render page ${n}: ${escapeHtml(err.message)}</div>`;
             } finally {
                 rendering = false;
             }
@@ -185,7 +178,7 @@ const FileViewer = (() => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             currentRawText = await res.text();
         } catch (err) {
-            contentEl.innerHTML = `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to load file: ${err.message}</div>`;
+            contentEl.innerHTML = `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to load file: ${escapeHtml(err.message)}</div>`;
             return;
         }
         renderPreviewView(ext);

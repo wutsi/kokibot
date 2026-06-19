@@ -30,7 +30,7 @@ The worker is configured inline in `file-viewer.js`:
 
 ```js
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs';
+    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 ```
 
 ## UI Structure
@@ -80,7 +80,7 @@ Add a new `renderPdf(url)` function:
 ```js
 async function renderPdf(url) {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs';
+        'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
     // Loading indicator
     contentEl.innerHTML = '<div class="viewer-text">Loading…</div>';

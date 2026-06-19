@@ -1,0 +1,221 @@
+/* ===== File Viewer Panel ===== */
+
+.chat-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.chat-body .chat-container {
+    flex: 1;
+    min-width: 0;
+    transition: flex 0.2s ease;
+}
+
+.chat-body.viewer-open .chat-container {
+    flex: 0 0 50%;
+}
+
+.file-viewer {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--color-border-light);
+    background-color: var(--color-bg-primary);
+    overflow: hidden;
+}
+
+.file-viewer--hidden {
+    display: none;
+}
+
+/* ===== Toolbar ===== */
+
+.file-viewer-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border-light);
+    background-color: var(--color-bg-secondary);
+    flex-shrink: 0;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.file-viewer-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.file-viewer-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.file-viewer-toolbar-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 4px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.file-viewer-toolbar-actions button:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.file-viewer-close-btn {
+    font-size: 16px !important;
+    padding: 4px 8px !important;
+}
+
+/* ===== Content Area ===== */
+
+.file-viewer-content {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+    min-height: 0;
+}
+
+.file-viewer-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+.file-viewer-content img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    margin: auto;
+    padding: 16px;
+    object-fit: contain;
+}
+
+.file-viewer-content .viewer-text {
+    padding: 16px;
+    font-family: 'Google Sans', 'Roboto', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text-primary);
+}
+
+.file-viewer-content .viewer-text table {
+    border-collapse: collapse;
+    margin: 12px 0;
+    width: 100%;
+}
+
+.file-viewer-content .viewer-text th,
+.file-viewer-content .viewer-text td {
+    border: 1px solid var(--color-border-light);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.file-viewer-content .viewer-text th {
+    background-color: var(--color-bg-tertiary);
+    font-weight: 600;
+}
+
+.file-viewer-content .viewer-code-wrap {
+    display: flex;
+    overflow: auto;
+    height: 100%;
+    background: var(--color-bg-code);
+}
+
+.file-viewer-content .viewer-line-nums {
+    padding: 16px 12px;
+    margin: 0;
+    text-align: right;
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border-light);
+    user-select: none;
+    flex-shrink: 0;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.file-viewer-content .viewer-code {
+    padding: 16px;
+    margin: 0;
+    flex: 1;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    white-space: pre;
+    background: var(--color-bg-code);
+}
+
+/* ===== PDF Viewer ===== */
+
+.pdf-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--color-border-light);
+    background: var(--color-bg-secondary);
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.pdf-nav-bar button {
+    padding: 3px 10px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 4px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.pdf-nav-bar button:hover:not(:disabled) {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.pdf-nav-bar button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.pdf-canvas-wrap {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    min-height: 0;
+}
+
+.pdf-canvas-wrap canvas {
+    display: block;
+    max-width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}

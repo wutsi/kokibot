@@ -89,6 +89,6 @@ class FileReadTool(private val maxLength: Int = WebFetchTool.MAX_FILE_SIZE) : Ab
             }
         }
 
-        return "BEGIN FILE CONTENT\n\n" + content.take(maxLength) + "\n\nEND FILE CONTENT"
+        return "<file-content>\n" + content.take(maxLength) + "\n</file-content>"
     }
 }

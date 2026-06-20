@@ -59,10 +59,10 @@ class SkillActivationTool : Tool {
             }
 
             val sb = StringBuilder()
-            sb.append("Skill `$name` has been activated.\n")
-            sb.append("BEGIN SKILL INSTRUCTIONS: $name\n\n")
+            sb.append("Skill `$name` has been activated. Here are the skill detailed instructions\n")
+            sb.append("<skill-instructions>\n")
             sb.append(skill.body)
-            sb.append("\n\nEND SKILL INSTRUCTIONS: $name")
+            sb.append("\n</skill-instructions>")
             return sb.toString()
         } catch (ex: Exception) {
             return "Unable to activate skill `$name`. Error= ${ex.message}"

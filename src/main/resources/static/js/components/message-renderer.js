@@ -78,6 +78,8 @@ class MessageRenderer {
         }
 
         textDiv.innerHTML = this.markdownRenderer.render(text);
+        this.addImageDownloadButtons(textDiv);
+        this.addCodeCopyButtons(textDiv);
 
         let timestamp = contentDiv.querySelector('.message-timestamp');
         if (!timestamp) {
@@ -146,6 +148,53 @@ class MessageRenderer {
         this.copyButton.setupCopy(messageDiv);
 
         return messageDiv;
+    }
+
+    /**
+     * Wrap each <img> in a relative container and overlay a download button.
+     */
+    addImageDownloadButtons(textDiv) {
+        textDiv.querySelectorAll('img').forEach(img => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'img-wrapper';
+
+            const fileDiv = img.parentNode.classList.contains('file') ? img.parentNode : null;
+            const anchor = fileDiv || img;
+            anchor.parentNode.insertBefore(wrapper, anchor);
+            wrapper.appendChild(anchor);
+
+            const btn = document.createElement('a');
+            btn.className = 'img-download-btn';
+            btn.href = img.src;
+            btn.download = img.src.split('/').pop().split('?')[0] || 'image';
+            btn.title = 'Download';
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>';
+            wrapper.appendChild(btn);
+        });
+    }
+
+    addCodeCopyButtons(textDiv) {
+        textDiv.querySelectorAll('pre').forEach(pre => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-block-wrapper';
+            pre.parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(pre);
+
+            const btn = document.createElement('button');
+            btn.className = 'code-copy-btn';
+            btn.title = 'Copy';
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1 1 2 2 2h11c1 0 2-1 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/></svg>';
+            btn.addEventListener('click', () => {
+                const code = pre.querySelector('code');
+                navigator.clipboard.writeText(code ? code.innerText : pre.innerText).then(() => {
+                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+                    setTimeout(() => {
+                        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1 1 2 2 2h11c1 0 2-1 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/></svg>';
+                    }, 2000);
+                });
+            });
+            wrapper.appendChild(btn);
+        });
     }
 
     /**

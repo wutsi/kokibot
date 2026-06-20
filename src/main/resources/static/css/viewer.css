@@ -62,6 +62,10 @@
     flex-shrink: 0;
 }
 
+.file-viewer-toolbar-actions button[hidden] {
+    display: none;
+}
+
 .file-viewer-toolbar-actions button {
     display: flex;
     align-items: center;

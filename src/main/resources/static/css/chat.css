@@ -487,6 +487,7 @@ ol, li {
     border-radius: 18px 18px 18px 4px;
     padding: 16px;
     box-shadow: var(--shadow-sm);
+    min-width: 60%;
 }
 
 .message-text {
@@ -1067,6 +1068,43 @@ ol, li {
     background: transparent;
 }
 
+.message-text .code-block-wrapper {
+    position: relative;
+    margin: 12px 0;
+}
+
+.message-text .code-block-wrapper pre {
+    margin: 0;
+}
+
+.message-text .code-copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 4px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.message-text .code-block-wrapper:hover .code-copy-btn {
+    opacity: 1;
+}
+
+.message-text .code-copy-btn:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
 .message-text blockquote {
     border-left: 4px solid var(--color-accent-blue);
     padding-left: 16px;
@@ -1111,8 +1149,43 @@ ol, li {
 .message-text img {
     max-width: 100%;
     height: auto;
-    border-radius: 6px;
-    margin: 8px 0;
+}
+
+.message-text .img-wrapper {
+    position: relative;
+    display: inline-block;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 4px;
+    overflow: hidden;
+    padding: 16px;
+}
+
+.message-text .img-download-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 4px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.message-text .img-wrapper:hover .img-download-btn {
+    opacity: 1;
+}
+
+.message-text .img-download-btn:hover {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
 }
 
 /* ===== Tool Status Badge ===== */

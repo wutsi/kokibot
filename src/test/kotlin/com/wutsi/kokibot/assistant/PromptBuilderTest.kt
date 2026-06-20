@@ -10,6 +10,7 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.mcp.McpServerConfig
+import com.wutsi.kokibot.mcp.McpToolDefinition
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import com.wutsi.kokibot.service.memory.ConversationRepository
 import com.wutsi.kokibot.service.memory.DailyLog
@@ -25,6 +26,7 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import java.util.concurrent.CopyOnWriteArrayList
 
 class PromptBuilderTest {
     private fun getResourceFile(path: String): File {
@@ -39,6 +41,7 @@ class PromptBuilderTest {
     private val conversationRepository = mock<ConversationRepository>()
     private val assistant = mock<Assistant>()
     private val context = mock<Context>()
+    private val activatedMcps: MutableList<McpServer> = CopyOnWriteArrayList()
 
     // Fixed clock for deterministic date/time assertions: 2026-06-09T14:30:15Z
     private val fixedClock: Clock = Clock.fixed(
@@ -58,6 +61,7 @@ class PromptBuilderTest {
         doReturn("test-assistant").whenever(assistant).name
 
         doReturn(mcpRegistry).whenever(context).mcpRegistry
+        doReturn(activatedMcps).whenever(context).activatedMcps
         doReturn(null).whenever(memory).get()
         doReturn(null).whenever(dailyLog).get()
         doReturn(emptyList<Skill>()).whenever(skillRegistry).all()
@@ -353,13 +357,11 @@ class PromptBuilderTest {
 
     @Test
     fun `should include available MCP servers in system instructions`() {
-        val mcpRegistry = mock<McpRegistry>()
         val server1 = mock<McpServer>()
         val server2 = mock<McpServer>()
         doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data and forecasts", url = "https://w.example.com")).whenever(server1).config
         doReturn(McpServerConfig(name = "news-mcp", description = "Latest news", url = "https://n.example.com")).whenever(server2).config
         doReturn(listOf(server1, server2)).whenever(mcpRegistry).all()
-        doReturn(mcpRegistry).whenever(context).mcpRegistry
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
@@ -374,13 +376,41 @@ class PromptBuilderTest {
 
     @Test
     fun `should omit MCP section when no servers configured`() {
-        val mcpRegistry = mock<McpRegistry>()
         doReturn(emptyList<McpServer>()).whenever(mcpRegistry).all()
-        doReturn(mcpRegistry).whenever(context).mcpRegistry
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
 
         assertFalse(instructions.contains("# Available MCP Servers"))
+    }
+
+    @Test
+    fun `should include activated MCP server tools in system instructions`() {
+        val server = mock<McpServer>()
+        doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server).config
+        doReturn(
+            listOf(
+                McpToolDefinition(
+                    name = "get_weather",
+                    description = "Get current weather for a city",
+                    inputSchema = mapOf(
+                        "properties" to mapOf(
+                            "city" to mapOf("type" to "string", "description" to "City name")
+                        )
+                    )
+                )
+            )
+        ).whenever(server).toolDefinitions
+        doReturn(listOf(server)).whenever(mcpRegistry).all()
+        activatedMcps.add(server)
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
+
+        assertTrue(instructions.contains("# Activated MCP Servers"))
+        assertTrue(instructions.contains("weather-mcp"))
+        assertTrue(instructions.contains("get_weather"))
+        assertTrue(instructions.contains("Get current weather for a city"))
+        assertTrue(instructions.contains("mcp_call"))
     }
 }

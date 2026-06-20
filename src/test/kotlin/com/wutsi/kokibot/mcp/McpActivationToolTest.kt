@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.mcp
 
-import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
@@ -9,37 +8,32 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class McpActivationToolTest {
     private val mcpRegistry = mock<McpRegistry>()
-    private val toolRegistry = mock<ToolRegistry>()
     private val server = mock<McpServer>()
     private val context = mock<Context>()
+    private val activatedMcps: MutableList<McpServer> = CopyOnWriteArrayList()
 
     private val tool = McpActivationTool()
-
-    private val weatherTool = McpTool(
-        serverName = "weather-mcp",
-        toolDef = McpToolDefinition(name = "get_weather", description = "Get weather"),
-        server = server,
-    )
-    private val forecastTool = McpTool(
-        serverName = "weather-mcp",
-        toolDef = McpToolDefinition(name = "get_forecast", description = "Get forecast"),
-        server = server,
-    )
 
     @BeforeEach
     fun setUp() {
         doReturn(mcpRegistry).whenever(context).mcpRegistry
-        doReturn(toolRegistry).whenever(context).toolRegistry
+        doReturn(activatedMcps).whenever(context).activatedMcps
         doReturn(server).whenever(mcpRegistry).get("weather-mcp")
         doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server).config
+        doReturn(
+            listOf(
+                McpToolDefinition(name = "get_weather", description = "Get weather"),
+                McpToolDefinition(name = "get_forecast", description = "Get forecast"),
+            )
+        ).whenever(server).toolDefinitions
         tool.init(emptyMap<String, Any>(), context)
     }
 
@@ -55,14 +49,23 @@ class McpActivationToolTest {
 
     @Test
     fun `exec activates server and returns tool list`() {
-        doReturn(true).whenever(server).activated
-        doReturn(listOf(weatherTool, forecastTool)).whenever(toolRegistry).all()
-
         val result = tool.exec(mapOf("server" to "weather-mcp"))
 
-        verify(server).activate(toolRegistry)
+        verify(server).initialize()
         assertTrue(result.contains("weather-mcp"))
         assertTrue(result.contains("Activated"))
+        assertTrue(result.contains("get_weather"))
+        assertTrue(result.contains("get_forecast"))
+        assertTrue(activatedMcps.contains(server))
+    }
+
+    @Test
+    fun `exec does not add server twice to activatedMcps`() {
+        activatedMcps.add(server)
+
+        tool.exec(mapOf("server" to "weather-mcp"))
+
+        assertEquals(1, activatedMcps.size)
     }
 
     @Test
@@ -77,7 +80,7 @@ class McpActivationToolTest {
 
     @Test
     fun `exec returns error string when activation fails`() {
-        doThrow(RuntimeException("Connection refused")).whenever(server).activate(any())
+        doThrow(RuntimeException("Connection refused")).whenever(server).initialize()
 
         val result = tool.exec(mapOf("server" to "weather-mcp"))
 

@@ -48,6 +48,7 @@ class ReActReasoningLoop(
         memory: MutableList<String>,
         context: Context
     ): Message {
+        context.activatedMcps.clear()
         var iteration = startIteration
         val tools = mutableMapOf<String, Tool>()
         context.toolRegistry.all().forEach { tool -> tools[tool.metadata().name] = tool }

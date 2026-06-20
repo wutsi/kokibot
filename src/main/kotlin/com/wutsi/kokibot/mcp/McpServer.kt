@@ -3,7 +3,6 @@ package com.wutsi.kokibot.mcp
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Resource
-import com.wutsi.kokibot.tools.ToolRegistry
 import org.slf4j.LoggerFactory
 
 class McpServer(
@@ -14,7 +13,7 @@ class McpServer(
         private val LOGGER = LoggerFactory.getLogger(McpServer::class.java)
     }
 
-    var activated: Boolean = false
+    var toolDefinitions: List<McpToolDefinition> = emptyList()
         private set
 
     lateinit var client: McpClient
@@ -27,16 +26,11 @@ class McpServer(
     override fun health(): Health = Health(id = id(), up = true)
 
     @Synchronized
-    fun activate(toolRegistry: ToolRegistry) {
-        if (activated) return
-
-        LOGGER.info("Activating MCP server: ${config.name}")
+    fun initialize() {
+        if (::client.isInitialized) return
+        LOGGER.info("Initializing MCP server: ${config.name}")
         client = McpClient(config.url, config.token, transport)
         client.initialize()
-        val tools = client.listTools()
-        tools.forEach { toolDef ->
-            toolRegistry.register(McpTool(config.name, toolDef, this))
-        }
-        activated = true
+        toolDefinitions = client.listTools()
     }
 }

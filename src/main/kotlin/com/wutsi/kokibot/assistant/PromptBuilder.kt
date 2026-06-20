@@ -135,16 +135,39 @@ class PromptBuilder(
     }
 
     private fun mcpInstructions(context: Context): String? {
-        val servers: List<McpServer> = context.mcpRegistry.all()
-        if (servers.isEmpty()) return null
+        val allServers = context.mcpRegistry.all()
+        if (allServers.isEmpty()) return null
 
-        val lines = servers.joinToString("\n") { server ->
-            "## MCP Server: ${server.config.name}\n\n" +
-                "**Description:** ${server.config.description}"
+        val sb = StringBuilder()
+
+        val available = allServers.filter { !context.activatedMcps.contains(it) }
+        if (available.isNotEmpty()) {
+            sb.append("# Available MCP Servers\n\n")
+            sb.append("Activate with `mcp_activate`:\n\n")
+            available.forEach { server ->
+                sb.append("## ${server.config.name}\n\n**Description:** ${server.config.description}\n\n")
+            }
         }
-        return "# Available MCP Servers\n\n" +
-            "The following MCP servers can be activated using the `mcp_activate` tool:\n\n" +
-            lines
+
+        if (context.activatedMcps.isNotEmpty()) {
+            sb.append("# Activated MCP Servers\n\n")
+            sb.append("Use `mcp_call` to invoke tools:\n\n")
+            context.activatedMcps.forEach { server ->
+                sb.append("## ${server.config.name}\n\n")
+                server.toolDefinitions.forEach { tool ->
+                    sb.append("### ${tool.name}\n")
+                    tool.description?.let { sb.append("$it\n\n") }
+                    val props = tool.inputSchema["properties"] as? Map<*, *>
+                    props?.forEach { (k, v) ->
+                        val def = v as? Map<*, *>
+                        sb.append("- `$k` (${def?.get("type") ?: "string"}): ${def?.get("description") ?: ""}\n")
+                    }
+                    sb.append("\n")
+                }
+            }
+        }
+
+        return sb.toString().ifEmpty { null }
     }
 
     private fun securityInstructions(): String {

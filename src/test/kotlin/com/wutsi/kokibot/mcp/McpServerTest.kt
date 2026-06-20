@@ -6,16 +6,13 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class McpServerTest {
     private val transport = mock<McpHttpTransport>()
-    private val toolRegistry = mock<ToolRegistry>()
 
     private val config = McpServerConfig(
         name = "weather-mcp",
@@ -54,23 +51,24 @@ class McpServerTest {
     }
 
     @Test
-    fun `activate connects to server and registers tools`() {
-        assertFalse(server.activated)
+    fun `initialize sets toolDefinitions`() {
+        server.initialize()
 
-        server.activate(toolRegistry)
-
-        assertTrue(server.activated)
-        verify(toolRegistry, times(2)).register(any())
+        assertTrue(server.toolDefinitions.isNotEmpty())
+        assertEquals(2, server.toolDefinitions.size)
+        assertEquals("get_weather", server.toolDefinitions[0].name)
+        assertEquals("get_forecast", server.toolDefinitions[1].name)
     }
 
     @Test
-    fun `activate second call is no-op`() {
+    fun `initialize is no-op when called twice`() {
         doReturn(initResponse).doReturn(listToolsResponse).whenever(transport).post(any(), any(), any())
-        server.activate(toolRegistry)
+        server.initialize()
 
-        // Second call — must NOT re-register tools
-        server.activate(toolRegistry)
+        // Second call — must NOT re-initialize
+        server.initialize()
 
-        verify(toolRegistry, times(2)).register(any()) // still only 2 from first activation
+        // Only 2 posts from the first call (initialize + listTools)
+        verify(transport, times(2)).post(any(), any(), any())
     }
 }

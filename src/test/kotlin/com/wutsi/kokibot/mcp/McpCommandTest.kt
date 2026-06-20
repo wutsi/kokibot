@@ -31,10 +31,10 @@ class McpCommandTest {
         val server1 = mock<McpServer>()
         val server2 = mock<McpServer>()
         doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server1).config
-        doReturn(false).whenever(server1).activated
         doReturn(McpServerConfig(name = "news-mcp", description = "News feeds", url = "https://n.example.com")).whenever(server2).config
-        doReturn(true).whenever(server2).activated
         doReturn(listOf(server1, server2)).whenever(mcpRegistry).all()
+        // server2 is activated
+        context.activatedMcps.add(server2)
 
         val result = cmd.exec(Message(text = ""), context)
 
@@ -56,7 +56,6 @@ class McpCommandTest {
     fun `exec with name shows server details`() {
         val server = mock<McpServer>()
         doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server).config
-        doReturn(false).whenever(server).activated
         doReturn(server).whenever(mcpRegistry).get("weather-mcp")
 
         val result = cmd.exec(Message(text = "weather-mcp"), context)

@@ -40,17 +40,12 @@ class McpActivationTool : Tool {
     override fun exec(arguments: Map<*, *>): String {
         val name = arguments["server"]?.toString()?.ifEmpty { null }
             ?: throw IllegalArgumentException("Missing required argument: server")
-
         return try {
             val server = context.mcpRegistry.get(name)
-            server.activate(context.toolRegistry)
-
-            val activatedTools = context.toolRegistry.all()
-                .filterIsInstance<McpTool>()
-                .filter { it.activate() }
-                .map { it.metadata().name }
-
-            "Activated MCP server `$name`. ${if (activatedTools.isEmpty()) "No tools available." else "Tools available: ${activatedTools.joinToString(", ")}"}"
+            server.initialize()
+            if (!context.activatedMcps.contains(server)) context.activatedMcps.add(server)
+            val tools = server.toolDefinitions.map { it.name }
+            "Activated MCP server `$name`. ${if (tools.isEmpty()) "No tools available." else "Tools: ${tools.joinToString(", ")}. Use mcp_call to invoke them."}"
         } catch (ex: Exception) {
             "Unable to activate MCP server `$name`. Error: ${ex.message}"
         }

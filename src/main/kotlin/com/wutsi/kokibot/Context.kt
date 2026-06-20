@@ -7,6 +7,7 @@ import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.mcp.McpRegistry
+import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.service.memory.ChatHistory
@@ -22,6 +23,7 @@ import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
+import java.util.concurrent.CopyOnWriteArrayList
 
 class Context(
     val home: File,
@@ -44,6 +46,7 @@ class Context(
     val delegationStack: DelegationStack = DelegationStack(),
     val jsonMapper: JsonMapper = JsonMapper(),
     val assistantRegistry: AssistantRegistry = AssistantRegistry(),
+    val activatedMcps: MutableList<McpServer> = CopyOnWriteArrayList(),
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Context::class.java)

@@ -69,7 +69,7 @@ class ContextFactoryTest {
         assertEquals(skillRegistry, context.skillRegistry)
         assertEquals(assistantRegistry, context.assistantRegistry)
 
-        verify(toolRegistry, times(12)).register(any())
+        verify(toolRegistry, times(13)).register(any())
     }
 
     @Test

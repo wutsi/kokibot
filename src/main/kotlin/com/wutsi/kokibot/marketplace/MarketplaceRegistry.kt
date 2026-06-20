@@ -4,6 +4,8 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import java.io.File
 
 @Service
 class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder()) {
@@ -17,17 +19,25 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
         return marketplaces.values.toList()
     }
 
-    fun init(config: Map<*, *>, context: Context) {
-        val items = MapUtil.toList("marketplaces", config)
-        items?.forEach { entry ->
-            if (entry is Map<*, *>) {
+    fun init(context: Context) {
+        val dir = File(context.home, "config/marketplaces")
+        if (!dir.exists()) return
+
+        dir.listFiles { file -> file.isFile && file.extension == "json" }
+            ?.sortedBy { it.nameWithoutExtension }
+            ?.forEach { file ->
                 try {
-                    initMarketplace(entry, context)
+                    val config = loadConfig(file)
+                    initMarketplace(config, context)
                 } catch (ex: Exception) {
-                    LOGGER.warn("Failed to initialize the marketplace - ${ex.message}")
+                    LOGGER.warn("Failed to initialize the marketplace ${file.nameWithoutExtension} - ${ex.message}")
                 }
             }
-        }
+    }
+
+    private fun loadConfig(file: File): Map<*, *> {
+        val config = JsonMapper().readValue(file, Map::class.java)
+        return MapUtil.applyEnv(config)
     }
 
     private fun initMarketplace(config: Map<*, *>, context: Context) {

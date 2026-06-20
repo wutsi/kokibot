@@ -32,8 +32,8 @@ class MarketplaceTest {
     fun getSkills() {
         // GIVEN
         val files = listOf(
-            File(this::class.java.getResource("/home/007/skills/crm/SKILL.md")!!.file),
-            File(this::class.java.getResource("/home/007/skills/land-title-verifier/SKILL.md")!!.file)
+            File(this::class.java.getResource("/home/007/config/skills/crm/SKILL.md")!!.file),
+            File(this::class.java.getResource("/home/007/config/skills/land-title-verifier/SKILL.md")!!.file)
         )
         doReturn(files).whenever(finder).find(any(), any())
 
@@ -62,8 +62,8 @@ class MarketplaceTest {
     fun `getSkills - with whitelist`() {
         // GIVEN
         val files = listOf(
-            File(this::class.java.getResource("/home/007/skills/crm/SKILL.md")!!.file),
-            File(this::class.java.getResource("/home/007/skills/land-title-verifier/SKILL.md")!!.file)
+            File(this::class.java.getResource("/home/007/config/skills/crm/SKILL.md")!!.file),
+            File(this::class.java.getResource("/home/007/config/skills/land-title-verifier/SKILL.md")!!.file)
         )
         doReturn(files).whenever(finder).find(any(), any())
 

@@ -23,20 +23,5 @@
   "memory": {
     "window": "3d",
     "compaction-frequency": "12h"
-  },
-  "mail": {
-    "smtp": {
-      "host": "smtp.example.com",
-      "port": 587,
-      "username": "foo",
-      "password": "bar",
-      "from": "yo.man@gmail.com"
-    },
-    "imaps": {
-      "host": "imap.example.com",
-      "port": 993,
-      "username": "foo",
-      "password": "bar"
-    }
   }
 }

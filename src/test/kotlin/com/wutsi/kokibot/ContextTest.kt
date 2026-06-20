@@ -108,6 +108,7 @@ class ContextTest {
         verify(context.heartbeat).init(heartbeatConfig, context)
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
+        verify(context.marketplaceRegistry).init(context)
         verify(context.channelRegistry).init(config, context)
         verify(context.fileService).init(emptyMap<String, Any>(), context)
     }

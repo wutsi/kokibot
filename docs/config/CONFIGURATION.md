@@ -28,8 +28,13 @@ Each agent has its own configuration file:
 ~/kokibot/agents/
 └── {agent-name}/
     ├── config/
-    │   ├── settings.json        # Main configuration file
-    │   └── tools/               # Optional tool-specific configs
+    │   ├── settings.json             # Main configuration file
+    │   ├── marketplaces/             # One JSON file per marketplace
+    │   │   └── {marketplace}.json
+    │   ├── skills/                   # One directory per local skill
+    │   │   └── {skill-name}/
+    │   │       └── SKILL.md
+    │   └── tools/                    # Optional tool-specific configs
     │       └── {tool-name}.json
     └── ...
 ```
@@ -123,12 +128,6 @@ Here's a comprehensive example showing all available configuration options:
     "heartbeat": {
         "frequency": "30m"
     },
-    "marketplaces": [
-        {
-            "url": "https://github.com/username/skill-marketplace.git",
-            "branch": "main"
-        }
-    ],
     "swarm": {
         "max-depth": 5,
         "detect-cycles": true
@@ -616,60 +615,60 @@ If there are any critical issues, log them to the daily log.
 
 Configures external skill repositories for the assistant.
 
-**Section:** `marketplaces` (array)
+Each marketplace is defined as a separate JSON file in `config/marketplaces/`. Adding or removing a marketplace is as simple as adding or deleting a file — no changes to `settings.json` required.
 
-| Parameter | Type   | Required | Description                           |
-|-----------|--------|----------|---------------------------------------|
-| `url`     | string | ✅        | Git repository URL containing skills  |
-| `branch`  | string | ❌        | Git branch to use (default: `"main"`) |
+**File location:** `config/marketplaces/{name}.json`
 
-**Example:**
+| Parameter         | Type   | Required | Description                                                   |
+|-------------------|--------|----------|---------------------------------------------------------------|
+| `name`            | string | ✅        | Unique marketplace identifier (must match the filename)       |
+| `repo-url`        | string | ✅        | Git repository URL containing skills                          |
+| `skill-whitelist` | array  | ❌        | List of skill names to load (empty = load all skills)         |
+
+**Example — `config/marketplaces/kokibot.json`:**
 
 ```json
 {
-    "marketplaces": [
-        {
-            "url": "https://github.com/wutsi/kokibot-skills.git",
-            "branch": "main"
-        },
-        {
-            "url": "https://github.com/mycompany/internal-skills.git",
-            "branch": "production"
-        }
+    "name": "kokibot",
+    "repo-url": "https://github.com/wutsi/kokibot-skills.git",
+    "skill-whitelist": [
+        "pandoc",
+        "markitdown"
     ]
 }
 ```
 
+**Example — `config/marketplaces/anthropics.json`:**
+
+```json
+{
+    "name": "anthropics",
+    "repo-url": "https://github.com/anthropics/skills.git"
+}
+```
+
+**Directory layout:**
+
+```
+config/
+└── marketplaces/
+    ├── kokibot.json
+    └── anthropics.json
+```
+
 **How Marketplaces Work:**
 
-1. On initialization, Kokibot:
-    - Clones each marketplace repository to `~/kokibot/agents/{agent-name}/skills/marketplace-{hash}/`
+1. On initialization, Kokibot scans `config/marketplaces/` for `*.json` files
+2. For each file it:
+    - Clones (or pulls) the repository to `workspace/marketplaces/{name}/`
     - Discovers all `SKILL.md` files in the repository
-    - Registers skills alongside local skills
-
-2. Skills from marketplaces are treated identically to local skills
-
-3. Repositories are updated periodically (on restart)
-
-**Marketplace Structure:**
-
-```
-skill-marketplace/
-├── weather/
-│   ├── SKILL.md
-│   └── scripts/
-│       └── get_weather.py
-├── calendar/
-│   ├── SKILL.md
-│   └── scripts/
-│       └── sync_events.py
-└── README.md
-```
+    - Registers only whitelisted skills (or all skills if `skill-whitelist` is empty)
+3. Marketplace skills are treated identically to local skills
 
 **Best Practices:**
 
 - **Private repositories:** Use SSH URLs (`git@github.com:...`) with SSH key authentication
-- **Versioning:** Use specific branches or tags for production agents
+- **Pinning skills:** Use `skill-whitelist` to avoid loading unwanted skills from public marketplaces
 - **Testing:** Test marketplace skills in a dev agent before production deployment
 
 ---

@@ -6,6 +6,7 @@ import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
+import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.service.memory.ChatHistory
@@ -28,6 +29,7 @@ class Context(
     val assistant: Assistant = Assistant(),
     val config: Map<*, *> = emptyMap<String, String>(),
     val toolRegistry: ToolRegistry = ToolRegistry(),
+    val mcpRegistry: McpRegistry = McpRegistry(),
     val skillRegistry: SkillRegistry = SkillRegistry(SkillParser()),
     val commandRegistry: CommandRegistry = CommandRegistry(),
     val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),

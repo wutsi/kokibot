@@ -18,7 +18,7 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) {
     }
 
     private fun initSkills(context: Context) {
-        val root = File(context.home, "skills")
+        val root = File(context.home, "config/skills")
         if (root.exists()) {
             root.listFiles()?.forEach { file ->
                 if (file.isDirectory) {

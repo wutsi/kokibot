@@ -5,6 +5,8 @@ import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.json.JsonMapper
+import java.io.File
 
 class ChannelRegistry(
     private val factory: ChannelFactory = ChannelFactory()
@@ -15,17 +17,25 @@ class ChannelRegistry(
 
     private val channels = mutableMapOf<String, Channel>()
 
-    fun init(config: Map<*, *>, context: Context) {
-        val root = MapUtil.toList("channels", config)
-        root?.forEach { node ->
-            if (node is Map<*, *>) {
+    fun init(context: Context) {
+        val dir = File(context.home, "config/channels")
+        if (!dir.exists()) return
+
+        dir.listFiles { file -> file.isFile && file.extension == "json" }
+            ?.sortedBy { it.nameWithoutExtension }
+            ?.forEach { file ->
                 try {
-                    initChannel(node, context)
+                    val config = loadConfig(file)
+                    initChannel(config, context)
                 } catch (ex: Exception) {
-                    LOGGER.warn("Failed to initialize the channel - ${ex.message}")
+                    LOGGER.warn("Failed to initialize the channel ${file.nameWithoutExtension} - ${ex.message}")
                 }
             }
-        }
+    }
+
+    private fun loadConfig(file: File): Map<*, *> {
+        val config = JsonMapper().readValue(file, Map::class.java)
+        return MapUtil.applyEnv(config)
     }
 
     private fun initChannel(config: Map<*, *>, context: Context) {

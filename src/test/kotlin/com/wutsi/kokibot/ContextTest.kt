@@ -42,7 +42,6 @@ class ContextTest {
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
     private val memoryConfig = mapOf("window" to 1)
-    private val channelConfig = listOf(mapOf("type" to "foo"))
     private val assistantConfig = mapOf("x" to "y")
     private val heartbeatConfig = mapOf("p" to "q")
     private val config = mapOf(
@@ -51,9 +50,6 @@ class ContextTest {
         "memory" to memoryConfig,
         "assistant" to assistantConfig,
         "heartbeat" to heartbeatConfig,
-        "channels" to listOf(
-            channelConfig
-        ),
     )
 
     @BeforeEach
@@ -109,7 +105,7 @@ class ContextTest {
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
         verify(context.marketplaceRegistry).init(context)
-        verify(context.channelRegistry).init(config, context)
+        verify(context.channelRegistry).init(context)
         verify(context.fileService).init(emptyMap<String, Any>(), context)
     }
 

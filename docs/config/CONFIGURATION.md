@@ -15,6 +15,7 @@ located in each agent's `config/` directory.
     - [Memory Configuration](#memory-configuration)
     - [Heartbeat Configuration](#heartbeat-configuration)
     - [Marketplace Configuration](#marketplace-configuration)
+    - [Skills Configuration](#skills-configuration)
     - [Swarm Configuration](#swarm-configuration)
 - [Tool-Specific Configuration](#tool-specific-configuration)
 
@@ -29,6 +30,8 @@ Each agent has its own configuration file:
 └── {agent-name}/
     ├── config/
     │   ├── settings.json             # Main configuration file
+    │   ├── channels/                 # One JSON file per channel
+    │   │   └── {channel}.json
     │   ├── marketplaces/             # One JSON file per marketplace
     │   │   └── {marketplace}.json
     │   ├── skills/                   # One directory per local skill
@@ -71,7 +74,25 @@ export DEEPSEEK_API_KEY="your-actual-api-key"
 
 ## Complete Configuration Example
 
-Here's a comprehensive example showing all available configuration options:
+Configuration is split across multiple files. Here is the full layout for an agent with all features enabled:
+
+```
+config/
+├── settings.json                    # Core settings: assistant, llm, memory, heartbeat, swarm
+├── channels/
+│   ├── telegram.json                # Telegram channel
+│   ├── email.json                   # Email channel
+│   └── websocket.json               # WebSocket channel
+├── marketplaces/
+│   └── kokibot.json                 # External skill repository
+├── skills/
+│   └── my-skill/
+│       └── SKILL.md                 # Local skill
+└── tools/
+    └── shell.json                   # Tool-specific config
+```
+
+**`config/settings.json`** — core settings only:
 
 ```json
 {
@@ -94,32 +115,6 @@ Here's a comprehensive example showing all available configuration options:
         "read-timeout-millis": 60000,
         "connect-timeout-millis": 5000
     },
-    "channels": [
-        {
-            "type": "telegram",
-            "token": "${TELEGRAM_TOKEN}",
-            "thread-pool-size": 4,
-            "sender-whitelist": []
-        },
-        {
-            "type": "email",
-            "email": "bot@example.com",
-            "username": "bot@example.com",
-            "password": "${EMAIL_PASSWORD}",
-            "imap-host": "imap.example.com",
-            "imap-port": 993,
-            "imap-ssl": true,
-            "smtp-host": "smtp.example.com",
-            "smtp-port": 465,
-            "smtp-ssl": true,
-            "fetch-frequency": "15m",
-            "sender-whitelist": []
-        },
-        {
-            "type": "websocket",
-            "path": "/ws/agent-name"
-        }
-    ],
     "memory": {
         "window": "3d",
         "compaction-frequency": "6h",
@@ -132,6 +127,27 @@ Here's a comprehensive example showing all available configuration options:
         "max-depth": 5,
         "detect-cycles": true
     }
+}
+```
+
+**`config/channels/telegram.json`:**
+
+```json
+{
+    "type": "telegram",
+    "token": "${TELEGRAM_TOKEN}",
+    "thread-pool-size": 4,
+    "sender-whitelist": []
+}
+```
+
+**`config/marketplaces/kokibot.json`:**
+
+```json
+{
+    "name": "kokibot",
+    "repo-url": "https://github.com/wutsi/kokibot-skills.git",
+    "skill-whitelist": ["pandoc", "markitdown"]
 }
 ```
 
@@ -281,7 +297,11 @@ When `streaming: true`:
 
 Configures communication channels for user interaction.
 
-**Section:** `channels` (array)
+Each channel is defined as a separate JSON file in `config/channels/`. Adding or removing a channel is as simple as adding or deleting a file — no changes to `settings.json` required.
+
+**File location:** `config/channels/{name}.json`
+
+The `type` field in each file determines which channel implementation is used.
 
 #### Telegram Channel
 
@@ -294,20 +314,16 @@ Real-time messaging via Telegram Bot API with long polling.
 | `thread-pool-size` | integer | ❌        | Worker threads for concurrent message processing (default: 4)    |
 | `sender-whitelist` | array   | ❌        | List of allowed Telegram usernames (empty = allow all)           |
 
-**Example:**
+**File:** `config/channels/telegram.json`
 
 ```json
 {
-    "channels": [
-        {
-            "type": "telegram",
-            "token": "${TELEGRAM_TOKEN}",
-            "thread-pool-size": 8,
-            "sender-whitelist": [
-                "alice",
-                "bob"
-            ]
-        }
+    "type": "telegram",
+    "token": "${TELEGRAM_TOKEN}",
+    "thread-pool-size": 8,
+    "sender-whitelist": [
+        "alice",
+        "bob"
     ]
 }
 ```
@@ -342,28 +358,24 @@ Email-based communication using IMAP (receiving) and SMTP (sending).
 | `fetch-frequency`  | string  | ❌        | How often to check for new emails (default: `"15m"`)       |
 | `sender-whitelist` | array   | ❌        | List of allowed sender email addresses (empty = allow all) |
 
-**Example:**
+**File:** `config/channels/email.json`
 
 ```json
 {
-    "channels": [
-        {
-            "type": "email",
-            "email": "kokibot@example.com",
-            "username": "kokibot@example.com",
-            "password": "${EMAIL_PASSWORD}",
-            "imap-host": "imap.gmail.com",
-            "imap-port": 993,
-            "imap-ssl": true,
-            "smtp-host": "smtp.gmail.com",
-            "smtp-port": 465,
-            "smtp-ssl": true,
-            "fetch-frequency": "10m",
-            "sender-whitelist": [
-                "alice@example.com",
-                "bob@example.com"
-            ]
-        }
+    "type": "email",
+    "email": "kokibot@example.com",
+    "username": "kokibot@example.com",
+    "password": "${EMAIL_PASSWORD}",
+    "imap-host": "imap.gmail.com",
+    "imap-port": 993,
+    "imap-ssl": true,
+    "smtp-host": "smtp.gmail.com",
+    "smtp-port": 465,
+    "smtp-ssl": true,
+    "fetch-frequency": "10m",
+    "sender-whitelist": [
+        "alice@example.com",
+        "bob@example.com"
     ]
 }
 ```
@@ -386,16 +398,12 @@ Real-time bidirectional communication via WebSocket protocol.
 | `type`    | string | ✅        | Must be `"websocket"`                                   |
 | `path`    | string | ❌        | WebSocket endpoint path (default: `"/ws/{agent-name}"`) |
 
-**Example:**
+**File:** `config/channels/websocket.json`
 
 ```json
 {
-    "channels": [
-        {
-            "type": "websocket",
-            "path": "/ws/assistant"
-        }
-    ]
+    "type": "websocket",
+    "path": "/ws/assistant"
 }
 ```
 
@@ -673,6 +681,64 @@ config/
 
 ---
 
+### Skills Configuration
+
+Adds local skills directly to the agent — no Git repository required.
+
+Each skill lives in its own subdirectory under `config/skills/`. The subdirectory name is the skill's identifier and must contain a `SKILL.md` file.
+
+**Directory layout:**
+
+```
+config/skills/
+└── {skill-name}/
+    ├── SKILL.md          # Required — skill instructions and metadata
+    └── scripts/          # Optional — helper scripts the skill can call
+        └── *.sh / *.py
+```
+
+**`SKILL.md` frontmatter:**
+
+```markdown
+---
+name: my-skill
+description: Short description shown to the LLM when selecting skills.
+---
+
+Full skill instructions here...
+```
+
+**Example — `config/skills/tax-calculator/SKILL.md`:**
+
+```markdown
+---
+name: tax-calculator
+description: Calculate Canadian income tax for a given province and income level.
+---
+
+## Instructions
+
+Use the provided scripts to compute federal and provincial tax...
+```
+
+**How Skills Are Loaded:**
+
+1. On initialization, Kokibot scans `config/skills/` for subdirectories
+2. Each subdirectory is expected to contain a `SKILL.md` file
+3. Skills without a valid `SKILL.md` are skipped with a warning
+4. Local skills are loaded before marketplace skills; marketplace skills with the same name override local ones
+
+**Marketplace vs Local Skills:**
+
+| | Local (`config/skills/`) | Marketplace (`config/marketplaces/`) |
+|-|--------------------------|--------------------------------------|
+| Source | Files on disk | Cloned Git repository |
+| Updates | Manual file edits | On restart (git pull) |
+| Scope | Agent-specific | Shareable across agents |
+| Best for | Custom / private skills | Reusable community skills |
+
+---
+
 ### Swarm Configuration
 
 Controls multi-agent delegation behavior and safety limits.
@@ -797,13 +863,16 @@ Some tools support additional configuration via separate files in `config/tools/
         "type": "deepseek",
         "api-key": "${DEEPSEEK_API_KEY}",
         "model": "deepseek-chat"
-    },
-    "channels": [
-        {
-            "type": "telegram",
-            "token": "${TELEGRAM_TOKEN}"
-        }
-    ]
+    }
+}
+```
+
+**`~/kokibot/agents/coordinator/config/channels/telegram.json`:**
+
+```json
+{
+    "type": "telegram",
+    "token": "${TELEGRAM_TOKEN}"
 }
 ```
 
@@ -819,15 +888,13 @@ Some tools support additional configuration via separate files in `config/tools/
         "type": "deepseek",
         "api-key": "${DEEPSEEK_API_KEY}",
         "model": "deepseek-v4-flash"
-    },
-    "channels": []
+    }
 }
 ```
 
 **Key Points:**
 
-- Coordinator has `coordinator: true` and channels
-- Specialists have no channels (internal-only)
+- Coordinator has `coordinator: true` and a channel file; specialists have no `config/channels/` directory
 - Each agent has isolated configuration and workspace
 
 ---

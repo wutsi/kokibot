@@ -12,33 +12,38 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
+import java.io.File
 import kotlin.test.assertEquals
 
 class ChannelRegistryTest {
+    private val home = File("target/test-data/channel-registry")
     private val context = mock<Context>()
     private val factory = mock<ChannelFactory>()
     private val registry = ChannelRegistry(factory)
     private val channel1 = mock<Channel>()
     private val channel2 = mock<Channel>()
-    private val config = mapOf(
-        "channels" to listOf(
-            mapOf("type" to "test1"),
-            mapOf("type" to "test2"),
-        )
-    )
 
     @BeforeEach
     fun setup() {
+        if (home.exists()) {
+            home.deleteRecursively()
+        }
+        val dir = File(home, "config/channels")
+        dir.mkdirs()
+
+        File(dir, "test1.json").writeText("""{ "type": "test1" }""")
+        File(dir, "test2.json").writeText("""{ "type": "test2" }""")
+
+        doReturn(home).whenever(context).home
         doReturn("ch1").whenever(channel1).id()
         doReturn("ch2").whenever(channel2).id()
-
         doReturn(channel1).whenever(factory).create("test1")
         doReturn(channel2).whenever(factory).create("test2")
     }
 
     @Test
     fun init() {
-        registry.init(config, context)
+        registry.init(context)
 
         verify(channel1).init(mapOf("type" to "test1"), context)
         verify(channel2).init(mapOf("type" to "test2"), context)
@@ -46,15 +51,11 @@ class ChannelRegistryTest {
 
     @Test
     fun `init - missing type`() {
-        val config = mapOf(
-            "channels" to listOf(
-                mapOf("__type__" to "test1"),
-                mapOf("type" to "test2"),
-            )
-        )
-        registry.init(config, context)
+        File(home, "config/channels/no-type.json").writeText("""{ "foo": "bar" }""")
 
-        verify(channel1, never()).init(any(), any())
+        registry.init(context)
+
+        verify(channel1).init(mapOf("type" to "test1"), context)
         verify(channel2).init(mapOf("type" to "test2"), context)
     }
 
@@ -62,30 +63,30 @@ class ChannelRegistryTest {
     fun `init - channel initialization error`() {
         doThrow(IllegalArgumentException::class).whenever(channel1).init(any(), any())
 
-        registry.init(config, context)
+        registry.init(context)
 
         assertEquals(listOf(channel2), registry.all())
     }
 
     @Test
-    fun `init - channels not list`() {
-        val config = mapOf(
-            "channels" to mapOf("type" to "test1"),
-        )
+    fun `init - no channels directory`() {
+        File(home, "config/channels").deleteRecursively()
 
-        registry.init(config, context)
+        registry.init(context)
+
+        assertEquals(emptyList(), registry.all())
     }
 
     @Test
     fun all() {
-        registry.init(config, context)
+        registry.init(context)
 
         assertEquals(listOf(channel1, channel2), registry.all())
     }
 
     @Test
     fun get() {
-        registry.init(config, context)
+        registry.init(context)
         val channel = registry.get("ch1")
 
         assertEquals(channel1, channel)
@@ -93,7 +94,7 @@ class ChannelRegistryTest {
 
     @Test
     fun `get - not found`() {
-        registry.init(config, context)
+        registry.init(context)
 
         assertThrows<ChannelNotFoundException> { registry.get("xxx") }
     }

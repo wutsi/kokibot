@@ -15,42 +15,9 @@
     "model": "${KOKIBOT_LLM_MODEL}",
     "streaming": true
   },
-  "channels": [
-    {
-      "type": "websocket",
-      "path": "/ws/koki"
-    }
-  ],
   "memory": {
     "window": "5d",
     "compaction-frequency": "6h",
     "max-length": 400480
-  },
-  "marketplaces": [
-    {
-      "name": "anthropics",
-      "repo-url": "https://github.com/anthropics/skills.git",
-      "skill-whitelist": [
-        "pdf",
-        "docx",
-        "pptx",
-        "xlsx"
-      ]
-    },
-    {
-      "name": "vercel-labs",
-      "repo-url": "https://github.com/vercel-labs/agent-browser.git",
-      "skill-whitelist": [
-        "agent-browser"
-      ]
-    },
-    {
-      "name": "kokibot",
-      "repo-url": "https://github.com/wutsi/kokibot-skills.git",
-      "skill-whitelist": [
-        "markitdown",
-        "pandoc"
-      ]
-    }
-  ]
+  }
 }

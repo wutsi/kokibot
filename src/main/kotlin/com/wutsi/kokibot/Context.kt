@@ -56,7 +56,7 @@ class Context(
 
     fun init(config: Map<*, *>) {
         initAssistant(config)
-        initChannels(config)
+        initChannels()
         initMarketplaces() // IMPORTANT: Before initSkills() because some skills may depend on marketplaces.
         initSkills()
         initTools()
@@ -93,8 +93,8 @@ class Context(
         )
     }
 
-    private fun initChannels(config: Map<*, *>) {
-        channelRegistry.init(config, this)
+    private fun initChannels() {
+        channelRegistry.init(this)
     }
 
     private fun initMarketplaces() {

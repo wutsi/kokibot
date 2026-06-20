@@ -9,12 +9,6 @@
     "connect-timeout-millis": 30000,
     "max-tokens": 2048
   },
-  "channels": [
-    {
-      "type": "telegram",
-      "token": "${TELEGRAM_TOKEN}"
-    }
-  ],
   "mail": {
     "smtp": {
       "host": "smtp.example.com",

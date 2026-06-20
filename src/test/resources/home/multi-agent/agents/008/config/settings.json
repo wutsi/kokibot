@@ -7,8 +7,6 @@
     "api-key": "${DEEPSEEK_API_KEY}",
     "model": "deepseek-v4-pro"
   },
-  "channels": [
-  ],
   "heartbeat": {
     "frequency": "1h"
   },

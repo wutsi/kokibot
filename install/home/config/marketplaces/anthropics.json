@@ -1,0 +1,10 @@
+{
+  "name": "anthropics",
+  "repo-url": "https://github.com/anthropics/skills.git",
+  "skill-whitelist": [
+    "pdf",
+    "docx",
+    "pptx",
+    "xlsx"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "kokibot",
+  "repo-url": "https://github.com/wutsi/kokibot-skills.git",
+  "skill-whitelist": [
+    "markitdown",
+    "pandoc"
+  ]
+}

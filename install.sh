@@ -1,6 +1,6 @@
 #!/bin/sh
 
-KOKIBOT_VERSION="0.0.53"
+KOKIBOT_VERSION="0.0.54"
 KOKIBOT_PORT=10807
 BIN_DIR="$HOME/Applications/kokibot"
 HOME_DIR="$HOME/.kokibot"

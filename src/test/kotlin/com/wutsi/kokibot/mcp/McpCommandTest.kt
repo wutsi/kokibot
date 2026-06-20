@@ -39,8 +39,8 @@ class McpCommandTest {
         val result = cmd.exec(Message(text = ""), context)
 
         assertTrue(result.contains("2 MCP server(s)"))
-        assertTrue(result.contains("weather-mcp"))
-        assertTrue(result.contains("news-mcp"))
+        assertTrue(result.contains("weather-mcp: Weather data [not activated]"))
+        assertTrue(result.contains("news-mcp: News feeds [activated]"))
     }
 
     @Test

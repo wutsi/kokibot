@@ -30,8 +30,7 @@ class McpCommand : Command {
     private fun list(context: Context): String {
         val servers = context.mcpRegistry.all().sortedBy { it.config.name }
         val lines = servers.joinToString("\n") { server ->
-            val status = if (server.activated) "[active]" else "[inactive]"
-            "- ${server.config.name} $status"
+            "- ${server.config.name}: ${server.config.description} ${if (server.activated) "[activated]" else "[not activated]"}"
         }
         return "${servers.size} MCP server(s) found\n$lines"
     }

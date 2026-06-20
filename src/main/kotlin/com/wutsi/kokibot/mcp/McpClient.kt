@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.mcp
 
 import tools.jackson.databind.json.JsonMapper
+import java.util.concurrent.atomic.AtomicInteger
 
 class McpClient(
     private val url: String,
@@ -9,7 +10,7 @@ class McpClient(
     private val jsonMapper: JsonMapper = JsonMapper(),
 ) {
     private var sessionId: String? = null
-    private var requestId = 0
+    private val requestId = AtomicInteger(0)
 
     fun initialize() {
         val payload = buildPayload(
@@ -63,7 +64,7 @@ class McpClient(
     private fun buildPayload(method: String, params: Map<*, *>? = null): Map<String, Any> {
         val payload = mutableMapOf<String, Any>(
             "jsonrpc" to "2.0",
-            "id" to ++requestId,
+            "id" to requestId.incrementAndGet(),
             "method" to method,
         )
         params?.let { payload["params"] = it }

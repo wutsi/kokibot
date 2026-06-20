@@ -27,7 +27,14 @@ class McpTool(
 
     override fun activate(): Boolean = server.activated
 
-    override fun exec(arguments: Map<*, *>): String = server.client.callTool(toolDef.name, arguments)
+    override fun exec(arguments: Map<*, *>): String {
+        if (!server.activated) return "MCP server `$serverName` is not activated. Call mcp_activate first."
+        return try {
+            server.client.callTool(toolDef.name, arguments)
+        } catch (ex: Exception) {
+            "Error calling MCP tool `${toolDef.name}`: ${ex.message}"
+        }
+    }
 
     override fun statusText(toolCalls: List<LLMToolCall>): String =
         "Calling MCP tool ${toolDef.name} on $serverName"

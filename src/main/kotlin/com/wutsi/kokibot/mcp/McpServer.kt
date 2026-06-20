@@ -26,6 +26,7 @@ class McpServer(
 
     override fun health(): Health = Health(id = id(), up = true)
 
+    @Synchronized
     fun activate(toolRegistry: ToolRegistry) {
         if (activated) return
 

@@ -16,13 +16,10 @@ class McpOkHttpTransport(private val httpClient: OkHttpClient = OkHttpClient()) 
             .post(body.toRequestBody(JSON_MEDIA_TYPE))
         headers.forEach { (key, value) -> requestBuilder.header(key, value) }
 
-        val response = httpClient.newCall(requestBuilder.build()).execute()
-        val responseBody = response.body?.string() ?: ""
-        val responseHeaders = response.headers.toMap()
-        return McpHttpResponse(
-            statusCode = response.code,
-            headers = responseHeaders,
-            body = responseBody,
-        )
+        return httpClient.newCall(requestBuilder.build()).execute().use { response ->
+            val responseBody = response.body?.string() ?: ""
+            val responseHeaders = response.headers.toMap()
+            McpHttpResponse(statusCode = response.code, headers = responseHeaders, body = responseBody)
+        }
     }
 }

@@ -77,6 +77,7 @@ class McpToolTest {
 
     @Test
     fun `exec delegates to server client callTool with original name`() {
+        doReturn(true).whenever(mockServer).activated
         doReturn(mockClient).whenever(mockServer).client
         doReturn("Sunny, 72F").whenever(mockClient).callTool(any(), any())
 
@@ -84,6 +85,29 @@ class McpToolTest {
 
         assertEquals("Sunny, 72F", result)
         verify(mockClient).callTool(eq("get_weather"), eq(mapOf("city" to "Seattle")))
+    }
+
+    @Test
+    fun `exec returns error string when server is not activated`() {
+        doReturn(false).whenever(mockServer).activated
+
+        val result = tool.exec(mapOf("city" to "Seattle"))
+
+        assertTrue(result.contains("not activated"))
+        assertTrue(result.contains("weather-mcp"))
+    }
+
+    @Test
+    fun `exec returns error string when callTool throws`() {
+        doReturn(true).whenever(mockServer).activated
+        doReturn(mockClient).whenever(mockServer).client
+        whenever(mockClient.callTool(any(), any())).thenThrow(RuntimeException("connection refused"))
+
+        val result = tool.exec(mapOf("city" to "Seattle"))
+
+        assertTrue(result.contains("Error calling MCP tool"))
+        assertTrue(result.contains("get_weather"))
+        assertTrue(result.contains("connection refused"))
     }
 
     @Test

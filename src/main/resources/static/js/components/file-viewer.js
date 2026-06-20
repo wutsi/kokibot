@@ -3,9 +3,9 @@
  * Opens supported file types inline on the RHS when clicking /files/ links in chat
  */
 const FileViewer = (() => {
-    const SUPPORTED = new Set(['txt', 'md', 'html', 'htm', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']);
+    const SUPPORTED = new Set(['txt', 'md', 'html', 'htm', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'docx', 'xlsx']);
     const TOGGLE_TYPES = new Set(['md', 'html', 'htm']);
-    const BINARY_TYPES = new Set(['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']);
+    const BINARY_TYPES = new Set(['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'docx', 'xlsx']);
 
     let panel, chatBody, nameEl, toggleBtn, downloadBtn, contentEl;
     let currentRawText = null;
@@ -90,11 +90,42 @@ const FileViewer = (() => {
     function renderBinary(url, ext) {
         if (ext === 'pdf') {
             renderPdf(url); // async, errors caught internally
+        } else if (ext === 'docx') {
+            renderDocx(url); // async, errors caught internally
+        } else if (ext === 'xlsx') {
+            renderXlsx(url); // async, errors caught internally
         } else {
             const img = document.createElement('img');
             img.src = url;
             img.alt = '';
             contentEl.appendChild(img);
+        }
+    }
+
+    async function renderDocx(url) {
+        contentEl.innerHTML = '<div class="viewer-text">Loading…</div>';
+
+        let blob;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            blob = await res.blob();
+        } catch (err) {
+            contentEl.innerHTML =
+                `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to load document: ${escapeHtml(err.message)}</div>`;
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'viewer-docx';
+        contentEl.innerHTML = '';
+        contentEl.appendChild(container);
+
+        try {
+            await docx.renderAsync(blob, container, null, { inWrapper: false });
+        } catch (err) {
+            contentEl.innerHTML =
+                `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to render document: ${escapeHtml(err.message)}</div>`;
         }
     }
 
@@ -136,6 +167,63 @@ const FileViewer = (() => {
                 errDiv.textContent = `Failed to render page ${n}: ${err.message}`;
                 wrap.appendChild(errDiv);
             }
+        }
+    }
+
+    async function renderXlsx(url) {
+        contentEl.innerHTML = '<div class="viewer-text">Loading…</div>';
+
+        let arrayBuffer;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            arrayBuffer = await res.arrayBuffer();
+        } catch (err) {
+            contentEl.innerHTML =
+                `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to load spreadsheet: ${escapeHtml(err.message)}</div>`;
+            return;
+        }
+
+        try {
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const sheets = workbook.SheetNames.map(name => ({
+                name,
+                html: XLSX.utils.sheet_to_html(workbook.Sheets[name], { editable: false })
+            }));
+
+            const container = document.createElement('div');
+            container.className = 'viewer-xlsx';
+
+            const tabBar = document.createElement('div');
+            tabBar.className = 'viewer-xlsx-tabs';
+
+            const sheetArea = document.createElement('div');
+            sheetArea.className = 'viewer-xlsx-sheet';
+
+            function showSheet(index) {
+                sheetArea.innerHTML = sheets[index].html;
+                tabBar.querySelectorAll('.viewer-xlsx-tab').forEach((tab, i) => {
+                    tab.classList.toggle('viewer-xlsx-tab--active', i === index);
+                });
+            }
+
+            sheets.forEach((sheet, i) => {
+                const tab = document.createElement('button');
+                tab.className = 'viewer-xlsx-tab';
+                tab.textContent = sheet.name;
+                tab.addEventListener('click', () => showSheet(i));
+                tabBar.appendChild(tab);
+            });
+
+            container.appendChild(tabBar);
+            container.appendChild(sheetArea);
+            contentEl.innerHTML = '';
+            contentEl.appendChild(container);
+
+            showSheet(0);
+        } catch (err) {
+            contentEl.innerHTML =
+                `<div class="viewer-text" style="color:var(--color-accent-red)">Failed to render spreadsheet: ${escapeHtml(err.message)}</div>`;
         }
     }
 

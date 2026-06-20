@@ -60,6 +60,7 @@ class Context(
         initAssistant(config)
         initChannels()
         initMarketplaces() // IMPORTANT: Before initSkills() because some skills may depend on marketplaces.
+        initMcps()
         initSkills()
         initTools()
         initLLM(config)
@@ -85,6 +86,7 @@ class Context(
             toolRegistry.all() +
             channelRegistry.all() +
             marketplaceRegistry.all() +
+            mcpRegistry.all() +
             listOf(llm, memory, dailyLog, sessionLog, chatHistory, conversationRepository, fileService, heartbeat, delegationStack)
     }
 
@@ -101,6 +103,10 @@ class Context(
 
     private fun initMarketplaces() {
         marketplaceRegistry.init(this)
+    }
+
+    private fun initMcps() {
+        mcpRegistry.init(emptyMap<String, Any>(), this)
     }
 
     private fun initLLM(config: Map<*, *>) {

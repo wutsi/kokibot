@@ -8,6 +8,8 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.marketplace.Marketplace
+import com.wutsi.kokibot.mcp.McpRegistry
+import com.wutsi.kokibot.mcp.McpServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -33,6 +35,7 @@ class ContextTest {
         commandRegistry = mock(),
         skillRegistry = mock(),
         marketplaceRegistry = mock(),
+        mcpRegistry = mock(),
         memory = mock(),
         fileService = mock(),
         heartbeat = mock(),
@@ -59,6 +62,9 @@ class ContextTest {
 
         doReturn(Health(id = "-", up = true)).whenever(channel).health()
         doReturn(listOf(channel)).whenever(context.channelRegistry).all()
+
+        doReturn(Health(id = "-", up = true)).whenever(context.mcpRegistry).health()
+        doReturn(emptyList<McpServer>()).whenever(context.mcpRegistry).all()
 
         doReturn(Health(id = "-", up = true)).whenever(context.llm).health()
         doReturn(Health(id = "-", up = true)).whenever(context.dailyLog).health()
@@ -105,6 +111,7 @@ class ContextTest {
         verify(context.commandRegistry).init(context)
         verify(context.skillRegistry).init(context)
         verify(context.marketplaceRegistry).init(context)
+        verify(context.mcpRegistry).init(emptyMap<String, Any>(), context)
         verify(context.channelRegistry).init(context)
         verify(context.fileService).init(emptyMap<String, Any>(), context)
     }

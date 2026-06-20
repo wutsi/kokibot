@@ -8,6 +8,8 @@ import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
+import com.wutsi.kokibot.mcp.McpActivationTool
+import com.wutsi.kokibot.mcp.McpCommand
 import com.wutsi.kokibot.service.heartbeat.HeartbeatCommand
 import com.wutsi.kokibot.service.memory.CompactCommand
 import com.wutsi.kokibot.service.memory.DailyLog
@@ -84,6 +86,7 @@ class ContextFactory(
 
             ShellTool(),
 
+            McpActivationTool(),
             SkillActivationTool(),
 
             SwarmDelegateTool(),
@@ -102,6 +105,7 @@ class ContextFactory(
             CompactCommand(),
             HealthCommand(),
             HelpCommand(),
+            McpCommand(),
             SkillCommand(),
             ToolCommand(),
             HeartbeatCommand(),

@@ -70,13 +70,13 @@ This will automatically
 
 Open your navigator and go to [http://localhost:10807](http://localhost:10807) to chat with the default assistant.
 
-Refer to the [Configuration Guide](docs/CONFIGURATION.md) for configuring the agent.
+Refer to the [Configuration Guide](docs/config/CONFIGURATION.md) for configuring the agent.
 
 ---
 
 ## Documentation
 
-- **[Configuration Guide](docs/CONFIGURATION.md)** - Comprehensive configuration reference
+- **[Configuration Guide](docs/config/CONFIGURATION.md)** - Comprehensive configuration reference
 - **[Architecture Overview](ARCHITECTURE.md)** - System architecture and design patterns
 
 ### Directory Structure
@@ -86,35 +86,39 @@ Refer to the [Configuration Guide](docs/CONFIGURATION.md) for configuring the ag
    agents/
      {agent-name}/                          # Directory for each agent
        ASSISTANT.md                         # Assistant instructions
-       HEARTBEAT.md                         # Instruction of the heartbeat task executed frequently every day (Ex: ever hour)
+       HEARTBEAT.md                         # Heartbeat task instructions (runs on a schedule)
        config/
-         settings.json                      # Main configuration file for kokibot
-         instructions/                      # Directory containing additional instructions for the agent
-         tools/                             # Directory containing additional tools for the agent
-            {tool-name}.json                # Tool configuration file
-       skills/
-         {skill-name}/                      # Directory for each skill
-           SKILL.md                         # Skill instructions file
+         settings.json                      # Core settings: assistant, llm, memory, heartbeat, swarm
+         channels/                          # One JSON file per communication channel
+           {channel-name}.json              # e.g. telegram.json, email.json, websocket.json
+         marketplaces/                      # One JSON file per skill marketplace
+           {marketplace-name}.json          # e.g. kokibot.json, anthropics.json
+         skills/                            # One directory per local skill
+           {skill-name}/
+             SKILL.md                       # Skill instructions and metadata
+         tools/                             # Tool-specific configuration
+           {tool-name}.json                 # e.g. shell.json, python.json
+         instructions/                      # Additional instruction files for the agent
        memory/
-         MEMORY.md                          # Agent long term memory. Maintained by the agent itself
+         MEMORY.md                          # Agent long-term memory (maintained by the agent)
          history/
-           {yyyy}-{MM}-{dd}.log             # Daily conversation history. Maintained by the agent itself
-         sessions/                          # Directory for conversation sessions
-           {yyyy}/
-             {MM}/
-               {dd}/
-                 {session-id}.log           # Conversation session log file
-         chat/                              # Directory for conversation history with users
+           {yyyy}-{MM}-{dd}.log             # Daily conversation history
+         sessions/                          # Conversation session logs
+           {yyyy}/{MM}/{dd}/
+             {session-id}.log
+         chat/                              # Per-user conversation history
            {user-id}/
-             conversation.json              # Conversation history with a user. Maintained by the system
+             conversation.json
              {channel-id}/
-               {yyyy}-{MM}-{dd}.md          # Daily conversation history with a user in a channel. Maintained by the system
+               {yyyy}-{MM}-{dd}.md
        workspace/                           # Working directory
-         files/                             # Directory for files created by tools/skillsv
-         tmp/                               # Temporary directory for intermediate files
+         files/                             # Files created by tools and skills
+         marketplaces/                      # Cloned marketplace repositories
+           {marketplace-name}/
+         tmp/                               # Temporary files
    logs/                                    # Log directory
      kokibot.log                            # Today's log file
-     kokibot-{yyyy}-{MM}-{dd}.log           # Archive of daily log files
+     kokibot-{yyyy}-{MM}-{dd}.log           # Archived daily log files
 ```
 
 ### Supported LLM Providers

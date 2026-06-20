@@ -2,6 +2,7 @@ package com.wutsi.kokibot.assistant
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import org.apache.commons.io.IOUtils
 import java.io.File
@@ -75,6 +76,7 @@ class PromptBuilder(
             if (coordinator) coordinatorInstructions() else null,
             dailyLogInstructions(),
             skillsInstructions(context),
+            mcpInstructions(context),
             securityInstructions(),
         )
         return applyVariables(entries.joinToString("\n\n---\n\n"), query, context)
@@ -130,6 +132,19 @@ class PromptBuilder(
             .ifEmpty { null }
 
         return skills?.let { "# Available skills\n\nHere are the skills available:\n\n$skills" }
+    }
+
+    private fun mcpInstructions(context: Context): String? {
+        val servers: List<McpServer> = context.mcpRegistry.all()
+        if (servers.isEmpty()) return null
+
+        val lines = servers.joinToString("\n") { server ->
+            "## MCP Server: ${server.config.name}\n\n" +
+                "**Description:** ${server.config.description}"
+        }
+        return "# Available MCP Servers\n\n" +
+            "The following MCP servers can be activated using the `mcp_activate` tool:\n\n" +
+            lines
     }
 
     private fun securityInstructions(): String {

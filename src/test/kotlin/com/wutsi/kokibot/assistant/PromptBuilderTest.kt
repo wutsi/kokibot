@@ -7,6 +7,9 @@ import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.mcp.McpRegistry
+import com.wutsi.kokibot.mcp.McpServer
+import com.wutsi.kokibot.mcp.McpServerConfig
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import com.wutsi.kokibot.service.memory.ConversationRepository
 import com.wutsi.kokibot.service.memory.DailyLog
@@ -32,6 +35,7 @@ class PromptBuilderTest {
     private val memory = mock<Memory>()
     private val dailyLog = mock<DailyLog>()
     private val skillRegistry = mock<SkillRegistry>()
+    private val mcpRegistry = mock<McpRegistry>()
     private val conversationRepository = mock<ConversationRepository>()
     private val assistant = mock<Assistant>()
     private val context = mock<Context>()
@@ -53,9 +57,11 @@ class PromptBuilderTest {
         doReturn(assistant).whenever(context).assistant
         doReturn("test-assistant").whenever(assistant).name
 
+        doReturn(mcpRegistry).whenever(context).mcpRegistry
         doReturn(null).whenever(memory).get()
         doReturn(null).whenever(dailyLog).get()
         doReturn(emptyList<Skill>()).whenever(skillRegistry).all()
+        doReturn(emptyList<McpServer>()).whenever(mcpRegistry).all()
         doReturn(emptyList<ConversationMessage>()).whenever(conversationRepository).getMessages(
             com.nhaarman.mockitokotlin2.any(),
             com.nhaarman.mockitokotlin2.any(),
@@ -343,5 +349,38 @@ class PromptBuilderTest {
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("Hello"))
+    }
+
+    @Test
+    fun `should include available MCP servers in system instructions`() {
+        val mcpRegistry = mock<McpRegistry>()
+        val server1 = mock<McpServer>()
+        val server2 = mock<McpServer>()
+        doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data and forecasts", url = "https://w.example.com")).whenever(server1).config
+        doReturn(McpServerConfig(name = "news-mcp", description = "Latest news", url = "https://n.example.com")).whenever(server2).config
+        doReturn(listOf(server1, server2)).whenever(mcpRegistry).all()
+        doReturn(mcpRegistry).whenever(context).mcpRegistry
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
+
+        assertTrue(instructions.contains("# Available MCP Servers"))
+        assertTrue(instructions.contains("weather-mcp"))
+        assertTrue(instructions.contains("Weather data and forecasts"))
+        assertTrue(instructions.contains("news-mcp"))
+        assertTrue(instructions.contains("Latest news"))
+        assertTrue(instructions.contains("mcp_activate"))
+    }
+
+    @Test
+    fun `should omit MCP section when no servers configured`() {
+        val mcpRegistry = mock<McpRegistry>()
+        doReturn(emptyList<McpServer>()).whenever(mcpRegistry).all()
+        doReturn(mcpRegistry).whenever(context).mcpRegistry
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
+
+        assertFalse(instructions.contains("# Available MCP Servers"))
     }
 }

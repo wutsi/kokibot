@@ -1,4 +1,4 @@
-package com.wutsi.kokibot.mcp
+package com.wutsi.kokibot.tool.mcp
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -7,6 +7,11 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.mcp.McpNotFoundException
+import com.wutsi.kokibot.mcp.McpRegistry
+import com.wutsi.kokibot.mcp.McpServer
+import com.wutsi.kokibot.mcp.McpServerConfig
+import com.wutsi.kokibot.mcp.McpToolDefinition
 import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

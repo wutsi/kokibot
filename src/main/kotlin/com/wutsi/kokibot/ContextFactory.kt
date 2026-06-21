@@ -8,8 +8,6 @@ import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.command.HelpCommand
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
-import com.wutsi.kokibot.mcp.McpActivationTool
-import com.wutsi.kokibot.mcp.McpCallTool
 import com.wutsi.kokibot.mcp.McpCommand
 import com.wutsi.kokibot.service.heartbeat.HeartbeatCommand
 import com.wutsi.kokibot.service.memory.CompactCommand
@@ -17,6 +15,8 @@ import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillCommand
 import com.wutsi.kokibot.skill.SkillRegistry
+import com.wutsi.kokibot.tool.mcp.McpActivationTool
+import com.wutsi.kokibot.tool.mcp.McpCallTool
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolCommand
 import com.wutsi.kokibot.tools.ToolRegistry

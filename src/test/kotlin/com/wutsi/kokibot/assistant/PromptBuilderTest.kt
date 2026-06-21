@@ -385,32 +385,17 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should include activated MCP server tools in system instructions`() {
+    fun `should include activated MCP server in system instructions`() {
         val server = mock<McpServer>()
         doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server).config
-        doReturn(
-            listOf(
-                McpToolDefinition(
-                    name = "get_weather",
-                    description = "Get current weather for a city",
-                    inputSchema = mapOf(
-                        "properties" to mapOf(
-                            "city" to mapOf("type" to "string", "description" to "City name")
-                        )
-                    )
-                )
-            )
-        ).whenever(server).toolDefinitions
         doReturn(listOf(server)).whenever(mcpRegistry).all()
         activatedMcps.add(server)
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
 
-        assertTrue(instructions.contains("# Activated MCP Servers"))
+        assertTrue(instructions.contains("# Available MCP Servers"))
         assertTrue(instructions.contains("weather-mcp"))
-        assertTrue(instructions.contains("get_weather"))
-        assertTrue(instructions.contains("Get current weather for a city"))
-        assertTrue(instructions.contains("mcp_call"))
+        assertTrue(instructions.contains("Weather data"))
     }
 }

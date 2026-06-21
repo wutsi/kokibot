@@ -45,8 +45,23 @@ class McpActivationTool : Tool {
             val server = context.mcpRegistry.get(name)
             server.initialize()
             if (!context.activatedMcps.contains(server)) context.activatedMcps.add(server)
-            val tools = server.toolDefinitions.map { it.name }
-            "Activated MCP server `$name`. ${if (tools.isEmpty()) "No tools available." else "Tools: ${tools.joinToString(", ")}. Use mcp_call to invoke them."}"
+            if (server.toolDefinitions.isEmpty()) return "Activated MCP server `$name`. No tools available."
+            val toolDetails = server.toolDefinitions.joinToString("\n\n") { tool ->
+                val sb = StringBuilder("### ${tool.name}")
+                tool.description?.let { sb.append("\n$it") }
+                val props = tool.inputSchema["properties"] as? Map<*, *>
+                if (!props.isNullOrEmpty()) {
+                    sb.append("\nParameters:")
+                    props.forEach { (k, v) ->
+                        val def = v as? Map<*, *>
+                        val type = def?.get("type") ?: "string"
+                        val desc = def?.get("description")?.let { " — $it" } ?: ""
+                        sb.append("\n- `$k` ($type)$desc")
+                    }
+                }
+                sb.toString()
+            }
+            "Activated MCP server `$name`. Use `mcp_call` to invoke tools:\n\n$toolDetails"
         } catch (ex: Exception) {
             "Unable to activate MCP server `$name`. Error: ${ex.message}"
         }

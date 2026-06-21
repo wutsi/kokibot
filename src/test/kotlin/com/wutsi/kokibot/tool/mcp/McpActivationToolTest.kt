@@ -53,15 +53,33 @@ class McpActivationToolTest {
     }
 
     @Test
-    fun `exec activates server and returns tool list`() {
+    fun `exec activates server and returns tool details`() {
+        doReturn(
+            listOf(
+                McpToolDefinition(
+                    name = "get_weather",
+                    description = "Get current weather",
+                    inputSchema = mapOf(
+                        "properties" to mapOf(
+                            "city" to mapOf("type" to "string", "description" to "City name")
+                        )
+                    )
+                ),
+                McpToolDefinition(name = "get_forecast", description = "Get forecast"),
+            )
+        ).whenever(server).toolDefinitions
+
         val result = tool.exec(mapOf("server" to "weather-mcp"))
 
         verify(server).initialize()
-        assertTrue(result.contains("weather-mcp"))
-        assertTrue(result.contains("Activated"))
-        assertTrue(result.contains("get_weather"))
-        assertTrue(result.contains("get_forecast"))
         assertTrue(activatedMcps.contains(server))
+        assertTrue(result.contains("Activated"))
+        assertTrue(result.contains("weather-mcp"))
+        assertTrue(result.contains("get_weather"))
+        assertTrue(result.contains("Get current weather"))
+        assertTrue(result.contains("city"))
+        assertTrue(result.contains("get_forecast"))
+        assertTrue(result.contains("mcp_call"))
     }
 
     @Test

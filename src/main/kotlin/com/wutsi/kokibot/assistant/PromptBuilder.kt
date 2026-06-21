@@ -2,7 +2,6 @@ package com.wutsi.kokibot.assistant
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
-import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import org.apache.commons.io.IOUtils
 import java.io.File
@@ -135,39 +134,13 @@ class PromptBuilder(
     }
 
     private fun mcpInstructions(context: Context): String? {
-        val allServers = context.mcpRegistry.all()
-        if (allServers.isEmpty()) return null
+        val servers = context.mcpRegistry.all()
+        if (servers.isEmpty()) return null
 
-        val sb = StringBuilder()
-
-        val available = allServers.filter { !context.activatedMcps.contains(it) }
-        if (available.isNotEmpty()) {
-            sb.append("# Available MCP Servers\n\n")
-            sb.append("Activate with `mcp_activate`:\n\n")
-            available.forEach { server ->
-                sb.append("## ${server.config.name}\n\n**Description:** ${server.config.description}\n\n")
-            }
+        val lines = servers.joinToString("\n") { server ->
+            "## ${server.config.name}\n\n**Description:** ${server.config.description}"
         }
-
-        if (context.activatedMcps.isNotEmpty()) {
-            sb.append("# Activated MCP Servers\n\n")
-            sb.append("Use `mcp_call` to invoke tools:\n\n")
-            context.activatedMcps.forEach { server ->
-                sb.append("## ${server.config.name}\n\n")
-                server.toolDefinitions.forEach { tool ->
-                    sb.append("### ${tool.name}\n")
-                    tool.description?.let { sb.append("$it\n\n") }
-                    val props = tool.inputSchema["properties"] as? Map<*, *>
-                    props?.forEach { (k, v) ->
-                        val def = v as? Map<*, *>
-                        sb.append("- `$k` (${def?.get("type") ?: "string"}): ${def?.get("description") ?: ""}\n")
-                    }
-                    sb.append("\n")
-                }
-            }
-        }
-
-        return sb.toString().ifEmpty { null }
+        return "# Available MCP Servers\n\nActivate with `mcp_activate`:\n\n$lines"
     }
 
     private fun securityInstructions(): String {

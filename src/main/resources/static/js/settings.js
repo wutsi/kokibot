@@ -144,6 +144,10 @@ const Settings = {
                 this.loadMarketplaces();
                 this.loadedTabs.add(tabName);
                 break;
+            case 'mcp':
+                this.loadMcp();
+                this.loadedTabs.add(tabName);
+                break;
         }
     },
 
@@ -1038,6 +1042,103 @@ const Settings = {
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
                 <h3>Error Loading Skills</h3>
+                <p>${message}</p>
+            </div>
+        `;
+    },
+
+    async loadMcp() {
+        if (!this.agentName) {
+            this.showMcpError('No agent selected');
+            return;
+        }
+
+        const contentElement = document.getElementById('mcp-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="mcp-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading MCP servers...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/mcps`, {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Failed to load MCP servers (${response.status})`);
+            }
+
+            const mcps = await response.json();
+
+            if (!mcps || mcps.length === 0) {
+                this.showMcpEmpty();
+                return;
+            }
+
+            this.displayMcp(mcps);
+        } catch (error) {
+            console.error('Error loading MCP servers:', error);
+
+            if (error.name === 'AbortError') {
+                this.showMcpError('Request timed out. Please try again.');
+            } else {
+                this.showMcpError('Failed to load MCP servers. Please try again.');
+            }
+
+            Notifications.error('Failed to load MCP servers', { duration: 5000 });
+        }
+    },
+
+    displayMcp(mcps) {
+        const contentElement = document.getElementById('mcp-content');
+        if (!contentElement) return;
+
+        const mcpsHtml = mcps.map(mcp => `
+            <div class="skill-item">
+                <h3 class="skill-name">${this.escapeHtml(mcp.name)}</h3>
+                <p class="skill-description">${this.escapeHtml(mcp.description || 'No description available')}</p>
+            </div>
+        `).join('');
+
+        contentElement.innerHTML = `<div class="skills-list">${mcpsHtml}</div>`;
+    },
+
+    showMcpEmpty() {
+        const contentElement = document.getElementById('mcp-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="skills-empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 2.05V4.05C17.39 4.59 20.5 8.58 19.96 12.97C19.5 16.61 16.64 19.5 13 19.93V21.93C18.5 21.38 22.5 16.5 21.95 11C21.5 6.25 17.73 2.5 13 2.05M11 2.06C9.05 2.25 7.19 3 5.67 4.26L7.1 5.74C8.22 4.84 9.57 4.26 11 4.06V2.06M4.26 5.67C3 7.19 2.25 9.04 2.05 11H4.05C4.24 9.58 4.8 8.23 5.69 7.1L4.26 5.67M2.06 13C2.26 14.96 3.03 16.81 4.27 18.33L5.69 16.9C4.81 15.77 4.24 14.42 4.06 13H2.06M7.1 18.37L5.67 19.74C7.18 21 9.04 21.79 11 22V20C9.58 19.82 8.23 19.25 7.1 18.37M12 7L8 12H11V17L16 12H13L12 7Z"/>
+                </svg>
+                <h3>No MCP Servers Configured</h3>
+                <p>This assistant has no MCP servers configured</p>
+            </div>
+        `;
+    },
+
+    showMcpError(message) {
+        const contentElement = document.getElementById('mcp-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="skills-error">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <h3>Error Loading MCP Servers</h3>
                 <p>${message}</p>
             </div>
         `;

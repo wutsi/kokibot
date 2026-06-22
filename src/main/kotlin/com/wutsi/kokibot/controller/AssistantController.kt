@@ -46,7 +46,8 @@ class AssistantController(private val multi: MultiBootstrap) {
             mapOf(
                 "name" to context.assistant.name,
                 "description" to context.assistant.description,
-                "workspaceDirectory" to "${context.home.absolutePath}/workspace"
+                "coordinator" to context.assistant.coordinator,
+                "workspaceDirectory" to "${context.home.absolutePath}/workspace",
             )
         )
     }

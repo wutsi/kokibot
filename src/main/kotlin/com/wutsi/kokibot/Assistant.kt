@@ -25,11 +25,11 @@ class Assistant(val name: String = "") {
         const val ERROR_FAILURE = "Oups, an unexpected error occurred while processing the query."
     }
 
+    private lateinit var context: Context
     private var maxIterations: Int = DEFAULT_ITERATIONS
     private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
     lateinit var description: String
-    private lateinit var context: Context
-    private var coordinator: Boolean = false
+    var coordinator: Boolean = false
     private var threadPoolSize: Int = 4
     private lateinit var toolOrchestrator: ToolOrchestrator
     private lateinit var promptBuilder: PromptBuilder

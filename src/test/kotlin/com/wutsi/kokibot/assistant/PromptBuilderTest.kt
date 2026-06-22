@@ -10,7 +10,6 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.mcp.McpServerConfig
-import com.wutsi.kokibot.mcp.McpToolDefinition
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import com.wutsi.kokibot.service.memory.ConversationRepository
 import com.wutsi.kokibot.service.memory.DailyLog

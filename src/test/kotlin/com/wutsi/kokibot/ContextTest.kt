@@ -8,7 +8,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.marketplace.Marketplace
-import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

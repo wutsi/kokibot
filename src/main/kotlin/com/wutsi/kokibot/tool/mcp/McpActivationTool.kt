@@ -2,7 +2,6 @@ package com.wutsi.kokibot.tool.mcp
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMToolCall
-import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter

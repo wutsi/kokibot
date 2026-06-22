@@ -31,7 +31,7 @@ const Settings = {
     },
 
     setupElements() {
-        this.tabs = Array.from(document.querySelectorAll('.settings-tab'));
+        this.tabs = Array.from(document.querySelectorAll('.settings-nav-item[data-tab]'));
         this.tabContents = Array.from(document.querySelectorAll('.settings-tab-content'));
         this.agentNameElement = document.getElementById('agent-name');
         this.agentDescriptionElement = document.getElementById('agent-description');
@@ -134,6 +134,10 @@ const Settings = {
                 break;
             case 'skills':
                 this.loadSkills();
+                this.loadedTabs.add(tabName);
+                break;
+            case 'llm':
+                this.loadLLM();
                 this.loadedTabs.add(tabName);
                 break;
             case 'channels':
@@ -265,23 +269,18 @@ const Settings = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            // Fetch both agent info and LLM info in parallel
-            const [agentResponse, llmResponse] = await Promise.all([
-                fetch(`/assistants/${this.agentName}`, { signal: controller.signal }),
-                fetch(`/assistants/${this.agentName}/llm`, { signal: controller.signal })
-            ]);
+            const agentResponse = await fetch(`/assistants/${this.agentName}`, { signal: controller.signal });
 
             clearTimeout(timeoutId);
 
-            if (!agentResponse.ok || !llmResponse.ok) {
+            if (!agentResponse.ok) {
                 throw new Error('Failed to load general information');
             }
 
             const agentData = await agentResponse.json();
-            const llmData = await llmResponse.json();
 
             // Display general info
-            this.displayGeneralInfo(agentData, llmData);
+            this.displayGeneralInfo(agentData);
         } catch (error) {
             console.error('Error loading general information:', error);
 
@@ -297,25 +296,11 @@ const Settings = {
         }
     },
 
-    displayGeneralInfo(agentData, llmData) {
+    displayGeneralInfo(agentData) {
         const contentElement = document.getElementById('general-content');
         if (!contentElement) return;
 
         const workspace = agentData.workspaceDirectory || 'Unknown';
-        const llmName = llmData.name || 'Unknown';
-        const llmModel = llmData.model || 'Unknown';
-        const maxContextWindow = this.formatContextLength(llmData.maxContextWindow || 0);
-        const balance = llmData.availableBalance;
-
-        let balanceHtml = '';
-        if (balance) {
-            balanceHtml = `
-                <div class="general-item">
-                    <p class="general-item-label">Available Balance</p>
-                    <p class="general-item-value">${this.escapeHtml(balance.text)}</p>
-                </div>
-            `;
-        }
 
         contentElement.innerHTML = `
             <div class="general-info">
@@ -325,26 +310,6 @@ const Settings = {
                         <p class="general-item-label">Workspace Directory</p>
                         <p class="general-item-value">${workspace}</p>
                     </div>
-                </div>
-                <div class="general-section">
-                    <h3 class="general-section-title">Language Model</h3>
-                    <div class="general-item">
-                        <p class="general-item-label">Provider</p>
-                        <div class="general-llm-provider">
-                            <img src="/assets/llm/${llmName}.png" alt="${llmName}" class="general-llm-icon"
-                                 onerror="this.style.display='none'">
-                            <p class="general-llm-name">${this.formatLLMName(llmName)}</p>
-                        </div>
-                    </div>
-                    <div class="general-item">
-                        <p class="general-item-label">Model</p>
-                        <p class="general-item-value">${llmModel}</p>
-                    </div>
-                    <div class="general-item">
-                        <p class="general-item-label">Max Context Window</p>
-                        <p class="general-item-value">${maxContextWindow}</p>
-                    </div>
-                    ${balanceHtml}
                 </div>
             </div>
         `;
@@ -888,6 +853,14 @@ const Settings = {
         const llmName = data.name || 'Unknown';
         const model = data.model || 'Unknown';
         const maxContextLength = this.formatContextLength(data.maxContextWindow || 0);
+        const balance = data.availableBalance;
+
+        const balanceHtml = balance ? `
+            <div class="llm-detail-item">
+                <p class="llm-detail-label">Available Balance</p>
+                <p class="llm-detail-value">${this.escapeHtml(balance.text)}</p>
+            </div>
+        ` : '';
 
         contentElement.innerHTML = `
             <div class="llm-info">
@@ -904,6 +877,7 @@ const Settings = {
                         <p class="llm-detail-label">Max Context Window</p>
                         <p class="llm-detail-value">${maxContextLength}</p>
                     </div>
+                    ${balanceHtml}
                 </div>
             </div>
         `;
@@ -1003,18 +977,68 @@ const Settings = {
         const contentElement = document.getElementById('skills-content');
         if (!contentElement) return;
 
-        const skillsHtml = skills.map(skill => `
-            <div class="skill-item">
-                <h3 class="skill-name">${this.escapeHtml(skill.name)}</h3>
-                <p class="skill-description">${this.escapeHtml(skill.description || 'No description available')}</p>
-            </div>
+        const listHtml = skills.map((skill, i) => `
+            <button class="skill-list-item${i === 0 ? ' active' : ''}" data-skill="${this.escapeHtml(skill.name)}">
+                ${this.escapeHtml(skill.name)}
+            </button>
         `).join('');
 
         contentElement.innerHTML = `
-            <div class="skills-list">
-                ${skillsHtml}
+            <div class="skills-layout">
+                <div class="skills-list-panel">${listHtml}</div>
+                <div class="skill-detail-panel" id="skill-detail-panel">
+                    <div class="skill-detail-placeholder">Select a skill to view details</div>
+                </div>
             </div>
         `;
+
+        contentElement.querySelectorAll('.skill-list-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                contentElement.querySelectorAll('.skill-list-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const skill = skills.find(s => s.name === btn.dataset.skill);
+                this.loadSkillContent(skill);
+            });
+        });
+
+        if (skills.length > 0) {
+            this.loadSkillContent(skills[0]);
+        }
+    },
+
+    async loadSkillContent(skill) {
+        const panel = document.getElementById('skill-detail-panel');
+        if (!panel) return;
+
+        panel.innerHTML = `
+            <div class="skill-detail-loading">
+                <svg class="loading-spinner" fill="currentColor" height="32" viewBox="0 0 24 24" width="32">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`/assistants/${this.agentName}/skills/skill.md?skill=${encodeURIComponent(skill.name)}`);
+            const content = response.ok ? (await response.json()).content || '' : '';
+
+            const instructionsHtml = content.trim()
+                ? `<div class="skill-detail-instructions">
+                       <h3 class="skill-detail-instructions-title">Instructions</h3>
+                       <div class="skill-detail-content markdown-body">${new MarkdownRenderer().render(content)}</div>
+                   </div>`
+                : '';
+
+            panel.innerHTML = `
+                <div class="skill-detail">
+                    <h2 class="skill-detail-name">${this.escapeHtml(skill.name)}</h2>
+                    ${skill.description ? `<p class="skill-detail-description">${this.escapeHtml(skill.description)}</p>` : ''}
+                    ${instructionsHtml}
+                </div>
+            `;
+        } catch (error) {
+            panel.innerHTML = `<div class="skill-detail-placeholder">Failed to load skill content</div>`;
+        }
     },
 
     showSkillsEmpty() {

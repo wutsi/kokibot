@@ -21,6 +21,7 @@ class MarketplaceController(private val multi: MultiBootstrap) {
                     mapOf(
                         "name" to marketplace.getName(),
                         "repoUrl" to marketplace.getRepoUrl(),
+                        "icon" to marketplace.getIcon(),
                         "skills" to marketplace.getSkills().map { skill -> skill.metadata.name }
                     )
                 }

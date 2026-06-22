@@ -148,7 +148,7 @@ const Settings = {
                 this.loadMarketplaces();
                 this.loadedTabs.add(tabName);
                 break;
-            case 'mcp':
+            case 'connectors':
                 this.loadMcp();
                 this.loadedTabs.add(tabName);
                 break;
@@ -1128,14 +1128,22 @@ const Settings = {
         const contentElement = document.getElementById('mcp-content');
         if (!contentElement) return;
 
-        const mcpsHtml = mcps.map(mcp => `
-            <div class="skill-item">
-                <h3 class="skill-name">${this.escapeHtml(mcp.name)}</h3>
-                <p class="skill-description">${this.escapeHtml(mcp.description || 'No description available')}</p>
+        const mcpsHtml = mcps.map(mcp => {
+            const iconHtml = mcp.icon
+                ? `<img src="${this.escapeHtml(mcp.icon)}" alt="${this.escapeHtml(mcp.name)}" class="channel-icon" onerror="this.style.display='none'">`
+                : '';
+            return `
+            <div class="channel-item">
+                ${iconHtml}
+                <div class="channel-info">
+                    <span class="channel-name">${this.escapeHtml(mcp.name)}</span>
+                    ${mcp.description ? `<span class="channel-source">${this.escapeHtml(mcp.description)}</span>` : ''}
+                </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
-        contentElement.innerHTML = `<div class="skills-list">${mcpsHtml}</div>`;
+        contentElement.innerHTML = `<div class="channels-list">${mcpsHtml}</div>`;
     },
 
     showMcpEmpty() {
@@ -1327,6 +1335,9 @@ const Settings = {
         if (!contentElement) return;
 
         const html = marketplaces.map(mp => {
+            const iconHtml = mp.icon
+                ? `<img src="${this.escapeHtml(mp.icon)}" alt="${this.escapeHtml(mp.name)}" class="channel-icon" onerror="this.style.display='none'">`
+                : '';
             const skillsHtml = mp.skills && mp.skills.length > 0
                 ? mp.skills.map(s => `<span class="marketplace-skill-tag">${this.escapeHtml(s)}</span>`).join('')
                 : '<span class="marketplace-no-skills">No skills</span>';
@@ -1334,6 +1345,7 @@ const Settings = {
             return `
                 <div class="marketplace-item">
                     <div class="marketplace-header">
+                        ${iconHtml}
                         <h3 class="marketplace-name">${this.escapeHtml(mp.name)}</h3>
                         <span class="marketplace-skill-count">${mp.skills ? mp.skills.length : 0} skill${mp.skills && mp.skills.length === 1 ? '' : 's'}</span>
                     </div>

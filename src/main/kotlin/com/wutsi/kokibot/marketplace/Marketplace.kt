@@ -14,6 +14,7 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
 
     private lateinit var name: String
     private lateinit var repoUrl: String
+    private var icon: String = ""
     private lateinit var context: Context
     private lateinit var skillWhitelist: List<String>
     private var skills: MutableList<Skill> = mutableListOf()
@@ -29,6 +30,8 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
         this.repoUrl = config["repo-url"] as? String
             ?: throw ConfigurationException("Missing required config: repo-url")
 
+        this.icon = config["icon"]?.toString() ?: ""
+
         this.skillWhitelist = (config["skill-whitelist"] as? List<*>)?.mapNotNull { it?.toString()?.lowercase() }
             ?: emptyList()
 
@@ -41,6 +44,10 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
 
     fun getRepoUrl(): String {
         return repoUrl
+    }
+
+    fun getIcon(): String {
+        return icon
     }
 
     fun getSkills(): List<Skill> {

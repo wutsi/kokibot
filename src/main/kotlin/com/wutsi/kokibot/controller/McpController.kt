@@ -20,6 +20,7 @@ class McpController(private val multi: MultiBootstrap) {
                 mapOf(
                     "name" to server.config.name,
                     "description" to server.config.description,
+                    "icon" to server.config.icon,
                 )
             }
         )

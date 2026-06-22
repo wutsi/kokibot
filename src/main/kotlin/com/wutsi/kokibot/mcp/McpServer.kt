@@ -6,12 +6,14 @@ import com.wutsi.kokibot.Resource
 import org.slf4j.LoggerFactory
 
 class McpServer(
-    val config: McpServerConfig,
     private val transport: McpHttpTransport = McpOkHttpTransport(),
 ) : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(McpServer::class.java)
     }
+
+    lateinit var config: McpServerConfig
+        private set
 
     var toolDefinitions: List<McpToolDefinition> = emptyList()
         private set
@@ -21,7 +23,19 @@ class McpServer(
 
     override fun id(): String = "mcp:${config.name}"
 
-    override fun init(config: Map<*, *>, context: Context) {}
+    override fun init(config: Map<*, *>, context: Context) {
+        val name = config["name"]?.toString()
+            ?: throw IllegalArgumentException("'name' is required")
+        val url = config["url"]?.toString()
+            ?: throw IllegalArgumentException("'url' is required")
+        this.config = McpServerConfig(
+            name = name,
+            description = config["description"]?.toString() ?: "",
+            url = url,
+            token = config["token"]?.toString(),
+            icon = config["icon"]?.toString() ?: "",
+        )
+    }
 
     override fun health(): Health = Health(id = id(), up = true)
 

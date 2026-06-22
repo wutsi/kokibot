@@ -14,11 +14,11 @@ import kotlin.test.assertTrue
 class McpServerTest {
     private val transport = mock<McpHttpTransport>()
 
-    private val config = McpServerConfig(
-        name = "weather-mcp",
-        description = "Weather data",
-        url = "https://weather.example.com/mcp",
-        token = "tok-123",
+    private val configMap = mapOf(
+        "name" to "weather-mcp",
+        "description" to "Weather data",
+        "url" to "https://weather.example.com/mcp",
+        "token" to "tok-123",
     )
 
     private val initResponse = McpHttpResponse(
@@ -33,10 +33,11 @@ class McpServerTest {
         body = """{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"get_weather","description":"Get weather"},{"name":"get_forecast","description":"Get forecast"}]}}""",
     )
 
-    private val server = McpServer(config, transport)
+    private val server = McpServer(transport)
 
     @BeforeEach
     fun setUp() {
+        server.init(configMap, mock())
         doReturn(initResponse).doReturn(listToolsResponse).whenever(transport).post(any(), any(), any())
     }
 

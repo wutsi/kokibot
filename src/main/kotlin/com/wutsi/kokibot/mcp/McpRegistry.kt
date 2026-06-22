@@ -25,10 +25,11 @@ class McpRegistry : Resource {
             ?.sortedBy { it.name }
             ?.forEach { file ->
                 try {
-                    val serverConfig = loadConfig(file)
-                    val server = McpServer(serverConfig)
+                    val rawConfig = loadConfig(file)
+                    val server = McpServer()
+                    server.init(rawConfig, context)
                     register(server)
-                    LOGGER.info("MCP: ${serverConfig.name}")
+                    LOGGER.info("MCP: ${server.config.name}")
                 } catch (e: Exception) {
                     LOGGER.warn("Unable to initialize MCP from ${file.name}: ${e.message}")
                 }
@@ -50,18 +51,8 @@ class McpRegistry : Resource {
         servers[server.config.name.lowercase()] = server
     }
 
-    private fun loadConfig(file: File): McpServerConfig {
+    private fun loadConfig(file: File): Map<*, *> {
         val raw = JsonMapper().readValue(file, Map::class.java)
-        val processed = MapUtil.applyEnv(raw)
-        val name = processed["name"]?.toString()
-            ?: throw IllegalArgumentException("'name' is required in ${file.name}")
-        val url = processed["url"]?.toString()
-            ?: throw IllegalArgumentException("'url' is required in ${file.name}")
-        return McpServerConfig(
-            name = name,
-            description = processed["description"]?.toString() ?: "",
-            url = url,
-            token = processed["token"]?.toString(),
-        )
+        return MapUtil.applyEnv(raw)
     }
 }

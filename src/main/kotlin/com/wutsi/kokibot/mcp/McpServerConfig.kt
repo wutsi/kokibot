@@ -5,4 +5,5 @@ data class McpServerConfig(
     val description: String = "",
     val url: String,
     val token: String? = null,
+    val icon: String = "",
 )

@@ -23,12 +23,17 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.resttestclient.TestRestTemplate
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.util.LinkedMultiValueMap
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -157,7 +162,7 @@ class AssistantControllerTest {
 
         assertEquals(200, response.statusCode.value())
         assertEquals(true, response.body!!["success"])
-        verify(bootstrap.getContext().assistant).saveInstructions("New identity")
+        verify(bootstrap.getContext().assistant).setInstructions("New identity")
     }
 
     @Test
@@ -173,7 +178,7 @@ class AssistantControllerTest {
 
         assertEquals(200, response.statusCode.value())
         assertEquals(true, response.body!!["success"])
-        verify(bootstrap.getContext().assistant).saveInstructions("")
+        verify(bootstrap.getContext().assistant).setInstructions("")
     }
 
     @Test
@@ -332,6 +337,56 @@ class AssistantControllerTest {
         doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/xxx/icon.png", Any::class.java)
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
+    fun `upload icon stores file`() {
+        val bootstrap = createBootstrap("007")
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+
+        val iconBytes = byteArrayOf(1, 2, 3)
+        val resource = object : ByteArrayResource(iconBytes) {
+            override fun getFilename() = "icon.png"
+        }
+        val fileHeaders = HttpHeaders()
+        fileHeaders.contentType = MediaType.IMAGE_PNG
+        val body = LinkedMultiValueMap<String, Any>()
+        body.add("file", HttpEntity(resource, fileHeaders))
+
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.MULTIPART_FORM_DATA
+        val response = rest.postForEntity(
+            "/assistants/007/icon.png",
+            HttpEntity(body, headers),
+            Map::class.java
+        )
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(true, response.body!!["success"])
+        assertTrue(File("target/assistant-controller/007/config/icon.png").exists())
+    }
+
+    @Test
+    fun `upload icon returns 404 when assistant not found`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val resource = object : ByteArrayResource(byteArrayOf(1, 2, 3)) {
+            override fun getFilename() = "icon.png"
+        }
+        val fileHeaders = HttpHeaders()
+        fileHeaders.contentType = MediaType.IMAGE_PNG
+        val body = LinkedMultiValueMap<String, Any>()
+        body.add("file", HttpEntity(resource, fileHeaders))
+
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.MULTIPART_FORM_DATA
+        val response = rest.postForEntity(
+            "/assistants/xxx/icon.png",
+            HttpEntity(body, headers),
+            Any::class.java
+        )
 
         assertEquals(404, response.statusCode.value())
     }

@@ -91,7 +91,7 @@ class Assistant(val name: String = "") {
         return promptBuilder.loadIdentity(context)
     }
 
-    fun saveInstructions(content: String) {
+    fun setInstructions(content: String) {
         promptBuilder.saveIdentity(content, context)
     }
 

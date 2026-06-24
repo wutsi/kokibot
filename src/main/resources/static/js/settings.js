@@ -10,16 +10,12 @@ const Settings = {
     agentDescriptionElement: null,
     chatButton: null,
     backToChatLink: null,
-    instructionsEditBtn: null,
-    instructionsSaveBtn: null,
-    instructionsCancelBtn: null,
-    instructionsOriginalContent: null,
-    isEditingInstructions: false,
     heartbeatEditBtn: null,
     heartbeatSaveBtn: null,
     heartbeatCancelBtn: null,
     heartbeatOriginalContent: null,
     isEditingHeartbeat: false,
+    generalInstructionsContent: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -37,9 +33,6 @@ const Settings = {
         this.agentDescriptionElement = document.getElementById('agent-description');
         this.chatButton = document.getElementById('chat-btn');
         this.backToChatLink = document.querySelector('.back-to-chat-btn');
-        this.instructionsEditBtn = document.getElementById('instructions-edit-btn');
-        this.instructionsSaveBtn = document.getElementById('instructions-save-btn');
-        this.instructionsCancelBtn = document.getElementById('instructions-cancel-btn');
         this.heartbeatEditBtn = document.getElementById('heartbeat-edit-btn');
         this.heartbeatSaveBtn = document.getElementById('heartbeat-save-btn');
         this.heartbeatCancelBtn = document.getElementById('heartbeat-cancel-btn');
@@ -67,25 +60,6 @@ const Settings = {
             this.backToChatLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.navigateToChat();
-            });
-        }
-
-        // Instructions edit buttons
-        if (this.instructionsEditBtn) {
-            this.instructionsEditBtn.addEventListener('click', () => {
-                this.enterInstructionsEditMode();
-            });
-        }
-
-        if (this.instructionsSaveBtn) {
-            this.instructionsSaveBtn.addEventListener('click', () => {
-                this.saveInstructions();
-            });
-        }
-
-        if (this.instructionsCancelBtn) {
-            this.instructionsCancelBtn.addEventListener('click', () => {
-                this.cancelInstructionsEdit();
             });
         }
 
@@ -122,10 +96,6 @@ const Settings = {
         switch (tabName) {
             case 'general':
                 this.loadGeneral();
-                this.loadedTabs.add(tabName);
-                break;
-            case 'instructions':
-                this.loadInstructions();
                 this.loadedTabs.add(tabName);
                 break;
             case 'heartbeat':
@@ -300,19 +270,204 @@ const Settings = {
         const contentElement = document.getElementById('general-content');
         if (!contentElement) return;
 
-        const workspace = agentData.workspaceDirectory || 'Unknown';
+        const name = this.formatAgentName(agentData.name || '');
+        const description = agentData.description || '';
+        const instructions = agentData.instructions || '';
+        const iconUrl = `/assistants/${this.escapeHtml(this.agentName)}/icon.png`;
+
+        this.generalInstructionsContent = instructions;
+
+        const instructionsBodyHtml = instructions.trim()
+            ? `<div class="instructions-text markdown-body" id="general-instructions-body">${new MarkdownRenderer().render(instructions)}</div>`
+            : `<p class="general-instructions-empty" id="general-instructions-body">No instructions configured</p>`;
 
         contentElement.innerHTML = `
             <div class="general-info">
                 <div class="general-section">
-                    <h3 class="general-section-title">Workspace</h3>
-                    <div class="general-item">
-                        <p class="general-item-label">Workspace Directory</p>
-                        <p class="general-item-value">${workspace}</p>
+                    <div class="general-agent-header">
+                        <div class="general-agent-icon-container" id="general-agent-icon-container" title="Click to upload PNG icon">
+                            <img src="${iconUrl}" alt="${name}" class="general-agent-icon" id="general-agent-icon"
+                                 onerror="this.style.display='none'">
+                            <div class="general-agent-icon-overlay">
+                                <svg fill="currentColor" height="22" viewBox="0 0 24 24" width="22">
+                                    <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zM20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/>
+                                </svg>
+                            </div>
+                            <input type="file" accept=".png,image/png" id="general-icon-upload-input" style="display:none;">
+                        </div>
+                        <div class="general-agent-details">
+                            <h3 class="general-agent-name">${name}</h3>
+                            ${description ? `<p class="general-agent-description">${this.escapeHtml(description)}</p>` : ''}
+                        </div>
                     </div>
+                </div>
+                <div class="general-section">
+                    <div class="general-instructions-header">
+                        <h3 class="general-section-title">Instructions</h3>
+                        <div class="general-instructions-actions">
+                            <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-edit-btn">
+                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                                Edit
+                            </button>
+                            <button class="settings-action-btn settings-action-btn-primary" id="general-instructions-save-btn" style="display:none;">
+                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                    <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                                </svg>
+                                Save
+                            </button>
+                            <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-cancel-btn" style="display:none;">
+                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                    ${instructionsBodyHtml}
                 </div>
             </div>
         `;
+
+        document.getElementById('general-instructions-edit-btn')?.addEventListener('click', () => {
+            this.enterGeneralInstructionsEditMode();
+        });
+        document.getElementById('general-instructions-save-btn')?.addEventListener('click', () => {
+            this.saveGeneralInstructions();
+        });
+        document.getElementById('general-instructions-cancel-btn')?.addEventListener('click', () => {
+            this.exitGeneralInstructionsEditMode();
+        });
+
+        const iconContainer = document.getElementById('general-agent-icon-container');
+        const iconInput = document.getElementById('general-icon-upload-input');
+        if (iconContainer && iconInput) {
+            iconContainer.addEventListener('click', () => iconInput.click());
+            iconInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) this.uploadIcon(file);
+            });
+        }
+    },
+
+    enterGeneralInstructionsEditMode() {
+        const body = document.getElementById('general-instructions-body');
+        if (!body) return;
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'instructions-editor';
+        textarea.value = this.generalInstructionsContent || '';
+        textarea.id = 'general-instructions-editor-textarea';
+        body.replaceWith(textarea);
+        textarea.focus();
+
+        document.getElementById('general-instructions-edit-btn').style.display = 'none';
+        document.getElementById('general-instructions-save-btn').style.display = 'flex';
+        document.getElementById('general-instructions-cancel-btn').style.display = 'flex';
+    },
+
+    async saveGeneralInstructions() {
+        if (!this.agentName) {
+            Notifications.error('No agent selected');
+            return;
+        }
+
+        const textarea = document.getElementById('general-instructions-editor-textarea');
+        if (!textarea) return;
+
+        const content = textarea.value;
+        const saveBtn = document.getElementById('general-instructions-save-btn');
+        const cancelBtn = document.getElementById('general-instructions-cancel-btn');
+
+        if (saveBtn) saveBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/assistant.md`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content }),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Failed to save instructions (${response.status})`);
+            }
+
+            this.generalInstructionsContent = content;
+            this.exitGeneralInstructionsEditMode();
+            Notifications.success('Instructions saved successfully', { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving instructions:', error);
+            if (error.name === 'AbortError') {
+                Notifications.error('Save request timed out. Please try again.');
+            } else {
+                Notifications.error('Failed to save instructions. Please try again.');
+            }
+        } finally {
+            if (saveBtn) saveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+        }
+    },
+
+    exitGeneralInstructionsEditMode() {
+        const textarea = document.getElementById('general-instructions-editor-textarea');
+        if (!textarea) return;
+
+        const div = document.createElement(this.generalInstructionsContent?.trim() ? 'div' : 'p');
+        div.id = 'general-instructions-body';
+
+        if (this.generalInstructionsContent?.trim()) {
+            div.className = 'instructions-text markdown-body';
+            div.innerHTML = new MarkdownRenderer().render(this.generalInstructionsContent);
+        } else {
+            div.className = 'general-instructions-empty';
+            div.textContent = 'No instructions configured';
+        }
+
+        textarea.replaceWith(div);
+
+        document.getElementById('general-instructions-edit-btn').style.display = 'flex';
+        document.getElementById('general-instructions-save-btn').style.display = 'none';
+        document.getElementById('general-instructions-cancel-btn').style.display = 'none';
+    },
+
+    async uploadIcon(file) {
+        if (file.type !== 'image/png') {
+            Notifications.error('Only PNG files are accepted');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file, 'icon.png');
+
+        try {
+            const response = await fetch(`/assistants/${this.agentName}/icon.png`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed (${response.status})`);
+            }
+
+            const img = document.getElementById('general-agent-icon');
+            if (img) {
+                img.style.display = '';
+                img.src = `/assistants/${this.agentName}/icon.png?t=${Date.now()}`;
+            }
+
+            Notifications.success('Icon uploaded successfully', { duration: 3000 });
+        } catch (error) {
+            console.error('Error uploading icon:', error);
+            Notifications.error('Failed to upload icon. Please try again.');
+        }
     },
 
     showGeneralError(message) {
@@ -328,237 +483,6 @@ const Settings = {
                 <p>${message}</p>
             </div>
         `;
-    },
-
-    async loadInstructions() {
-        if (!this.agentName) {
-            this.showInstructionsError('No agent selected');
-            return;
-        }
-
-        const contentElement = document.getElementById('instructions-content');
-        if (!contentElement) {
-            return;
-        }
-
-        // Show loading state
-        contentElement.innerHTML = `
-            <div class="instructions-loading">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
-                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
-                </svg>
-                <p>Loading instructions...</p>
-            </div>
-        `;
-
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-            const response = await fetch(`/assistants/${this.agentName}/assistant.md`, {
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`Failed to load instructions (${response.status})`);
-            }
-
-            const data = await response.json();
-            const textContent = data.content || '';
-
-            // Store original content
-            this.instructionsOriginalContent = textContent;
-
-            if (!textContent.trim()) {
-                this.showInstructionsEmpty();
-                this.showInstructionsEditButton();
-                return;
-            }
-
-            const div = document.createElement('div');
-            div.className = 'instructions-text markdown-body';
-            div.innerHTML = new MarkdownRenderer().render(textContent);
-
-            contentElement.innerHTML = '';
-            contentElement.appendChild(div);
-
-            // Show edit button
-            this.showInstructionsEditButton();
-        } catch (error) {
-            console.error('Error loading instructions:', error);
-
-            if (error.name === 'AbortError') {
-                this.showInstructionsError('Request timed out. Please try again.');
-            } else {
-                this.showInstructionsError('Failed to load instructions. Please try again.');
-            }
-
-            Notifications.error('Failed to load assistant instructions', {
-                duration: 5000
-            });
-        }
-    },
-
-    showInstructionsEmpty() {
-        const contentElement = document.getElementById('instructions-content');
-        if (!contentElement) return;
-
-        contentElement.innerHTML = `
-            <div class="instructions-error">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                </svg>
-                <h3>No Instructions</h3>
-                <p>This assistant has no system instructions configured</p>
-            </div>
-        `;
-    },
-
-    showInstructionsError(message) {
-        const contentElement = document.getElementById('instructions-content');
-        if (!contentElement) return;
-
-        contentElement.innerHTML = `
-            <div class="instructions-error">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                </svg>
-                <h3>Error Loading Instructions</h3>
-                <p>${message}</p>
-            </div>
-        `;
-    },
-
-    showInstructionsEditButton() {
-        if (this.instructionsEditBtn) {
-            this.instructionsEditBtn.style.display = 'flex';
-        }
-        if (this.instructionsSaveBtn) {
-            this.instructionsSaveBtn.style.display = 'none';
-        }
-        if (this.instructionsCancelBtn) {
-            this.instructionsCancelBtn.style.display = 'none';
-        }
-    },
-
-    showInstructionsSaveButtons() {
-        if (this.instructionsEditBtn) {
-            this.instructionsEditBtn.style.display = 'none';
-        }
-        if (this.instructionsSaveBtn) {
-            this.instructionsSaveBtn.style.display = 'flex';
-        }
-        if (this.instructionsCancelBtn) {
-            this.instructionsCancelBtn.style.display = 'flex';
-        }
-    },
-
-    enterInstructionsEditMode() {
-        const contentElement = document.getElementById('instructions-content');
-        if (!contentElement) return;
-
-        this.isEditingInstructions = true;
-
-        // Create textarea
-        const textarea = document.createElement('textarea');
-        textarea.className = 'instructions-editor';
-        textarea.value = this.instructionsOriginalContent || '';
-        textarea.id = 'instructions-editor-textarea';
-
-        contentElement.innerHTML = '';
-        contentElement.appendChild(textarea);
-
-        // Show save/cancel buttons
-        this.showInstructionsSaveButtons();
-
-        // Focus textarea
-        textarea.focus();
-    },
-
-    async saveInstructions() {
-        if (!this.agentName) {
-            Notifications.error('No agent selected');
-            return;
-        }
-
-        const textarea = document.getElementById('instructions-editor-textarea');
-        if (!textarea) return;
-
-        const content = textarea.value;
-
-        // Disable buttons during save
-        if (this.instructionsSaveBtn) this.instructionsSaveBtn.disabled = true;
-        if (this.instructionsCancelBtn) this.instructionsCancelBtn.disabled = true;
-
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-            const response = await fetch(`/assistants/${this.agentName}/assistant.md`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ content }),
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`Failed to save instructions (${response.status})`);
-            }
-
-            // Update stored content
-            this.instructionsOriginalContent = content;
-
-            // Exit edit mode
-            this.exitInstructionsEditMode();
-
-            Notifications.success('Instructions saved successfully', {
-                duration: 3000
-            });
-        } catch (error) {
-            console.error('Error saving instructions:', error);
-
-            if (error.name === 'AbortError') {
-                Notifications.error('Save request timed out. Please try again.');
-            } else {
-                Notifications.error('Failed to save instructions. Please try again.');
-            }
-        } finally {
-            // Re-enable buttons
-            if (this.instructionsSaveBtn) this.instructionsSaveBtn.disabled = false;
-            if (this.instructionsCancelBtn) this.instructionsCancelBtn.disabled = false;
-        }
-    },
-
-    cancelInstructionsEdit() {
-        this.exitInstructionsEditMode();
-    },
-
-    exitInstructionsEditMode() {
-        this.isEditingInstructions = false;
-
-        const contentElement = document.getElementById('instructions-content');
-        if (!contentElement) return;
-
-        // Restore read-only view
-        if (!this.instructionsOriginalContent || !this.instructionsOriginalContent.trim()) {
-            this.showInstructionsEmpty();
-        } else {
-            const div = document.createElement('div');
-            div.className = 'instructions-text markdown-body';
-            div.innerHTML = new MarkdownRenderer().render(this.instructionsOriginalContent);
-
-            contentElement.innerHTML = '';
-            contentElement.appendChild(div);
-        }
-
-        // Show edit button
-        this.showInstructionsEditButton();
     },
 
     async loadHeartbeat() {

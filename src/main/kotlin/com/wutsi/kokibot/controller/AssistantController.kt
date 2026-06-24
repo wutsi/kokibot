@@ -12,9 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 import java.io.File
-import java.text.NumberFormat
-import java.util.Currency
 
 @RequestMapping("/assistants")
 @RestController
@@ -85,6 +84,21 @@ class AssistantController(private val multi: MultiBootstrap) {
         )
     }
 
+    @PostMapping("/{name}/assistant.md")
+    fun assistant(
+        @PathVariable name: String,
+        @RequestBody body: Map<String, Any>
+    ): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val context = bootstrap.getContext()
+        context.assistant.setInstructions(body["content"] as? String ?: "")
+        return ResponseEntity.ok(
+            mapOf(
+                "success" to true
+            )
+        )
+    }
+
     @GetMapping("/{name}/icon.png")
     fun icon(@PathVariable name: String): ResponseEntity<ByteArray> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
@@ -95,19 +109,16 @@ class AssistantController(private val multi: MultiBootstrap) {
             .body(icon.readBytes())
     }
 
-    @PostMapping("/{name}/assistant.md")
-    fun assistant(
+    @PostMapping("/{name}/icon.png", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadIcon(
         @PathVariable name: String,
-        @RequestBody body: Map<String, Any>
+        @RequestParam("file") file: MultipartFile,
     ): ResponseEntity<Map<String, Any>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val context = bootstrap.getContext()
-        context.assistant.saveInstructions(body["content"] as? String ?: "")
-        return ResponseEntity.ok(
-            mapOf(
-                "success" to true
-            )
-        )
+        val iconFile = File(bootstrap.getContext().home, "config/icon.png")
+        iconFile.parentFile.mkdirs()
+        iconFile.writeBytes(file.bytes)
+        return ResponseEntity.ok(mapOf("success" to true))
     }
 
     @GetMapping("/{name}/heartbeat.md")
@@ -135,13 +146,6 @@ class AssistantController(private val multi: MultiBootstrap) {
                 "success" to true
             )
         )
-    }
-
-    private fun formatMoney(amount: Double, currencyCode: String): String {
-        val format = NumberFormat.getCurrencyInstance()
-        val currency = Currency.getInstance(currencyCode)
-        format.currency = currency
-        return format.format(amount)
     }
 
     private fun getBootstrap(name: String) = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }

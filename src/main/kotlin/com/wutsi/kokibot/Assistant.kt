@@ -26,14 +26,14 @@ class Assistant(val name: String = "") {
     }
 
     private lateinit var context: Context
-    private var maxIterations: Int = DEFAULT_ITERATIONS
-    private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
+    internal var maxIterations: Int = DEFAULT_ITERATIONS
+    internal var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
     lateinit var description: String
     var coordinator: Boolean = false
-    private var threadPoolSize: Int = 4
-    private lateinit var toolOrchestrator: ToolOrchestrator
+    internal var threadPoolSize: Int = 4
+    internal lateinit var toolOrchestrator: ToolOrchestrator
     private lateinit var promptBuilder: PromptBuilder
-    private lateinit var reasoningLoop: ReasoningLoop
+    internal lateinit var reasoningLoop: ReasoningLoop
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
@@ -74,6 +74,40 @@ class Assistant(val name: String = "") {
             LOGGER.info("Shutting down tool orchestrator for assistant: $name")
             toolOrchestrator.destroy()
         }
+    }
+
+    fun apply(key: String, value: Any) {
+        when (key) {
+            "max-iterations" -> {
+                maxIterations = value.toString().toInt()
+                rebuildReasoningLoop()
+            }
+            "max-duration" -> {
+                maxDurationMinutes = DurationUtil.minutes(value.toString(), DEFAULT_MAX_DURATION_MINUTES)
+            }
+            "thread-pool-size" -> {
+                threadPoolSize = value.toString().toInt().coerceAtLeast(2)
+                toolOrchestrator.destroy()
+                toolOrchestrator = ToolOrchestrator(threadPoolSize = threadPoolSize)
+                rebuildReasoningLoop()
+            }
+            "description" -> description = value.toString()
+            "coordinator" -> {
+                coordinator = value.toString().toBoolean()
+                rebuildReasoningLoop()
+            }
+            else -> throw ConfigurationException("Unknown assistant setting: $key")
+        }
+    }
+
+    private fun rebuildReasoningLoop() {
+        reasoningLoop = ReActReasoningLoop(
+            assistantName = name,
+            maxIterations = maxIterations,
+            coordinator = coordinator,
+            promptBuilder = promptBuilder,
+            toolOrchestrator = toolOrchestrator,
+        )
     }
 
     fun contextWindow(userId: String, channelId: String, conversationId: String? = null): ContextWindow {

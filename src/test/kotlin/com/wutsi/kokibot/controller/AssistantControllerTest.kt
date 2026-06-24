@@ -443,6 +443,19 @@ class AssistantControllerTest {
     }
 
     @Test
+    fun `set - bad request when value missing from body`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/007/settings",
+            mapOf("key" to "description"),
+            Map::class.java,
+        )
+
+        assertEquals(400, response.statusCode.value())
+    }
+
+    @Test
     fun `set - bad request when unknown key`() {
         val bootstrap = mock(Bootstrap::class.java)
         val assistant = mock<Assistant>()

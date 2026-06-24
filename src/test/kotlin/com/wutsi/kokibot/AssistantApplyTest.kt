@@ -91,6 +91,13 @@ class AssistantApplyTest {
     }
 
     @Test
+    fun `apply max-iterations with invalid value throws ConfigurationException`() {
+        assertThrows<ConfigurationException> {
+            assistant.apply("max-iterations", "not-a-number")
+        }
+    }
+
+    @Test
     fun `apply unknown key throws ConfigurationException`() {
         assertThrows<ConfigurationException> {
             assistant.apply("unknown-key", "value")

@@ -17,9 +17,9 @@ import java.util.concurrent.TimeoutException
 class Assistant(val name: String = "") {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Assistant::class.java)
-        private const val DEFAULT_ITERATIONS = 10
+        private const val DEFAULT_ITERATIONS = 100 // 100 iterations
         private const val BYTES_PER_TOKENS = 4
-        const val DEFAULT_MAX_DURATION_MINUTES = 5L
+        const val DEFAULT_MAX_DURATION_MINUTES = 30L // 30 minutes
         const val ERROR_TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
         const val ERROR_TIMEOUT = "Oups, the request has been cancelled because it took too much time to process."
         const val ERROR_FAILURE = "Oups, an unexpected error occurred while processing the query."
@@ -79,23 +79,30 @@ class Assistant(val name: String = "") {
     fun apply(key: String, value: Any) {
         when (key) {
             "max-iterations" -> {
-                maxIterations = value.toString().toInt()
+                maxIterations = value.toString().toIntOrNull()
+                    ?: throw ConfigurationException("Invalid value for max-iterations: $value")
                 rebuildReasoningLoop()
             }
+
             "max-duration" -> {
                 maxDurationMinutes = DurationUtil.minutes(value.toString(), DEFAULT_MAX_DURATION_MINUTES)
             }
+
             "thread-pool-size" -> {
-                threadPoolSize = value.toString().toInt().coerceAtLeast(2)
+                threadPoolSize = (value.toString().toIntOrNull()
+                    ?: throw ConfigurationException("Invalid value for thread-pool-size: $value"))
+                    .coerceAtLeast(2)
                 toolOrchestrator.destroy()
                 toolOrchestrator = ToolOrchestrator(threadPoolSize = threadPoolSize)
                 rebuildReasoningLoop()
             }
+
             "description" -> description = value.toString()
             "coordinator" -> {
                 coordinator = value.toString().toBoolean()
                 rebuildReasoningLoop()
             }
+
             else -> throw ConfigurationException("Unknown assistant setting: $key")
         }
     }

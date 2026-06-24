@@ -38,17 +38,17 @@ class Bootstrap(
         return context
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun set(key: String, value: Any) {
         val file = File(File(context.home, "config"), "settings.json")
 
-        @Suppress("UNCHECKED_CAST")
         val rawConfig = JsonMapper().readValue(file, Map::class.java).toMutableMap() as MutableMap<Any?, Any?>
 
-        @Suppress("UNCHECKED_CAST")
         val assistantSection = rawConfig.getOrPut("assistant") { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
         assistantSection[key] = value
-        JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
+        // Apply live first — if it throws, the file is not written
         context.assistant.apply(key, value)
+        JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
     }
 
     private fun loadConfig(file: File): Map<*, *> {

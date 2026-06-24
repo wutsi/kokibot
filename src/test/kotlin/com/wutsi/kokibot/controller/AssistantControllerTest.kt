@@ -9,6 +9,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Bootstrap
 import com.wutsi.kokibot.ChannelNotFoundException
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import com.wutsi.kokibot.assistant.ContextWindow
@@ -389,6 +390,80 @@ class AssistantControllerTest {
         )
 
         assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
+    fun `set - success`() {
+        val bootstrap = mock(Bootstrap::class.java)
+        val assistant = mock<Assistant>()
+        doReturn("007").whenever(assistant).name
+        val context = Context(
+            assistant = assistant,
+            home = File("target/assistant-controller/007"),
+            llm = mock<LLM>(),
+        )
+        doReturn(context).whenever(bootstrap).getContext()
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/007/settings",
+            mapOf("key" to "description", "value" to "hello"),
+            Map::class.java,
+        )
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(true, response.body!!["success"])
+        verify(bootstrap).set("description", "hello")
+    }
+
+    @Test
+    fun `set - not found when assistant name unknown`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/xxx/settings",
+            mapOf("key" to "description", "value" to "hello"),
+            Map::class.java,
+        )
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
+    fun `set - bad request when key missing from body`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/007/settings",
+            mapOf("value" to "hello"),
+            Map::class.java,
+        )
+
+        assertEquals(400, response.statusCode.value())
+    }
+
+    @Test
+    fun `set - bad request when unknown key`() {
+        val bootstrap = mock(Bootstrap::class.java)
+        val assistant = mock<Assistant>()
+        doReturn("007").whenever(assistant).name
+        val context = Context(
+            assistant = assistant,
+            home = File("target/assistant-controller/007"),
+            llm = mock<LLM>(),
+        )
+        doReturn(context).whenever(bootstrap).getContext()
+        doThrow(ConfigurationException("Unknown assistant setting: invalid")).whenever(bootstrap).set(any(), any())
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/007/settings",
+            mapOf("key" to "invalid", "value" to "hello"),
+            Map::class.java,
+        )
+
+        assertEquals(400, response.statusCode.value())
+        assertEquals("Unknown assistant setting: invalid", (response.body as Map<*, *>)["error"])
     }
 
     private fun createBootstrap(

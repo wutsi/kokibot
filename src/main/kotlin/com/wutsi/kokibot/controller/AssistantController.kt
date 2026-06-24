@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.controller
 
 import com.wutsi.kokibot.ChannelNotFoundException
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import org.springframework.http.MediaType
@@ -146,6 +147,22 @@ class AssistantController(private val multi: MultiBootstrap) {
                 "success" to true
             )
         )
+    }
+
+    @PostMapping("/{name}/settings")
+    fun set(
+        @PathVariable name: String,
+        @RequestBody body: Map<String, Any>,
+    ): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val key = body["key"] as? String ?: return ResponseEntity.badRequest().build()
+        val value = body["value"] ?: return ResponseEntity.badRequest().build()
+        return try {
+            bootstrap.set(key, value)
+            ResponseEntity.ok(mapOf("success" to true))
+        } catch (e: ConfigurationException) {
+            ResponseEntity.badRequest().body(mapOf("error" to (e.message ?: "Invalid setting")))
+        }
     }
 
     private fun getBootstrap(name: String) = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }

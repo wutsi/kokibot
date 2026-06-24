@@ -1263,6 +1263,141 @@ ol, li {
     flex-shrink: 0;
 }
 
+/* ===== Sidebar Sections ===== */
+.sidebar-section {
+    flex-shrink: 0;
+}
+
+.sidebar-section--agents {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.sidebar-section--history {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.sidebar-section--history .conv-history-list {
+    flex: 1;
+}
+
+.sidebar-section--status {
+    border-top: 1px solid var(--color-border-light);
+    padding-top: 4px;
+    flex-shrink: 0;
+}
+
+/* ===== Sidebar Agent Header (Section 1) ===== */
+.sidebar-agent-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 4px 8px 4px;
+}
+
+.sidebar-agent-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+/* ===== Agent Avatar ===== */
+.agent-avatar {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: var(--color-accent-blue);
+    flex-shrink: 0;
+}
+
+.agent-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.agent-avatar span {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.agent-avatar--sm {
+    width: 28px;
+    height: 28px;
+}
+
+.agent-avatar--sm span {
+    font-size: 11px;
+}
+
+/* ===== Sidebar Section Label ===== */
+.sidebar-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 4px 4px 4px;
+}
+
+/* ===== Agents List (Section 2) ===== */
+.agents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.agent-list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 4px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+.agent-list-item:hover {
+    background-color: var(--color-bg-tertiary);
+}
+
+.agent-list-item.active {
+    background-color: var(--color-bg-user-message);
+    color: var(--color-accent-blue);
+    font-weight: 500;
+}
+
+.agent-list-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* ===== Conversation History Panel ===== */
 .conv-history-list {
     flex: 1;

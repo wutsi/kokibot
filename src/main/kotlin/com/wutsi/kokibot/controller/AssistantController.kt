@@ -44,12 +44,14 @@ class AssistantController(private val multi: MultiBootstrap) {
             ?: return ResponseEntity.notFound().build()
 
         val context = bootstrap.getContext()
+        val assistant = context.assistant
         return ResponseEntity.ok(
             mapOf(
-                "name" to context.assistant.name,
-                "description" to context.assistant.description,
-                "coordinator" to context.assistant.coordinator,
+                "name" to assistant.name,
+                "description" to assistant.description,
+                "coordinator" to assistant.coordinator,
                 "workspaceDirectory" to "${context.home.absolutePath}/workspace",
+                "instructions" to assistant.getInstructions()
             )
         )
     }
@@ -81,6 +83,16 @@ class AssistantController(private val multi: MultiBootstrap) {
                 "content" to (identity ?: "")
             )
         )
+    }
+
+    @GetMapping("/{name}/icon.png")
+    fun icon(@PathVariable name: String): ResponseEntity<ByteArray> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val icon = File(bootstrap.getContext().home, "config/icon.png")
+        if (!icon.exists()) return ResponseEntity.notFound().build()
+        return ResponseEntity.ok()
+            .contentType(MediaType.IMAGE_PNG)
+            .body(icon.readBytes())
     }
 
     @PostMapping("/{name}/assistant.md")
@@ -123,40 +135,6 @@ class AssistantController(private val multi: MultiBootstrap) {
                 "success" to true
             )
         )
-    }
-
-    @GetMapping("/{name}/llm")
-    fun llm(@PathVariable name: String): ResponseEntity<Map<String, Any?>> {
-        val bootstrap = multi.bootstraps.firstOrNull { it.getContext().assistant.name == name }
-            ?: return ResponseEntity.notFound().build()
-
-        val context = bootstrap.getContext()
-        val llm = context.llm
-        val balance = llm.balance()
-        return ResponseEntity.ok(
-            mapOf(
-                "name" to llm.name(),
-                "model" to llm.model(),
-                "maxContextWindow" to llm.maxContextWindow(),
-                "availableBalance" to balance?.let {
-                    mapOf(
-                        "amount" to balance.total,
-                        "currency" to balance.currency,
-                        "text" to formatMoney(balance.total, balance.currency)
-                    )
-                }
-            )
-        )
-    }
-
-    @GetMapping("/{name}/icon.png")
-    fun icon(@PathVariable name: String): ResponseEntity<ByteArray> {
-        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val icon = File(bootstrap.getContext().home, "config/icon.png")
-        if (!icon.exists()) return ResponseEntity.notFound().build()
-        return ResponseEntity.ok()
-            .contentType(MediaType.IMAGE_PNG)
-            .body(icon.readBytes())
     }
 
     private fun formatMoney(amount: Double, currencyCode: String): String {

@@ -14,19 +14,6 @@
 </head>
 <body>
 <div class="app-container">
-    <!-- Agent Selector Modal -->
-    <div class="modal" id="agent-selector-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Select Agent</h2>
-                <button class="close-button" id="close-modal-btn">&times;</button>
-            </div>
-            <div class="agent-list" id="agent-list">
-                <div class="agent-list-loading">Loading agents...</div>
-            </div>
-        </div>
-    </div>
-
     <!-- Left Sidebar (full height) -->
     <aside class="sidebar" id="sidebar">
         <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Sidebar">
@@ -120,11 +107,6 @@
             <div class="agent-info">
                 <div class="agent-name-container">
                     <h1 id="agent-name">Kokibot</h1>
-                    <button class="agent-selector-button" id="agent-selector-btn" title="Switch Agent">
-                        <svg fill="currentColor" height="16" viewBox="0 0 16 16" width="16">
-                            <path d="M8 11L3 6h10l-5 5z"/>
-                        </svg>
-                    </button>
                 </div>
                 <span id="agent-description">AI Assistant</span>
             </div>
@@ -356,7 +338,6 @@
 <script src="js/utils.js"></script>
 <script src="js/components/notification-manager.js"></script>
 <script src="js/components/markdown-renderer.js"></script>
-<script src="js/components/agent-selector.js"></script>
 <script src="js/components/conversation-history.js"></script>
 <script src="js/components/sidebar.js"></script>
 <script src="js/settings.js"></script>
@@ -364,7 +345,6 @@
     // Initialize app on page load
     document.addEventListener('DOMContentLoaded', () => {
         const agentName = getAgentNameFromURL();
-        AgentSelector.init(agentName);
         Sidebar.init();
         Settings.init(agentName);
     });

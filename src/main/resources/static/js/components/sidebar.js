@@ -1,12 +1,15 @@
 /**
  * Sidebar Component
- * Manages left sidebar with navigation menu (New Chat, History, Settings)
- * Handles collapsing/expanding and navigation actions
+ * Manages left sidebar with 4 sections:
+ *   1. Current agent (icon, name, New Chat, Settings)
+ *   2. Agents list (from /assistants)
+ *   3. Chat history (scrollable, up to 30)
+ *   4. Status (connection + context window)
  */
 const Sidebar = {
     sidebar: null,
     toggleButton: null,
-    historyButton: null,
+    newChatButton: null,
     settingsButton: null,
     storageKey: 'kokibot_sidebar_collapsed',
 
@@ -14,56 +17,32 @@ const Sidebar = {
         this.setupElements();
         this.loadState();
         this.setupEventListeners();
-        ConversationHistory.init(getAgentNameFromURL());
+        const agentName = getAgentNameFromURL();
+        this._loadCurrentAgent(agentName);
+        this._loadAgentsList(agentName);
+        ConversationHistory.init(agentName);
     },
 
     setupElements() {
         this.sidebar = document.getElementById('sidebar');
         this.toggleButton = document.getElementById('sidebar-toggle');
         this.newChatButton = document.getElementById('new-chat-btn');
-        this.historyButton = document.getElementById('history-btn');
         this.settingsButton = document.getElementById('settings-btn');
     },
 
     loadState() {
-        // Load saved state from localStorage (default: expanded)
         const isCollapsed = localStorage.getItem(this.storageKey) === 'true';
-        if (isCollapsed) {
-            this.sidebar.classList.add('collapsed');
-        }
+        if (isCollapsed) this.sidebar.classList.add('collapsed');
     },
 
     setupEventListeners() {
-        // Toggle button
-        this.toggleButton.addEventListener('click', () => {
-            this.toggle();
-        });
-
-        // New Chat button
-        if (this.newChatButton) {
-            this.newChatButton.addEventListener('click', () => {
-                ChatUI.newChat();
-            });
-        }
-
-        // History button (disabled for now)
-        if (this.historyButton) {
-            this.historyButton.addEventListener('click', () => {
-                this.handleHistory();
-            });
-        }
-
-        // Settings button
-        if (this.settingsButton) {
-            this.settingsButton.addEventListener('click', () => {
-                this.handleSettings();
-            });
-        }
+        this.toggleButton.addEventListener('click', () => this.toggle());
+        if (this.newChatButton) this.newChatButton.addEventListener('click', () => ChatUI.newChat());
+        if (this.settingsButton) this.settingsButton.addEventListener('click', () => this.handleSettings());
     },
 
     toggle() {
         const isCollapsed = this.sidebar.classList.toggle('collapsed');
-        // Save state to localStorage
         localStorage.setItem(this.storageKey, isCollapsed.toString());
     },
 
@@ -77,14 +56,72 @@ const Sidebar = {
         localStorage.setItem(this.storageKey, 'true');
     },
 
-    handleHistory() {
-        // Placeholder for future history feature
-        Notifications.info('Chat history feature coming soon!');
-    },
-
     handleSettings() {
-        // Navigate to settings page with agent parameter
         const agentName = getAgentNameFromURL();
         window.location.href = `/settings.html?agent=${agentName}`;
-    }
+    },
+
+    async _loadCurrentAgent(agentName) {
+        const avatarEl = document.getElementById('sidebar-agent-avatar');
+        const nameEl = document.getElementById('sidebar-agent-name');
+        if (!avatarEl || !nameEl) return;
+
+        avatarEl.innerHTML = this._avatarContent(agentName);
+        nameEl.textContent = this._formatName(agentName);
+
+        try {
+            const res = await fetch(`/assistants/${agentName}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.name) nameEl.textContent = this._formatName(data.name);
+            }
+        } catch (_) {}
+    },
+
+    async _loadAgentsList(agentName) {
+        const listEl = document.getElementById('agents-list');
+        if (!listEl) return;
+
+        try {
+            const res = await fetch('/assistants');
+            if (!res.ok) return;
+            const agents = await res.json();
+
+            let html = '';
+            for (const name of agents) {
+                const isActive = name === agentName;
+                html += `<button class="agent-list-item${isActive ? ' active' : ''}" data-agent="${escapeHtml(name)}">
+                    <div class="agent-avatar agent-avatar--sm">${this._avatarContent(name)}</div>
+                    <span class="agent-list-name">${escapeHtml(this._formatName(name))}</span>
+                </button>`;
+            }
+            listEl.innerHTML = html;
+
+            listEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('.agent-list-item');
+                if (!btn) return;
+                const target = btn.dataset.agent;
+                if (target !== agentName) {
+                    window.location.href = `/index.html?agent=${encodeURIComponent(target)}`;
+                }
+            });
+        } catch (_) {
+            console.warn('Failed to load agents list');
+        }
+    },
+
+    _avatarContent(name) {
+        const initials = escapeHtml(this._initials(name));
+        return `<img src="/assistants/${encodeURIComponent(name)}/icon.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span style="display:none">${initials}</span>`;
+    },
+
+    _formatName(name) {
+        return name.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    },
+
+    _initials(name) {
+        const parts = name.split(/[-_\s]+/).filter(Boolean);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name.substring(0, 2).toUpperCase();
+    },
 };

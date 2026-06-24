@@ -27,7 +27,6 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpMethod
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.test.util.AssertionErrors.assertNull
 import java.io.File
 import kotlin.test.assertEquals
 
@@ -299,41 +298,6 @@ class AssistantControllerTest {
         )
 
         assertEquals(404, response.statusCode.value())
-    }
-
-    @Test
-    fun llm() {
-        val balance = LLMBalance(currency = "USD", total = 100.0)
-        doReturn(
-            listOf(createBootstrap("007", balance = balance))
-        ).whenever(multi).bootstraps
-
-        val response = rest.getForEntity("/assistants/007/llm", Map::class.java)
-
-        assertEquals(200, response.statusCode.value())
-        assertEquals("deepseek", response.body!!["name"])
-        assertEquals("deepseek-v4.0", response.body!!["model"])
-        assertEquals(MAX_CONTEXT_WINDOW, response.body!!["maxContextWindow"])
-
-        val availableBalance = response.body!!["availableBalance"] as Map<String, *>
-        assertEquals(100.0, availableBalance["amount"])
-        assertEquals("USD", availableBalance["currency"])
-        assertEquals(true, availableBalance["text"].toString().contains("\$100.00"))
-    }
-
-    @Test
-    fun `llm no balance`() {
-        doReturn(
-            listOf(createBootstrap("007", balance = null))
-        ).whenever(multi).bootstraps
-
-        val response = rest.getForEntity("/assistants/007/llm", Map::class.java)
-
-        assertEquals(200, response.statusCode.value())
-        assertEquals("deepseek", response.body!!["name"])
-        assertEquals("deepseek-v4.0", response.body!!["model"])
-        assertEquals(MAX_CONTEXT_WINDOW, response.body!!["maxContextWindow"])
-        assertNull("availableBalance", response.body!!["availableBalance"])
     }
 
     @Test

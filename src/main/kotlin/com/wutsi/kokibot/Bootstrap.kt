@@ -38,6 +38,19 @@ class Bootstrap(
         return context
     }
 
+    fun set(key: String, value: Any) {
+        val file = File(File(context.home, "config"), "settings.json")
+
+        @Suppress("UNCHECKED_CAST")
+        val rawConfig = JsonMapper().readValue(file, Map::class.java).toMutableMap() as MutableMap<Any?, Any?>
+
+        @Suppress("UNCHECKED_CAST")
+        val assistantSection = rawConfig.getOrPut("assistant") { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
+        assistantSection[key] = value
+        JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
+        context.assistant.apply(key, value)
+    }
+
     private fun loadConfig(file: File): Map<*, *> {
         val config = JsonMapper().readValue(file, Map::class.java)
         return MapUtil.applyEnv(config)

@@ -3,6 +3,7 @@ package com.wutsi.kokibot.controller
 import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.io.File
 import java.text.NumberFormat
 import java.util.Currency
 
@@ -145,6 +147,16 @@ class AssistantController(private val multi: MultiBootstrap) {
                 }
             )
         )
+    }
+
+    @GetMapping("/{name}/icon.png")
+    fun icon(@PathVariable name: String): ResponseEntity<ByteArray> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val icon = File(bootstrap.getContext().home, "config/icon.png")
+        if (!icon.exists()) return ResponseEntity.notFound().build()
+        return ResponseEntity.ok()
+            .contentType(MediaType.IMAGE_PNG)
+            .body(icon.readBytes())
     }
 
     private fun formatMoney(amount: Double, currencyCode: String): String {

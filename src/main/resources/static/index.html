@@ -13,19 +13,6 @@
 </head>
 <body>
 <div class="app-container">
-    <!-- Agent Selector Modal -->
-    <div id="agent-selector-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Select Agent</h2>
-                <button id="close-modal-btn" class="close-button">&times;</button>
-            </div>
-            <div id="agent-list" class="agent-list">
-                <div class="agent-list-loading">Loading agents...</div>
-            </div>
-        </div>
-    </div>
-
     <!-- Left Sidebar (full height) -->
     <aside id="sidebar" class="sidebar">
         <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle Sidebar">
@@ -51,24 +38,7 @@
             </nav>
             <hr class="sidebar-divider">
             <div id="conversation-history" class="conv-history-list"></div>
-        </div>
-    </aside>
-
-    <!-- Content area: header + chat + input -->
-    <div class="content-area">
-        <!-- Header -->
-        <header class="chat-header">
-            <div class="agent-info">
-                <div class="agent-name-container">
-                    <h1 id="agent-name">Kokibot</h1>
-                    <button id="agent-selector-btn" class="agent-selector-button" title="Switch Agent">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 11L3 6h10l-5 5z"/>
-                        </svg>
-                    </button>
-                </div>
-                <span id="agent-description">AI Assistant</span>
-            </div>
+            <hr class="sidebar-divider">
             <div class="header-status">
                 <div class="connection-status">
                     <span class="status-dot" id="status-indicator"></span>
@@ -81,6 +51,19 @@
                     </div>
                     <span id="context-window-text">—</span>
                 </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Content area: header + chat + input -->
+    <div class="content-area">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="agent-info">
+                <div class="agent-name-container">
+                    <h1 id="agent-name">Kokibot</h1>
+                </div>
+                <span id="agent-description">AI Assistant</span>
             </div>
         </header>
 
@@ -154,7 +137,6 @@
 <script src="js/components/input-controller.js"></script>
 <script src="js/components/connection-manager.js"></script>
 <script src="js/components/assistant-info-loader.js"></script>
-<script src="js/components/agent-selector.js"></script>
 <script src="js/components/conversation-history.js"></script>
 <script src="js/components/sidebar.js"></script>
 <script src="js/components/file-upload.js"></script>
@@ -170,7 +152,6 @@
     document.addEventListener('DOMContentLoaded', () => {
         const agentName = getAgentNameFromURL();
         ChatUI.init(agentName);
-        AgentSelector.init(agentName);
         Sidebar.init();
         FileUpload.init(agentName);
         ContextWindowDisplay.init(agentName);

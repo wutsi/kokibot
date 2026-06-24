@@ -336,6 +336,42 @@ class AssistantControllerTest {
         assertNull("availableBalance", response.body!!["availableBalance"])
     }
 
+    @Test
+    fun `icon returns PNG content`() {
+        val bootstrap = createBootstrap("007")
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+
+        val iconFile = File("target/assistant-controller/007/config/icon.png")
+        iconFile.parentFile.mkdirs()
+        iconFile.writeBytes(byteArrayOf(1, 2, 3))
+
+        val response = rest.getForEntity("/assistants/007/icon.png", ByteArray::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals("image/png", response.headers.contentType?.toString())
+    }
+
+    @Test
+    fun `icon returns 404 when file missing`() {
+        val bootstrap = createBootstrap("007")
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+
+        File("target/assistant-controller/007/config/icon.png").delete()
+
+        val response = rest.getForEntity("/assistants/007/icon.png", Any::class.java)
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
+    fun `icon returns 404 when assistant not found`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/xxx/icon.png", Any::class.java)
+
+        assertEquals(404, response.statusCode.value())
+    }
+
     private fun createBootstrap(
         name: String,
         description: String? = null,

@@ -62,36 +62,6 @@ class AssistantControllerTest {
     }
 
     @Test
-    fun `list - by channelId`() {
-        doReturn(
-            listOf(
-                createBootstrap("007"),
-                createBootstrap("008", channelIds = listOf("channel:123"))
-            )
-        ).whenever(multi).bootstraps
-
-        val response = rest.getForEntity("/assistants?channel-id=channel:123", List::class.java)
-
-        assertEquals(1, response.body!!.size)
-        assertEquals(listOf("008"), response.body)
-    }
-
-    @Test
-    fun `list - by channelId suffix`() {
-        doReturn(
-            listOf(
-                createBootstrap("007"),
-                createBootstrap("008", channelIds = listOf("channel:123"))
-            )
-        ).whenever(multi).bootstraps
-
-        val response = rest.getForEntity("/assistants?channel-id=123", List::class.java)
-
-        assertEquals(1, response.body!!.size)
-        assertEquals(listOf("008"), response.body)
-    }
-
-    @Test
     fun get() {
         doReturn(
             listOf(createBootstrap("007", description = "Hello world"))

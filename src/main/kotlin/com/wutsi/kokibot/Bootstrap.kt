@@ -50,6 +50,7 @@ class Bootstrap(
         when (section) {
             "assistant" -> context.assistant.apply(property, value)
             "memory" -> context.memory.apply(property, value)
+            "heartbeat" -> context.heartbeat.apply(property, value)
             else -> throw ConfigurationException("Unknown setting section: $section")
         }
 

@@ -108,6 +108,11 @@ class Memory : Resource {
     }
 
     fun compact() {
+        if (!enabled) {
+            LOGGER.info("Memory compaction is disabled, skipping")
+            return
+        }
+
         val prompt = this::class.java.getResourceAsStream("/instructions/MEMORY.md")!!
             .bufferedReader()
             .readText()

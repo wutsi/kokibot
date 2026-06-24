@@ -420,6 +420,40 @@
     min-height: 400px;
 }
 
+.heartbeat-settings {
+    margin-bottom: 24px;
+}
+
+.heartbeat-frequency-select {
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 6px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    outline: none;
+    cursor: pointer;
+    min-width: 160px;
+}
+
+.heartbeat-frequency-select:focus {
+    border-color: var(--color-accent-blue);
+}
+
+.heartbeat-frequency-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.heartbeat-instructions-section {
+    border-top: 1px solid var(--color-border-light);
+    padding-top: 20px;
+}
+
+.heartbeat-instructions-header {
+    margin-bottom: 16px;
+}
+
 .heartbeat-loading {
     display: flex;
     flex-direction: column;

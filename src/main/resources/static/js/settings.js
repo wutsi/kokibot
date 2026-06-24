@@ -10,9 +10,7 @@ const Settings = {
     agentDescriptionElement: null,
     chatButton: null,
     backToChatLink: null,
-    heartbeatEditBtn: null,
-    heartbeatSaveBtn: null,
-    heartbeatCancelBtn: null,
+    heartbeatData: null,
     heartbeatOriginalContent: null,
     isEditingHeartbeat: false,
     generalInstructionsContent: null,
@@ -35,9 +33,6 @@ const Settings = {
         this.agentDescriptionElement = document.getElementById('agent-description');
         this.chatButton = document.getElementById('chat-btn');
         this.backToChatLink = document.querySelector('.back-to-chat-btn');
-        this.heartbeatEditBtn = document.getElementById('heartbeat-edit-btn');
-        this.heartbeatSaveBtn = document.getElementById('heartbeat-save-btn');
-        this.heartbeatCancelBtn = document.getElementById('heartbeat-cancel-btn');
     },
 
     setupEventListeners() {
@@ -65,24 +60,6 @@ const Settings = {
             });
         }
 
-        // Heartbeat edit buttons
-        if (this.heartbeatEditBtn) {
-            this.heartbeatEditBtn.addEventListener('click', () => {
-                this.enterHeartbeatEditMode();
-            });
-        }
-
-        if (this.heartbeatSaveBtn) {
-            this.heartbeatSaveBtn.addEventListener('click', () => {
-                this.saveHeartbeat();
-            });
-        }
-
-        if (this.heartbeatCancelBtn) {
-            this.heartbeatCancelBtn.addEventListener('click', () => {
-                this.cancelHeartbeatEdit();
-            });
-        }
     },
 
     setupTabLoaders() {
@@ -702,228 +679,245 @@ const Settings = {
         }
 
         const contentElement = document.getElementById('heartbeat-content');
-        if (!contentElement) {
-            return;
-        }
+        if (!contentElement) return;
 
-        // Show loading state
         contentElement.innerHTML = `
             <div class="heartbeat-loading">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
                     <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
                 </svg>
-                <p>Loading heartbeat instructions...</p>
+                <p>Loading heartbeat settings...</p>
             </div>
         `;
 
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-            const response = await fetch(`/assistants/${this.agentName}/heartbeat.md`, {
-                signal: controller.signal
-            });
-
+            const response = await fetch(`/assistants/${this.agentName}/heartbeat`, { signal: controller.signal });
             clearTimeout(timeoutId);
 
-            if (!response.ok) {
-                throw new Error(`Failed to load heartbeat instructions (${response.status})`);
-            }
+            if (!response.ok) throw new Error(`Failed to load heartbeat settings (${response.status})`);
 
             const data = await response.json();
-            const textContent = data.content || '';
+            this.heartbeatData = data;
+            this.heartbeatOriginalContent = data.instructions || '';
 
-            // Store original content
-            this.heartbeatOriginalContent = textContent;
-
-            if (!textContent.trim()) {
-                this.showHeartbeatEmpty();
-                this.showHeartbeatEditButton();
-                return;
-            }
-
-            const div = document.createElement('div');
-            div.className = 'heartbeat-text markdown-body';
-            div.innerHTML = new MarkdownRenderer().render(textContent);
-
-            contentElement.innerHTML = '';
-            contentElement.appendChild(div);
-
-            // Show edit button
-            this.showHeartbeatEditButton();
+            this.renderHeartbeat(contentElement);
         } catch (error) {
-            console.error('Error loading heartbeat instructions:', error);
-
-            if (error.name === 'AbortError') {
-                this.showHeartbeatError('Request timed out. Please try again.');
-            } else {
-                this.showHeartbeatError('Failed to load heartbeat instructions. Please try again.');
-            }
-
-            Notifications.error('Failed to load heartbeat instructions', {
-                duration: 5000
-            });
+            console.error('Error loading heartbeat settings:', error);
+            this.showHeartbeatError(error.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Failed to load heartbeat settings. Please try again.');
+            Notifications.error('Failed to load heartbeat settings', { duration: 5000 });
         }
     },
 
-    showHeartbeatEmpty() {
-        const contentElement = document.getElementById('heartbeat-content');
-        if (!contentElement) return;
+    renderHeartbeat(contentElement) {
+        const data = this.heartbeatData;
+        const enabled = data.enabled !== false;
+        const frequency = data.frequency || 30;
+        const disabledClass = enabled ? '' : ' memory-fields-disabled';
+
+        const FREQUENCY_OPTIONS = [
+            { value: '30m', label: 'Every 30 minutes' },
+            { value: '1h', label: 'Every hour' },
+            { value: '2h', label: 'Every 2 hours' },
+            { value: '1d', label: 'Every day' },
+        ];
+
+        const frequencyOptions = FREQUENCY_OPTIONS.map(opt =>
+            `<option value="${opt.value}"${frequency === opt.value ? ' selected' : ''}>${opt.label}</option>`
+        ).join('');
 
         contentElement.innerHTML = `
-            <div class="heartbeat-error">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-                <h3>No Heartbeat Instructions</h3>
-                <p>This assistant has no heartbeat instructions configured</p>
+            <div class="heartbeat-settings">
+                <div class="memory-setting-row">
+                    <div class="memory-setting-label-group">
+                        <span class="memory-setting-name">Enable Heartbeat</span>
+                        <span class="memory-setting-hint">Run periodic health checks automatically</span>
+                    </div>
+                    <label class="memory-toggle" title="Toggle heartbeat">
+                        <input type="checkbox" id="heartbeat-enabled-toggle"${enabled ? ' checked' : ''}>
+                        <span class="memory-toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="heartbeat-schedule-fields" class="memory-setting-row memory-setting-row-last${disabledClass}">
+                    <div class="memory-setting-label-group">
+                        <span class="memory-setting-name">Frequency</span>
+                        <span class="memory-setting-hint">How often to run the heartbeat</span>
+                    </div>
+                    <select id="heartbeat-frequency-select" class="heartbeat-frequency-select"${enabled ? '' : ' disabled'}>
+                        ${frequencyOptions}
+                    </select>
+                </div>
+            </div>
+            <div class="heartbeat-instructions-section">
+                <div class="settings-section-header heartbeat-instructions-header">
+                    <div>
+                        <h3 class="general-section-title">Instructions</h3>
+                        <span class="memory-setting-hint">Periodic prompt sent to the assistant on each heartbeat tick</span>
+                    </div>
+                    <div class="settings-section-actions">
+                        <button class="settings-action-btn settings-action-btn-secondary" id="heartbeat-edit-btn"${enabled ? '' : ' disabled'}>
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                            Edit
+                        </button>
+                        <button class="settings-action-btn settings-action-btn-primary" id="heartbeat-save-btn" style="display:none">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                            </svg>
+                            Save
+                        </button>
+                        <button class="settings-action-btn settings-action-btn-secondary" id="heartbeat-cancel-btn" style="display:none">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+                <div id="heartbeat-instructions-content">
+                    ${this.heartbeatOriginalContent.trim()
+                        ? `<div class="heartbeat-text markdown-body">${new MarkdownRenderer().render(this.heartbeatOriginalContent)}</div>`
+                        : `<div class="heartbeat-error">
+                               <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                               </svg>
+                               <h3>No Instructions</h3>
+                               <p>No heartbeat instructions configured</p>
+                           </div>`
+                    }
+                </div>
             </div>
         `;
+
+        this.setupHeartbeatListeners();
+    },
+
+    setupHeartbeatListeners() {
+        document.getElementById('heartbeat-enabled-toggle')?.addEventListener('change', (e) => {
+            const enabled = e.target.checked;
+            this.saveHeartbeatSetting('enabled', enabled, enabled ? 'Heartbeat enabled' : 'Heartbeat disabled');
+            const scheduleFields = document.getElementById('heartbeat-schedule-fields');
+            if (scheduleFields) {
+                scheduleFields.classList.toggle('memory-fields-disabled', !enabled);
+                const select = document.getElementById('heartbeat-frequency-select');
+                if (select) select.disabled = !enabled;
+            }
+            const editBtn = document.getElementById('heartbeat-edit-btn');
+            if (editBtn) editBtn.disabled = !enabled;
+        });
+
+        document.getElementById('heartbeat-frequency-select')?.addEventListener('change', (e) => {
+            this.saveHeartbeatSetting('frequency', parseInt(e.target.value, 10), 'Frequency saved');
+        });
+
+        document.getElementById('heartbeat-edit-btn')?.addEventListener('click', () => this.enterHeartbeatEditMode());
+        document.getElementById('heartbeat-save-btn')?.addEventListener('click', () => this.saveHeartbeat());
+        document.getElementById('heartbeat-cancel-btn')?.addEventListener('click', () => this.exitHeartbeatEditMode());
     },
 
     showHeartbeatError(message) {
         const contentElement = document.getElementById('heartbeat-content');
         if (!contentElement) return;
-
         contentElement.innerHTML = `
             <div class="heartbeat-error">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
-                <h3>Error Loading Heartbeat Instructions</h3>
+                <h3>Error Loading Heartbeat Settings</h3>
                 <p>${message}</p>
             </div>
         `;
     },
 
-    showHeartbeatEditButton() {
-        if (this.heartbeatEditBtn) {
-            this.heartbeatEditBtn.style.display = 'flex';
-        }
-        if (this.heartbeatSaveBtn) {
-            this.heartbeatSaveBtn.style.display = 'none';
-        }
-        if (this.heartbeatCancelBtn) {
-            this.heartbeatCancelBtn.style.display = 'none';
-        }
-    },
-
-    showHeartbeatSaveButtons() {
-        if (this.heartbeatEditBtn) {
-            this.heartbeatEditBtn.style.display = 'none';
-        }
-        if (this.heartbeatSaveBtn) {
-            this.heartbeatSaveBtn.style.display = 'flex';
-        }
-        if (this.heartbeatCancelBtn) {
-            this.heartbeatCancelBtn.style.display = 'flex';
-        }
-    },
-
     enterHeartbeatEditMode() {
-        const contentElement = document.getElementById('heartbeat-content');
-        if (!contentElement) return;
+        const instructionsContent = document.getElementById('heartbeat-instructions-content');
+        if (!instructionsContent) return;
 
         this.isEditingHeartbeat = true;
 
-        // Create textarea
         const textarea = document.createElement('textarea');
         textarea.className = 'heartbeat-editor';
         textarea.value = this.heartbeatOriginalContent || '';
         textarea.id = 'heartbeat-editor-textarea';
 
-        contentElement.innerHTML = '';
-        contentElement.appendChild(textarea);
-
-        // Show save/cancel buttons
-        this.showHeartbeatSaveButtons();
-
-        // Focus textarea
+        instructionsContent.innerHTML = '';
+        instructionsContent.appendChild(textarea);
         textarea.focus();
+
+        document.getElementById('heartbeat-edit-btn').style.display = 'none';
+        document.getElementById('heartbeat-save-btn').style.display = 'flex';
+        document.getElementById('heartbeat-cancel-btn').style.display = 'flex';
     },
 
     async saveHeartbeat() {
-        if (!this.agentName) {
-            Notifications.error('No agent selected');
-            return;
-        }
+        if (!this.agentName) { Notifications.error('No agent selected'); return; }
 
         const textarea = document.getElementById('heartbeat-editor-textarea');
         if (!textarea) return;
 
         const content = textarea.value;
-
-        // Disable buttons during save
-        if (this.heartbeatSaveBtn) this.heartbeatSaveBtn.disabled = true;
-        if (this.heartbeatCancelBtn) this.heartbeatCancelBtn.disabled = true;
+        const saveBtn = document.getElementById('heartbeat-save-btn');
+        const cancelBtn = document.getElementById('heartbeat-cancel-btn');
+        if (saveBtn) saveBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
 
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-            const response = await fetch(`/assistants/${this.agentName}/heartbeat.md`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ content }),
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`Failed to save heartbeat instructions (${response.status})`);
-            }
-
-            // Update stored content
+            await this.saveHeartbeatSetting('instructions', content, 'Instructions saved');
             this.heartbeatOriginalContent = content;
-
-            // Exit edit mode
             this.exitHeartbeatEditMode();
-
-            Notifications.success('Heartbeat instructions saved successfully', {
-                duration: 3000
-            });
-        } catch (error) {
-            console.error('Error saving heartbeat instructions:', error);
-
-            if (error.name === 'AbortError') {
-                Notifications.error('Save request timed out. Please try again.');
-            } else {
-                Notifications.error('Failed to save heartbeat instructions. Please try again.');
-            }
         } finally {
-            // Re-enable buttons
-            if (this.heartbeatSaveBtn) this.heartbeatSaveBtn.disabled = false;
-            if (this.heartbeatCancelBtn) this.heartbeatCancelBtn.disabled = false;
+            if (saveBtn) saveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
         }
-    },
-
-    cancelHeartbeatEdit() {
-        this.exitHeartbeatEditMode();
     },
 
     exitHeartbeatEditMode() {
         this.isEditingHeartbeat = false;
 
-        const contentElement = document.getElementById('heartbeat-content');
-        if (!contentElement) return;
+        const instructionsContent = document.getElementById('heartbeat-instructions-content');
+        if (!instructionsContent) return;
 
-        // Restore read-only view
-        if (!this.heartbeatOriginalContent || !this.heartbeatOriginalContent.trim()) {
-            this.showHeartbeatEmpty();
+        if (this.heartbeatOriginalContent?.trim()) {
+            instructionsContent.innerHTML = `<div class="heartbeat-text markdown-body">${new MarkdownRenderer().render(this.heartbeatOriginalContent)}</div>`;
         } else {
-            const div = document.createElement('div');
-            div.className = 'heartbeat-text markdown-body';
-            div.innerHTML = new MarkdownRenderer().render(this.heartbeatOriginalContent);
-
-            contentElement.innerHTML = '';
-            contentElement.appendChild(div);
+            instructionsContent.innerHTML = `
+                <div class="heartbeat-error">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <h3>No Instructions</h3>
+                    <p>No heartbeat instructions configured</p>
+                </div>`;
         }
 
-        // Show edit button
-        this.showHeartbeatEditButton();
+        document.getElementById('heartbeat-edit-btn').style.display = 'flex';
+        document.getElementById('heartbeat-save-btn').style.display = 'none';
+        document.getElementById('heartbeat-cancel-btn').style.display = 'none';
+    },
+
+    async saveHeartbeatSetting(key, value, successMsg) {
+        if (!this.agentName) return;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/heartbeat/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+            Notifications.success(successMsg, { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving heartbeat setting:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+        }
     },
 
     async loadLLM() {

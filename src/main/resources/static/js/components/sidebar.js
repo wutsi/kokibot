@@ -89,8 +89,8 @@ const Sidebar = {
 
             let html = '';
             for (const name of agents) {
-                const isActive = name === agentName;
-                html += `<button class="agent-list-item${isActive ? ' active' : ''}" data-agent="${escapeHtml(name)}">
+                if (name === agentName) continue;
+                html += `<button class="agent-list-item" data-agent="${escapeHtml(name)}">
                     <div class="agent-avatar agent-avatar--sm">${this._avatarContent(name)}</div>
                     <span class="agent-list-name">${escapeHtml(this._formatName(name))}</span>
                 </button>`;

@@ -20,11 +20,8 @@ import java.io.File
 @RestController
 class AssistantController(private val multi: MultiBootstrap) {
     @GetMapping
-    fun list(
-        @RequestParam(required = false, name = "channel-id") channelId: String? = null,
-    ): List<String> {
+    fun list(): List<String> {
         return multi.bootstraps
-            .filter { bootstrap -> channelId == null || hasChannel(bootstrap.getContext(), channelId) }
             .map { bootstrap -> bootstrap.getContext().assistant.name }
     }
 
@@ -114,7 +111,7 @@ class AssistantController(private val multi: MultiBootstrap) {
     ): ResponseEntity<Map<String, Any>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()
-        context.heartbeat.saveInstructions(body["content"] as? String ?: "")
+        context.heartbeat.apply("instructions", body["content"] as? String ?: "")
         return ResponseEntity.ok(
             mapOf(
                 "success" to true

@@ -8,13 +8,16 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HeartbeatTest {
@@ -41,14 +44,14 @@ class HeartbeatTest {
     fun tick() {
         doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
 
-        heartbeat.init(mapOf("frequency" to "2s"), context)
-        Thread.sleep(3000)
+        heartbeat.init(mapOf("frequency" to "30m"), context)
+        heartbeat.tick()
 
         val msg = argumentCaptor<Message>()
         verify(context.assistant).process(msg.capture(), anyOrNull())
 
         assertEquals(Role.SYSTEM, msg.firstValue.role)
-        assertEquals("This is the heartbeat job\n", msg.firstValue.text)
+        assertEquals("Run every hour", msg.firstValue.text)
         assertEquals(heartbeat.id(), msg.firstValue.channelId)
         assertEquals(System.getProperty("user.name"), msg.firstValue.userId)
     }
@@ -61,29 +64,72 @@ class HeartbeatTest {
             home = File("target/test-data/heartbeat"),
             llm = mock(),
         )
-        heartbeat.init(mapOf("frequency" to "2s"), ctx)
-        Thread.sleep(3000)
+        heartbeat.init(mapOf("frequency" to 30), ctx)
+        heartbeat.tick()
 
         verify(context.assistant, never()).process(any(), anyOrNull())
     }
 
     @Test
-    fun `tick - empty frequency`() {
+    fun `tick - disabled`() {
         doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
 
-        heartbeat.init(mapOf("frequency" to ""), context)
-        Thread.sleep(3000)
+        heartbeat.init(mapOf("frequency" to "30m", "enabled" to false), context)
+        heartbeat.tick()
 
         verify(context.assistant, never()).process(any(), anyOrNull())
     }
 
     @Test
-    fun `tick - null frequency`() {
-        doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
+    fun `init - defaults`() {
+        heartbeat.init(emptyMap<String, Any>(), context)
 
-        heartbeat.init(mapOf("frequency" to null), context)
-        Thread.sleep(3000)
+        assertTrue(heartbeat.isEnabled())
+        assertEquals(Heartbeat.DEFAULT_FREQUENCY, heartbeat.getFrequency())
+    }
 
-        verify(context.assistant, never()).process(any(), anyOrNull())
+    @Test
+    fun `apply - enabled false`() {
+        heartbeat.init(mapOf("frequency" to 30), context)
+
+        heartbeat.apply("enabled", false)
+
+        assertFalse(heartbeat.isEnabled())
+    }
+
+    @Test
+    fun `apply - enabled true`() {
+        heartbeat.init(mapOf("frequency" to 30, "enabled" to false), context)
+
+        heartbeat.apply("enabled", true)
+
+        assertTrue(heartbeat.isEnabled())
+    }
+
+    @Test
+    fun `apply - frequency`() {
+        heartbeat.init(mapOf("frequency" to "30m"), context)
+
+        heartbeat.apply("frequency", "60m")
+
+        assertEquals("60m", heartbeat.getFrequency())
+    }
+
+    @Test
+    fun `apply - instructions`() {
+        heartbeat.init(mapOf("frequency" to 30), context)
+
+        heartbeat.apply("instructions", "Run every hour")
+
+        assertEquals("Run every hour", heartbeat.getInstructions())
+    }
+
+    @Test
+    fun `apply - unknown key`() {
+        heartbeat.init(mapOf("frequency" to 30), context)
+
+        assertThrows<ConfigurationException> {
+            heartbeat.apply("unknown", "value")
+        }
     }
 }

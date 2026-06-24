@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.service.heartbeat
 
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
@@ -17,11 +18,14 @@ class Heartbeat() : Resource {
         private val LOGGER = LoggerFactory.getLogger(Heartbeat::class.java)
 
         const val ID = "service:heartbeat"
+        const val DEFAULT_FREQUENCY = "30m"
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private lateinit var context: Context
     private var job: ScheduledFuture<*>? = null
+    private var enabled: Boolean = true
+    private var frequency: String = DEFAULT_FREQUENCY
 
     override fun id(): String {
         return ID
@@ -29,18 +33,27 @@ class Heartbeat() : Resource {
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-        val frequency = MapUtil.toString("frequency", config)?.ifEmpty { null }
+        this.enabled = MapUtil.toBoolean("enabled", config) ?: true
+        this.frequency = MapUtil.toString("frequency", config) ?: DEFAULT_FREQUENCY
 
-        frequency?.let {
+        if (enabled) {
             job = launchJob(frequency)
+        } else {
+            LOGGER.info("Heartbeat is disabled")
         }
     }
 
     override fun destroy() {
         job?.cancel(false)
+        scheduler.shutdown()
     }
 
     fun tick() {
+        if (!enabled) {
+            LOGGER.info("Heartbeat is disabled. Skipping tick.")
+            return
+        }
+
         LOGGER.info("Tick")
 
         val query = getInstructions()
@@ -56,6 +69,10 @@ class Heartbeat() : Resource {
         }
     }
 
+    fun isEnabled(): Boolean = enabled
+
+    fun getFrequency(): String = frequency
+
     fun getInstructions(): String? {
         val file = File(context.home, "HEARTBEAT.md")
         return if (file.exists()) {
@@ -65,20 +82,45 @@ class Heartbeat() : Resource {
         }
     }
 
-    fun saveInstructions(content: String) {
+    private fun setInstructions(content: String) {
         val file = File(context.home, "HEARTBEAT.md")
         file.writeText(content)
     }
 
-    private fun launchJob(frequency: String): ScheduledFuture<*> {
+    fun apply(key: String, value: Any) {
+        when (key) {
+            "enabled" -> {
+                enabled = value.toString().toBoolean()
+                if (enabled) {
+                    job = launchJob(frequency)
+                } else {
+                    job?.cancel(false)
+                    job = null
+                    LOGGER.info("Heartbeat is disabled")
+                }
+            }
+
+            "frequency" -> {
+                frequency = value.toString()
+                job?.cancel(false)
+                job = if (enabled) launchJob(frequency) else null
+            }
+
+            "instructions" -> setInstructions(value.toString())
+
+            else -> throw ConfigurationException("Unknown heartbeat setting: $key")
+        }
+    }
+
+    private fun launchJob(frequencyMinutes: String): ScheduledFuture<*> {
         val heartbeat = this
         val task = Runnable {
             LOGGER.info("Heartbeat tick")
             heartbeat.tick()
         }
 
-        val delay = DurationUtil.millis(frequency, DurationUtil.ONE_HOUR)
-        LOGGER.info("Scheduling Heartbeat every $frequency ($delay ms)")
+        val delay = DurationUtil.millis(frequency, DurationUtil.ONE_HOUR / 2)
+        LOGGER.info("Scheduling Heartbeat every ${frequencyMinutes}m ($delay ms)")
         return scheduler.scheduleAtFixedRate(task, delay, delay, TimeUnit.MILLISECONDS)
     }
 }

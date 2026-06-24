@@ -73,33 +73,6 @@ class AssistantController(private val multi: MultiBootstrap) {
         )
     }
 
-    @GetMapping("/{name}/assistant.md")
-    fun assistant(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
-        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val context = bootstrap.getContext()
-        val identity = context.assistant.getInstructions()
-        return ResponseEntity.ok(
-            mapOf(
-                "content" to (identity ?: "")
-            )
-        )
-    }
-
-    @PostMapping("/{name}/assistant.md")
-    fun assistant(
-        @PathVariable name: String,
-        @RequestBody body: Map<String, Any>
-    ): ResponseEntity<Map<String, Any>> {
-        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val context = bootstrap.getContext()
-        context.assistant.setInstructions(body["content"] as? String ?: "")
-        return ResponseEntity.ok(
-            mapOf(
-                "success" to true
-            )
-        )
-    }
-
     @GetMapping("/{name}/icon.png")
     fun icon(@PathVariable name: String): ResponseEntity<ByteArray> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()

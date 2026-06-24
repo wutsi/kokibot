@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.service.memory
 
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Resource
@@ -34,10 +35,12 @@ class Memory : Resource {
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
+    private var enabled: Boolean = true
     private var window: Long = DEFAULT_WINDOW
     private var maxLength: Int = DEFAULT_MAX_LENGTH
+    private var compactionFrequency: String = DEFAULT_COMPACTION_FREQUENCY
     private lateinit var context: Context
-    private lateinit var job: ScheduledFuture<*>
+    private var job: ScheduledFuture<*>? = null
     private var consecutiveFailures: Int = 0
 
     override fun id(): String {
@@ -53,18 +56,23 @@ class Memory : Resource {
      */
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
+        this.enabled = MapUtil.toBoolean("enabled", config) ?: true
         this.maxLength = MapUtil.toInt("max-length", config) ?: DEFAULT_MAX_LENGTH
         this.window = MapUtil.toString("window", config)
             ?.let { value ->
                 DurationUtil.days(value, DEFAULT_WINDOW)
             } ?: DEFAULT_WINDOW
 
-        val frequency = MapUtil.toString("compaction-frequency", config) ?: DEFAULT_COMPACTION_FREQUENCY
-        job = launchJob(frequency)
+        compactionFrequency = MapUtil.toString("compaction-frequency", config) ?: DEFAULT_COMPACTION_FREQUENCY
+        if (enabled) {
+            job = launchJob(compactionFrequency)
+        } else {
+            LOGGER.info("Memory compaction is disabled")
+        }
     }
 
     override fun destroy() {
-        job.cancel(false)
+        job?.cancel(false)
 
         scheduler.shutdown()
         try {
@@ -81,6 +89,14 @@ class Memory : Resource {
             Thread.currentThread().interrupt()
         }
     }
+
+    fun isEnabled(): Boolean = enabled
+
+    fun getWindow(): Long = window
+
+    fun getMaxLength(): Int = maxLength
+
+    fun getCompactionFrequency(): String = compactionFrequency
 
     fun get(): String? {
         val file = getFile()
@@ -105,6 +121,34 @@ class Memory : Resource {
                 text = prompt,
             ),
         )
+    }
+
+    fun apply(key: String, value: Any) {
+        when (key) {
+            "enabled" -> {
+                enabled = value.toString().toBoolean()
+                if (enabled) {
+                    job = launchJob(compactionFrequency)
+                } else {
+                    job?.cancel(false)
+                    job = null
+                    LOGGER.info("Memory compaction is disabled")
+                }
+            }
+
+            "window" -> window = DurationUtil.days(value.toString(), DEFAULT_WINDOW)
+
+            "max-length" -> maxLength = value.toString().toIntOrNull()
+                ?: throw ConfigurationException("Invalid value for max-length: $value")
+
+            "compaction-frequency" -> {
+                compactionFrequency = value.toString()
+                job?.cancel(false)
+                job = if (enabled) launchJob(compactionFrequency) else null
+            }
+
+            else -> throw ConfigurationException("Unknown memory setting: $key")
+        }
     }
 
     private fun launchJob(frequency: String): ScheduledFuture<*> {

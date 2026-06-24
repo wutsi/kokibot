@@ -40,20 +40,22 @@ class PromptBuilder(
             }
         }
 
-        val longTermMemory = context.memory.get()
-        if (longTermMemory != null) {
-            sb.append("\n---\n")
-            sb.append("# Long-Term Memory\n")
-            sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
-            sb.append("<memory>\n$longTermMemory\n</memory>\n")
-        }
+        if (context.memory.isEnabled()) {
+            val longTermMemory = context.memory.get()
+            if (longTermMemory != null) {
+                sb.append("\n---\n")
+                sb.append("# Long-Term Memory\n")
+                sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
+                sb.append("<memory>\n$longTermMemory\n</memory>\n")
+            }
 
-        val shortTermMemory = context.dailyLog.get()
-        if (shortTermMemory != null) {
-            sb.append("\n---\n\n")
-            sb.append("# Short-Term Memory\n")
-            sb.append("Here are information that you have stored in your short-term memory in Markdown format:\n")
-            sb.append("<memory>\n$shortTermMemory\n</memory>\n")
+            val shortTermMemory = context.dailyLog.get()
+            if (shortTermMemory != null) {
+                sb.append("\n---\n\n")
+                sb.append("# Short-Term Memory\n")
+                sb.append("Here are information that you have stored in your short-term memory in Markdown format:\n")
+                sb.append("<memory>\n$shortTermMemory\n</memory>\n")
+            }
         }
 
         if (iterationMemory.isNotEmpty()) {

@@ -6,6 +6,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import org.junit.jupiter.api.AfterEach
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
 
@@ -82,6 +84,19 @@ class MemoryTest {
     }
 
     @Test
+    fun `compaction disabled`() {
+        val cfg = mapOf(
+            "enabled" to false,
+            "compaction-frequency" to "2s",
+        )
+        memory.init(cfg, context)
+
+        Thread.sleep(3000)
+
+        verify(context.assistant, org.mockito.Mockito.never()).process(any(), anyOrNull())
+    }
+
+    @Test
     fun `launch compaction with errors`() {
         doThrow(RuntimeException::class).whenever(context.assistant).process(any(), anyOrNull())
 
@@ -117,6 +132,47 @@ class MemoryTest {
 
         // THEN
         assertEquals("This is the current memory", result)
+    }
+
+    @Test
+    fun `apply - enabled false stops job`() {
+        val cfg = mapOf("compaction-frequency" to "2s")
+        memory.init(cfg, context)
+
+        memory.apply("enabled", false)
+
+        Thread.sleep(3000)
+
+        verify(context.assistant, org.mockito.Mockito.never()).process(any(), anyOrNull())
+    }
+
+    @Test
+    fun `apply - enabled true restarts job`() {
+        val cfg = mapOf("enabled" to false, "compaction-frequency" to "2s")
+        memory.init(cfg, context)
+
+        memory.apply("enabled", true)
+
+        Thread.sleep(3000)
+
+        verify(context.assistant).process(any(), anyOrNull())
+    }
+
+    @Test
+    fun `apply - compaction-frequency reschedules job`() {
+        memory.init(config, context)
+
+        memory.apply("compaction-frequency", "2s")
+
+        Thread.sleep(3000)
+
+        verify(context.assistant).process(any(), anyOrNull())
+    }
+
+    @Test
+    fun `apply - unknown key throws`() {
+        memory.init(config, context)
+        assertThrows<ConfigurationException> { memory.apply("foo", "bar") }
     }
 
     @Test

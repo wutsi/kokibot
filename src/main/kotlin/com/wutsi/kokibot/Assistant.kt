@@ -103,6 +103,8 @@ class Assistant(val name: String = "") {
                 rebuildReasoningLoop()
             }
 
+            "instructions" -> setInstructions(value.toString())
+
             else -> throw ConfigurationException("Unknown assistant setting: $key")
         }
     }
@@ -132,7 +134,7 @@ class Assistant(val name: String = "") {
         return promptBuilder.loadIdentity(context)
     }
 
-    fun setInstructions(content: String) {
+    private fun setInstructions(content: String) {
         promptBuilder.saveIdentity(content, context)
     }
 

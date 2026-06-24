@@ -61,6 +61,7 @@ class PromptBuilderTest {
 
         doReturn(mcpRegistry).whenever(context).mcpRegistry
         doReturn(activatedMcps).whenever(context).activatedMcps
+        doReturn(true).whenever(memory).isEnabled()
         doReturn(null).whenever(memory).get()
         doReturn(null).whenever(dailyLog).get()
         doReturn(emptyList<Skill>()).whenever(skillRegistry).all()
@@ -117,6 +118,30 @@ class PromptBuilderTest {
 
         assertTrue(prompt.contains("# Short-Term Memory"))
         assertTrue(prompt.contains("Today's task: implement feature X"))
+    }
+
+    @Test
+    fun `should exclude long-term memory when memory disabled`() {
+        doReturn(false).whenever(memory).isEnabled()
+        doReturn("User prefers concise answers").whenever(memory).get()
+        val query = Message(text = "Test query")
+
+        val prompt = builder.buildPrompt(query, emptyList(), context)
+
+        assertFalse(prompt.contains("# Long-Term Memory"))
+        assertFalse(prompt.contains("User prefers concise answers"))
+    }
+
+    @Test
+    fun `should exclude short-term memory when memory disabled`() {
+        doReturn(false).whenever(memory).isEnabled()
+        doReturn("Today's task: implement feature X").whenever(dailyLog).get()
+        val query = Message(text = "Test query")
+
+        val prompt = builder.buildPrompt(query, emptyList(), context)
+
+        assertFalse(prompt.contains("# Short-Term Memory"))
+        assertFalse(prompt.contains("Today's task: implement feature X"))
     }
 
     @Test

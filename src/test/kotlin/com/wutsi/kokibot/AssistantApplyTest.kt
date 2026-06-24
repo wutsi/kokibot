@@ -98,6 +98,17 @@ class AssistantApplyTest {
     }
 
     @Test
+    fun `apply instructions persists to ASSISTANT md`() {
+        val home = File("target/test-data/assistant-apply")
+        val instructionsFile = File(home, "ASSISTANT.md")
+        instructionsFile.parentFile.mkdirs()
+
+        assistant.apply("instructions", "You are a helpful assistant")
+
+        assertEquals("You are a helpful assistant", instructionsFile.readText())
+    }
+
+    @Test
     fun `apply unknown key throws ConfigurationException`() {
         assertThrows<ConfigurationException> {
             assistant.apply("unknown-key", "value")

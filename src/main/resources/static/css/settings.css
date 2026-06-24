@@ -794,6 +794,57 @@
     line-height: 1.5;
 }
 
+.general-description-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+}
+
+.general-description-edit-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: var(--color-text-secondary);
+    border-radius: 4px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.general-description-row:hover .general-description-edit-btn {
+    display: flex;
+}
+
+.general-description-edit-btn:hover {
+    opacity: 1;
+}
+
+.general-description-input {
+    font-size: 14px;
+    color: var(--color-text-primary);
+    background: var(--color-bg-input, var(--color-bg-secondary));
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    flex: 1;
+    min-width: 0;
+    outline: none;
+}
+
+.general-description-input:focus {
+    border-color: var(--color-accent);
+}
+
+.general-description-placeholder {
+    color: var(--color-text-tertiary, var(--color-text-secondary));
+    font-style: italic;
+}
+
 .general-llm-provider {
     display: flex;
     align-items: center;
@@ -847,6 +898,119 @@
     .general-section {
         background-color: #2d2d2d;
     }
+}
+
+/* ===== Memory Settings ===== */
+.memory-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border-light);
+    gap: 16px;
+}
+
+.memory-setting-row-last {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.memory-setting-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.memory-setting-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.memory-setting-hint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.memory-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.memory-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.memory-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-border-medium);
+    border-radius: 24px;
+    transition: background-color 0.2s;
+}
+
+.memory-toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.memory-toggle input:checked + .memory-toggle-slider {
+    background-color: var(--color-accent-blue);
+}
+
+.memory-toggle input:checked + .memory-toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.memory-number-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.memory-number-input {
+    width: 72px;
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 6px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    text-align: right;
+    outline: none;
+}
+
+.memory-number-input:focus {
+    border-color: var(--color-accent-blue);
+}
+
+.memory-number-unit {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    min-width: 28px;
+}
+
+.memory-fields-disabled {
+    opacity: 0.4;
+    pointer-events: none;
 }
 
 /* ===== Skills Tab ===== */

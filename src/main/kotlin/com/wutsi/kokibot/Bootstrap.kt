@@ -40,14 +40,26 @@ class Bootstrap(
 
     @Suppress("UNCHECKED_CAST")
     fun set(key: String, value: Any) {
-        val file = File(File(context.home, "config"), "settings.json")
+        val dot = key.indexOf('.')
+        if (dot < 0) throw ConfigurationException("Setting key must use the format <section>.<property> (e.g. assistant.max-iterations)")
 
-        val rawConfig = JsonMapper().readValue(file, Map::class.java).toMutableMap() as MutableMap<Any?, Any?>
+        val section = key.substring(0, dot)
+        val property = key.substring(dot + 1)
 
-        val assistantSection = rawConfig.getOrPut("assistant") { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
-        assistantSection[key] = value
         // Apply live first — if it throws, the file is not written
-        context.assistant.apply(key, value)
+        when (section) {
+            "assistant" -> context.assistant.apply(property, value)
+            "memory" -> context.memory.apply(property, value)
+            else -> throw ConfigurationException("Unknown setting section: $section")
+        }
+
+        // instructions are persisted to ASSISTANT.md by Assistant.apply(); skip settings.json
+        if (section == "assistant" && property == "instructions") return
+
+        val file = File(File(context.home, "config"), "settings.json")
+        val rawConfig = JsonMapper().readValue(file, Map::class.java).toMutableMap() as MutableMap<Any?, Any?>
+        val sectionMap = rawConfig.getOrPut(section) { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
+        sectionMap[property] = value
         JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
     }
 

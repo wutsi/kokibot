@@ -16,6 +16,8 @@ const Settings = {
     heartbeatOriginalContent: null,
     isEditingHeartbeat: false,
     generalInstructionsContent: null,
+    generalDescription: null,
+    memoryData: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -239,7 +241,10 @@ const Settings = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const agentResponse = await fetch(`/assistants/${this.agentName}`, { signal: controller.signal });
+            const [agentResponse, memoryResponse] = await Promise.all([
+                fetch(`/assistants/${this.agentName}`, { signal: controller.signal }),
+                fetch(`/assistants/${this.agentName}/memory`, { signal: controller.signal }),
+            ]);
 
             clearTimeout(timeoutId);
 
@@ -248,9 +253,10 @@ const Settings = {
             }
 
             const agentData = await agentResponse.json();
+            const memoryData = memoryResponse.ok ? await memoryResponse.json() : null;
 
             // Display general info
-            this.displayGeneralInfo(agentData);
+            this.displayGeneralInfo(agentData, memoryData);
         } catch (error) {
             console.error('Error loading general information:', error);
 
@@ -266,7 +272,7 @@ const Settings = {
         }
     },
 
-    displayGeneralInfo(agentData) {
+    displayGeneralInfo(agentData, memoryData) {
         const contentElement = document.getElementById('general-content');
         if (!contentElement) return;
 
@@ -276,6 +282,13 @@ const Settings = {
         const iconUrl = `/assistants/${this.escapeHtml(this.agentName)}/icon.png`;
 
         this.generalInstructionsContent = instructions;
+        this.generalDescription = description;
+        this.memoryData = memoryData || { enabled: true, maxLength: 10240, window: 7 };
+
+        const memoryEnabled = this.memoryData.enabled;
+        const memoryMaxLengthKb = Math.max(1, Math.round(this.memoryData.maxLength / 1024));
+        const memoryWindow = this.memoryData.window;
+        const memoryFieldsClass = memoryEnabled ? '' : ' memory-fields-disabled';
 
         const instructionsBodyHtml = instructions.trim()
             ? `<div class="instructions-text markdown-body" id="general-instructions-body">${new MarkdownRenderer().render(instructions)}</div>`
@@ -297,7 +310,51 @@ const Settings = {
                         </div>
                         <div class="general-agent-details">
                             <h3 class="general-agent-name">${name}</h3>
-                            ${description ? `<p class="general-agent-description">${this.escapeHtml(description)}</p>` : ''}
+                            <div class="general-description-row">
+                                <p class="general-agent-description" id="general-description-text">${description ? this.escapeHtml(description) : '<span class="general-description-placeholder">No description</span>'}</p>
+                                <button class="general-description-edit-btn" id="general-description-edit-btn" title="Edit description">
+                                    <svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14">
+                                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="general-section">
+                    <h3 class="general-section-title">Memory</h3>
+                    <div class="memory-setting-row">
+                        <div class="memory-setting-label-group">
+                            <span class="memory-setting-name">Enable Memory</span>
+                            <span class="memory-setting-hint">Store long-term and short-term memories</span>
+                        </div>
+                        <label class="memory-toggle" title="Toggle memory">
+                            <input type="checkbox" id="memory-enabled-toggle" ${memoryEnabled ? 'checked' : ''}>
+                            <span class="memory-toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div id="memory-numeric-fields" class="${memoryFieldsClass}">
+                        <div class="memory-setting-row">
+                            <div class="memory-setting-label-group">
+                                <span class="memory-setting-name">Max Length</span>
+                                <span class="memory-setting-hint">Maximum memory file size (min. 1 KB)</span>
+                            </div>
+                            <div class="memory-number-control">
+                                <input type="number" id="memory-max-length-input" class="memory-number-input"
+                                       min="1" value="${memoryMaxLengthKb}" ${memoryEnabled ? '' : 'disabled'}>
+                                <span class="memory-number-unit">KB</span>
+                            </div>
+                        </div>
+                        <div class="memory-setting-row memory-setting-row-last">
+                            <div class="memory-setting-label-group">
+                                <span class="memory-setting-name">Window</span>
+                                <span class="memory-setting-hint">Days of history to remember</span>
+                            </div>
+                            <div class="memory-number-control">
+                                <input type="number" id="memory-window-input" class="memory-number-input"
+                                       min="1" value="${memoryWindow}" ${memoryEnabled ? '' : 'disabled'}>
+                                <span class="memory-number-unit">days</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -340,6 +397,12 @@ const Settings = {
             this.exitGeneralInstructionsEditMode();
         });
 
+        document.getElementById('general-description-edit-btn')?.addEventListener('click', () => {
+            this.enterDescriptionEditMode();
+        });
+
+        this.bindMemoryEvents();
+
         const iconContainer = document.getElementById('general-agent-icon-container');
         const iconInput = document.getElementById('general-icon-upload-input');
         if (iconContainer && iconInput) {
@@ -348,6 +411,71 @@ const Settings = {
                 const file = e.target.files[0];
                 if (file) this.uploadIcon(file);
             });
+        }
+    },
+
+    bindMemoryEvents() {
+        document.getElementById('memory-enabled-toggle')?.addEventListener('change', (e) => {
+            this.saveMemorySetting('enabled', e.target.checked, e.target.checked ? 'Memory enabled' : 'Memory disabled');
+            this.updateMemoryFields(e.target.checked);
+        });
+
+        const maxLengthInput = document.getElementById('memory-max-length-input');
+        if (maxLengthInput) {
+            const saveMaxLength = () => {
+                const kb = Math.max(1, parseInt(maxLengthInput.value, 10) || 1);
+                maxLengthInput.value = kb;
+                this.saveMemorySetting('max-length', kb * 1024, 'Max length saved');
+            };
+            maxLengthInput.addEventListener('blur', saveMaxLength);
+            maxLengthInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { maxLengthInput.blur(); } });
+        }
+
+        const windowInput = document.getElementById('memory-window-input');
+        if (windowInput) {
+            const saveWindow = () => {
+                const days = Math.max(1, parseInt(windowInput.value, 10) || 1);
+                windowInput.value = days;
+                this.saveMemorySetting('window', `${days}d`, 'Window saved');
+            };
+            windowInput.addEventListener('blur', saveWindow);
+            windowInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { windowInput.blur(); } });
+        }
+    },
+
+    updateMemoryFields(enabled) {
+        const container = document.getElementById('memory-numeric-fields');
+        if (!container) return;
+        container.classList.toggle('memory-fields-disabled', !enabled);
+        container.querySelectorAll('input, button').forEach(el => {
+            el.disabled = !enabled;
+        });
+    },
+
+    async saveMemorySetting(key, value, successMsg) {
+        if (!this.agentName) return;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/memory/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value }),
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+
+            Notifications.success(successMsg, { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving memory setting:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
         }
     },
 
@@ -387,10 +515,10 @@ const Settings = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const response = await fetch(`/assistants/${this.agentName}/assistant.md`, {
+            const response = await fetch(`/assistants/${this.agentName}/settings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content }),
+                body: JSON.stringify({ key: 'assistant.instructions', value: content }),
                 signal: controller.signal
             });
 
@@ -436,6 +564,88 @@ const Settings = {
         document.getElementById('general-instructions-edit-btn').style.display = 'flex';
         document.getElementById('general-instructions-save-btn').style.display = 'none';
         document.getElementById('general-instructions-cancel-btn').style.display = 'none';
+    },
+
+    enterDescriptionEditMode() {
+        const row = document.getElementById('general-description-text')?.parentElement;
+        if (!row) return;
+
+        row.innerHTML = `
+            <input type="text" class="general-description-input" id="general-description-input"
+                   value="${this.escapeHtml(this.generalDescription || '')}" placeholder="Enter description...">
+            <button class="settings-action-btn settings-action-btn-primary general-description-save-btn" id="general-description-save-btn">Save</button>
+            <button class="settings-action-btn settings-action-btn-secondary general-description-cancel-btn" id="general-description-cancel-btn">Cancel</button>
+        `;
+
+        const input = document.getElementById('general-description-input');
+        input?.focus();
+        input?.select();
+
+        document.getElementById('general-description-save-btn')?.addEventListener('click', () => this.saveDescription());
+        document.getElementById('general-description-cancel-btn')?.addEventListener('click', () => this.exitDescriptionEditMode());
+        input?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.saveDescription();
+            if (e.key === 'Escape') this.exitDescriptionEditMode();
+        });
+    },
+
+    async saveDescription() {
+        const input = document.getElementById('general-description-input');
+        if (!input) return;
+
+        const value = input.value.trim();
+        const saveBtn = document.getElementById('general-description-save-btn');
+        const cancelBtn = document.getElementById('general-description-cancel-btn');
+
+        if (saveBtn) saveBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: 'assistant.description', value }),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Failed to save description (${response.status})`);
+            }
+
+            this.generalDescription = value;
+            if (this.agentDescriptionElement) {
+                this.agentDescriptionElement.textContent = value;
+            }
+            this.exitDescriptionEditMode();
+            Notifications.success('Description saved', { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving description:', error);
+            if (saveBtn) saveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out. Please try again.' : 'Failed to save description. Please try again.');
+        }
+    },
+
+    exitDescriptionEditMode() {
+        const row = document.getElementById('general-description-input')?.parentElement;
+        if (!row) return;
+
+        const text = this.generalDescription || '';
+        row.innerHTML = `
+            <p class="general-agent-description" id="general-description-text">${text ? this.escapeHtml(text) : '<span class="general-description-placeholder">No description</span>'}</p>
+            <button class="general-description-edit-btn" id="general-description-edit-btn" title="Edit description">
+                <svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+            </button>
+        `;
+
+        document.getElementById('general-description-edit-btn')?.addEventListener('click', () => this.enterDescriptionEditMode());
     },
 
     async uploadIcon(file) {

@@ -1755,6 +1755,7 @@ const Settings = {
             clearTimeout(timeoutId);
 
             if (response.status === 409) {
+                clearTimeout(timeoutId);
                 Notifications.error('File already ingested', { duration: 5000 });
                 return;
             }

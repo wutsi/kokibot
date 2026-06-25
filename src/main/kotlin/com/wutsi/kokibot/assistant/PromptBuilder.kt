@@ -182,17 +182,17 @@ class PromptBuilder(
             return null
         }
 
-        val content = entries.joinToString("\n") { entry ->
-            val summary = entry.summary?.let { path -> "{{HOME}}/$path" } ?: "N/A"
-            val raw = entry.raw?.let { path -> "{{HOME}}/$path" } ?: "{{HOME}}/${entry.source}"
-            listOfNotNull(
-                "### ${entry.name}\n\n" +
-                    "**Scope:** ${entry.scope}\n\n" +
-                    "**Keywords:** ${entry.keywords.joinToString(", ")}\n\n" +
-                    "**Summary File:** $summary\n\n" +
-                    "**Raw File**: $raw\n\n"
-            ).joinToString("\n\n")
-        }
+        val content = entries
+            .filter { entry -> entry.raw != null && entry.summary != null }
+            .joinToString("\n") { entry ->
+                listOfNotNull(
+                    "### ${entry.name}\n\n" +
+                        "**Scope:** ${entry.scope}\n\n" +
+                        "**Keywords:** ${entry.keywords.joinToString(", ")}\n\n" +
+                        "**Summary File:** {{HOME}}/${entry.summary}\n\n" +
+                        "**Raw File**: {{HOME}}/${entry.raw}\n\n"
+                ).joinToString("\n\n")
+            }
 
         val usage = listOfNotNull(
             if (kb.isExclusive()) {

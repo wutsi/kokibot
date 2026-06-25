@@ -58,17 +58,13 @@ class KnowledgeBase : Resource {
         // Update the index
         LOGGER.info("Adding ${file.name} to the knowledge base index")
         val prefix = context.home.absolutePath.length + 1
-        add(
-            KBEntry(
-                name = file.name,
-                scope = "",
-                keywords = emptyList(),
-                summary = null,
-                raw = null,
-                source = source.absolutePath.substring(prefix),
-                contentType = context.fileService.contentType(file),
-            )
+        val entry = KBEntry(
+            name = file.name,
+            keywords = emptyList(),
+            source = source.absolutePath.substring(prefix),
+            contentType = context.fileService.contentType(file),
         )
+        add(entry)
 
         // Process the file asynchronously
         executor.submit {
@@ -76,6 +72,12 @@ class KnowledgeBase : Resource {
                 processAsync(source)
             } catch (ex: Exception) {
                 LOGGER.error("Failed to process ${source.name} asynchronously", ex)
+                val xentry = entry.copy(error = ex.message ?: "Unexpected error")
+                try {
+                    update(xentry)
+                } catch (e: Exception) {
+                    LOGGER.error("Failed to update entry ${source.name} with error message", e)
+                }
             }
         }
     }
@@ -90,20 +92,19 @@ class KnowledgeBase : Resource {
         summary.writeText(result.summary)
 
         // Update the index
-        val entry = delete(source.name)
-        if (entry == null) {
+        val entry = entries().find { it.name == source.name }
+        if (entry != null) {
+            LOGGER.info("Adding knowledge base entry ${source.name}")
+            val xentry = entry.copy(
+                scope = result.scope,
+                keywords = result.keywords,
+                summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
+                raw = md.absolutePath.substring(context.home.absolutePath.length + 1),
+            )
+            update(xentry)
+        } else {
             LOGGER.warn("Knowledge base entry ${source.name} not found")
-            return
         }
-
-        LOGGER.info("Updating knowledge base entry ${source.name}")
-        val xentry = entry.copy(
-            scope = result.scope,
-            keywords = result.keywords,
-            summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
-            raw = md.absolutePath.substring(context.home.absolutePath.length + 1),
-        )
-        add(xentry)
     }
 
     fun delete(name: String): KBEntry? {
@@ -115,10 +116,12 @@ class KnowledgeBase : Resource {
         }
 
         // Remove from index
+        LOGGER.info("Removing $name from index")
         val xindex = index.filter { it.name != name }
         writeIndex(xindex)
 
         // Delete local files
+        LOGGER.info("Deleting files")
         deleteFile(entry.source)
         entry.raw?.let { deleteFile(entry.raw) }
         entry.summary?.let { deleteFile(entry.summary) }
@@ -145,16 +148,27 @@ class KnowledgeBase : Resource {
         writeIndex(index)
     }
 
+    private fun update(entry: KBEntry) {
+        val items = entries()
+            .filter { it.name != entry.name }
+            .toMutableList()
+
+        items.add(entry)
+        writeIndex(items)
+    }
+
     private fun checkIfAlreadyIngested(file: File): Boolean {
         val index = entries()
         return index.any { it.name == file.name }
     }
 
     private fun deleteFile(path: String) {
-        val file = File(path)
+        val file = File(context.home, path)
         if (file.exists()) {
             LOGGER.info("Deleting $path")
             file.delete()
+        } else {
+            LOGGER.warn("File $path does not exist")
         }
     }
 
@@ -218,7 +232,7 @@ class KnowledgeBase : Resource {
     }
 
     private fun convertToMarkdown(source: File): File {
-        LOGGER.info("Converting ${source.absolutePath} to Markdown")
+        LOGGER.info("Converting ${source.absolutePath} to markdown")
 
         // Convert to markdown using pandoc or markitdown
         val converter = MarkdownConverter(fileService = context.fileService)

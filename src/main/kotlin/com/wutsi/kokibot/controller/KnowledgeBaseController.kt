@@ -23,16 +23,16 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val kb = bootstrap.getContext().knowledgeBase
         return ResponseEntity.ok(
-            mapOf(
-                "enabled" to kb.isEnabled(),
-                "exclusive" to kb.isExclusive(),
-                "webSearch" to kb.isWebSearch(),
-            )
+            buildMap {
+                put("enabled", kb.isEnabled())
+                put("exclusive", kb.isExclusive())
+                put("webSearch", kb.isWebSearch())
+            }
         )
     }
 
     @GetMapping("/{name}/knowledge-base/entries")
-    fun entries(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
+    fun entries(@PathVariable name: String): ResponseEntity<List<Map<String, Any?>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()
         val kb = context.knowledgeBase
@@ -43,8 +43,15 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
                 "scope" to entry.scope,
                 "keywords" to entry.keywords,
                 "size" to File(entry.source).length(),
-                "url" to fileService.urlPath(File(context.home, entry.source).absolutePath)!!,
-                "status" to if (entry.summary == null) "processing" else "ready",
+                "url" to fileService.urlPath(File(context.home, entry.source).absolutePath),
+                "status" to if (entry.error != null) {
+                    "error"
+                } else if (entry.summary == null) {
+                    "processing"
+                } else {
+                    "ready"
+                },
+                "error" to entry.error,
             )
         }
         return ResponseEntity.ok(entries)

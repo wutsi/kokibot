@@ -1737,9 +1737,31 @@ const Settings = {
         }
 
         const rowsHtml = entries.map(entry => {
+            const status = entry.status || 'ready';
+            const isReady = status === 'ready';
+            const isError = status === 'error';
+            const isProcessing = status === 'processing';
+
             const keywordsHtml = (entry.keywords || [])
                 .map(k => `<span class="marketplace-skill-tag">${this.escapeHtml(k)}</span>`)
                 .join('');
+
+            const statusBadge = isProcessing
+                ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary,#888);margin-left:6px;">
+                       <svg class="loading-spinner" fill="currentColor" height="12" viewBox="0 0 24 24" width="12"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>
+                       Processing…
+                   </span>`
+                : isError
+                ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#c0392b;margin-left:6px;">
+                       <svg fill="currentColor" height="12" viewBox="0 0 24 24" width="12"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                       Error
+                   </span>`
+                : '';
+
+            const errorRow = isError && entry.error
+                ? `<span style="font-size:11px;color:#c0392b;">${this.escapeHtml(entry.error)}</span>`
+                : '';
+
             return `
                 <div class="channel-item" style="flex-direction:column;align-items:flex-start;gap:4px;position:relative;">
                     <a href="${this.escapeHtml(entry.url)}" download title="Download file"
@@ -1754,9 +1776,13 @@ const Settings = {
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
                     </button>
-                    <span class="channel-name">${this.escapeHtml(entry.filename)}</span>
-                    ${entry.scope ? `<span class="channel-source">${this.escapeHtml(entry.scope)}</span>` : ''}
-                    ${keywordsHtml ? `<div class="marketplace-skills" style="margin-top:4px;">${keywordsHtml}</div>` : ''}
+                    <span style="display:inline-flex;align-items:center;">
+                        <span class="channel-name">${this.escapeHtml(entry.filename)}</span>
+                        ${statusBadge}
+                    </span>
+                    ${isReady && entry.scope ? `<span class="channel-source">${this.escapeHtml(entry.scope)}</span>` : ''}
+                    ${errorRow}
+                    ${isReady && keywordsHtml ? `<div class="marketplace-skills" style="margin-top:4px;">${keywordsHtml}</div>` : ''}
                 </div>
             `;
         }).join('');

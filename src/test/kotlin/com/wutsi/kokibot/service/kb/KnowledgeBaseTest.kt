@@ -2,6 +2,7 @@ package com.wutsi.kokibot.service.kb
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
@@ -10,6 +11,7 @@ import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
@@ -93,12 +95,13 @@ class KnowledgeBaseTest {
         val entries = kb.entries()
         assertEquals(1, entries.size)
         assertEquals(file.name, entries[0].name)
-        assertEquals("", entries[0].scope)
-        assertEquals(emptyList(), entries[0].keywords)
+        assertNull(entries[0].scope)
+        assertTrue(entries[0].keywords.isEmpty())
         assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
         assertEquals("kb/source/${file.name}", entries[0].source)
         assertNull(entries[0].raw)
         assertNull(entries[0].summary)
+        assertNull(entries[0].error)
 
         assertTrue(File(context.home, entries[0].source).exists())
     }
@@ -111,7 +114,7 @@ class KnowledgeBaseTest {
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
-        Thread.sleep(5000) // Wait for the async processing to complete
+        Thread.sleep(3000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()
@@ -123,6 +126,7 @@ class KnowledgeBaseTest {
         assertEquals("kb/source/${file.name}", entries[0].source)
         assertEquals("kb/raw/${file.name}.md", entries[0].raw)
         assertEquals("kb/raw/${file.name}.summary.md", entries[0].summary)
+        assertNull(entries[0].error)
 
         assertTrue(File(context.home, entries[0].source).exists())
         assertTrue(File(context.home, entries[0].raw!!).exists())
@@ -155,7 +159,7 @@ class KnowledgeBaseTest {
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
-        Thread.sleep(5000) // Wait for the async processing to complete
+        Thread.sleep(3000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()
@@ -167,11 +171,37 @@ class KnowledgeBaseTest {
         assertEquals("kb/raw/${file.name}.md", entries[0].raw)
         assertEquals("kb/raw/${file.name}.summary.md", entries[0].summary)
         assertEquals("kb/source/${file.name}", entries[0].source)
+        assertNull(entries[0].error)
 
         assertTrue(File(context.home, entries[0].source).exists())
         assertTrue(File(context.home, entries[0].raw).exists())
         assertTrue(File(context.home, entries[0].summary).exists())
         assertEquals("This is a sample document.", File(context.home, entries[0].summary).readText())
+    }
+
+    @Test
+    fun `ingest - LLM error`() {
+        // GIVEN
+        kb.init(config, context)
+
+        doThrow(RuntimeException("LLM error")).whenever(context.llm).completion(any(), any())
+
+        // WHEN
+        val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
+        kb.ingest(file)
+        Thread.sleep(3000) // Wait for the async processing to complete
+
+        // THEN
+        val entries = kb.entries()
+        assertEquals(1, entries.size)
+        assertEquals(file.name, entries[0].name)
+        assertNull(entries[0].scope)
+        assertTrue(entries[0].keywords.isEmpty())
+        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
+        assertNull(entries[0].raw)
+        assertNull(entries[0].raw)
+        assertNull(entries[0].summary)
+        assertEquals("LLM error", entries[0].error)
     }
 
     @Test
@@ -194,11 +224,12 @@ class KnowledgeBaseTest {
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
         kb.delete(file.name)
-        Thread.sleep(5000) // Wait for the async processing to complete
+        Thread.sleep(2000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()
-        assertEquals(0, entries.size)
+        assertEquals(1, entries.size)
+        assertNotNull(entries[0].error)
     }
 
     @Test
@@ -208,7 +239,7 @@ class KnowledgeBaseTest {
 
         val file = File(this::class.java.getResource("/file/sample.html")!!.file)
         kb.ingest(file)
-        Thread.sleep(5000) // Wait for the async processing to complete
+        Thread.sleep(3000) // Wait for the async processing to complete
 
         // WHEN
         kb.delete("sample.html")

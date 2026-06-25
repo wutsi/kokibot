@@ -15,14 +15,14 @@ import com.wutsi.kokibot.service.memory.DailyLog
 import com.wutsi.kokibot.service.memory.Memory
 import com.wutsi.kokibot.skill.SkillCommand
 import com.wutsi.kokibot.skill.SkillRegistry
-import com.wutsi.kokibot.tool.mcp.McpActivationTool
-import com.wutsi.kokibot.tool.mcp.McpCallTool
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolCommand
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.tools.file.FileEditTool
 import com.wutsi.kokibot.tools.file.FileReadTool
 import com.wutsi.kokibot.tools.file.FileWriteTool
+import com.wutsi.kokibot.tools.mcp.McpActivationTool
+import com.wutsi.kokibot.tools.mcp.McpCallTool
 import com.wutsi.kokibot.tools.python.PythonTool
 import com.wutsi.kokibot.tools.shell.ShellTool
 import com.wutsi.kokibot.tools.skill.SkillActivationTool

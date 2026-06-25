@@ -1,4 +1,4 @@
-package com.wutsi.kokibot.tool.mcp
+package com.wutsi.kokibot.tools.mcp
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -32,7 +32,13 @@ class McpActivationToolTest {
         doReturn(mcpRegistry).whenever(context).mcpRegistry
         doReturn(activatedMcps).whenever(context).activatedMcps
         doReturn(server).whenever(mcpRegistry).get("weather-mcp")
-        doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server).config
+        doReturn(
+            McpServerConfig(
+                name = "weather-mcp",
+                description = "Weather data",
+                url = "https://w.example.com"
+            )
+        ).whenever(server).config
         doReturn(
             listOf(
                 McpToolDefinition(name = "get_weather", description = "Get weather"),

@@ -169,7 +169,7 @@ class KnowledgeBaseControllerTest {
         assertEquals(true, response.body!!["success"])
         verify(bootstrap.getContext().knowledgeBase).ingest(any())
     }
-
+    
     @Test
     fun `upload file - not found`() {
         doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps

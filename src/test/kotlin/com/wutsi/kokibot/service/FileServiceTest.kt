@@ -39,6 +39,66 @@ class FileServiceTest {
     }
 
     @Test
+    fun `contentType - txt`() {
+        assertEquals("text/plain", service.contentType(File("file.txt")))
+    }
+
+    @Test
+    fun `contentType - md`() {
+        assertEquals("text/markdown", service.contentType(File("file.md")))
+    }
+
+    @Test
+    fun `contentType - html`() {
+        assertEquals("text/html", service.contentType(File("file.html")))
+    }
+
+    @Test
+    fun `contentType - htm`() {
+        assertEquals("text/html", service.contentType(File("file.htm")))
+    }
+
+    @Test
+    fun `contentType - json`() {
+        assertEquals("application/json", service.contentType(File("file.json")))
+    }
+
+    @Test
+    fun `contentType - xml`() {
+        assertEquals("application/xml", service.contentType(File("file.xml")))
+    }
+
+    @Test
+    fun `contentType - csv`() {
+        assertEquals("text/csv", service.contentType(File("file.csv")))
+    }
+
+    @Test
+    fun `contentType - jpg`() {
+        assertEquals("image/jpeg", service.contentType(File("file.jpg")))
+    }
+
+    @Test
+    fun `contentType - jpeg`() {
+        assertEquals("image/jpeg", service.contentType(File("file.jpeg")))
+    }
+
+    @Test
+    fun `contentType - png`() {
+        assertEquals("image/png", service.contentType(File("file.png")))
+    }
+
+    @Test
+    fun `contentType - gif`() {
+        assertEquals("image/gif", service.contentType(File("file.gif")))
+    }
+
+    @Test
+    fun `contentType - unknown`() {
+        assertEquals("application/octet-stream", service.contentType(File("file.xyz")))
+    }
+
+    @Test
     fun `urlPath - not in home`() {
         service.init(emptyMap<String, Any>(), context)
 

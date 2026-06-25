@@ -7,11 +7,15 @@ import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.service.file.MarkdownConverter
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class KnowledgeBase : Resource {
-    private var enabled: Boolean = true
+    private var enabled: Boolean = false
     private var exclusive: Boolean = true
+    private var webSearch: Boolean = true
     private lateinit var context: Context
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
 
     companion object {
         const val ID = "service:knowledge-base"
@@ -24,7 +28,7 @@ class KnowledgeBase : Resource {
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-        this.enabled = config["enabled"] as? Boolean ?: true
+        this.enabled = config["enabled"] as? Boolean ?: false
         this.exclusive = config["exclusive"] as? Boolean ?: true
     }
 
@@ -32,10 +36,13 @@ class KnowledgeBase : Resource {
 
     fun isExclusive(): Boolean = exclusive
 
+    fun isWebSearch(): Boolean = webSearch
+
     fun apply(key: String, value: Any) {
         when (key) {
             "enabled" -> enabled = value.toString().toBoolean()
             "exclusive" -> exclusive = value.toString().toBoolean()
+            "webSearch" -> webSearch = value.toString().toBoolean()
             else -> throw ConfigurationException("Unknown knowledge-base setting: $key")
         }
     }
@@ -47,6 +54,34 @@ class KnowledgeBase : Resource {
 
         // Store the file into the source directory
         val source = addToSource(file)
+
+        // Update the index
+        LOGGER.info("Adding ${file.name} to the knowledge base index")
+        val prefix = context.home.absolutePath.length + 1
+        add(
+            KBEntry(
+                name = file.name,
+                scope = "",
+                keywords = emptyList(),
+                summary = null,
+                raw = null,
+                source = source.absolutePath.substring(prefix),
+                contentType = context.fileService.contentType(file),
+            )
+        )
+
+        // Process the file asynchronously
+        executor.submit {
+            try {
+                processAsync(source)
+            } catch (ex: Exception) {
+                LOGGER.error("Failed to process ${source.name} asynchronously", ex)
+            }
+        }
+    }
+
+    private fun processAsync(source: File) {
+        // Convert to markdown
         val md = convertToMarkdown(source)
 
         // Summarize
@@ -55,26 +90,28 @@ class KnowledgeBase : Resource {
         summary.writeText(result.summary)
 
         // Update the index
-        LOGGER.info("Adding ${file.name} to the knowledge base index")
-        val entry = KBEntry(
-            name = file.name,
-            scope = result.scope,
-            keywords = result.keywords,
-            summary = summary.absolutePath,
-            raw = md.absolutePath,
-            source = source.absolutePath,
+        val entry = delete(source.name)
+        if (entry == null) {
+            LOGGER.warn("Knowledge base entry ${source.name} not found")
+            return
+        }
+
+        LOGGER.info("Updating knowledge base entry ${source.name}")
+        add(
+            entry.copy(
+                scope = result.scope,
+                keywords = result.keywords,
+                summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
+            )
         )
-        val index = readIndex().toMutableList()
-        index.add(entry)
-        writeIndex(index)
     }
 
-    fun delete(name: String) {
+    fun delete(name: String): KBEntry? {
         val index = readIndex()
         val entry = index.find { it.name == name }
         if (entry == null) {
             LOGGER.warn("Knowledge base entry $name not found")
-            return
+            return null
         }
 
         // Remove from index
@@ -83,8 +120,9 @@ class KnowledgeBase : Resource {
 
         // Delete local files
         deleteFile(entry.source)
-        deleteFile(entry.raw)
-        deleteFile(entry.summary)
+        entry.raw?.let { deleteFile(entry.raw) }
+        entry.summary?.let { deleteFile(entry.summary) }
+        return entry
     }
 
     fun readIndex(): List<KBEntry> {
@@ -101,7 +139,13 @@ class KnowledgeBase : Resource {
         }
     }
 
-    fun checkIfAlreadyIngested(file: File): Boolean {
+    private fun add(entry: KBEntry) {
+        val index = readIndex().toMutableList()
+        index.add(entry)
+        writeIndex(index)
+    }
+
+    private fun checkIfAlreadyIngested(file: File): Boolean {
         val index = readIndex()
         return index.any { it.name == file.name }
     }
@@ -152,7 +196,14 @@ class KnowledgeBase : Resource {
         )
         val response = context.llm.completion(request, emptyList())
 
-        val json = response.choices[0].content
+        val content = response.choices[0].content!!.trim()
+        val json = if (content.startsWith("```json")) {
+            val start = content.indexOf("```json") + 7
+            val end = content.lastIndexOf("```")
+            content.substring(start, end).trim()
+        } else {
+            content
+        }
         return context.jsonMapper.readValue(json, KBSumaryResult::class.java)
     }
 

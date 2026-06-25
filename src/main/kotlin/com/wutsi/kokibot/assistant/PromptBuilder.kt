@@ -75,7 +75,8 @@ class PromptBuilder(
         val entries = listOfNotNull(
             loadIdentity(context),
             if (coordinator) coordinatorInstructions() else null,
-            dailyLogInstructions(),
+            dailyLogInstructions(context),
+            knowledgeBaseInstructions(context),
             skillsInstructions(context),
             mcpInstructions(context),
             securityInstructions(),
@@ -159,11 +160,65 @@ class PromptBuilder(
         )
     }
 
-    private fun dailyLogInstructions(): String {
-        return IOUtils.toString(
-            javaClass.getResourceAsStream("/instructions/DAILY_LOG.md"),
-            "utf-8"
-        )
+    private fun dailyLogInstructions(context: Context): String? {
+        return if (!context.memory.isEnabled()) {
+            IOUtils.toString(
+                javaClass.getResourceAsStream("/instructions/DAILY_LOG.md"),
+                "utf-8"
+            )
+        } else {
+            null
+        }
+    }
+
+    private fun knowledgeBaseInstructions(context: Context): String? {
+        val kb = context.knowledgeBase
+        if (!kb.isEnabled()) {
+            return null
+        }
+
+        val entries = kb.readIndex()
+        if (entries.isEmpty()) {
+            return null
+        }
+
+        val content = entries.joinToString("\n") { entry ->
+            val summary = entry.summary?.let { path -> "{{HOME}}/$path" } ?: "N/A"
+            val raw = entry.raw?.let { path -> "{{HOME}}/$path" } ?: "{{HOME}}/${entry.source}"
+            listOfNotNull(
+                "### ${entry.name}\n\n" +
+                    "**Scope:** ${entry.scope}\n\n" +
+                    "**Keywords:** ${entry.keywords.joinToString(", ")}\n\n" +
+                    "**Summary File:** $summary\n\n" +
+                    "**Raw File**: $raw\n\n"
+            ).joinToString("\n\n")
+        }
+
+        val usage = listOfNotNull(
+            if (kb.isExclusive()) {
+                """
+                - Use only your knowledge base.
+                - Do not use your own training knowledge to answer questions.
+                - Do not make up information that is not in your knowledge base.
+            """.trimIndent()
+            } else {
+                "- Prefer your knowledge base content over your own training knowledge, but you can use your own training knowledge if the answer is not in your knowledge base."
+            },
+
+            if (!kb.isWebSearch()) {
+                """
+                - Do not use web search to answer questions.
+                """.trimIndent()
+            } else {
+                null
+            },
+
+            "- If you don't know the answer, say \"I don't know\" or \"I don't have enough information to answer that question\"",
+        ).joinToString("\n")
+
+        return "# Knowledge Base Instructions\n\n" +
+            "## Knowledge Base Content\n\nHere are the knowledge base entries available:\n\n$content\n" +
+            "## Knowledge Base Usage Instructions\n\n$usage"
     }
 
     private fun applyVariables(text: String, query: Message, context: Context): String {

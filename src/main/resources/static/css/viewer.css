@@ -17,6 +17,35 @@
     flex: 0 0 50%;
 }
 
+/* ===== Knowledge Base Sidebar Section ===== */
+
+.kb-panel--hidden {
+    display: none;
+}
+
+.kb-panel-files {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+}
+
+.kb-panel-file {
+    display: block;
+    padding: 5px 8px;
+    font-size: 13px;
+    color: var(--color-accent-blue, #0969da);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-radius: 4px;
+}
+
+.kb-panel-file:hover {
+    text-decoration: underline;
+    background-color: var(--color-bg-hover);
+}
+
 .file-viewer {
     width: 50%;
     display: flex;

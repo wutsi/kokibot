@@ -1,4 +1,4 @@
-package com.wutsi.kokibot.tool.mcp
+package com.wutsi.kokibot.tools.mcp
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMToolCall

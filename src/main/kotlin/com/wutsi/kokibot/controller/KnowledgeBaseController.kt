@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.io.File
 
 @RequestMapping("/assistants")
 @RestController
@@ -25,6 +26,7 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
             mapOf(
                 "enabled" to kb.isEnabled(),
                 "exclusive" to kb.isExclusive(),
+                "webSearch" to kb.isWebSearch(),
             )
         )
     }
@@ -32,12 +34,17 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
     @GetMapping("/{name}/knowledge-base/entries")
     fun entries(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val kb = bootstrap.getContext().knowledgeBase
+        val context = bootstrap.getContext()
+        val kb = context.knowledgeBase
+        val fileService = context.fileService
         val entries = kb.readIndex().map { entry ->
             mapOf(
                 "filename" to entry.name,
                 "scope" to entry.scope,
                 "keywords" to entry.keywords,
+                "size" to File(entry.source).length(),
+                "url" to fileService.urlPath(File(context.home, entry.source).absolutePath)!!,
+                "status" to if (entry.summary == null) "processing" else "ready",
             )
         }
         return ResponseEntity.ok(entries)

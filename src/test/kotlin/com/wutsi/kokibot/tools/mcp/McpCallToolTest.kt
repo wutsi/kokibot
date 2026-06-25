@@ -1,4 +1,4 @@
-package com.wutsi.kokibot.tool.mcp
+package com.wutsi.kokibot.tools.mcp
 
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -35,7 +35,13 @@ class McpCallToolTest {
         doReturn(activatedMcps).whenever(context).activatedMcps
         doReturn(server).whenever(mcpRegistry).get("weather-mcp")
         doReturn(mcpClient).whenever(server).client
-        doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server).config
+        doReturn(
+            McpServerConfig(
+                name = "weather-mcp",
+                description = "Weather data",
+                url = "https://w.example.com"
+            )
+        ).whenever(server).config
         tool.init(emptyMap<String, Any>(), context)
     }
 
@@ -114,7 +120,8 @@ class McpCallToolTest {
     @Test
     fun `exec returns error when callTool throws`() {
         activatedMcps.add(server)
-        doThrow(RuntimeException("Connection refused")).whenever(mcpClient).callTool("get_weather", emptyMap<String, Any>())
+        doThrow(RuntimeException("Connection refused")).whenever(mcpClient)
+            .callTool("get_weather", emptyMap<String, Any>())
 
         val result = tool.exec(
             mapOf(

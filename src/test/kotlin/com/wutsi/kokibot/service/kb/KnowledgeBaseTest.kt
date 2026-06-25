@@ -94,16 +94,59 @@ class KnowledgeBaseTest {
         assertEquals(file.name, entries[0].name)
         assertEquals("This is the scope of the document", entries[0].scope)
         assertEquals(listOf("sample", "document"), entries[0].keywords)
-        assertEquals(File(context.home, "kb/raw/${file.name}.md").absolutePath, entries[0].raw)
-        assertEquals(File(context.home, "kb/raw/${file.name}.summary.md").absolutePath, entries[0].summary)
-        assertEquals(File(context.home, "kb/source/${file.name}").absolutePath, entries[0].source)
+        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
+        assertEquals("kb/raw/${file.name}.md", entries[0].raw)
+        assertEquals("kb/raw/${file.name}.summary.md", entries[0].summary)
+        assertEquals("kb/source/${file.name}", entries[0].source)
 
-        assertTrue(File(context.home, "kb/source/${file.name}").exists())
+        assertTrue(File(context.home, entries[0].source).exists())
+        assertTrue(File(context.home, entries[0].raw).exists())
+        assertTrue(File(context.home, entries[0].summary).exists())
+        assertEquals("This is a sample document.", File(context.home, entries[0].summary).readText())
+    }
 
-        assertTrue(File(context.home, "kb/raw/${file.name}.md").exists())
+    @Test
+    fun `ingest - LLM response in json block`() {
+        // GIVEN
+        kb.init(config, context)
 
-        assertTrue(File(context.home, "kb/raw/${file.name}.summary.md").exists())
-        assertEquals("This is a sample document.", File(context.home, "kb/raw/${file.name}.summary.md").readText())
+        val llmResponse = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = """
+                        ```json
+                        {
+                            "summary": "This is a sample document.",
+                            "keywords": ["sample", "document"],
+                            "scope": "This is the scope of the document"
+                        }
+                        ```
+                    """.trimIndent()
+                )
+            )
+        )
+        doReturn(llmResponse).whenever(context.llm).completion(any(), any())
+
+        // WHEN
+        val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
+        kb.ingest(file)
+        Thread.sleep(2000)
+
+        // THEN
+        val entries = kb.readIndex()
+        assertEquals(1, entries.size)
+        assertEquals(file.name, entries[0].name)
+        assertEquals("This is the scope of the document", entries[0].scope)
+        assertEquals(listOf("sample", "document"), entries[0].keywords)
+        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
+        assertEquals("kb/raw/${file.name}.md", entries[0].raw)
+        assertEquals("kb/raw/${file.name}.summary.md", entries[0].summary)
+        assertEquals("kb/source/${file.name}", entries[0].source)
+
+        assertTrue(File(context.home, entries[0].source).exists())
+        assertTrue(File(context.home, entries[0].raw).exists())
+        assertTrue(File(context.home, entries[0].summary).exists())
+        assertEquals("This is a sample document.", File(context.home, entries[0].summary).readText())
     }
 
     @Test
@@ -133,9 +176,7 @@ class KnowledgeBaseTest {
         assertEquals(0, entries.size)
 
         assertFalse(File(context.home, "kb/source/${file.name}").exists())
-
         assertFalse(File(context.home, "kb/raw/${file.name}.md").exists())
-
         assertFalse(File(context.home, "kb/raw/${file.name}.summary.md").exists())
     }
 }

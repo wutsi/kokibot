@@ -4,7 +4,6 @@ import com.wutsi.kokibot.MultiBootstrap
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import java.nio.file.Files
 
 class FilesServlet(private val multi: MultiBootstrap) : HttpServlet() {
 
@@ -32,13 +31,14 @@ class FilesServlet(private val multi: MultiBootstrap) : HttpServlet() {
                 return
             }
 
-        val file = bootstrap.getContext().fileService.urlPathFile(filePath)
+        val fileService = bootstrap.getContext().fileService
+        val file = fileService.urlPathFile(filePath)
         if (!file.exists()) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND)
             return
         }
 
-        val contentType = Files.probeContentType(file.toPath()) ?: "application/octet-stream"
+        val contentType = fileService.contentType(file)
         val disposition = if (inline) "inline" else "attachment"
 
         resp.contentType = contentType

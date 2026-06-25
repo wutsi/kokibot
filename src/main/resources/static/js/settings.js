@@ -6,8 +6,6 @@ const Settings = {
     agentName: null,
     tabs: [],
     tabContents: [],
-    agentNameElement: null,
-    agentDescriptionElement: null,
     chatButton: null,
     backToChatLink: null,
     heartbeatData: null,
@@ -30,8 +28,6 @@ const Settings = {
     setupElements() {
         this.tabs = Array.from(document.querySelectorAll('.settings-nav-item[data-tab]'));
         this.tabContents = Array.from(document.querySelectorAll('.settings-tab-content'));
-        this.agentNameElement = document.getElementById('agent-name');
-        this.agentDescriptionElement = document.getElementById('agent-description');
         this.chatButton = document.getElementById('chat-btn');
         this.backToChatLink = document.querySelector('.back-to-chat-btn');
     },
@@ -171,14 +167,6 @@ const Settings = {
 
             const data = await response.json();
 
-            // Update UI
-            if (this.agentNameElement) {
-                this.agentNameElement.textContent = this.formatAgentName(data.name);
-            }
-
-            if (this.agentDescriptionElement && data.description) {
-                this.agentDescriptionElement.textContent = data.description;
-            }
         } catch (error) {
             console.error('Error loading agent info:', error);
 
@@ -600,9 +588,6 @@ const Settings = {
             }
 
             this.generalDescription = value;
-            if (this.agentDescriptionElement) {
-                this.agentDescriptionElement.textContent = value;
-            }
             this.exitDescriptionEditMode();
             Notifications.success('Description saved', { duration: 3000 });
         } catch (error) {
@@ -1559,6 +1544,7 @@ const Settings = {
     renderKnowledgeBase(contentElement) {
         const enabled = this.kbData.enabled !== false;
         const exclusive = this.kbData.exclusive !== false;
+        const webSearch = this.kbData.webSearch !== false;
 
         contentElement.innerHTML = `
             <div class="heartbeat-settings">
@@ -1572,13 +1558,23 @@ const Settings = {
                         <span class="memory-toggle-slider"></span>
                     </label>
                 </div>
-                <div class="memory-setting-row memory-setting-row-last${enabled ? '' : ' memory-fields-disabled'}" id="kb-exclusive-row">
+                <div class="memory-setting-row${enabled ? '' : ' memory-fields-disabled'}" id="kb-exclusive-row">
                     <div class="memory-setting-label-group">
                         <span class="memory-setting-name">Exclusive Mode</span>
-                        <span class="memory-setting-hint">Search only the knowledge base, not the LLM</span>
+                        <span class="memory-setting-hint">Search only the knowledge base, not the LLM training data</span>
                     </div>
                     <label class="memory-toggle" title="Toggle exclusive mode">
                         <input type="checkbox" id="kb-exclusive-toggle"${exclusive ? ' checked' : ''}${enabled ? '' : ' disabled'}>
+                        <span class="memory-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="memory-setting-row memory-setting-row-last${enabled ? '' : ' memory-fields-disabled'}" id="kb-web-search-row">
+                    <div class="memory-setting-label-group">
+                        <span class="memory-setting-name">Web Search</span>
+                        <span class="memory-setting-hint">Allow web search to supplement knowledge base answers</span>
+                    </div>
+                    <label class="memory-toggle" title="Toggle web search">
+                        <input type="checkbox" id="kb-web-search-toggle"${webSearch ? ' checked' : ''}${enabled ? '' : ' disabled'}>
                         <span class="memory-toggle-slider"></span>
                     </label>
                 </div>
@@ -1624,6 +1620,9 @@ const Settings = {
         document.getElementById('kb-exclusive-toggle')?.addEventListener('change', (e) => {
             this.saveKBSetting('exclusive', e.target.checked, e.target.checked ? 'Exclusive mode enabled' : 'Exclusive mode disabled');
         });
+        document.getElementById('kb-web-search-toggle')?.addEventListener('change', (e) => {
+            this.saveKBSetting('webSearch', e.target.checked, e.target.checked ? 'Web search enabled' : 'Web search disabled');
+        });
     },
 
     updateKBFields(enabled) {
@@ -1632,6 +1631,12 @@ const Settings = {
         if (exclusiveRow) {
             exclusiveRow.classList.toggle('memory-fields-disabled', !enabled);
             const toggle = document.getElementById('kb-exclusive-toggle');
+            if (toggle) toggle.disabled = !enabled;
+        }
+        const webSearchRow = document.getElementById('kb-web-search-row');
+        if (webSearchRow) {
+            webSearchRow.classList.toggle('memory-fields-disabled', !enabled);
+            const toggle = document.getElementById('kb-web-search-toggle');
             if (toggle) toggle.disabled = !enabled;
         }
         if (filesSection) {
@@ -1737,6 +1742,12 @@ const Settings = {
                 .join('');
             return `
                 <div class="channel-item" style="flex-direction:column;align-items:flex-start;gap:4px;position:relative;">
+                    <a href="${this.escapeHtml(entry.url)}" download title="Download file"
+                       style="position:absolute;top:8px;right:36px;background:none;border:none;cursor:pointer;color:var(--text-secondary,#666);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;text-decoration:none;">
+                        <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                    </a>
                     <button class="kb-delete-btn" data-filename="${this.escapeHtml(entry.filename)}" title="Delete file"
                             style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:var(--text-secondary,#666);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;">
                         <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">

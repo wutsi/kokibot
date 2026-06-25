@@ -1273,6 +1273,11 @@ ol, li {
     overflow-y: auto;
 }
 
+.sidebar-section--kb {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
 .sidebar-section--history {
     flex: 1;
     display: flex;

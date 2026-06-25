@@ -1,4 +1,4 @@
-package com.wutsi.kokibot.tool.mcp
+package com.wutsi.kokibot.tools.mcp
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMToolCall
@@ -24,7 +24,12 @@ class McpCallTool : Tool {
         description = "Call a tool on an activated MCP server.",
         parameters = listOf(
             ToolParameter("server", ToolParameterType.STRING, "Name of the activated MCP server", required = true),
-            ToolParameter("tool", ToolParameterType.STRING, "Name of the tool to call on the MCP server", required = true),
+            ToolParameter(
+                "tool",
+                ToolParameterType.STRING,
+                "Name of the tool to call on the MCP server",
+                required = true
+            ),
             ToolParameter("arguments", ToolParameterType.OBJECT, "Arguments to pass to the tool", required = false),
         ),
     )

@@ -8,7 +8,6 @@ const ChatUI = {
     reasoningView: null,
     tokenDisplay: null,
     inputController: null,
-    assistantInfoLoader: null,
 
     agentName: null,
     currentMessageId: null,
@@ -19,8 +18,6 @@ const ChatUI = {
     sendButton: null,
     statusIndicator: null,
     statusText: null,
-    agentNameElement: null,
-    agentDescriptionElement: null,
     conversationId: null,
     historyLoaded: false,
 
@@ -33,7 +30,6 @@ const ChatUI = {
         this.setupConnectionHandlers();
         this.setupInputHandlers();
 
-        this.assistantInfoLoader.load(agentName);
         this.connectionManager.connect();
     },
 
@@ -102,8 +98,6 @@ const ChatUI = {
         this.sendButton = document.getElementById('send-button');
         this.statusIndicator = document.getElementById('status-indicator');
         this.statusText = document.getElementById('status-text');
-        this.agentNameElement = document.getElementById('agent-name');
-        this.agentDescriptionElement = document.getElementById('agent-description');
     },
 
     initializeComponents() {
@@ -112,10 +106,6 @@ const ChatUI = {
         this.reasoningView = new ReasoningView();
         this.tokenDisplay = new TokenDisplay();
         this.inputController = new InputController(this.messageInput, this.sendButton);
-        this.assistantInfoLoader = new AssistantInfoLoader(
-            this.agentNameElement,
-            this.agentDescriptionElement
-        );
     },
 
     setupConnectionHandlers() {

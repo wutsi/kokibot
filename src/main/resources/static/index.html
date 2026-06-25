@@ -52,9 +52,16 @@
                 <div id="agents-list" class="agents-list"></div>
             </div>
 
+            <!-- Section 3: Knowledge Base (hidden until KB is enabled and has files) -->
+            <div id="kb-panel" class="sidebar-section sidebar-section--kb kb-panel--hidden">
+                <hr class="sidebar-divider">
+                <div class="sidebar-section-label">Knowledge Base</div>
+                <div id="kb-panel-files" class="kb-panel-files"></div>
+            </div>
+
             <hr class="sidebar-divider">
 
-            <!-- Section 3: Chat History (scrollable) -->
+            <!-- Section 4: Chat History (scrollable) -->
             <div class="sidebar-section sidebar-section--history">
                 <div id="conversation-history" class="conv-history-list"></div>
             </div>
@@ -81,16 +88,6 @@
 
     <!-- Content area: header + chat + input -->
     <div class="content-area">
-        <!-- Header -->
-        <header class="chat-header">
-            <div class="agent-info">
-                <div class="agent-name-container">
-                    <h1 id="agent-name">Kokibot</h1>
-                </div>
-                <span id="agent-description">AI Assistant</span>
-            </div>
-        </header>
-
         <!-- Chat + Viewer split -->
         <div class="chat-body">
             <main class="chat-container" id="chat-container">
@@ -169,6 +166,7 @@
 <script src="https://unpkg.com/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/components/file-viewer.js"></script>
+<script src="js/components/kb-panel.js"></script>
 <!-- Main orchestrator -->
 <script src="js/chat-ui.js"></script>
 <script>
@@ -180,6 +178,7 @@
         FileUpload.init(agentName);
         ContextWindowDisplay.init(agentName);
         FileViewer.init();
+        KBPanel.init(agentName);
     });
 </script>
 </body>

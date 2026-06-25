@@ -22,15 +22,15 @@
             </svg>
         </button>
         <div class="sidebar-content">
-            <nav class="sidebar-nav">
-                <button class="sidebar-nav-item" id="chat-btn">
-                    <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
-                        <path
-                            d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
-                    </svg>
-                    <span>Chat</span>
-                </button>
+            <!-- Agent header: click to return to chat -->
+            <div class="sidebar-section">
+                <div class="sidebar-agent-header sidebar-agent-header--link" id="chat-btn" title="Back to Chat">
+                    <div id="sidebar-agent-avatar" class="agent-avatar"></div>
+                    <span id="sidebar-agent-name" class="sidebar-agent-name">Kokibot</span>
+                </div>
+            </div>
 
+            <nav class="sidebar-nav">
                 <hr class="sidebar-divider">
                 <div class="sidebar-section-label">Settings</div>
 

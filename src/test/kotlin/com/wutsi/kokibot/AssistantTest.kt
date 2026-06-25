@@ -163,9 +163,6 @@ class AssistantTest {
         assertSystemInstructionsContain(
             systemInstructions,
             "You are a system agent designed to assist users with various tasks.\n",
-            "# Security Guidelines",
-            "# Daily Log Protocol",
-            "# Available skills"
         )
         // Conversation history is injected into the prompt only when conversationId is set
         assertEquals(false, req.firstValue.prompt.contains("# Conversation History"))

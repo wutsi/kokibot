@@ -1304,6 +1304,16 @@ ol, li {
     padding: 4px 4px 8px 4px;
 }
 
+.sidebar-agent-header--link {
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.15s;
+}
+
+.sidebar-agent-header--link:hover {
+    background-color: var(--color-bg-secondary);
+}
+
 .sidebar-agent-name {
     font-size: 15px;
     font-weight: 600;

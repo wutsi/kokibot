@@ -208,10 +208,10 @@ class KnowledgeBaseTest {
 
         val file = File(this::class.java.getResource("/file/sample.html")!!.file)
         kb.ingest(file)
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // WHEN
         kb.delete("sample.html")
-        Thread.sleep(5000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()

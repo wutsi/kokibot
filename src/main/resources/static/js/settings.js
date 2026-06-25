@@ -1572,25 +1572,25 @@ const Settings = {
                         <span class="memory-toggle-slider"></span>
                     </label>
                 </div>
-                <div class="memory-setting-row memory-setting-row-last">
+                <div class="memory-setting-row memory-setting-row-last${enabled ? '' : ' memory-fields-disabled'}" id="kb-exclusive-row">
                     <div class="memory-setting-label-group">
                         <span class="memory-setting-name">Exclusive Mode</span>
                         <span class="memory-setting-hint">Search only the knowledge base, not the LLM</span>
                     </div>
                     <label class="memory-toggle" title="Toggle exclusive mode">
-                        <input type="checkbox" id="kb-exclusive-toggle"${exclusive ? ' checked' : ''}>
+                        <input type="checkbox" id="kb-exclusive-toggle"${exclusive ? ' checked' : ''}${enabled ? '' : ' disabled'}>
                         <span class="memory-toggle-slider"></span>
                     </label>
                 </div>
             </div>
-            <div class="heartbeat-instructions-section">
+            <div class="heartbeat-instructions-section${enabled ? '' : ' memory-fields-disabled'}" id="kb-files-section">
                 <div class="settings-section-header heartbeat-instructions-header">
                     <div>
                         <h3 class="general-section-title">Files</h3>
                         <span class="memory-setting-hint">Documents ingested into the knowledge base</span>
                     </div>
                     <div class="settings-section-actions">
-                        <button class="settings-action-btn settings-action-btn-primary" id="kb-upload-btn">
+                        <button class="settings-action-btn settings-action-btn-primary" id="kb-upload-btn"${enabled ? '' : ' disabled'}>
                             <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
                                 <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
                             </svg>
@@ -1617,11 +1617,29 @@ const Settings = {
 
     setupKBListeners() {
         document.getElementById('kb-enabled-toggle')?.addEventListener('change', (e) => {
-            this.saveKBSetting('enabled', e.target.checked, e.target.checked ? 'Knowledge base enabled' : 'Knowledge base disabled');
+            const enabled = e.target.checked;
+            this.saveKBSetting('enabled', enabled, enabled ? 'Knowledge base enabled' : 'Knowledge base disabled');
+            this.updateKBFields(enabled);
         });
         document.getElementById('kb-exclusive-toggle')?.addEventListener('change', (e) => {
             this.saveKBSetting('exclusive', e.target.checked, e.target.checked ? 'Exclusive mode enabled' : 'Exclusive mode disabled');
         });
+    },
+
+    updateKBFields(enabled) {
+        const exclusiveRow = document.getElementById('kb-exclusive-row');
+        const filesSection = document.getElementById('kb-files-section');
+        if (exclusiveRow) {
+            exclusiveRow.classList.toggle('memory-fields-disabled', !enabled);
+            const toggle = document.getElementById('kb-exclusive-toggle');
+            if (toggle) toggle.disabled = !enabled;
+        }
+        if (filesSection) {
+            filesSection.classList.toggle('memory-fields-disabled', !enabled);
+            const uploadBtn = document.getElementById('kb-upload-btn');
+            if (uploadBtn) uploadBtn.disabled = !enabled;
+            filesSection.querySelectorAll('.kb-delete-btn').forEach(btn => { btn.disabled = !enabled; });
+        }
     },
 
     async saveKBSetting(key, value, successMsg) {

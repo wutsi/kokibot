@@ -35,7 +35,7 @@ class FileServiceTest {
         service.init(emptyMap<String, Any>(), context)
 
         val url = service.urlPath(context.home.absolutePath + "/workspace/a/file.pdf")
-        assertEquals("/assistants/test/files/workspace/a/file.pdf", url)
+        assertEquals("/files/test/workspace/a/file.pdf", url)
     }
 
     @Test
@@ -95,7 +95,7 @@ class FileServiceTest {
 
     @Test
     fun `contentType - unknown`() {
-        assertEquals("application/octet-stream", service.contentType(File("file.xyz")))
+        assertEquals("application/octet-stream", service.contentType(File("file.ppp")))
     }
 
     @Test

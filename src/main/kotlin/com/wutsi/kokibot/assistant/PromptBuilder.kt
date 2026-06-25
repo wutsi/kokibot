@@ -161,7 +161,7 @@ class PromptBuilder(
     }
 
     private fun dailyLogInstructions(context: Context): String? {
-        return if (!context.memory.isEnabled()) {
+        return if (context.memory.isEnabled()) {
             IOUtils.toString(
                 javaClass.getResourceAsStream("/instructions/DAILY_LOG.md"),
                 "utf-8"
@@ -177,7 +177,7 @@ class PromptBuilder(
             return null
         }
 
-        val entries = kb.readIndex()
+        val entries = kb.entries()
         if (entries.isEmpty()) {
             return null
         }

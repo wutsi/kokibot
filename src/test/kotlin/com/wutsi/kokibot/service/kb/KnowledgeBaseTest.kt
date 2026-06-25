@@ -10,6 +10,7 @@ import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
@@ -55,7 +56,7 @@ class KnowledgeBaseTest {
     @Test
     fun `init - defaults`() {
         kb.init(emptyMap<String, Any>(), context)
-        assertTrue(kb.isEnabled())
+        assertFalse(kb.isEnabled())
         assertTrue(kb.isExclusive())
     }
 
@@ -89,19 +90,43 @@ class KnowledgeBaseTest {
         kb.ingest(file)
 
         // THEN
-        val entries = kb.readIndex()
+        val entries = kb.entries()
+        assertEquals(1, entries.size)
+        assertEquals(file.name, entries[0].name)
+        assertEquals("", entries[0].scope)
+        assertEquals(emptyList(), entries[0].keywords)
+        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
+        assertEquals("kb/source/${file.name}", entries[0].source)
+        assertNull(entries[0].raw)
+        assertNull(entries[0].summary)
+
+        assertTrue(File(context.home, entries[0].source).exists())
+    }
+
+    @Test
+    fun `ingest and process`() {
+        // GIVEN
+        kb.init(config, context)
+
+        // WHEN
+        val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
+        kb.ingest(file)
+        Thread.sleep(5000) // Wait for the async processing to complete
+
+        // THEN
+        val entries = kb.entries()
         assertEquals(1, entries.size)
         assertEquals(file.name, entries[0].name)
         assertEquals("This is the scope of the document", entries[0].scope)
         assertEquals(listOf("sample", "document"), entries[0].keywords)
         assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
+        assertEquals("kb/source/${file.name}", entries[0].source)
         assertEquals("kb/raw/${file.name}.md", entries[0].raw)
         assertEquals("kb/raw/${file.name}.summary.md", entries[0].summary)
-        assertEquals("kb/source/${file.name}", entries[0].source)
 
         assertTrue(File(context.home, entries[0].source).exists())
-        assertTrue(File(context.home, entries[0].raw).exists())
-        assertTrue(File(context.home, entries[0].summary).exists())
+        assertTrue(File(context.home, entries[0].raw!!).exists())
+        assertTrue(File(context.home, entries[0].summary!!).exists())
         assertEquals("This is a sample document.", File(context.home, entries[0].summary).readText())
     }
 
@@ -130,10 +155,10 @@ class KnowledgeBaseTest {
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
-        Thread.sleep(2000)
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // THEN
-        val entries = kb.readIndex()
+        val entries = kb.entries()
         assertEquals(1, entries.size)
         assertEquals(file.name, entries[0].name)
         assertEquals("This is the scope of the document", entries[0].scope)
@@ -161,6 +186,22 @@ class KnowledgeBaseTest {
     }
 
     @Test
+    fun `ingest and delete and process`() {
+        // GIVEN
+        kb.init(config, context)
+
+        // WHEN
+        val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
+        kb.ingest(file)
+        kb.delete(file.name)
+        Thread.sleep(5000) // Wait for the async processing to complete
+
+        // THEN
+        val entries = kb.entries()
+        assertEquals(0, entries.size)
+    }
+
+    @Test
     fun delete() {
         // GIVEN
         kb.init(config, context)
@@ -170,9 +211,10 @@ class KnowledgeBaseTest {
 
         // WHEN
         kb.delete("sample.html")
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // THEN
-        val entries = kb.readIndex()
+        val entries = kb.entries()
         assertEquals(0, entries.size)
 
         assertFalse(File(context.home, "kb/source/${file.name}").exists())

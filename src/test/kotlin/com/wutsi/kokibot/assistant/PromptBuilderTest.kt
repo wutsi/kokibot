@@ -10,6 +10,8 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.mcp.McpServerConfig
+import com.wutsi.kokibot.service.kb.KBEntry
+import com.wutsi.kokibot.service.kb.KnowledgeBase
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import com.wutsi.kokibot.service.memory.ConversationRepository
 import com.wutsi.kokibot.service.memory.DailyLog
@@ -40,6 +42,7 @@ class PromptBuilderTest {
     private val conversationRepository = mock<ConversationRepository>()
     private val assistant = mock<Assistant>()
     private val context = mock<Context>()
+    private val kb = mock<KnowledgeBase>()
     private val activatedMcps: MutableList<McpServer> = CopyOnWriteArrayList()
 
     // Fixed clock for deterministic date/time assertions: 2026-06-09T14:30:15Z
@@ -51,8 +54,15 @@ class PromptBuilderTest {
 
     @BeforeEach
     fun setup() {
-        doReturn(home).whenever(context).home
+        doReturn(false).whenever(kb).isEnabled()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(emptyList<KBEntry>()).whenever(kb).entries()
+        doReturn(kb).whenever(context).knowledgeBase
+
+        doReturn(true).whenever(memory).isEnabled()
         doReturn(memory).whenever(context).memory
+
+        doReturn(home).whenever(context).home
         doReturn(dailyLog).whenever(context).dailyLog
         doReturn(skillRegistry).whenever(context).skillRegistry
         doReturn(conversationRepository).whenever(context).conversationRepository
@@ -383,8 +393,20 @@ class PromptBuilderTest {
     fun `should include available MCP servers in system instructions`() {
         val server1 = mock<McpServer>()
         val server2 = mock<McpServer>()
-        doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data and forecasts", url = "https://w.example.com")).whenever(server1).config
-        doReturn(McpServerConfig(name = "news-mcp", description = "Latest news", url = "https://n.example.com")).whenever(server2).config
+        doReturn(
+            McpServerConfig(
+                name = "weather-mcp",
+                description = "Weather data and forecasts",
+                url = "https://w.example.com"
+            )
+        ).whenever(server1).config
+        doReturn(
+            McpServerConfig(
+                name = "news-mcp",
+                description = "Latest news",
+                url = "https://n.example.com"
+            )
+        ).whenever(server2).config
         doReturn(listOf(server1, server2)).whenever(mcpRegistry).all()
 
         val query = Message(userId = "user1", channelId = "channel1")
@@ -411,7 +433,13 @@ class PromptBuilderTest {
     @Test
     fun `should include activated MCP server in system instructions`() {
         val server = mock<McpServer>()
-        doReturn(McpServerConfig(name = "weather-mcp", description = "Weather data", url = "https://w.example.com")).whenever(server).config
+        doReturn(
+            McpServerConfig(
+                name = "weather-mcp",
+                description = "Weather data",
+                url = "https://w.example.com"
+            )
+        ).whenever(server).config
         doReturn(listOf(server)).whenever(mcpRegistry).all()
         activatedMcps.add(server)
 
@@ -421,5 +449,184 @@ class PromptBuilderTest {
         assertTrue(instructions.contains("# Available MCP Servers"))
         assertTrue(instructions.contains("weather-mcp"))
         assertTrue(instructions.contains("Weather data"))
+    }
+
+    // ── Knowledge Base Instruction Tests ──────────────────────────────────
+
+    private fun sampleEntry(
+        name: String = "Guide",
+        scope: String = "general",
+        keywords: List<String> = listOf("kotlin", "spring"),
+        summary: String? = null,
+        raw: String? = null,
+        source: String = "docs/guide.pdf",
+        contentType: String = "application/pdf",
+    ) = KBEntry(
+        name = name,
+        scope = scope,
+        keywords = keywords,
+        summary = summary,
+        raw = raw,
+        source = source,
+        contentType = contentType,
+    )
+
+    @Test
+    fun `should not include knowledge base instructions when KB is disabled`() {
+        // kb.isEnabled() returns false by default (set in @BeforeEach)
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+        assertFalse(instructions.contains("# Knowledge Base Instructions"))
+    }
+
+    @Test
+    fun `should not include knowledge base instructions when KB has no entries`() {
+        doReturn(true).whenever(kb).isEnabled()
+        // entries() already returns emptyList in @BeforeEach
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+        assertFalse(instructions.contains("# Knowledge Base Instructions"))
+    }
+
+    @Test
+    fun `should include knowledge base section when KB is enabled with entries`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry())).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("# Knowledge Base Instructions"))
+        assertTrue(instructions.contains("## Knowledge Base Content"))
+        assertTrue(instructions.contains("Guide"))
+        assertTrue(instructions.contains("general"))
+        assertTrue(instructions.contains("kotlin, spring"))
+    }
+
+    @Test
+    fun `should include exclusive usage instructions when KB is exclusive`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry())).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("Use only your knowledge base"))
+        assertTrue(instructions.contains("Do not use your own training knowledge"))
+        assertTrue(instructions.contains("Do not make up information"))
+    }
+
+    @Test
+    fun `should include non-exclusive usage instructions when KB is not exclusive`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(false).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry())).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("Prefer your knowledge base content over your own training knowledge"))
+    }
+
+    @Test
+    fun `should include web search restriction when KB web search is disabled`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry())).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("Do not use web search"))
+    }
+
+    @Test
+    fun `should not include web search restriction when KB web search is enabled`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(true).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry())).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertFalse(instructions.contains("Do not use web search"))
+    }
+
+    @Test
+    fun `should show not available for summary when entry summary is null`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry(summary = null))).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("**Summary File:** N/A"))
+    }
+
+    @Test
+    fun `should resolve summary path against home when entry summary is set`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry(summary = "summaries/guide-summary.md"))).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("${home.absolutePath}/summaries/guide-summary.md"))
+    }
+
+    @Test
+    fun `should fall back to source path as raw file when entry raw is null`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry(raw = null, source = "docs/guide.pdf"))).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("${home.absolutePath}/docs/guide.pdf"))
+    }
+
+    @Test
+    fun `should resolve raw path against home when entry raw is set`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(listOf(sampleEntry(raw = "raw/guide.txt"))).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("${home.absolutePath}/raw/guide.txt"))
+    }
+
+    @Test
+    fun `should include all entries when KB has multiple entries`() {
+        doReturn(true).whenever(kb).isEnabled()
+        doReturn(true).whenever(kb).isExclusive()
+        doReturn(false).whenever(kb).isWebSearch()
+        doReturn(
+            listOf(
+                sampleEntry(name = "Entry A", source = "docs/a.pdf"),
+                sampleEntry(name = "Entry B", source = "docs/b.pdf"),
+            )
+        ).whenever(kb).entries()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("Entry A"))
+        assertTrue(instructions.contains("Entry B"))
     }
 }

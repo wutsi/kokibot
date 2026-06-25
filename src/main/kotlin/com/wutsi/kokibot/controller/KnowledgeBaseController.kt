@@ -37,7 +37,7 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
         val context = bootstrap.getContext()
         val kb = context.knowledgeBase
         val fileService = context.fileService
-        val entries = kb.readIndex().map { entry ->
+        val entries = kb.entries().map { entry ->
             mapOf(
                 "filename" to entry.name,
                 "scope" to entry.scope,

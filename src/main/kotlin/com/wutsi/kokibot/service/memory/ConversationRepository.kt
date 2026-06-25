@@ -183,13 +183,11 @@ class ConversationRepository : Resource {
 
     private fun writeIndex(userId: String, channelId: String, conversations: List<Conversation>) {
         val file = getIndexFile(userId, channelId)
-        file.parentFile.mkdirs()
-        val tmp = File(file.parentFile, "${file.name}.tmp")
-        tmp.writeText(context.jsonMapper.writeValueAsString(conversations))
-        if (!tmp.renameTo(file)) {
-            tmp.delete()
-            throw IllegalStateException("Failed to write conversation index for user $userId channel $channelId")
+        if (!file.parentFile.exists()) {
+            file.parentFile.mkdirs()
         }
+        val json = context.jsonMapper.writeValueAsString(conversations)
+        file.writeText(json)
     }
 
     private fun readAllChannels(userId: String): List<Conversation> {

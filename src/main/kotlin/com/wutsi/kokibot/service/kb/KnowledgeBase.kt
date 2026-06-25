@@ -97,17 +97,17 @@ class KnowledgeBase : Resource {
         }
 
         LOGGER.info("Updating knowledge base entry ${source.name}")
-        add(
-            entry.copy(
-                scope = result.scope,
-                keywords = result.keywords,
-                summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
-            )
+        val xentry = entry.copy(
+            scope = result.scope,
+            keywords = result.keywords,
+            summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
+            raw = md.absolutePath.substring(context.home.absolutePath.length + 1),
         )
+        add(xentry)
     }
 
     fun delete(name: String): KBEntry? {
-        val index = readIndex()
+        val index = entries()
         val entry = index.find { it.name == name }
         if (entry == null) {
             LOGGER.warn("Knowledge base entry $name not found")
@@ -125,7 +125,7 @@ class KnowledgeBase : Resource {
         return entry
     }
 
-    fun readIndex(): List<KBEntry> {
+    fun entries(): List<KBEntry> {
         val file = getIndexFile()
         if (!file.exists()) return emptyList()
         return try {
@@ -140,13 +140,13 @@ class KnowledgeBase : Resource {
     }
 
     private fun add(entry: KBEntry) {
-        val index = readIndex().toMutableList()
+        val index = entries().toMutableList()
         index.add(entry)
         writeIndex(index)
     }
 
     private fun checkIfAlreadyIngested(file: File): Boolean {
-        val index = readIndex()
+        val index = entries()
         return index.any { it.name == file.name }
     }
 
@@ -160,12 +160,11 @@ class KnowledgeBase : Resource {
 
     private fun writeIndex(entries: List<KBEntry>) {
         val file = getIndexFile()
-        val tmp = File(file.parentFile, "${file.name}.tmp")
-        tmp.writeText(context.jsonMapper.writeValueAsString(entries))
-        if (!tmp.renameTo(file)) {
-            tmp.delete()
-            throw IllegalStateException("Failed update the knowledge base")
+        if (!file.parentFile.exists()) {
+            file.parentFile.mkdirs()
         }
+        val json = context.jsonMapper.writeValueAsString(entries)
+        file.writeText(json)
     }
 
     private fun summarize(md: File): KBSumaryResult {
@@ -209,6 +208,9 @@ class KnowledgeBase : Resource {
 
     private fun addToSource(file: File): File {
         val source = File(getSourceDir(), file.name)
+        if (!source.parentFile.exists()) {
+            source.parentFile.mkdirs()
+        }
 
         LOGGER.info("Storing ${file.absolutePath} into ${source.absolutePath}")
         file.copyTo(source, overwrite = true)
@@ -224,23 +226,20 @@ class KnowledgeBase : Resource {
 
         // Store
         val md = File(getRawDir(), "${source.name}.md")
+        if (!md.parentFile.exists()) {
+            md.parentFile.mkdirs()
+        }
         md.writeText(content)
         return md
     }
 
     private fun getSourceDir(): File {
         val dir = File(getRootDir(), "/source")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
         return dir
     }
 
     private fun getRawDir(): File {
         val dir = File(getRootDir(), "/raw")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
         return dir
     }
 
@@ -250,9 +249,6 @@ class KnowledgeBase : Resource {
 
     private fun getRootDir(): File {
         val dir = File(context.home, "kb")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
         return dir
     }
 }

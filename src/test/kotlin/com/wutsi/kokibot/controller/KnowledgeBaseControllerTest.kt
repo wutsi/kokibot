@@ -249,7 +249,7 @@ class KnowledgeBaseControllerTest {
         val kb = mock<KnowledgeBase>()
         doReturn(enabled).whenever(kb).isEnabled()
         doReturn(exclusive).whenever(kb).isExclusive()
-        doReturn(entries).whenever(kb).readIndex()
+        doReturn(entries).whenever(kb).entries()
 
         val assistant = mock<Assistant>()
         doReturn(name).whenever(assistant).name

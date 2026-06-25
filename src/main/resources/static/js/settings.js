@@ -1796,6 +1796,7 @@ const Settings = {
     },
 
     async deleteKBFile(btn, filename) {
+        if (!window.confirm(`Delete "${filename}"?`)) return;
         btn.disabled = true;
         btn.innerHTML = `
             <svg class="loading-spinner" fill="currentColor" height="16" viewBox="0 0 24 24" width="16">

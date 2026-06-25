@@ -1662,6 +1662,73 @@ const Settings = {
         `;
     },
 
+    async loadKBFiles() {
+        const listEl = document.getElementById('kb-files-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = `
+            <div class="kb-loading">
+                <svg class="loading-spinner" fill="currentColor" height="32" viewBox="0 0 24 24" width="32">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/entries`, {
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const entries = await response.json();
+            this.renderKBFiles(entries);
+        } catch (error) {
+            console.error('Error loading KB files:', error);
+            listEl.innerHTML = `
+                <div class="skills-error">
+                    <p>${error.name === 'AbortError' ? 'Request timed out.' : 'Failed to load files.'}</p>
+                </div>
+            `;
+        }
+    },
+
+    renderKBFiles(entries) {
+        const listEl = document.getElementById('kb-files-list');
+        if (!listEl) return;
+
+        if (!entries || entries.length === 0) {
+            listEl.innerHTML = `
+                <div class="skills-empty">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+                    </svg>
+                    <h3>No Files</h3>
+                    <p>No files have been ingested yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        const rowsHtml = entries.map(entry => {
+            const keywordsHtml = (entry.keywords || [])
+                .map(k => `<span class="marketplace-skill-tag">${this.escapeHtml(k)}</span>`)
+                .join('');
+            return `
+                <div class="channel-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+                    <span class="channel-name">${this.escapeHtml(entry.filename)}</span>
+                    ${entry.scope ? `<span class="channel-source" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${this.escapeHtml(entry.scope)}</span>` : ''}
+                    ${keywordsHtml ? `<div class="marketplace-skills" style="margin-top:4px;">${keywordsHtml}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        listEl.innerHTML = `<div class="channels-list">${rowsHtml}</div>`;
+    },
+
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;

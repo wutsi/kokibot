@@ -36,7 +36,7 @@ class UploadControllerTest {
     @Autowired
     protected lateinit var rest: TestRestTemplate
 
-    private val home = File("target/upload-controller")
+    private val home = File("target/test-data/upload-controller")
 
     @BeforeEach
     fun setUp() {

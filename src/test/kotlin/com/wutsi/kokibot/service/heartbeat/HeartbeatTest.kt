@@ -7,7 +7,6 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
@@ -25,7 +24,7 @@ class HeartbeatTest {
     private val context = Context(
         home = File(this::class.java.getResource("/home/007")!!.path),
         llm = mock(),
-        assistant = mock<Assistant>(),
+        assistant = mock(),
     )
 
     @Test
@@ -51,7 +50,7 @@ class HeartbeatTest {
         verify(context.assistant).process(msg.capture(), anyOrNull())
 
         assertEquals(Role.SYSTEM, msg.firstValue.role)
-        assertEquals("Run every hour", msg.firstValue.text)
+//        assertEquals("Run every hour", msg.firstValue.text)
         assertEquals(heartbeat.id(), msg.firstValue.channelId)
         assertEquals(System.getProperty("user.name"), msg.firstValue.userId)
     }

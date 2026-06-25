@@ -55,6 +55,7 @@ class KnowledgeBase : Resource {
         summary.writeText(result.summary)
 
         // Update the index
+        LOGGER.info("Adding ${file.name} to the knowledge base index")
         val entry = KBEntry(
             name = file.name,
             scope = result.scope,
@@ -66,6 +67,24 @@ class KnowledgeBase : Resource {
         val index = readIndex().toMutableList()
         index.add(entry)
         writeIndex(index)
+    }
+
+    fun delete(name: String) {
+        val index = readIndex()
+        val entry = index.find { it.name == name }
+        if (entry == null) {
+            LOGGER.warn("Knowledge base entry $name not found")
+            return
+        }
+
+        // Remove from index
+        val xindex = index.filter { it.name != name }
+        writeIndex(xindex)
+
+        // Delete local files
+        deleteFile(entry.source)
+        deleteFile(entry.raw)
+        deleteFile(entry.summary)
     }
 
     fun readIndex(): List<KBEntry> {
@@ -87,6 +106,14 @@ class KnowledgeBase : Resource {
         return index.any { it.name == file.name }
     }
 
+    private fun deleteFile(path: String) {
+        val file = File(path)
+        if (file.exists()) {
+            LOGGER.info("Deleting $path")
+            file.delete()
+        }
+    }
+
     private fun writeIndex(entries: List<KBEntry>) {
         val file = getIndexFile()
         val tmp = File(file.parentFile, "${file.name}.tmp")
@@ -98,11 +125,13 @@ class KnowledgeBase : Resource {
     }
 
     private fun summarize(md: File): KBSumaryResult {
+        LOGGER.info("Extracting summary from  ${md.absolutePath}")
+
         val request = LLMRequest(
             prompt = """
                 You are a highly meticulous Technical Data Compiler.
                 Your task is to read the provided content and extract the following information:
-                1. Scope: Provide a concise description of the scope of the content, limited to 50 to 100 words.
+                1. Scope: Provide a concise description of the scope of the content, limited to 30 to 50 words.
                 2. Summary: High-fidelity summary of the content in Markdown format. Your primary directive is ZERO SEMANTIC DATA LOSS. Do not summarize away technical details, specific configurations, metrics, architecture patterns, or domain-specific logic.
                 3. Keywords: Identify and list relevant keywords that encapsulate the core topics, technologies, and concepts discussed in the content. Up to 10 keywords
 
@@ -129,11 +158,15 @@ class KnowledgeBase : Resource {
 
     private fun addToSource(file: File): File {
         val source = File(getSourceDir(), file.name)
+
+        LOGGER.info("Storing ${file.absolutePath} into ${source.absolutePath}")
         file.copyTo(source, overwrite = true)
         return source
     }
 
     private fun convertToMarkdown(source: File): File {
+        LOGGER.info("Converting ${source.absolutePath} to Markdown")
+
         // Convert to markdown using pandoc or markitdown
         val converter = MarkdownConverter(fileService = context.fileService)
         val content = converter.convert(source)

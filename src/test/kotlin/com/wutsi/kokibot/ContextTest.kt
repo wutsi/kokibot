@@ -40,18 +40,21 @@ class ContextTest {
         heartbeat = mock(),
         chatHistory = mock(),
         conversationRepository = mock(),
+        knowledgeBase = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
     private val memoryConfig = mapOf("window" to 1)
     private val assistantConfig = mapOf("x" to "y")
     private val heartbeatConfig = mapOf("p" to "q")
+    private val kbConfig = mapOf("r" to "s")
     private val config = mapOf(
         "foo" to "bar",
         "llm" to llmConfig,
         "memory" to memoryConfig,
         "assistant" to assistantConfig,
         "heartbeat" to heartbeatConfig,
+        "knowledge-base" to kbConfig,
     )
 
     @BeforeEach
@@ -73,6 +76,7 @@ class ContextTest {
         doReturn(Health(id = "-", up = true)).whenever(context.conversationRepository).health()
         doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
         doReturn(Health(id = "-", up = true)).whenever(context.heartbeat).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.knowledgeBase).health()
     }
 
     @Test
@@ -93,6 +97,10 @@ class ContextTest {
         verify(context.conversationRepository).destroy()
         verify(context.heartbeat).destroy()
         verify(channel).destroy()
+        verify(context.knowledgeBase).destroy()
+        verify(context.memory).destroy()
+        verify(context.dailyLog).destroy()
+        verify(context.chatHistory).destroy()
     }
 
     @Test
@@ -113,6 +121,7 @@ class ContextTest {
         verify(context.mcpRegistry).init(emptyMap<String, Any>(), context)
         verify(context.channelRegistry).init(context)
         verify(context.fileService).init(emptyMap<String, Any>(), context)
+        verify(context.knowledgeBase).init(kbConfig, context)
     }
 
     @Test
@@ -141,7 +150,10 @@ class ContextTest {
 
         // THEN
         assertTrue(health.up)
-        assertEquals(11, health.children.size) // LLM, Memory, DailyLog, SessionLog, ChatHistory, ConversationRepository, FileService, Heartbeat, DelegationStack, 2 channels
+        assertEquals(
+            12,
+            health.children.size
+        ) // LLM, Memory, DailyLog, SessionLog, ChatHistory, ConversationRepository, FileService, Heartbeat, DelegationStack, 2 channels
     }
 
     private fun getResourceFile(path: String): File {

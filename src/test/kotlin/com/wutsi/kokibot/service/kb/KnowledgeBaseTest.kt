@@ -30,6 +30,21 @@ class KnowledgeBaseTest {
     fun setUp() {
         context.home.deleteRecursively()
         context.fileService.init(config, context)
+
+        val llmResponse = LLMResponse(
+            choices = listOf(
+                LLMResponseChoice(
+                    content = """
+                        {
+                            "summary": "This is a sample document.",
+                            "keywords": ["sample", "document"],
+                            "scope": "This is the scope of the document"
+                        }
+                    """.trimIndent()
+                )
+            )
+        )
+        doReturn(llmResponse).whenever(context.llm).completion(any(), any())
     }
 
     @Test
@@ -69,21 +84,6 @@ class KnowledgeBaseTest {
         // GIVEN
         kb.init(config, context)
 
-        val llmResponse = LLMResponse(
-            choices = listOf(
-                LLMResponseChoice(
-                    content = """
-                        {
-                            "summary": "This is a sample document.",
-                            "keywords": ["sample", "document"],
-                            "scope": "This is the scope of the document"
-                        }
-                    """.trimIndent()
-                )
-            )
-        )
-        doReturn(llmResponse).whenever(context.llm).completion(any(), any())
-
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
@@ -111,24 +111,31 @@ class KnowledgeBaseTest {
         // GIVEN
         kb.init(config, context)
 
-        val llmResponse = LLMResponse(
-            choices = listOf(
-                LLMResponseChoice(
-                    content = """
-                        {
-                            "summary": "This is a sample document.",
-                            "keywords": ["sample", "document"],
-                            "scope": "This is the topic of the document."
-                        }
-                    """.trimIndent()
-                )
-            )
-        )
-        doReturn(llmResponse).whenever(context.llm).completion(any(), any())
-
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
         assertThrows<FileAlreadyIngestedException> { kb.ingest(file) }
+    }
+
+    @Test
+    fun delete() {
+        // GIVEN
+        kb.init(config, context)
+
+        val file = File(this::class.java.getResource("/file/sample.html")!!.file)
+        kb.ingest(file)
+
+        // WHEN
+        kb.delete("sample.html")
+
+        // THEN
+        val entries = kb.readIndex()
+        assertEquals(0, entries.size)
+
+        assertFalse(File(context.home, "kb/source/${file.name}").exists())
+
+        assertFalse(File(context.home, "kb/raw/${file.name}.md").exists())
+
+        assertFalse(File(context.home, "kb/raw/${file.name}.summary.md").exists())
     }
 }

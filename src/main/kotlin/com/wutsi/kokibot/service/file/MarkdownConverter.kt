@@ -5,6 +5,7 @@ import com.wutsi.kokibot.service.UnsupportedMimeTypeException
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.Files
 
 class MarkdownConverter(
     private val textExtractorFactory: TextExtractorFactory = TextExtractorFactory(),
@@ -12,6 +13,11 @@ class MarkdownConverter(
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarkdownConverter::class.java)
+    }
+
+    fun convert(file: File): String {
+        val contentType = Files.probeContentType(file.toPath())
+        return convert(file, contentType)
     }
 
     fun convert(file: File, contentType: String): String {

@@ -50,28 +50,42 @@ class HeartbeatControllerTest {
     @Test
     fun `get heartbeat`() {
         doReturn(
-            listOf(createBootstrap("007", heartbeatEnabled = true, heartbeatFrequency = 30L, heartbeatInstructions = "Tick every hour"))
+            listOf(
+                createBootstrap(
+                    "007",
+                    heartbeatEnabled = true,
+                    heartbeatFrequency = "30m",
+                    heartbeatInstructions = "Tick every hour"
+                )
+            )
         ).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/007/heartbeat", Map::class.java)
 
         assertEquals(200, response.statusCode.value())
         assertEquals(true, response.body!!["enabled"])
-        assertEquals(30, response.body!!["frequency"])
+        assertEquals("30m", response.body!!["frequency"])
         assertEquals("Tick every hour", response.body!!["instructions"])
     }
 
     @Test
     fun `get heartbeat - no instructions`() {
         doReturn(
-            listOf(createBootstrap("007", heartbeatEnabled = false, heartbeatFrequency = 60L, heartbeatInstructions = null))
+            listOf(
+                createBootstrap(
+                    "007",
+                    heartbeatEnabled = false,
+                    heartbeatFrequency = "60m",
+                    heartbeatInstructions = null
+                )
+            )
         ).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/007/heartbeat", Map::class.java)
 
         assertEquals(200, response.statusCode.value())
         assertEquals(false, response.body!!["enabled"])
-        assertEquals(60, response.body!!["frequency"])
+        assertEquals("60m", response.body!!["frequency"])
         assertEquals("", response.body!!["instructions"])
     }
 
@@ -162,7 +176,7 @@ class HeartbeatControllerTest {
         description: String? = null,
         instructions: String? = null,
         heartbeatEnabled: Boolean = true,
-        heartbeatFrequency: Long = 30L,
+        heartbeatFrequency: String = "30m",
         heartbeatInstructions: String? = null,
         balance: LLMBalance? = null,
         channelIds: List<String> = emptyList(),

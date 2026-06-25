@@ -10,6 +10,7 @@ import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
+import com.wutsi.kokibot.service.kb.KnowledgeBase
 import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.ConversationRepository
 import com.wutsi.kokibot.service.memory.DailyLog
@@ -47,6 +48,7 @@ class Context(
     val jsonMapper: JsonMapper = JsonMapper(),
     val assistantRegistry: AssistantRegistry = AssistantRegistry(),
     val activatedMcps: MutableList<McpServer> = CopyOnWriteArrayList(),
+    val knowledgeBase: KnowledgeBase = KnowledgeBase(),
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Context::class.java)
@@ -72,6 +74,7 @@ class Context(
         initFileService()
         initHeartbeat(config)
         initDelegationStack(config)
+        initKnowledgeBase(config)
     }
 
     fun health(): Health {
@@ -90,7 +93,18 @@ class Context(
             channelRegistry.all() +
             marketplaceRegistry.all() +
             mcpRegistry.all() +
-            listOf(llm, memory, dailyLog, sessionLog, chatHistory, conversationRepository, fileService, heartbeat, delegationStack)
+            listOf(
+                llm,
+                memory,
+                dailyLog,
+                sessionLog,
+                chatHistory,
+                conversationRepository,
+                fileService,
+                heartbeat,
+                delegationStack,
+                knowledgeBase
+            )
     }
 
     private fun initAssistant(config: Map<*, *>) {
@@ -153,6 +167,13 @@ class Context(
     private fun initHeartbeat(config: Map<*, *>) {
         heartbeat.init(
             MapUtil.toMap("heartbeat", config) ?: emptyMap<String, Any>(),
+            this,
+        )
+    }
+
+    private fun initKnowledgeBase(config: Map<*, *>) {
+        knowledgeBase.init(
+            MapUtil.toMap("knowledge-base", config) ?: emptyMap<String, Any>(),
             this,
         )
     }

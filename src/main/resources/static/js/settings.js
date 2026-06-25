@@ -1807,8 +1807,8 @@ const Settings = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
             const response = await fetch(
-                `/assistants/${this.agentName}/knowledge-base/entries/${encodeURIComponent(filename)}`,
-                { method: 'DELETE', signal: controller.signal }
+                `/assistants/${this.agentName}/knowledge-base/entries/delete?filename=${encodeURIComponent(filename)}`,
+                { signal: controller.signal }
             );
             clearTimeout(timeoutId);
 

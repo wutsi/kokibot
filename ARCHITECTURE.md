@@ -207,14 +207,18 @@ The Context object contains all resources needed by an assistant:
 | `commandRegistry` | CommandRegistry | Registry of system commands |
 | `channelRegistry` | ChannelRegistry | Registry of communication channels |
 | `marketplaceRegistry` | MarketplaceRegistry | Registry of skill marketplaces |
+| `mcpRegistry` | McpRegistry | Registry of MCP servers |
 | `assistantRegistry` | AssistantRegistry | Registry of all assistants (shared) |
 | `memory` | Memory | Long-term memory compaction |
 | `dailyLog` | DailyLog | Daily activity journal |
 | `sessionLog` | SessionLog | Detailed execution trace |
 | `chatHistory` | ChatHistory | Conversation storage |
+| `conversationRepository` | ConversationRepository | Conversation index and retrieval |
+| `knowledgeBase` | KnowledgeBase | Document ingestion and retrieval |
 | `fileService` | FileService | File operations service |
 | `heartbeat` | Heartbeat | Periodic task scheduler |
 | `delegationStack` | DelegationStack | Multi-agent delegation tracking |
+| `activatedMcps` | List | MCP servers activated for this session |
 | `config` | Map | Configuration settings |
 | `jsonMapper` | JsonMapper | JSON serialization |
 
@@ -231,11 +235,13 @@ The Context object contains all resources needed by an assistant:
 4. Skills
 5. Tools
 6. LLM
-7. Memory (Memory, DailyLog, SessionLog, ChatHistory)
-8. Commands
-9. FileService
-10. Heartbeat
-11. DelegationStack
+7. MCP servers
+8. Memory (Memory, DailyLog, SessionLog, ChatHistory)
+9. Commands
+10. FileService
+11. Heartbeat
+12. KnowledgeBase
+13. DelegationStack
 
 ---
 
@@ -326,18 +332,20 @@ ContextFactory
 
 **Discovered Tools:**
 - `FileReadTool`, `FileWriteTool`, `FileEditTool`
+- `McpActivationTool`, `McpCallTool`
 - `PythonTool`
-- `SendMessageTool`
 - `ShellTool`
 - `SkillActivationTool`
 - `SwarmDelegateTool`
+- `TelegramSendTool`
+- `UserAskQuestionTool`
 - `WebSearchTool`, `WebFetchTool`
 
 **Discovered Commands:**
-- `ClearCommand`
 - `CompactCommand`
 - `HealthCommand`
 - `HelpCommand`
+- `McpCommand`
 - `SkillCommand`
 - `ToolCommand`
 - `HeartbeatCommand`
@@ -469,8 +477,11 @@ classDiagram
 | **Files** | `file_write` | Write files to agent's workspace |
 | **Files** | `file_edit` | Edit existing files in workspace |
 | **Skills** | `skill_activation` | Dynamically activate skills during conversation |
+| **MCP** | `mcp_activate` | Activate an MCP server for the current session |
+| **MCP** | `mcp_call` | Call a tool on an activated MCP server |
 | **Multi-Agent** | `swarm_delegate` | Delegate tasks to specialist agents |
-| **Messaging** | `send_message` | Send messages to users via channels |
+| **Messaging** | `telegram_send` | Send a Telegram message to a user |
+| **Interaction** | `user_ask` | Pause execution and ask the user a question |
 
 **Tool Lifecycle:**
 1. **Discovery** - Tools discovered by `ContextFactory.discoverTools()`
@@ -859,7 +870,7 @@ The weather is sunny.
 
 **Purpose:** Conversation index and message retrieval for the web UI
 
-- **Index storage:** `~/kokibot/agents/{agent}/memory/chat/{userId}/conversations.json`
+- **Index storage:** `~/kokibot/agents/{agent}/memory/chat/{userId}/{channelId}/conversations.json`
 - **Message storage:** Reads from existing ChatHistory markdown files (`~/kokibot/agents/{agent}/memory/chat/{userId}/{channelId}/YYYY-MM-DD.md`)
 - **Format:** JSON array of `Conversation` objects (id, channelId, title, startDate)
 - **Thread-safety:** ReentrantReadWriteLock
@@ -886,7 +897,7 @@ The weather is sunny.
 
 **Purpose:** Long-term fact extraction and compaction
 
-- **Storage:** `~/kokibot/agents/{agent}/memory/MEMORY.md`
+- **Storage:** `~/kokibot/agents/{agent}/memory/MEMORY.md` (created under the `memory/` subdirectory of the agent home)
 - **Format:** Markdown document with key facts
 - **Content:** Extracted facts, decisions, learnings from conversations
 - **Retention:** Grows until `max-length`, then truncates
@@ -914,9 +925,97 @@ The weather is sunny.
 
 **Commands:**
 - `/compact` - Manually trigger compaction
-- `/clear` - Clear chat history (doesn't affect Memory)
 
 **Loaded into Prompt:** Yes (under "# Long-Term Memory")
+
+---
+
+### MCP (Model Context Protocol) System
+
+**MCP servers** extend the assistant with external tools via the Model Context Protocol standard.
+
+**Components:**
+- `McpRegistry` - Loads and manages MCP server configurations from `config/mcps/`
+- `McpServer` - Represents a single MCP server connection
+- `McpClient` / `McpOkHttpTransport` - HTTP transport for MCP protocol
+- `McpActivationTool` (`mcp_activate`) - Activates an MCP server for the current session
+- `McpCallTool` (`mcp_call`) - Calls a tool on an activated MCP server
+- `McpCommand` (`/mcp`) - Lists registered MCP servers or shows server details
+
+**Configuration:**
+
+Each MCP server is defined as a separate JSON file in `config/mcps/`. Adding or removing a server requires no changes to `settings.json`.
+
+```
+config/
+└── mcps/
+    └── my-server.json
+```
+
+```json
+{
+    "name": "my-server",
+    "url": "http://localhost:3001/sse"
+}
+```
+
+**Activation Flow:**
+
+1. On initialization, `McpRegistry` scans `config/mcps/` and registers all `*.json` files
+2. During a session, the LLM calls `mcp_activate(server="my-server")` to activate a server
+3. The server's available tools are loaded and added to the LLM's tool list
+4. The LLM calls `mcp_call(server="my-server", tool="...", arguments={...})`
+5. Result returned to the LLM as a tool result
+
+---
+
+### Knowledge Base System
+
+**KnowledgeBase** provides document ingestion, summarization, and retrieval capabilities.
+
+**Components:**
+- `KnowledgeBase` (`service/kb/KnowledgeBase.kt`) - Core service for ingestion and retrieval
+- `KBEntry` - Index entry with name, scope, keywords, summary, source path, and content type
+- `KnowledgeBaseController` - REST API for managing KB files
+- `KBSumaryResult` - Result of LLM-based summarization
+
+**Storage:**
+- **Index:** `~/kokibot/agents/{agent}/kb/index.json`
+- **Source files:** `~/kokibot/agents/{agent}/kb/source/`
+- **Summaries:** `~/kokibot/agents/{agent}/kb/raw/*.summary.md`
+
+**Ingestion Flow:**
+1. File uploaded via REST API → stored in `kb/source/`
+2. Entry added to `kb/index.json` with empty keywords and summary
+3. Async worker converts file to Markdown using `MarkdownConverter`
+4. LLM extracts keywords and writes a summary
+5. Index entry updated with keywords and summary
+
+**Configuration:**
+
+```json
+{
+    "knowledge-base": {
+        "enabled": false,
+        "exclusive": true,
+        "webSearch": true
+    }
+}
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable the knowledge base |
+| `exclusive` | boolean | `true` | When `true`, LLM uses only KB content and ignores other context |
+| `webSearch` | boolean | `true` | Allow web search fallback when KB has no matching content |
+
+**REST API:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/assistants/{name}/kb` | List all KB entries |
+| `POST` | `/assistants/{name}/kb` | Ingest a new file |
+| `DELETE` | `/assistants/{name}/kb/{entryName}` | Remove a KB entry |
 
 ---
 
@@ -979,17 +1078,17 @@ classDiagram
     }
     
     class HelpCommand
-    class ClearCommand
     class CompactCommand
     class HealthCommand
+    class McpCommand
     class SkillCommand
     class ToolCommand
     class HeartbeatCommand
     
     Command <|-- HelpCommand
-    Command <|-- ClearCommand
     Command <|-- CompactCommand
     Command <|-- HealthCommand
+    Command <|-- McpCommand
     Command <|-- SkillCommand
     Command <|-- ToolCommand
     Command <|-- HeartbeatCommand
@@ -1001,9 +1100,9 @@ classDiagram
 | Command | Purpose |
 |---------|---------|
 | `/help [cmd]` | Display available commands or details about specific command |
-| `/clear` | Clear conversation history for current user/channel |
 | `/compact` | Manually trigger memory compaction |
 | `/health` | System health check showing status of all components |
+| `/mcp [name]` | List available MCP servers or show details about a specific one |
 | `/skill [name]` | Show skill details or list all available skills |
 | `/tool [name]` | Show tool details or list all available tools |
 | `/heartbeat` | Manually trigger heartbeat task |
@@ -1195,8 +1294,8 @@ sequenceDiagram
 ### Core Framework
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Spring Boot** | 4.0.6 | Application framework, DI, lifecycle management |
-| **Kotlin** | 2.3.21 | Primary language |
+| **Spring Boot** | 4.1.0 | Application framework, DI, lifecycle management |
+| **Kotlin** | 2.2.0 | Primary language |
 | **Java** | 17 | Runtime environment |
 
 ### LLM & AI
@@ -1209,20 +1308,20 @@ sequenceDiagram
 ### Communication
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Telegram Bots SDK** | 9.6.0 | Telegram Bot API integration |
+| **Telegram Bots SDK** | 10.0.0 | Telegram Bot API integration |
 | **Jakarta Mail API** | 2.1.5 | Email (IMAP/SMTP) functionality |
-| **Spring WebSocket** | 4.0.6 | WebSocket real-time communication |
+| **Spring WebSocket** | 4.1.0 | WebSocket real-time communication |
 
 ### Data Processing
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| **Jackson Kotlin** | 2.21.3 | JSON serialization/deserialization |
+| **Jackson Kotlin** | 2.22.0 | JSON serialization/deserialization |
 | **JSoup** | 1.22.2 | HTML parsing for web content |
 | **Apache PDFBox** | 3.0.7 | PDF text extraction |
 | **Apache POI** | 5.5.1 | Microsoft Office document parsing |
 | **Flexmark** | 0.64.8 | Markdown/HTML conversion |
-| **JGit** | 7.6.0 | Git operations for marketplaces |
-| **OkHttp** | 5.3.2 | HTTP client for API calls |
+| **JGit** | 7.7.0 | Git operations for marketplaces |
+| **OkHttp** | 5.4.0 | HTTP client for API calls |
 | **Kotlinx Coroutines** | 1.11.0 | Asynchronous programming |
 
 ### Testing

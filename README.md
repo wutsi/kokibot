@@ -12,10 +12,10 @@ tools*
 [![pr](https://github.com/wutsi/kokibot/actions/workflows/pr.yml/badge.svg)](https://github.com/wutsi/kokibot/actions/workflows/pr.yml)
 [![JaCoCo Coverage](https://img.shields.io/badge/Coverage-93%25-brightgreen.svg)](target/site/jacoco/index.html)
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg?logo=openjdk)](https://openjdk.org/)
 [![Python](https://img.shields.io/badge/Python-3.x-orange.svg?logo=python)](https://python.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-brightgreen.svg?logo=spring)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-brightgreen.svg?logo=spring)](https://spring.io/projects/spring-boot)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Features](#-key-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation)
@@ -102,14 +102,14 @@ Refer to the [Configuration Guide](docs/config/CONFIGURATION.md) for configuring
        memory/
          MEMORY.md                          # Agent long-term memory (maintained by the agent)
          history/
-           {yyyy}-{MM}-{dd}.log             # Daily conversation history
+           {yyyy}-{MM}-{dd}.md              # Daily conversation history
          sessions/                          # Conversation session logs
            {yyyy}/{MM}/{dd}/
-             {session-id}.log
+             {session-id}.jsonl
          chat/                              # Per-user conversation history
            {user-id}/
-             conversation.json
              {channel-id}/
+               conversations.json
                {yyyy}-{MM}-{dd}.md
        workspace/                           # Working directory
          files/                             # Files created by tools and skills

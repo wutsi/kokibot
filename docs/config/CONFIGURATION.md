@@ -13,7 +13,9 @@ located in each agent's `config/` directory.
     - [LLM Configuration](#llm-configuration)
     - [Channel Configuration](#channel-configuration)
     - [Memory Configuration](#memory-configuration)
+    - [Knowledge Base Configuration](#knowledge-base-configuration)
     - [Heartbeat Configuration](#heartbeat-configuration)
+    - [MCP Configuration](#mcp-configuration)
     - [Marketplace Configuration](#marketplace-configuration)
     - [Skills Configuration](#skills-configuration)
     - [Swarm Configuration](#swarm-configuration)
@@ -565,6 +567,53 @@ Controls long-term memory compaction and retention.
 
 ---
 
+### Knowledge Base Configuration
+
+Configures the built-in document knowledge base.
+
+**Section:** `knowledge-base`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable the knowledge base feature. When disabled, KB tools and UI are hidden |
+| `exclusive` | boolean | `true` | When `true`, the LLM answers only from KB content; web search is suppressed unless `webSearch` is also `true` |
+| `webSearch` | boolean | `true` | Allow the LLM to fall back to web search when no KB content matches the query |
+
+**Example:**
+
+```json
+{
+    "knowledge-base": {
+        "enabled": true,
+        "exclusive": false,
+        "webSearch": true
+    }
+}
+```
+
+**How the Knowledge Base Works:**
+
+1. Files are ingested via the settings UI or the REST API (`POST /assistants/{name}/kb`)
+2. Each file is stored in `{agent}/kb/source/`, converted to Markdown, and summarized asynchronously by the LLM
+3. At query time, the assistant searches the KB index for relevant entries and injects their summaries into the prompt
+4. When `exclusive: true`, only KB-sourced content is used to answer; the LLM will not answer from general knowledge
+
+**Storage locations:**
+
+- Index: `~/kokibot/agents/{agent}/kb/index.json`
+- Source files: `~/kokibot/agents/{agent}/kb/source/`
+- Summaries: `~/kokibot/agents/{agent}/kb/raw/*.summary.md`
+
+**REST API:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/assistants/{name}/kb` | List all KB entries |
+| `POST` | `/assistants/{name}/kb` | Upload and ingest a new file |
+| `DELETE` | `/assistants/{name}/kb/{entryName}` | Remove a KB entry |
+
+---
+
 ### Heartbeat Configuration
 
 Schedules periodic automated tasks for the assistant.
@@ -616,6 +665,52 @@ If there are any critical issues, log them to the daily log.
 - `"1d"` = Once per day
 
 **Note:** Leave `frequency` empty or omit the `heartbeat` section to disable this feature.
+
+---
+
+### MCP Configuration
+
+Configures external MCP (Model Context Protocol) servers that provide additional tools to the assistant.
+
+Each MCP server is defined as a separate JSON file in `config/mcps/`. Adding or removing a server requires no changes to `settings.json`.
+
+**File location:** `config/mcps/{name}.json`
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | ✅ | Unique server identifier (must match the filename without extension) |
+| `url` | string | ✅ | HTTP URL of the MCP server's SSE endpoint |
+
+**Example — `config/mcps/my-server.json`:**
+
+```json
+{
+    "name": "my-server",
+    "url": "http://localhost:3001/sse"
+}
+```
+
+**Directory layout:**
+
+```
+config/
+└── mcps/
+    ├── my-server.json
+    └── another-server.json
+```
+
+**How MCP Works:**
+
+1. On startup, `McpRegistry` scans `config/mcps/` and registers all `*.json` files
+2. The assistant exposes `mcp_activate` and `mcp_call` tools to the LLM
+3. The LLM calls `mcp_activate(server="my-server")` to connect and discover available tools
+4. Activated server tools are added to the LLM's tool list for the current session
+5. The LLM calls `mcp_call(server="my-server", tool="...", arguments={...})` to invoke a tool
+
+**Commands:**
+
+- `/mcp` — List all registered MCP servers
+- `/mcp <name>` — Show details and available tools for a specific server
 
 ---
 

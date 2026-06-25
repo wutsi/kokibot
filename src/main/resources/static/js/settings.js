@@ -1729,6 +1729,58 @@ const Settings = {
         listEl.innerHTML = `<div class="channels-list">${rowsHtml}</div>`;
     },
 
+    async uploadKBFile(file) {
+        const btn = document.getElementById('kb-upload-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="loading-spinner" fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                Uploading…
+            `;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/upload`, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+
+            if (response.status === 409) {
+                Notifications.error('File already ingested', { duration: 5000 });
+                return;
+            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            Notifications.success(`${file.name} ingested successfully`, { duration: 3000 });
+            await this.loadKBFiles();
+        } catch (error) {
+            console.error('Error uploading KB file:', error);
+            Notifications.error(
+                error.name === 'AbortError' ? 'Upload timed out. Please try again.' : 'Failed to upload file. Please try again.',
+                { duration: 5000 }
+            );
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                        <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                    </svg>
+                    Upload
+                `;
+            }
+        }
+    },
+
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;

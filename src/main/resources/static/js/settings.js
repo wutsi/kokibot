@@ -1718,15 +1718,28 @@ const Settings = {
                 .map(k => `<span class="marketplace-skill-tag">${this.escapeHtml(k)}</span>`)
                 .join('');
             return `
-                <div class="channel-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+                <div class="channel-item" style="flex-direction:column;align-items:flex-start;gap:4px;position:relative;">
+                    <button class="kb-delete-btn" data-filename="${this.escapeHtml(entry.filename)}" title="Delete file"
+                            style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:var(--text-secondary,#666);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;">
+                        <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
                     <span class="channel-name">${this.escapeHtml(entry.filename)}</span>
-                    ${entry.scope ? `<span class="channel-source" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${this.escapeHtml(entry.scope)}</span>` : ''}
+                    ${entry.scope ? `<span class="channel-source">${this.escapeHtml(entry.scope)}</span>` : ''}
                     ${keywordsHtml ? `<div class="marketplace-skills" style="margin-top:4px;">${keywordsHtml}</div>` : ''}
                 </div>
             `;
         }).join('');
 
         listEl.innerHTML = `<div class="channels-list">${rowsHtml}</div>`;
+
+        listEl.querySelectorAll('.kb-delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filename = btn.dataset.filename;
+                if (filename) this.deleteKBFile(btn, filename);
+            });
+        });
     },
 
     async uploadKBFile(file) {
@@ -1779,6 +1792,42 @@ const Settings = {
                     Upload
                 `;
             }
+        }
+    },
+
+    async deleteKBFile(btn, filename) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg class="loading-spinner" fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+            </svg>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(
+                `/assistants/${this.agentName}/knowledge-base/entries/${encodeURIComponent(filename)}`,
+                { method: 'DELETE', signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            Notifications.success(`${this.escapeHtml(filename)} deleted`, { duration: 3000 });
+            await this.loadKBFiles();
+        } catch (error) {
+            console.error('Error deleting KB file:', error);
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+            `;
+            Notifications.error(
+                error.name === 'AbortError' ? 'Delete request timed out.' : 'Failed to delete file. Please try again.',
+                { duration: 5000 }
+            );
         }
     },
 

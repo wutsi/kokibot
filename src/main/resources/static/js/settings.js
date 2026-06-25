@@ -1726,7 +1726,7 @@ const Settings = {
                         </svg>
                     </button>
                     <span class="channel-name">${this.escapeHtml(entry.filename)}</span>
-                    ${entry.scope ? `<span class="channel-source">${this.escapeHtml(entry.scope)}</span>` : ''}
+                    ${entry.scope ? `<span class="channel-source" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${this.escapeHtml(entry.scope)}</span>` : ''}
                     ${keywordsHtml ? `<div class="marketplace-skills" style="margin-top:4px;">${keywordsHtml}</div>` : ''}
                 </div>
             `;

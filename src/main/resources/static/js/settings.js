@@ -16,6 +16,7 @@ const Settings = {
     generalInstructionsContent: null,
     generalDescription: null,
     memoryData: null,
+    kbData: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -95,6 +96,10 @@ const Settings = {
                 break;
             case 'marketplaces':
                 this.loadMarketplaces();
+                this.loadedTabs.add(tabName);
+                break;
+            case 'knowledge-base':
+                this.loadKnowledgeBase();
                 this.loadedTabs.add(tabName);
                 break;
             case 'connectors':
@@ -1511,6 +1516,147 @@ const Settings = {
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
                 <h3>Error Loading Marketplaces</h3>
+                <p>${message}</p>
+            </div>
+        `;
+    },
+
+    async loadKnowledgeBase() {
+        if (!this.agentName) {
+            this.showKBError('No agent selected');
+            return;
+        }
+
+        const contentElement = document.getElementById('kb-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="kb-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading knowledge base settings...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`Failed to load knowledge base settings (${response.status})`);
+
+            this.kbData = await response.json();
+            this.renderKnowledgeBase(contentElement);
+        } catch (error) {
+            console.error('Error loading knowledge base settings:', error);
+            this.showKBError(error.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Failed to load knowledge base settings. Please try again.');
+            Notifications.error('Failed to load knowledge base settings', { duration: 5000 });
+        }
+    },
+
+    renderKnowledgeBase(contentElement) {
+        const enabled = this.kbData.enabled !== false;
+        const exclusive = this.kbData.exclusive !== false;
+
+        contentElement.innerHTML = `
+            <div class="heartbeat-settings">
+                <div class="memory-setting-row">
+                    <div class="memory-setting-label-group">
+                        <span class="memory-setting-name">Enable Knowledge Base</span>
+                        <span class="memory-setting-hint">Use the knowledge base to answer queries</span>
+                    </div>
+                    <label class="memory-toggle" title="Toggle knowledge base">
+                        <input type="checkbox" id="kb-enabled-toggle"${enabled ? ' checked' : ''}>
+                        <span class="memory-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="memory-setting-row memory-setting-row-last">
+                    <div class="memory-setting-label-group">
+                        <span class="memory-setting-name">Exclusive Mode</span>
+                        <span class="memory-setting-hint">Search only the knowledge base, not the LLM</span>
+                    </div>
+                    <label class="memory-toggle" title="Toggle exclusive mode">
+                        <input type="checkbox" id="kb-exclusive-toggle"${exclusive ? ' checked' : ''}>
+                        <span class="memory-toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="heartbeat-instructions-section">
+                <div class="settings-section-header heartbeat-instructions-header">
+                    <div>
+                        <h3 class="general-section-title">Files</h3>
+                        <span class="memory-setting-hint">Documents ingested into the knowledge base</span>
+                    </div>
+                    <div class="settings-section-actions">
+                        <button class="settings-action-btn settings-action-btn-primary" id="kb-upload-btn">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                            </svg>
+                            Upload
+                        </button>
+                        <input type="file" id="kb-file-input" style="display:none;">
+                    </div>
+                </div>
+                <div id="kb-files-list"></div>
+            </div>
+        `;
+
+        this.setupKBListeners();
+        document.getElementById('kb-upload-btn')?.addEventListener('click', () => {
+            document.getElementById('kb-file-input')?.click();
+        });
+        document.getElementById('kb-file-input')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) this.uploadKBFile(file);
+            e.target.value = '';
+        });
+        this.loadKBFiles();
+    },
+
+    setupKBListeners() {
+        document.getElementById('kb-enabled-toggle')?.addEventListener('change', (e) => {
+            this.saveKBSetting('enabled', e.target.checked, e.target.checked ? 'Knowledge base enabled' : 'Knowledge base disabled');
+        });
+        document.getElementById('kb-exclusive-toggle')?.addEventListener('change', (e) => {
+            this.saveKBSetting('exclusive', e.target.checked, e.target.checked ? 'Exclusive mode enabled' : 'Exclusive mode disabled');
+        });
+    },
+
+    async saveKBSetting(key, value, successMsg) {
+        if (!this.agentName) return;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+            Notifications.success(successMsg, { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving knowledge base setting:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+        }
+    },
+
+    showKBError(message) {
+        const contentElement = document.getElementById('kb-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="kb-error">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <h3>Error Loading Knowledge Base Settings</h3>
                 <p>${message}</p>
             </div>
         `;

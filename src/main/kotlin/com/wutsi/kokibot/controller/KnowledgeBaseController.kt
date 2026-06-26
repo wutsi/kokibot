@@ -37,13 +37,16 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
     fun entries(
         @PathVariable name: String,
         @RequestParam(required = false) status: String? = null,
+        @RequestParam(required = false) limit: Int = 5,
     ): ResponseEntity<List<Map<String, Any?>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()
         val kb = context.knowledgeBase
         val fileService = context.fileService
         val entries = kb.entries()
+        val result = entries
             .filter { entry -> status == null || entry.status.name.equals(status, ignoreCase = true) }
+            .take(limit)
             .map { entry ->
                 mapOf(
                     "filename" to entry.name,
@@ -68,7 +71,10 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
                     "error" to entry.error,
                 )
             }
-        return ResponseEntity.ok(entries)
+        return ResponseEntity
+            .status(200)
+            .header("X-Total-Count", entries.size.toString())
+            .body(result)
     }
 
     @PostMapping("/{name}/knowledge-base/upload")

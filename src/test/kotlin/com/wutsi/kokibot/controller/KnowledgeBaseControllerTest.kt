@@ -144,6 +144,8 @@ class KnowledgeBaseControllerTest {
         val response = rest.getForEntity("/assistants/007/knowledge-base/entries", List::class.java)
 
         assertEquals(200, response.statusCode.value())
+        assertEquals("2", response.headers["X-Total-Count"]?.firstOrNull())
+
         val body = response.body as List<*>
         assertEquals(2, body.size)
         val first = body[0] as Map<*, *>
@@ -186,10 +188,46 @@ class KnowledgeBaseControllerTest {
         val response = rest.getForEntity("/assistants/007/knowledge-base/entries?status=ready", List::class.java)
 
         assertEquals(200, response.statusCode.value())
+        assertEquals("2", response.headers["X-Total-Count"]?.firstOrNull())
+
         val body = response.body as List<*>
         assertEquals(1, body.size)
         val first = body[0] as Map<*, *>
         assertEquals("doc.pdf", first["filename"])
+    }
+
+    @Test
+    fun `get entries with limit`() {
+        val entries = listOf(
+            KBEntry(
+                name = "doc.pdf",
+                scope = "Technical spec",
+                keywords = listOf("kotlin", "spring"),
+                type = KBEntryType.FILE,
+                status = KBEntryStatus.READY
+            ),
+            KBEntry(
+                name = "https://foo.com/5001-g.pdf",
+                scope = "Overview",
+                keywords = listOf("setup"),
+                url = "https://foo.com/5001-g.pdf",
+                type = KBEntryType.LINK,
+                status = KBEntryStatus.ERROR,
+                error = "Failed to fetch the LINK"
+            ),
+            KBEntry(name = "foo.pdf"),
+            KBEntry(name = "bar.pdf"),
+            KBEntry(name = "test.pdf"),
+        )
+        doReturn(listOf(createBootstrap("007", entries = entries))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/knowledge-base/entries?limit=3", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals("5", response.headers["X-Total-Count"]?.firstOrNull())
+
+        val body = response.body as List<*>
+        assertEquals(3, body.size)
     }
 
     @Test

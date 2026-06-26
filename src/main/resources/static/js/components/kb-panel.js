@@ -30,19 +30,20 @@ const KBPanel = {
             const kb = await kbRes.json();
             if (!kb.enabled) return;
 
-            const entriesRes = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?status=READY`);
+            const entriesRes = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?status=READY&limit=5`);
             if (!entriesRes.ok) return;
+            const total = parseInt(entriesRes.headers.get('X-Total-Count') || '0', 10);
             const entries = await entriesRes.json();
-            if (!entries.length) return;
+            if (!total) return;
 
-            this.render(entries);
+            this.render(entries, total);
         } catch (_) {}
     },
 
-    render(entries) {
+    render(entries, total) {
         this.filesList.innerHTML = '';
         entries.forEach(entry => this.filesList.appendChild(this.buildFileEl(entry)));
-        if (this.count) this.count.textContent = `(${entries.length})`;
+        if (this.count) this.count.textContent = `(${total})`;
         this.panel.classList.remove('kb-panel--hidden');
     },
 

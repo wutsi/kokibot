@@ -62,7 +62,13 @@
                 <div id="kb-panel-files" class="kb-panel-files"></div>
             </div>
 
-            <!-- Section 4: Status -->
+            <!-- Section 4: Chat History -->
+            <div class="sidebar-section sidebar-section--history">
+                <hr class="sidebar-divider">
+                <div id="conversation-history" class="conv-history-list"></div>
+            </div>
+
+            <!-- Section 5: Status -->
             <div class="sidebar-section sidebar-section--status">
                 <div class="header-status">
                     <div class="connection-status">
@@ -175,6 +181,7 @@
         ContextWindowDisplay.init(agentName);
         FileViewer.init();
         KBPanel.init(agentName);
+        ConversationHistory.init(agentName);
     });
 </script>
 </body>

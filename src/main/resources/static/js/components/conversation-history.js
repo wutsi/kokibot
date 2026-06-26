@@ -77,11 +77,14 @@ const ConversationHistory = {
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(today.getDate() - 30);
 
         const todayGroup = [];
         const yesterdayGroup = [];
+        const thisWeekGroup = [];
         const recentGroup = [];
         const monthGroups = new Map();
 
@@ -92,6 +95,8 @@ const ConversationHistory = {
                 todayGroup.push(conv);
             } else if (day >= yesterday) {
                 yesterdayGroup.push(conv);
+            } else if (day >= weekStart) {
+                thisWeekGroup.push(conv);
             } else if (day >= thirtyDaysAgo) {
                 recentGroup.push(conv);
             } else {
@@ -104,6 +109,7 @@ const ConversationHistory = {
         const groups = [
             ['Today', todayGroup],
             ['Yesterday', yesterdayGroup],
+            ['This week', thisWeekGroup],
             ['Previous 30 days', recentGroup],
         ];
         for (const [key, items] of monthGroups) {

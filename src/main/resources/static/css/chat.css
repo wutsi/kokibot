@@ -1274,9 +1274,8 @@ ol, li {
 }
 
 .sidebar-section--kb {
-    flex: 1;
+    max-height: 200px;
     overflow-y: auto;
-    min-height: 0;
 }
 
 .kb-panel-header {

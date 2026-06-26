@@ -1,3 +1,4 @@
+//        val file = download(url)
 package com.wutsi.kokibot.service.kb
 
 import com.wutsi.kokibot.ConfigurationException
@@ -5,8 +6,11 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.service.file.MarkdownConverter
+import com.wutsi.kokibot.util.URLUtil
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.FileNotFoundException
+import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -48,7 +52,7 @@ class KnowledgeBase : Resource {
     }
 
     fun ingest(file: File) {
-        if (checkIfAlreadyIngested(file)) {
+        if (checkIfAlreadyIngested(file.name)) {
             throw FileAlreadyIngestedException("${file.name} is already ingest")
         }
 
@@ -60,46 +64,93 @@ class KnowledgeBase : Resource {
         val prefix = context.home.absolutePath.length + 1
         val entry = KBEntry(
             name = file.name,
-            keywords = emptyList(),
             source = source.absolutePath.substring(prefix),
-            contentType = context.fileService.contentType(file),
+            type = KBEntryType.FILE,
+            status = KBEntryStatus.PROCESSING,
         )
         add(entry)
 
         // Process the file asynchronously
         executor.submit {
             try {
-                processAsync(source)
+                processAsync(source.name, source)
+            } catch (ex: FileNotFoundException) {
+                LOGGER.error("Failed to process ${file.name} asynchronously", ex)
+                delete(entry.name) // File not found, remove from index
             } catch (ex: Exception) {
                 LOGGER.error("Failed to process ${source.name} asynchronously", ex)
-                val xentry = entry.copy(error = ex.message ?: "Unexpected error")
+                val xentry = entry.copy(
+                    error = ex.message ?: "Unexpected error",
+                    status = KBEntryStatus.ERROR,
+                )
+                update(xentry) // Update the entry with the error status
+            }
+        }
+    }
+
+    fun ingest(url: URL) {
+        val name = url.toString()
+        if (checkIfAlreadyIngested(name)) {
+            throw FileAlreadyIngestedException("$name is already ingest")
+        }
+
+        // Update the index
+        LOGGER.info("Adding $name to the knowledge base index")
+        val entry = KBEntry(
+            name = name,
+            url = url.toString(),
+            type = KBEntryType.LINK,
+            status = KBEntryStatus.PROCESSING,
+        )
+        add(entry)
+
+        // Process the LINK asynchronously
+        executor.submit {
+            try {
+                processAsync(name, url)
+            } catch (ex: Exception) {
+                LOGGER.error("Failed to process $name asynchronously", ex)
+                val xentry = entry.copy(
+                    error = ex.message ?: "Unexpected error",
+                    status = KBEntryStatus.ERROR,
+                )
                 try {
                     update(xentry)
                 } catch (e: Exception) {
-                    LOGGER.error("Failed to update entry ${source.name} with error message", e)
+                    LOGGER.error("Failed to update entry $name with error message", e)
                 }
             }
         }
     }
 
-    private fun processAsync(source: File) {
+    private fun processAsync(name: String, url: URL) {
+        LOGGER.info("Downloading $url")
+        val file = URLUtil.fetch(url)
+        val source = addToSource(file)
+
+        processAsync(name, source)
+    }
+
+    private fun processAsync(name: String, source: File) {
         // Convert to markdown
         val md = convertToMarkdown(source)
 
         // Summarize
         val result = summarize(md)
-        val summary = File(getRawDir(), "${source.name}.summary.md")
+        val summary = File(getDataDir(), "${source.name}.summary.md")
         summary.writeText(result.summary)
 
         // Update the index
-        val entry = entries().find { it.name == source.name }
+        val entry = entries().find { it.name == name }
         if (entry != null) {
-            LOGGER.info("Adding knowledge base entry ${source.name}")
+            LOGGER.info("Adding knowledge base entry $source.name")
             val xentry = entry.copy(
                 scope = result.scope,
                 keywords = result.keywords,
+                source = source.absolutePath.substring(context.home.absolutePath.length + 1),
                 summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
                 raw = md.absolutePath.substring(context.home.absolutePath.length + 1),
+                status = KBEntryStatus.READY,
             )
             update(xentry)
         } else {
@@ -122,7 +173,7 @@ class KnowledgeBase : Resource {
 
         // Delete local files
         LOGGER.info("Deleting files")
-        deleteFile(entry.source)
+        entry.source?.let { deleteFile(entry.source) }
         entry.raw?.let { deleteFile(entry.raw) }
         entry.summary?.let { deleteFile(entry.summary) }
         return entry
@@ -157,9 +208,9 @@ class KnowledgeBase : Resource {
         writeIndex(items)
     }
 
-    private fun checkIfAlreadyIngested(file: File): Boolean {
+    private fun checkIfAlreadyIngested(name: String): Boolean {
         val index = entries()
-        return index.any { it.name == file.name }
+        return index.any { it.name == name }
     }
 
     private fun deleteFile(path: String) {
@@ -239,7 +290,7 @@ class KnowledgeBase : Resource {
         val content = converter.convert(source)
 
         // Store
-        val md = File(getRawDir(), "${source.name}.md")
+        val md = File(getDataDir(), "${source.name}.md")
         if (!md.parentFile.exists()) {
             md.parentFile.mkdirs()
         }
@@ -252,8 +303,8 @@ class KnowledgeBase : Resource {
         return dir
     }
 
-    private fun getRawDir(): File {
-        val dir = File(getRootDir(), "/raw")
+    private fun getDataDir(): File {
+        val dir = File(getRootDir(), "/data")
         return dir
     }
 

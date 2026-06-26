@@ -7,9 +7,11 @@ data class KBEntry(
     val scope: String? = null,
     val keywords: List<String> = emptyList(),
     val summary: String? = null,
-    val source: String = "",
+    val source: String? = null,
     val raw: String? = null,
+    val url: String? = null,
     val createdAt: LocalDateTime = LocalDateTime.now(),
-    val contentType: String = "",
     val error: String? = null,
+    val type: KBEntryType = KBEntryType.UNKNOWN,
+    val status: KBEntryStatus = KBEntryStatus.UNKNOWN,
 )

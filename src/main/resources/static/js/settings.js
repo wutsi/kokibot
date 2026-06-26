@@ -15,6 +15,7 @@ const Settings = {
     generalDescription: null,
     memoryData: null,
     kbData: null,
+    kbPollingInterval: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -134,13 +135,11 @@ const Settings = {
     },
 
     loadActiveTab() {
-        // Load previously active tab from localStorage
+        const urlTab = new URLSearchParams(window.location.search).get('tab');
         const savedTab = localStorage.getItem('settings_active_tab');
-        const activeTab = savedTab || 'general';
+        const activeTab = urlTab || savedTab || 'general';
 
-        if (savedTab) {
-            this.switchTab(savedTab);
-        }
+        this.switchTab(activeTab);
 
         // Trigger loading for the active tab with force reload
         this.onTabActivated(activeTab, true);
@@ -1586,6 +1585,12 @@ const Settings = {
                         <span class="memory-setting-hint">Documents ingested into the knowledge base</span>
                     </div>
                     <div class="settings-section-actions">
+                        <button class="settings-action-btn settings-action-btn-secondary" id="kb-link-btn"${enabled ? '' : ' disabled'}>
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                            </svg>
+                            Link URL
+                        </button>
                         <button class="settings-action-btn settings-action-btn-primary" id="kb-upload-btn"${enabled ? '' : ' disabled'}>
                             <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
                                 <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
@@ -1600,6 +1605,9 @@ const Settings = {
         `;
 
         this.setupKBListeners();
+        document.getElementById('kb-link-btn')?.addEventListener('click', () => {
+            this.ingestKBLink();
+        });
         document.getElementById('kb-upload-btn')?.addEventListener('click', () => {
             document.getElementById('kb-file-input')?.click();
         });
@@ -1641,6 +1649,8 @@ const Settings = {
         }
         if (filesSection) {
             filesSection.classList.toggle('memory-fields-disabled', !enabled);
+            const linkBtn = document.getElementById('kb-link-btn');
+            if (linkBtn) linkBtn.disabled = !enabled;
             const uploadBtn = document.getElementById('kb-upload-btn');
             if (uploadBtn) uploadBtn.disabled = !enabled;
             filesSection.querySelectorAll('.kb-delete-btn').forEach(btn => { btn.disabled = !enabled; });
@@ -1689,13 +1699,12 @@ const Settings = {
         const listEl = document.getElementById('kb-files-list');
         if (!listEl) return;
 
-        listEl.innerHTML = `
-            <div class="kb-loading">
-                <svg class="loading-spinner" fill="currentColor" height="32" viewBox="0 0 24 24" width="32">
-                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
-                </svg>
+        listEl.innerHTML = Array.from({ length: 3 }, () => `
+            <div class="kb-skeleton-row">
+                <div class="kb-skeleton-line kb-skeleton-line--title"></div>
+                <div class="kb-skeleton-line kb-skeleton-line--sub"></div>
             </div>
-        `;
+        `).join('');
 
         try {
             const controller = new AbortController();
@@ -1737,21 +1746,46 @@ const Settings = {
         }
 
         const rowsHtml = entries.map(entry => {
-            const status = entry.status || 'ready';
-            const isReady = status === 'ready';
-            const isError = status === 'error';
-            const isProcessing = status === 'processing';
+            const status = entry.status || 'PROCESSING';
+            const isReady = status === 'READY';
+            const isError = status === 'ERROR';
+            const isProcessing = status === 'PROCESSING';
+            const titleHtml = this.buildKBEntryTitle(entry);
+
+            const downloadBtn = entry.type === 'FILE'
+                ? `<a href="${this.escapeHtml(entry.url)}" download title="Download file"
+                      style="position:absolute;top:8px;right:36px;background:none;border:none;cursor:pointer;color:var(--text-secondary,#666);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;text-decoration:none;">
+                       <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                           <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                       </svg>
+                   </a>`
+                : '';
+            const actionButtons = `
+                ${downloadBtn}
+                <button class="kb-delete-btn" data-filename="${this.escapeHtml(entry.filename)}" title="Delete file"
+                        style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:var(--text-secondary,#666);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;">
+                    <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
+            `;
+
+            if (isProcessing) {
+                return `
+                    <div class="channel-item kb-skeleton-row--processing" style="flex-direction:column;align-items:flex-start;gap:4px;position:relative;">
+                        ${actionButtons}
+                        <span class="kb-processing-title">${titleHtml}</span>
+                        <div class="kb-skeleton-line kb-skeleton-line--sub"></div>
+                        <div class="kb-skeleton-line kb-skeleton-line--sub" style="width:50%;"></div>
+                    </div>
+                `;
+            }
 
             const keywordsHtml = (entry.keywords || [])
                 .map(k => `<span class="marketplace-skill-tag">${this.escapeHtml(k)}</span>`)
                 .join('');
 
-            const statusBadge = isProcessing
-                ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary,#888);margin-left:6px;">
-                       <svg class="loading-spinner" fill="currentColor" height="12" viewBox="0 0 24 24" width="12"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>
-                       Processing…
-                   </span>`
-                : isError
+            const statusBadge = isError
                 ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#c0392b;margin-left:6px;">
                        <svg fill="currentColor" height="12" viewBox="0 0 24 24" width="12"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                        Error
@@ -1762,32 +1796,29 @@ const Settings = {
                 ? `<span style="font-size:11px;color:#c0392b;">${this.escapeHtml(entry.error)}</span>`
                 : '';
 
+            const urlRow = entry.type === 'LINK' && entry.url
+                ? `<a href="${this.escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer" class="channel-source" style="word-break:break-all;color:var(--color-accent-blue,#2196f3);">${this.escapeHtml(entry.url)}</a>`
+                : '';
+
             return `
                 <div class="channel-item" style="flex-direction:column;align-items:flex-start;gap:4px;position:relative;">
-                    <a href="${this.escapeHtml(entry.url)}" download title="Download file"
-                       style="position:absolute;top:8px;right:36px;background:none;border:none;cursor:pointer;color:var(--text-secondary,#666);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;text-decoration:none;">
-                        <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                        </svg>
-                    </a>
-                    <button class="kb-delete-btn" data-filename="${this.escapeHtml(entry.filename)}" title="Delete file"
-                            style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:var(--text-secondary,#666);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;">
-                        <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                        </svg>
-                    </button>
-                    <span style="display:inline-flex;align-items:center;">
-                        <span class="channel-name">${this.escapeHtml(entry.filename)}</span>
+                    ${actionButtons}
+                    <span style="display:inline-flex;align-items:center;gap:8px;">
+                        ${titleHtml}
                         ${statusBadge}
                     </span>
-                    ${isReady && entry.scope ? `<span class="channel-source">${this.escapeHtml(entry.scope)}</span>` : ''}
+                    ${urlRow}
                     ${errorRow}
+                    ${isReady && entry.scope ? `<span class="channel-source">${this.escapeHtml(entry.scope)}</span>` : ''}
                     ${isReady && keywordsHtml ? `<div class="marketplace-skills" style="margin-top:4px;">${keywordsHtml}</div>` : ''}
                 </div>
             `;
         }).join('');
 
         listEl.innerHTML = `<div class="channels-list">${rowsHtml}</div>`;
+
+        const stillProcessing = entries.some(e => (e.status || 'PROCESSING') === 'PROCESSING');
+        if (!stillProcessing) this.stopKBPolling();
 
         listEl.querySelectorAll('.kb-delete-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1831,6 +1862,7 @@ const Settings = {
 
             Notifications.success(`${file.name} ingested successfully`, { duration: 3000 });
             await this.loadKBFiles();
+            this.startKBPolling();
         } catch (error) {
             console.error('Error uploading KB file:', error);
             Notifications.error(
@@ -1845,6 +1877,60 @@ const Settings = {
                         <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
                     </svg>
                     Upload
+                `;
+            }
+        }
+    },
+
+    async ingestKBLink() {
+        const url = window.prompt('Enter URL to ingest:');
+        if (!url) return;
+
+        const btn = document.getElementById('kb-link-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="loading-spinner" fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                Ingesting…
+            `;
+        }
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/link`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+
+            if (response.status === 409) {
+                Notifications.error('URL already ingested', { duration: 5000 });
+                return;
+            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            Notifications.success('URL ingested successfully', { duration: 3000 });
+            await this.loadKBFiles();
+            this.startKBPolling();
+        } catch (error) {
+            console.error('Error ingesting URL:', error);
+            Notifications.error(
+                error.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Failed to ingest URL. Please try again.',
+                { duration: 5000 }
+            );
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                    </svg>
+                    Link URL
                 `;
             }
         }
@@ -1885,6 +1971,38 @@ const Settings = {
                 { duration: 5000 }
             );
         }
+    },
+
+    startKBPolling() {
+        if (this.kbPollingInterval) return;
+        this.kbPollingInterval = setInterval(() => this.loadKBFiles(), 30000);
+    },
+
+    stopKBPolling() {
+        if (!this.kbPollingInterval) return;
+        clearInterval(this.kbPollingInterval);
+        this.kbPollingInterval = null;
+    },
+
+    buildKBEntryTitle(entry) {
+        if (entry.type === 'LINK') {
+            return `
+                <svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14" style="flex-shrink:0;color:var(--text-secondary,#666);">
+                    <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                </svg>
+                <span class="channel-name">${this.escapeHtml(entry.displayName)}</span>
+            `;
+        }
+        if (entry.type === 'FILE') {
+            const dotIdx = entry.filename.lastIndexOf('.');
+            const ext = dotIdx !== -1 ? entry.filename.slice(dotIdx + 1).toLowerCase() : '';
+            const displayName = dotIdx !== -1 ? entry.filename.slice(0, dotIdx) : entry.filename;
+            const extBadge = ext
+                ? `<span class="message-file-extension file-extension-${this.escapeHtml(ext)}">${this.escapeHtml(ext)}</span>`
+                : '';
+            return `${extBadge}<span class="channel-name">${this.escapeHtml(displayName)}</span>`;
+        }
+        return `<span class="channel-name">${this.escapeHtml(entry.filename)}</span>`;
     },
 
     escapeHtml(text) {

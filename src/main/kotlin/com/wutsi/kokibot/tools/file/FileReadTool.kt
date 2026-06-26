@@ -5,10 +5,10 @@ import com.wutsi.kokibot.service.file.MarkdownConverter
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
-import com.wutsi.kokibot.tools.web.WebFetchTool
+import com.wutsi.kokibot.util.URLUtil
 import org.springframework.http.MediaTypeFactory
 
-class FileReadTool(private val maxLength: Int = WebFetchTool.MAX_FILE_SIZE) : AbstractFileTool() {
+class FileReadTool(private val maxLength: Int = URLUtil.MAX_FILE_SIZE) : AbstractFileTool() {
     companion object {
         const val NAME = "file_read"
     }

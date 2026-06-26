@@ -55,15 +55,11 @@
             <!-- Section 3: Knowledge Base (hidden until KB is enabled and has files) -->
             <div id="kb-panel" class="sidebar-section sidebar-section--kb kb-panel--hidden">
                 <hr class="sidebar-divider">
-                <div class="sidebar-section-label">Knowledge Base</div>
+                <div class="sidebar-section-label kb-panel-header">
+                    <span>Knowledge Base <span id="kb-panel-count" class="kb-panel-count"></span></span>
+                    <a id="kb-panel-view-all" href="#" class="kb-panel-view-all">View all</a>
+                </div>
                 <div id="kb-panel-files" class="kb-panel-files"></div>
-            </div>
-
-            <hr class="sidebar-divider">
-
-            <!-- Section 4: Chat History (scrollable) -->
-            <div class="sidebar-section sidebar-section--history">
-                <div id="conversation-history" class="conv-history-list"></div>
             </div>
 
             <!-- Section 4: Status -->

@@ -25,8 +25,9 @@ class MarkdownConverter(
 
             supportsMarkitdown(contentType) -> markitdown(file) ?: pandoc(file)
 
-            contentType.startsWith("text/") -> file.readText()
-            contentType.startsWith("application/json") -> file.readText()
+            contentType.startsWith("text/") ||
+                contentType.startsWith("application/xml") ||
+                contentType.startsWith("application/json") -> file.readText()
 
             contentType.startsWith("application/pdf") -> pandoc(file)
 

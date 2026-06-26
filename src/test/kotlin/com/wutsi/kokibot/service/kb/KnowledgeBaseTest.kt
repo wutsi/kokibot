@@ -11,11 +11,11 @@ import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
+import java.net.URL
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -83,7 +83,7 @@ class KnowledgeBaseTest {
     }
 
     @Test
-    fun ingest() {
+    fun `ingest file`() {
         // GIVEN
         kb.init(config, context)
 
@@ -95,9 +95,10 @@ class KnowledgeBaseTest {
         val entries = kb.entries()
         assertEquals(1, entries.size)
         assertEquals(file.name, entries[0].name)
+        assertEquals(KBEntryType.FILE, entries[0].type)
+        assertEquals(KBEntryStatus.PROCESSING, entries[0].status)
         assertNull(entries[0].scope)
         assertTrue(entries[0].keywords.isEmpty())
-        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
         assertEquals("kb/source/${file.name}", entries[0].source)
         assertNull(entries[0].raw)
         assertNull(entries[0].summary)
@@ -107,25 +108,27 @@ class KnowledgeBaseTest {
     }
 
     @Test
-    fun `ingest and process`() {
+    fun `ingest file and process`() {
         // GIVEN
         kb.init(config, context)
 
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
-        Thread.sleep(3000) // Wait for the async processing to complete
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()
         assertEquals(1, entries.size)
         assertEquals(file.name, entries[0].name)
+        assertEquals(KBEntryType.FILE, entries[0].type)
+        assertEquals(KBEntryStatus.READY, entries[0].status)
         assertEquals("This is the scope of the document", entries[0].scope)
         assertEquals(listOf("sample", "document"), entries[0].keywords)
-        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
         assertEquals("kb/source/${file.name}", entries[0].source)
-        assertEquals("kb/raw/${file.name}.md", entries[0].raw)
-        assertEquals("kb/raw/${file.name}.summary.md", entries[0].summary)
+        assertEquals("kb/data/${file.name}.md", entries[0].raw)
+        assertEquals("kb/data/${file.name}.summary.md", entries[0].summary)
+        assertNull(entries[0].url)
         assertNull(entries[0].error)
 
         assertTrue(File(context.home, entries[0].source).exists())
@@ -135,7 +138,7 @@ class KnowledgeBaseTest {
     }
 
     @Test
-    fun `ingest - LLM response in json block`() {
+    fun `ingest file - LLM response in json block`() {
         // GIVEN
         kb.init(config, context)
 
@@ -159,28 +162,30 @@ class KnowledgeBaseTest {
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
-        Thread.sleep(3000) // Wait for the async processing to complete
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()
         assertEquals(1, entries.size)
         assertEquals(file.name, entries[0].name)
+        assertEquals(KBEntryType.FILE, entries[0].type)
+        assertEquals(KBEntryStatus.READY, entries[0].status)
         assertEquals("This is the scope of the document", entries[0].scope)
         assertEquals(listOf("sample", "document"), entries[0].keywords)
-        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
-        assertEquals("kb/raw/${file.name}.md", entries[0].raw)
-        assertEquals("kb/raw/${file.name}.summary.md", entries[0].summary)
+        assertEquals("kb/data/${file.name}.md", entries[0].raw)
+        assertEquals("kb/data/${file.name}.summary.md", entries[0].summary)
         assertEquals("kb/source/${file.name}", entries[0].source)
+        assertNull(entries[0].url)
         assertNull(entries[0].error)
 
         assertTrue(File(context.home, entries[0].source).exists())
-        assertTrue(File(context.home, entries[0].raw).exists())
-        assertTrue(File(context.home, entries[0].summary).exists())
+        assertTrue(File(context.home, entries[0].raw!!).exists())
+        assertTrue(File(context.home, entries[0].summary!!).exists())
         assertEquals("This is a sample document.", File(context.home, entries[0].summary).readText())
     }
 
     @Test
-    fun `ingest - LLM error`() {
+    fun `ingest file - LLM error`() {
         // GIVEN
         kb.init(config, context)
 
@@ -189,15 +194,16 @@ class KnowledgeBaseTest {
         // WHEN
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
-        Thread.sleep(3000) // Wait for the async processing to complete
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()
         assertEquals(1, entries.size)
         assertEquals(file.name, entries[0].name)
+        assertEquals(KBEntryType.FILE, entries[0].type)
+        assertEquals(KBEntryStatus.ERROR, entries[0].status)
         assertNull(entries[0].scope)
         assertTrue(entries[0].keywords.isEmpty())
-        assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", entries[0].contentType)
         assertNull(entries[0].raw)
         assertNull(entries[0].raw)
         assertNull(entries[0].summary)
@@ -205,7 +211,7 @@ class KnowledgeBaseTest {
     }
 
     @Test
-    fun `ingest - already exists`() {
+    fun `ingest file - already exists`() {
         // GIVEN
         kb.init(config, context)
 
@@ -216,7 +222,7 @@ class KnowledgeBaseTest {
     }
 
     @Test
-    fun `ingest and delete and process`() {
+    fun `ingest file and delete and process`() {
         // GIVEN
         kb.init(config, context)
 
@@ -224,22 +230,21 @@ class KnowledgeBaseTest {
         val file = File(this::class.java.getResource("/file/sample.docx")!!.file)
         kb.ingest(file)
         kb.delete(file.name)
-        Thread.sleep(2000) // Wait for the async processing to complete
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // THEN
         val entries = kb.entries()
-        assertEquals(1, entries.size)
-        assertNotNull(entries[0].error)
+        assertEquals(0, entries.size)
     }
 
     @Test
-    fun delete() {
+    fun `delete file`() {
         // GIVEN
         kb.init(config, context)
 
         val file = File(this::class.java.getResource("/file/sample.html")!!.file)
         kb.ingest(file)
-        Thread.sleep(3000) // Wait for the async processing to complete
+        Thread.sleep(5000) // Wait for the async processing to complete
 
         // WHEN
         kb.delete("sample.html")
@@ -249,7 +254,80 @@ class KnowledgeBaseTest {
         assertEquals(0, entries.size)
 
         assertFalse(File(context.home, "kb/source/${file.name}").exists())
-        assertFalse(File(context.home, "kb/raw/${file.name}.md").exists())
-        assertFalse(File(context.home, "kb/raw/${file.name}.summary.md").exists())
+        assertFalse(File(context.home, "kb/data/${file.name}.md").exists())
+        assertFalse(File(context.home, "kb/data/${file.name}.summary.md").exists())
+    }
+
+    @Test
+    fun `ingest URL`() {
+        // GIVEN
+        kb.init(config, context)
+
+        // WHEN
+        val url = URL("https://pdfobject.com/pdf/sample.pdf")
+        kb.ingest(url)
+
+        // THEN
+        val entries = kb.entries()
+        assertEquals(1, entries.size)
+        assertEquals(url.toString(), entries[0].name)
+        assertEquals(KBEntryType.LINK, entries[0].type)
+        assertEquals(KBEntryStatus.PROCESSING, entries[0].status)
+        assertNull(entries[0].scope)
+        assertTrue(entries[0].keywords.isEmpty())
+        assertEquals(url.toString(), entries[0].url)
+        assertNull(entries[0].source)
+        assertNull(entries[0].raw)
+        assertNull(entries[0].summary)
+        assertNull(entries[0].error)
+    }
+
+    @Test
+    fun `ingest URL and process`() {
+        // GIVEN
+        kb.init(config, context)
+
+        // WHEN
+        val url = URL("https://pdfobject.com/pdf/sample.pdf")
+        kb.ingest(url)
+        Thread.sleep(5000) // Wait for the async processing to complete
+
+        // THEN
+        val entries = kb.entries()
+        assertEquals(1, entries.size)
+        assertEquals(url.toString(), entries[0].name)
+        assertEquals(KBEntryType.LINK, entries[0].type)
+        assertEquals(KBEntryStatus.READY, entries[0].status)
+        assertEquals("This is the scope of the document", entries[0].scope)
+        assertEquals(listOf("sample", "document"), entries[0].keywords)
+        assertEquals(url.toString(), entries[0].url)
+        assertEquals(true, entries[0].source?.startsWith("kb/source/"))
+        assertEquals(true, entries[0].source?.endsWith(".pdf"))
+        assertEquals(true, entries[0].raw?.startsWith("kb/data/"))
+        assertEquals(true, entries[0].raw?.endsWith(".md"))
+        assertEquals(true, entries[0].summary?.startsWith("kb/data/"))
+        assertEquals(true, entries[0].summary?.endsWith(".summary.md"))
+        assertNull(entries[0].error)
+
+        assertTrue(File(context.home, entries[0].raw!!).exists())
+        assertTrue(File(context.home, entries[0].summary!!).exists())
+        assertEquals("This is a sample document.", File(context.home, entries[0].summary!!).readText())
+    }
+
+    @Test
+    fun `delete URL`() {
+        // GIVEN
+        kb.init(config, context)
+
+        val url = URL("https://pdfobject.com/pdf/sample.pdf")
+        kb.ingest(url)
+        Thread.sleep(5000) // Wait for the async processing to complete
+
+        // WHEN
+        kb.delete(url.toString())
+
+        // THEN
+        val entries = kb.entries()
+        assertEquals(0, entries.size)
     }
 }

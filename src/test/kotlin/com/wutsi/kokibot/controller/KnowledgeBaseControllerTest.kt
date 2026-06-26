@@ -12,6 +12,8 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import com.wutsi.kokibot.service.kb.FileAlreadyIngestedException
 import com.wutsi.kokibot.service.kb.KBEntry
+import com.wutsi.kokibot.service.kb.KBEntryStatus
+import com.wutsi.kokibot.service.kb.KBEntryType
 import com.wutsi.kokibot.service.kb.KnowledgeBase
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -120,8 +122,22 @@ class KnowledgeBaseControllerTest {
     @Test
     fun `get entries`() {
         val entries = listOf(
-            KBEntry(name = "doc.pdf", scope = "Technical spec", keywords = listOf("kotlin", "spring")),
-            KBEntry(name = "readme.md", scope = "Overview", keywords = listOf("setup")),
+            KBEntry(
+                name = "doc.pdf",
+                scope = "Technical spec",
+                keywords = listOf("kotlin", "spring"),
+                type = KBEntryType.FILE,
+                status = KBEntryStatus.PROCESSING
+            ),
+            KBEntry(
+                name = "https://foo.com/5001-g.pdf",
+                scope = "Overview",
+                keywords = listOf("setup"),
+                url = "https://foo.com/5001-g.pdf",
+                type = KBEntryType.LINK,
+                status = KBEntryStatus.ERROR,
+                error = "Failed to fetch the LINK"
+            ),
         )
         doReturn(listOf(createBootstrap("007", entries = entries))).whenever(multi).bootstraps
 
@@ -134,6 +150,46 @@ class KnowledgeBaseControllerTest {
         assertEquals("doc.pdf", first["filename"])
         assertEquals("Technical spec", first["scope"])
         assertEquals(listOf("kotlin", "spring"), first["keywords"])
+        assertEquals(KBEntryType.FILE.name, first["type"])
+        assertEquals(KBEntryStatus.PROCESSING.name, first["status"])
+
+        val second = body[1] as Map<*, *>
+        assertEquals("https://foo.com/5001-g.pdf", second["filename"])
+        assertEquals(KBEntryType.LINK.name, second["type"])
+        assertEquals(KBEntryStatus.ERROR.name, second["status"])
+        assertEquals("Failed to fetch the LINK", second["error"])
+        assertEquals("https://foo.com/5001-g.pdf", second["url"])
+    }
+
+    @Test
+    fun `get entries by status`() {
+        val entries = listOf(
+            KBEntry(
+                name = "doc.pdf",
+                scope = "Technical spec",
+                keywords = listOf("kotlin", "spring"),
+                type = KBEntryType.FILE,
+                status = KBEntryStatus.READY
+            ),
+            KBEntry(
+                name = "https://foo.com/5001-g.pdf",
+                scope = "Overview",
+                keywords = listOf("setup"),
+                url = "https://foo.com/5001-g.pdf",
+                type = KBEntryType.LINK,
+                status = KBEntryStatus.ERROR,
+                error = "Failed to fetch the LINK"
+            ),
+        )
+        doReturn(listOf(createBootstrap("007", entries = entries))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/knowledge-base/entries?status=ready", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        val body = response.body as List<*>
+        assertEquals(1, body.size)
+        val first = body[0] as Map<*, *>
+        assertEquals("doc.pdf", first["filename"])
     }
 
     @Test
@@ -167,7 +223,7 @@ class KnowledgeBaseControllerTest {
 
         assertEquals(200, response.statusCode.value())
         assertEquals(true, response.body!!["success"])
-        verify(bootstrap.getContext().knowledgeBase).ingest(any())
+        verify(bootstrap.getContext().knowledgeBase).ingest(any<File>())
     }
 
     @Test
@@ -197,7 +253,7 @@ class KnowledgeBaseControllerTest {
         val bootstrap = createBootstrap("007")
         doReturn(listOf(bootstrap)).whenever(multi).bootstraps
         val kb = bootstrap.getContext().knowledgeBase
-        doThrow(FileAlreadyIngestedException("test.txt is already ingested")).whenever(kb).ingest(any())
+        doThrow(FileAlreadyIngestedException("test.txt is already ingested")).whenever(kb).ingest(any<File>())
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.MULTIPART_FORM_DATA

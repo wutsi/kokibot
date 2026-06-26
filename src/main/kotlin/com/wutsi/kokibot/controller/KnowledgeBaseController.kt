@@ -3,6 +3,7 @@ package com.wutsi.kokibot.controller
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.MultiBootstrap
 import com.wutsi.kokibot.service.kb.FileAlreadyIngestedException
+import com.wutsi.kokibot.service.kb.KBEntryType
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
+import java.net.URL
 
 @RequestMapping("/assistants")
 @RestController
@@ -32,28 +34,40 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
     }
 
     @GetMapping("/{name}/knowledge-base/entries")
-    fun entries(@PathVariable name: String): ResponseEntity<List<Map<String, Any?>>> {
+    fun entries(
+        @PathVariable name: String,
+        @RequestParam(required = false) status: String? = null,
+    ): ResponseEntity<List<Map<String, Any?>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()
         val kb = context.knowledgeBase
         val fileService = context.fileService
-        val entries = kb.entries().map { entry ->
-            mapOf(
-                "filename" to entry.name,
-                "scope" to entry.scope,
-                "keywords" to entry.keywords,
-                "size" to File(entry.source).length(),
-                "url" to fileService.urlPath(File(context.home, entry.source).absolutePath),
-                "status" to if (entry.error != null) {
-                    "error"
-                } else if (entry.summary == null) {
-                    "processing"
-                } else {
-                    "ready"
-                },
-                "error" to entry.error,
-            )
-        }
+        val entries = kb.entries()
+            .filter { entry -> status == null || entry.status.name.equals(status, ignoreCase = true) }
+            .map { entry ->
+                mapOf(
+                    "filename" to entry.name,
+                    "displayName" to if (entry.type == KBEntryType.LINK && entry.url != null) {
+                        URL(entry.url).file
+                            .removeSuffix("/")
+                            .ifEmpty { null }
+                            ?.let { File(it).name }
+                            ?: entry.name
+                    } else {
+                        entry.name
+                    },
+                    "scope" to entry.scope,
+                    "keywords" to entry.keywords,
+                    "url" to if (entry.type == KBEntryType.FILE && entry.source != null) {
+                        fileService.urlPath(File(context.home, entry.source).absolutePath)
+                    } else {
+                        entry.url
+                    },
+                    "status" to entry.status,
+                    "type" to entry.type,
+                    "error" to entry.error,
+                )
+            }
         return ResponseEntity.ok(entries)
     }
 
@@ -75,6 +89,22 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
             ResponseEntity.status(HttpStatus.CONFLICT).body(mapOf("error" to (e.message ?: "File already ingested")))
         } finally {
             tmp.delete()
+        }
+    }
+
+    @PostMapping("/{name}/knowledge-base/link")
+    fun addLink(
+        @PathVariable name: String,
+        @RequestBody request: Map<String, Any?>,
+    ): ResponseEntity<Map<String, Any>> {
+        val url = request["url"] as? String ?: return ResponseEntity.badRequest().build()
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val kb = bootstrap.getContext().knowledgeBase
+        return try {
+            kb.ingest(URL(url))
+            ResponseEntity.ok(mapOf("success" to true))
+        } catch (e: FileAlreadyIngestedException) {
+            ResponseEntity.status(HttpStatus.CONFLICT).body(mapOf("error" to (e.message ?: "File already ingested")))
         }
     }
 

@@ -30,15 +30,21 @@
 }
 
 .kb-panel-file {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 5px 8px;
     font-size: 13px;
-    color: var(--color-accent-blue, #0969da);
+    color: var(--color-text-primary);
     text-decoration: none;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.kb-panel-file > span:last-child {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    border-radius: 4px;
 }
 
 .kb-panel-file:hover {

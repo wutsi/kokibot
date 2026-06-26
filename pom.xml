@@ -30,6 +30,7 @@
         <java.version>17</java.version>
         <jqit.version>7.7.0.202606012155-r</jqit.version>
         <jsoup.version>1.22.2</jsoup.version>
+        <jodd.version>6.3.0</jodd.version>
         <kotlin.version>2.2.0</kotlin.version>
         <kotlin-jackson.version>2.22.0</kotlin-jackson.version>
         <kotlin-mockito.version>2.2.0</kotlin-mockito.version>
@@ -138,6 +139,12 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>${jsoup.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jodd</groupId>
+            <artifactId>jodd-util</artifactId>
+            <version>${jodd.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

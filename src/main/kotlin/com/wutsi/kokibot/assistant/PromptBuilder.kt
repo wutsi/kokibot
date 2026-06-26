@@ -2,6 +2,7 @@ package com.wutsi.kokibot.assistant
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.service.kb.KBEntryStatus
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import org.apache.commons.io.IOUtils
 import java.io.File
@@ -177,22 +178,20 @@ class PromptBuilder(
             return null
         }
 
-        val entries = kb.entries()
+        val entries = kb.entries().filter { entry -> entry.status == KBEntryStatus.READY }
         if (entries.isEmpty()) {
             return null
         }
 
-        val content = entries
-            .filter { entry -> entry.raw != null && entry.summary != null }
-            .joinToString("\n") { entry ->
-                listOfNotNull(
-                    "### ${entry.name}\n\n" +
-                        "**Scope:** ${entry.scope}\n\n" +
-                        "**Keywords:** ${entry.keywords.joinToString(", ")}\n\n" +
-                        "**Summary File:** {{HOME}}/${entry.summary}\n\n" +
-                        "**Raw File**: {{HOME}}/${entry.raw}\n\n"
-                ).joinToString("\n\n")
-            }
+        val content = entries.joinToString("\n\n") { entry ->
+            listOfNotNull(
+                "### ${entry.name}",
+                "**Scope:** ${entry.scope}",
+                entry.keywords.ifEmpty { null }?.let { "**Keywords:** ${entry.keywords.joinToString(", ")}" },
+                entry.summary?.let { path -> "**Summary File:** {{HOME}}/$path" },
+                entry.raw?.let { path -> "**Raw File:** {{HOME}}/$path" },
+            ).joinToString("\n")
+        }
 
         val usage = listOfNotNull(
             if (kb.isExclusive()) {
@@ -207,7 +206,7 @@ class PromptBuilder(
 
             if (!kb.isWebSearch()) {
                 """
-                - Do not use web search to answer questions.
+                - Do not use web search to answer questions
                 """.trimIndent()
             } else {
                 null

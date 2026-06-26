@@ -44,7 +44,7 @@ class McpCommand : Command {
             val status = if (activated) "active" else "inactive"
             "*MCP Server:* ${config.name}\n\n" +
                 "*Description:* ${config.description}\n\n" +
-                "*URL:* ${config.url}\n\n" +
+                "*LINK:* ${config.url}\n\n" +
                 "*Status:* $status"
         } catch (ex: McpNotFoundException) {
             LOGGER.warn("MCP server not found: $name", ex)

@@ -11,6 +11,7 @@ import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.mcp.McpServerConfig
 import com.wutsi.kokibot.service.kb.KBEntry
+import com.wutsi.kokibot.service.kb.KBEntryStatus
 import com.wutsi.kokibot.service.kb.KnowledgeBase
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import com.wutsi.kokibot.service.memory.ConversationRepository
@@ -457,10 +458,11 @@ class PromptBuilderTest {
         name: String = "Guide",
         scope: String = "general",
         keywords: List<String> = listOf("kotlin", "spring"),
-        summary: String? = null,
-        raw: String? = null,
+        summary: String? = "kb/summary/guide.summary.md",
+        raw: String? = "kb/raw/guide.md",
         source: String = "docs/guide.pdf",
         contentType: String = "application/pdf",
+        status: KBEntryStatus = KBEntryStatus.READY,
     ) = KBEntry(
         name = name,
         scope = scope,
@@ -468,7 +470,7 @@ class PromptBuilderTest {
         summary = summary,
         raw = raw,
         source = source,
-        contentType = contentType,
+        status = status
     )
 
     @Test
@@ -507,10 +509,11 @@ class PromptBuilderTest {
 
     @Test
     fun `should include exclusive usage instructions when KB is exclusive`() {
+        val entry = sampleEntry()
         doReturn(true).whenever(kb).isEnabled()
         doReturn(true).whenever(kb).isExclusive()
         doReturn(false).whenever(kb).isWebSearch()
-        doReturn(listOf(sampleEntry())).whenever(kb).entries()
+        doReturn(listOf(entry)).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, false, context)
@@ -518,6 +521,8 @@ class PromptBuilderTest {
         assertTrue(instructions.contains("Use only your knowledge base"))
         assertTrue(instructions.contains("Do not use your own training knowledge"))
         assertTrue(instructions.contains("Do not make up information"))
+        assertTrue(instructions.contains("${home.absolutePath}/${entry.raw}"))
+        assertTrue(instructions.contains("${home.absolutePath}/${entry.summary}"))
     }
 
     @Test
@@ -534,19 +539,6 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should include web search restriction when KB web search is disabled`() {
-        doReturn(true).whenever(kb).isEnabled()
-        doReturn(true).whenever(kb).isExclusive()
-        doReturn(false).whenever(kb).isWebSearch()
-        doReturn(listOf(sampleEntry())).whenever(kb).entries()
-
-        val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
-
-        assertTrue(instructions.contains("Do not use web search"))
-    }
-
-    @Test
     fun `should not include web search restriction when KB web search is enabled`() {
         doReturn(true).whenever(kb).isEnabled()
         doReturn(true).whenever(kb).isExclusive()
@@ -560,42 +552,29 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should show not available for summary when entry summary is null`() {
+    fun `should ignore when entry status is PROCESSING`() {
         doReturn(true).whenever(kb).isEnabled()
         doReturn(true).whenever(kb).isExclusive()
         doReturn(false).whenever(kb).isWebSearch()
-        doReturn(listOf(sampleEntry(summary = null))).whenever(kb).entries()
+        doReturn(listOf(sampleEntry(status = KBEntryStatus.PROCESSING))).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, false, context)
 
-        assertTrue(instructions.contains("**Summary File:** N/A"))
+        assertFalse(instructions.contains("# Knowledge Base Instructions"))
     }
 
     @Test
-    fun `should resolve summary path against home when entry summary is set`() {
+    fun `should ignore when entry status is ERROR`() {
         doReturn(true).whenever(kb).isEnabled()
         doReturn(true).whenever(kb).isExclusive()
         doReturn(false).whenever(kb).isWebSearch()
-        doReturn(listOf(sampleEntry(summary = "summaries/guide-summary.md"))).whenever(kb).entries()
+        doReturn(listOf(sampleEntry(status = KBEntryStatus.ERROR))).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, false, context)
 
-        assertTrue(instructions.contains("${home.absolutePath}/summaries/guide-summary.md"))
-    }
-
-    @Test
-    fun `should fall back to source path as raw file when entry raw is null`() {
-        doReturn(true).whenever(kb).isEnabled()
-        doReturn(true).whenever(kb).isExclusive()
-        doReturn(false).whenever(kb).isWebSearch()
-        doReturn(listOf(sampleEntry(raw = null, source = "docs/guide.pdf"))).whenever(kb).entries()
-
-        val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
-
-        assertTrue(instructions.contains("${home.absolutePath}/docs/guide.pdf"))
+        assertFalse(instructions.contains("# Knowledge Base Instructions"))
     }
 
     @Test

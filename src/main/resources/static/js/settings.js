@@ -1873,7 +1873,7 @@ const Settings = {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
-            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/entries`, {
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?limit=50`, {
                 signal: controller.signal,
             });
             clearTimeout(timeoutId);

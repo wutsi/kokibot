@@ -9,6 +9,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.config.JacksonConfiguration
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
@@ -48,6 +49,11 @@ class KnowledgeBaseTest {
             )
         )
         doReturn(llmResponse).whenever(context.llm).completion(any(), any())
+    }
+
+    @AfterEach
+    fun tearDown() {
+        kb.destroy()
     }
 
     @Test

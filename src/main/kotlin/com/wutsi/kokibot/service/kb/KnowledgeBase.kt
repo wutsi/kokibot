@@ -13,13 +13,24 @@ import java.io.FileNotFoundException
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 class KnowledgeBase : Resource {
-    private var enabled: Boolean = false
-    private var exclusive: Boolean = true
-    private var webSearch: Boolean = true
     private lateinit var context: Context
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val lock = ReentrantReadWriteLock()
+
+    @Volatile
+    private var enabled: Boolean = false
+
+    @Volatile
+    private var exclusive: Boolean = true
+
+    @Volatile
+    private var webSearch: Boolean = true
 
     companion object {
         const val ID = "service:knowledge-base"
@@ -34,6 +45,25 @@ class KnowledgeBase : Resource {
         this.context = context
         this.enabled = config["enabled"] as? Boolean ?: false
         this.exclusive = config["exclusive"] as? Boolean ?: true
+    }
+
+    override fun destroy() {
+        super.destroy()
+
+        executor.shutdown()
+        try {
+            if (!executor.awaitTermination(15, TimeUnit.SECONDS)) {
+                LOGGER.warn("Scheduler didn't terminate gracefully, forcing shutdown")
+                executor.shutdownNow()
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    LOGGER.error("Scheduler failed to terminate")
+                }
+            }
+        } catch (_: InterruptedException) {
+            LOGGER.warn("Interrupted while waiting for scheduler shutdown")
+            executor.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     fun isEnabled(): Boolean = enabled
@@ -52,23 +82,30 @@ class KnowledgeBase : Resource {
     }
 
     fun ingest(file: File) {
-        if (checkIfAlreadyIngested(file.name)) {
-            throw FileAlreadyIngestedException("${file.name} is already ingest")
+        var source: File
+        val entry = lock.write {
+            // Make sure the file is not already ingested
+            val index = entries()
+            if (index.any { it.name == file.name }) {
+                throw FileAlreadyIngestedException("${file.name} is already ingest")
+            }
+
+            // Store the file into the source directory
+            source = addToSource(file)
+
+            // Update the index
+            LOGGER.info("Adding ${file.name} to the knowledge base index")
+            val prefix = context.home.absolutePath.length + 1
+            val entry = KBEntry(
+                name = file.name,
+                source = source.absolutePath.substring(prefix),
+                type = KBEntryType.FILE,
+                status = KBEntryStatus.PROCESSING,
+            )
+            writeIndex(index + entry)
+
+            entry
         }
-
-        // Store the file into the source directory
-        val source = addToSource(file)
-
-        // Update the index
-        LOGGER.info("Adding ${file.name} to the knowledge base index")
-        val prefix = context.home.absolutePath.length + 1
-        val entry = KBEntry(
-            name = file.name,
-            source = source.absolutePath.substring(prefix),
-            type = KBEntryType.FILE,
-            status = KBEntryStatus.PROCESSING,
-        )
-        add(entry)
 
         // Process the file asynchronously
         executor.submit {
@@ -90,19 +127,24 @@ class KnowledgeBase : Resource {
 
     fun ingest(url: URL) {
         val name = url.toString()
-        if (checkIfAlreadyIngested(name)) {
-            throw FileAlreadyIngestedException("$name is already ingest")
-        }
+        val entry = lock.write {
+            // Make sure the file is not already ingested
+            val index = entries()
+            if (index.any { it.name == name }) {
+                throw FileAlreadyIngestedException("$name is already ingest")
+            }
 
-        // Update the index
-        LOGGER.info("Adding $name to the knowledge base index")
-        val entry = KBEntry(
-            name = name,
-            url = url.toString(),
-            type = KBEntryType.LINK,
-            status = KBEntryStatus.PROCESSING,
-        )
-        add(entry)
+            // Update the index
+            LOGGER.info("Adding $name to the knowledge base index")
+            val entry = KBEntry(
+                name = name,
+                url = url.toString(),
+                type = KBEntryType.LINK,
+                status = KBEntryStatus.PROCESSING,
+            )
+            writeIndex(index + entry)
+            entry
+        }
 
         // Process the LINK asynchronously
         executor.submit {
@@ -141,76 +183,69 @@ class KnowledgeBase : Resource {
         summary.writeText(result.summary)
 
         // Update the index
-        val entry = entries().find { it.name == name }
-        if (entry != null) {
-            LOGGER.info("Adding knowledge base entry $source.name")
-            val xentry = entry.copy(
-                scope = result.scope,
-                keywords = result.keywords,
-                source = source.absolutePath.substring(context.home.absolutePath.length + 1),
-                summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
-                raw = md.absolutePath.substring(context.home.absolutePath.length + 1),
-                status = KBEntryStatus.READY,
-            )
-            update(xentry)
-        } else {
-            LOGGER.warn("Knowledge base entry ${source.name} not found")
+        lock.write {
+            val entry = entries().find { it.name == name }
+            if (entry != null) {
+                LOGGER.info("Adding knowledge base entry $source.name")
+                val xentry = entry.copy(
+                    scope = result.scope,
+                    keywords = result.keywords,
+                    source = source.absolutePath.substring(context.home.absolutePath.length + 1),
+                    summary = summary.absolutePath.substring(context.home.absolutePath.length + 1),
+                    raw = md.absolutePath.substring(context.home.absolutePath.length + 1),
+                    status = KBEntryStatus.READY,
+                )
+                update(xentry)
+            } else {
+                LOGGER.warn("Knowledge base entry ${source.name} not found")
+            }
         }
     }
 
     fun delete(name: String): KBEntry? {
-        val index = entries()
-        val entry = index.find { it.name == name }
-        if (entry == null) {
-            LOGGER.warn("Knowledge base entry $name not found")
-            return null
+        lock.write {
+            val index = entries()
+            val entry = index.find { it.name == name }
+            if (entry == null) {
+                LOGGER.warn("Knowledge base entry $name not found")
+                return null
+            }
+
+            // Remove from index
+            LOGGER.info("Removing $name from index")
+            val xindex = index.filter { it.name != name }
+            writeIndex(xindex)
+
+            // Delete local files
+            LOGGER.info("Deleting files")
+            entry.source?.let { deleteFile(entry.source) }
+            entry.raw?.let { deleteFile(entry.raw) }
+            entry.summary?.let { deleteFile(entry.summary) }
+            return entry
         }
-
-        // Remove from index
-        LOGGER.info("Removing $name from index")
-        val xindex = index.filter { it.name != name }
-        writeIndex(xindex)
-
-        // Delete local files
-        LOGGER.info("Deleting files")
-        entry.source?.let { deleteFile(entry.source) }
-        entry.raw?.let { deleteFile(entry.raw) }
-        entry.summary?.let { deleteFile(entry.summary) }
-        return entry
     }
 
     fun entries(): List<KBEntry> {
-        val file = getIndexFile()
-        if (!file.exists()) return emptyList()
-        return try {
-            context.jsonMapper.readValue(
-                file.readText(),
-                context.jsonMapper.typeFactory.constructCollectionType(List::class.java, KBEntry::class.java),
-            )
-        } catch (ex: Exception) {
-            LOGGER.warn("Failed to read index file", ex)
-            emptyList()
+        lock.read {
+            val file = getIndexFile()
+            if (!file.exists()) return emptyList()
+            return try {
+                context.jsonMapper.readValue(
+                    file.readText(),
+                    context.jsonMapper.typeFactory.constructCollectionType(List::class.java, KBEntry::class.java),
+                )
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to read index file", ex)
+                emptyList()
+            }
         }
     }
 
-    private fun add(entry: KBEntry) {
-        val index = entries().toMutableList()
-        index.add(entry)
-        writeIndex(index)
-    }
-
     private fun update(entry: KBEntry) {
-        val items = entries()
-            .filter { it.name != entry.name }
-            .toMutableList()
-
-        items.add(entry)
-        writeIndex(items)
-    }
-
-    private fun checkIfAlreadyIngested(name: String): Boolean {
-        val index = entries()
-        return index.any { it.name == name }
+        lock.write {
+            val items = entries().filter { it.name != entry.name }
+            writeIndex(items + entry)
+        }
     }
 
     private fun deleteFile(path: String) {
@@ -225,9 +260,7 @@ class KnowledgeBase : Resource {
 
     private fun writeIndex(entries: List<KBEntry>) {
         val file = getIndexFile()
-        if (!file.parentFile.exists()) {
-            file.parentFile.mkdirs()
-        }
+        file.parentFile.mkdirs()
         val json = context.jsonMapper.writeValueAsString(entries)
         file.writeText(json)
     }
@@ -262,7 +295,7 @@ class KnowledgeBase : Resource {
 
         val content = response.choices.firstOrNull()?.content?.trim()
             ?: throw IllegalStateException("No content returned from LLM")
-        
+
         val json = if (content.startsWith("```json")) {
             val start = content.indexOf("```json") + 7
             val end = content.lastIndexOf("```")
@@ -275,9 +308,7 @@ class KnowledgeBase : Resource {
 
     private fun addToSource(file: File): File {
         val source = File(getSourceDir(), file.name)
-        if (!source.parentFile.exists()) {
-            source.parentFile.mkdirs()
-        }
+        source.parentFile.mkdirs()
 
         LOGGER.info("Storing ${file.absolutePath} into ${source.absolutePath}")
         file.copyTo(source, overwrite = true)
@@ -293,9 +324,7 @@ class KnowledgeBase : Resource {
 
         // Store
         val md = File(getDataDir(), "${source.name}.md")
-        if (!md.parentFile.exists()) {
-            md.parentFile.mkdirs()
-        }
+        md.parentFile.mkdirs()
         md.writeText(content)
         return md
     }

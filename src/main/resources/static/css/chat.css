@@ -1397,12 +1397,6 @@ ol, li {
 .agents-count {
     font-size: 10px;
     font-weight: 600;
-    color: var(--color-text-tertiary);
-    background: var(--color-bg-tertiary);
-    border-radius: 8px;
-    padding: 1px 5px;
-    margin-left: 4px;
-    vertical-align: middle;
 }
 
 .agents-panel-header {

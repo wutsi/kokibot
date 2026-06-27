@@ -30,7 +30,7 @@ const KBPanel = {
             const kb = await kbRes.json();
             if (!kb.enabled) return;
 
-            const entriesRes = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?status=READY&limit=5`);
+            const entriesRes = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?status=READY&limit=3`);
             if (!entriesRes.ok) return;
             const total = parseInt(entriesRes.headers.get('X-Total-Count') || '0', 10);
             const entries = await entriesRes.json();
@@ -70,7 +70,19 @@ const KBPanel = {
         } else if (entry.type === 'LINK') {
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
-            a.innerHTML = '<svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14" style="flex-shrink:0"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>';
+            const url = entry.url || '';
+            const urlPath = url.split('?')[0].split('#')[0];
+            const lastSegment = urlPath.split('/').pop();
+            const dotIdx = lastSegment.lastIndexOf('.');
+            const ext = !url.endsWith('/') && dotIdx !== -1 ? lastSegment.slice(dotIdx + 1).toLowerCase() : '';
+            if (ext) {
+                const badge = document.createElement('span');
+                badge.className = `message-file-extension file-extension-${ext}`;
+                badge.textContent = ext;
+                a.appendChild(badge);
+            } else {
+                a.innerHTML = '<svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14" style="flex-shrink:0"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>';
+            }
             const name = document.createElement('span');
             name.textContent = entry.displayName;
             a.appendChild(name);

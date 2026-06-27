@@ -1745,7 +1745,7 @@ const Settings = {
             <div class="heartbeat-instructions-section${enabled ? '' : ' memory-fields-disabled'}" id="kb-files-section">
                 <div class="settings-section-header heartbeat-instructions-header">
                     <div>
-                        <h3 class="general-section-title">Files</h3>
+                        <h3 class="general-section-title" id="kb-files-title">Files</h3>
                         <span class="memory-setting-hint">Documents ingested into the knowledge base</span>
                     </div>
                     <div class="settings-section-actions">
@@ -1873,7 +1873,7 @@ const Settings = {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
-            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?limit=50`, {
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?limit=20`, {
                 signal: controller.signal,
             });
             clearTimeout(timeoutId);
@@ -1895,6 +1895,20 @@ const Settings = {
     renderKBFiles(entries) {
         const listEl = document.getElementById('kb-files-list');
         if (!listEl) return;
+
+        const MAX_FILES = 20;
+        this.kbEntries = entries || [];
+        const count = this.kbEntries.length;
+        const atMax = count >= MAX_FILES;
+
+        const titleEl = document.getElementById('kb-files-title');
+        if (titleEl) titleEl.textContent = count > 0 ? `Files (${count}/${MAX_FILES})` : 'Files';
+
+        const kbEnabled = this.kbData?.enabled !== false;
+        const uploadBtn = document.getElementById('kb-upload-btn');
+        const linkBtn = document.getElementById('kb-link-btn');
+        if (uploadBtn) uploadBtn.disabled = atMax || !kbEnabled;
+        if (linkBtn) linkBtn.disabled = atMax || !kbEnabled;
 
         if (!entries || entries.length === 0) {
             listEl.innerHTML = `
@@ -1993,6 +2007,10 @@ const Settings = {
     },
 
     async uploadKBFile(file) {
+        if ((this.kbEntries || []).length >= 20) {
+            Notifications.error('Maximum of 20 files reached. Delete a file before uploading.', { duration: 5000 });
+            return;
+        }
         const btn = document.getElementById('kb-upload-btn');
         if (btn) {
             btn.disabled = true;
@@ -2047,6 +2065,10 @@ const Settings = {
     },
 
     async ingestKBLink() {
+        if ((this.kbEntries || []).length >= 20) {
+            Notifications.error('Maximum of 20 files reached. Delete a file before adding more.', { duration: 5000 });
+            return;
+        }
         const url = window.prompt('Enter URL to ingest:');
         if (!url) return;
 
@@ -2150,12 +2172,15 @@ const Settings = {
 
     buildKBEntryTitle(entry) {
         if (entry.type === 'LINK') {
-            return `
-                <svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14" style="flex-shrink:0;color:var(--text-secondary,#666);">
-                    <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                </svg>
-                <span class="channel-name">${this.escapeHtml(entry.displayName)}</span>
-            `;
+            const url = entry.url || '';
+            const urlPath = url.split('?')[0].split('#')[0];
+            const lastSegment = urlPath.split('/').pop();
+            const dotIdx = lastSegment.lastIndexOf('.');
+            const ext = !url.endsWith('/') && dotIdx !== -1 ? lastSegment.slice(dotIdx + 1).toLowerCase() : '';
+            const prefixHtml = ext
+                ? `<span class="message-file-extension file-extension-${this.escapeHtml(ext)}">${this.escapeHtml(ext)}</span>`
+                : `<svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14" style="flex-shrink:0;color:var(--text-secondary,#666);"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>`;
+            return `${prefixHtml}<span class="channel-name">${this.escapeHtml(entry.displayName)}</span>`;
         }
         if (entry.type === 'FILE') {
             const dotIdx = entry.filename.lastIndexOf('.');

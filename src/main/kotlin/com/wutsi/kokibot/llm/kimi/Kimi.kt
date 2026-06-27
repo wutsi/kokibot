@@ -28,4 +28,6 @@ class Kimi : Deepseek() {
             jsonMapper = context.jsonMapper,
         )
     }
+
+    override fun maxContextWindow() = 256 * 1024
 }

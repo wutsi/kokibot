@@ -74,7 +74,8 @@ class PromptBuilder(
         context: Context
     ): String {
         val entries = listOfNotNull(
-            loadIdentity(context),
+            loadInstructions(context),
+            identityInstructions(context),
             if (coordinator) coordinatorInstructions() else null,
             dailyLogInstructions(context),
             knowledgeBaseInstructions(context),
@@ -96,16 +97,16 @@ class PromptBuilder(
             IOUtils.toString(input, "utf-8")
     }
 
-    internal fun loadIdentity(context: Context): String? {
-        return loadIdentity(context.home)
+    internal fun loadInstructions(context: Context): String? {
+        return loadInstructions(context.home)
     }
 
-    internal fun saveIdentity(content: String, context: Context) {
+    internal fun saveInstructions(content: String, context: Context) {
         val file = File(context.home, "ASSISTANT.md")
         file.writeText(content)
     }
 
-    private fun loadIdentity(home: File): String? {
+    private fun loadInstructions(home: File): String? {
         val file = File(home, "ASSISTANT.md")
         return if (file.exists()) {
             file.readText()
@@ -145,6 +146,17 @@ class PromptBuilder(
             "## ${server.config.name}\n\n**Description:** ${server.config.description}"
         }
         return "# Available MCP Servers\n\nActivate with `mcp_activate`:\n\n$lines"
+    }
+
+    private fun identityInstructions(context: Context): String? {
+        val assistant = context.assistant
+        val lines = listOfNotNull(
+            "- **Handle:** ${assistant.name}",
+            assistant.getFullName()?.let { "- **Full Name:** $it" },
+            assistant.getEmail()?.let { "- **Email:** $it" },
+        )
+        if (lines.size <= 1) return null
+        return "# Assistant Identity\n\n${lines.joinToString("\n")}"
     }
 
     private fun securityInstructions(): String {

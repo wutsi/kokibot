@@ -45,8 +45,11 @@ class AssistantController(private val multi: MultiBootstrap) {
         return ResponseEntity.ok(
             mapOf(
                 "name" to assistant.name,
-                "description" to assistant.description,
-                "coordinator" to assistant.coordinator,
+                "description" to assistant.getDescription(),
+                "coordinator" to assistant.isCoordinator(),
+                "firstName" to assistant.getFullName(),
+                "email" to assistant.getEmail(),
+                "language" to assistant.getLanguage(),
                 "workspaceDirectory" to "${context.home.absolutePath}/workspace",
                 "instructions" to assistant.getInstructions()
             )

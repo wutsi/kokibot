@@ -19,7 +19,7 @@ class Heartbeat() : Resource {
         private val LOGGER = LoggerFactory.getLogger(Heartbeat::class.java)
 
         const val ID = "service:heartbeat"
-        const val DEFAULT_FREQUENCY = "30m"
+        const val DEFAULT_FREQUENCY = "1h"
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()

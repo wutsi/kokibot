@@ -20,25 +20,32 @@ class Assistant(val name: String = "") {
         private const val DEFAULT_ITERATIONS = 100 // 100 iterations
         private const val BYTES_PER_TOKENS = 4
         const val DEFAULT_MAX_DURATION_MINUTES = 30L // 30 minutes
+        const val DEFAULT_LANGUAGE = "en"
         const val ERROR_TOO_MANY_ITERATIONS = "Oups, the request has been cancelled."
         const val ERROR_TIMEOUT = "Oups, the request has been cancelled because it took too much time to process."
         const val ERROR_FAILURE = "Oups, an unexpected error occurred while processing the query."
     }
 
     private lateinit var context: Context
-    internal var maxIterations: Int = DEFAULT_ITERATIONS
-    internal var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
-    lateinit var description: String
-    var coordinator: Boolean = false
-    internal var threadPoolSize: Int = 4
+    private var maxIterations: Int = DEFAULT_ITERATIONS
+    private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
+    private lateinit var description: String
+    private var coordinator: Boolean = false
+    private var fullName: String? = null
+    private var language: String? = null
+    private var email: String? = null
+    private var threadPoolSize: Int = 4
+    internal lateinit var promptBuilder: PromptBuilder
     internal lateinit var toolOrchestrator: ToolOrchestrator
-    private lateinit var promptBuilder: PromptBuilder
     internal lateinit var reasoningLoop: ReasoningLoop
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         description = MapUtil.toString("description", config) ?: ""
         coordinator = MapUtil.toBoolean("coordinator", config) ?: false
+        fullName = MapUtil.toString("full-name", config)
+        language = MapUtil.toString("language", config) ?: DEFAULT_LANGUAGE
+        email = MapUtil.toString("email", config)
         maxDurationMinutes = MapUtil.toString("max-duration", config)
             ?.let { value -> DurationUtil.minutes(value, DEFAULT_MAX_DURATION_MINUTES) }
             ?: DEFAULT_MAX_DURATION_MINUTES
@@ -64,6 +71,9 @@ class Assistant(val name: String = "") {
 
         LOGGER.info("Assistant: $name")
         LOGGER.info("  coordinator: $coordinator")
+        LOGGER.info("  full-name: $fullName")
+        LOGGER.info("  language: $language")
+        LOGGER.info("  email: $email")
         LOGGER.info("  max-duration: ${maxDurationMinutes}m")
         LOGGER.info("  max-iterations: $maxIterations")
         LOGGER.info("  thread-pool-size: $threadPoolSize")
@@ -75,6 +85,14 @@ class Assistant(val name: String = "") {
             toolOrchestrator.destroy()
         }
     }
+
+    fun getMaxDurationMinutes(): Long = maxDurationMinutes
+    fun getMaxIterations(): Int = maxIterations
+    fun getDescription(): String = description
+    fun getFullName(): String? = fullName
+    fun getLanguage(): String? = language
+    fun getEmail(): String? = email
+    fun isCoordinator(): Boolean = coordinator
 
     fun apply(key: String, value: Any) {
         when (key) {
@@ -88,25 +106,33 @@ class Assistant(val name: String = "") {
                 maxDurationMinutes = DurationUtil.minutes(value.toString(), DEFAULT_MAX_DURATION_MINUTES)
             }
 
-            "thread-pool-size" -> {
-                threadPoolSize = (value.toString().toIntOrNull()
-                    ?: throw ConfigurationException("Invalid value for thread-pool-size: $value"))
-                    .coerceAtLeast(2)
-                toolOrchestrator.destroy()
-                toolOrchestrator = ToolOrchestrator(threadPoolSize = threadPoolSize)
-                rebuildReasoningLoop()
-            }
-
             "description" -> description = value.toString()
             "coordinator" -> {
                 coordinator = value.toString().toBoolean()
                 rebuildReasoningLoop()
             }
 
+            "full-name" -> {
+                fullName = value.toString()
+                rebuildPromptBuilder()
+            }
+
+            "language" -> {
+                language = value.toString()
+                rebuildPromptBuilder()
+            }
+
+            "email" -> email = value.toString()
+
             "instructions" -> setInstructions(value.toString())
 
             else -> throw ConfigurationException("Unknown assistant setting: $key")
         }
+    }
+
+    private fun rebuildPromptBuilder() {
+        promptBuilder = PromptBuilder(assistantName = name)
+        rebuildReasoningLoop()
     }
 
     private fun rebuildReasoningLoop() {
@@ -131,11 +157,11 @@ class Assistant(val name: String = "") {
     }
 
     fun getInstructions(): String? {
-        return promptBuilder.loadIdentity(context)
+        return promptBuilder.loadInstructions(context)
     }
 
     private fun setInstructions(content: String) {
-        promptBuilder.saveIdentity(content, context)
+        promptBuilder.saveInstructions(content, context)
     }
 
     fun process(

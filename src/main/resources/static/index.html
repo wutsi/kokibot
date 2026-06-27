@@ -8,15 +8,17 @@
     <link href="css/errors.css" rel="stylesheet">
     <link href="css/notifications.css" rel="stylesheet">
     <link href="css/viewer.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" rel="stylesheet" media="(prefers-color-scheme: light)">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" rel="stylesheet" media="(prefers-color-scheme: dark)">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" media="(prefers-color-scheme: light)"
+          rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" media="(prefers-color-scheme: dark)"
+          rel="stylesheet">
 </head>
 <body>
 <div class="app-container">
     <!-- Left Sidebar (full height) -->
-    <aside id="sidebar" class="sidebar">
-        <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle Sidebar">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <aside class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Sidebar">
+            <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
             </svg>
         </button>
@@ -25,19 +27,20 @@
             <!-- Section 1: Current Agent -->
             <div class="sidebar-section">
                 <div class="sidebar-agent-header">
-                    <div id="sidebar-agent-avatar" class="agent-avatar"></div>
-                    <span id="sidebar-agent-name" class="sidebar-agent-name">Kokibot</span>
+                    <div class="agent-avatar" id="sidebar-agent-avatar"></div>
+                    <span class="sidebar-agent-name" id="sidebar-agent-name">Kokibot</span>
                 </div>
                 <nav class="sidebar-nav">
-                    <button id="new-chat-btn" class="sidebar-nav-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <button class="sidebar-nav-item" id="new-chat-btn">
+                        <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                         </svg>
                         <span>New Chat</span>
                     </button>
-                    <button id="settings-btn" class="sidebar-nav-item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                    <button class="sidebar-nav-item" id="settings-btn">
+                        <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
+                            <path
+                                d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
                         </svg>
                         <span>Settings</span>
                     </button>
@@ -46,26 +49,26 @@
 
             <hr class="sidebar-divider">
 
-            <!-- Section 2: Agents -->
+            <!-- Section 2: Assistants -->
             <div class="sidebar-section sidebar-section--agents">
-                <div class="sidebar-section-label">Agents</div>
-                <div id="agents-list" class="agents-list"></div>
+                <div class="sidebar-section-label">Assistants</div>
+                <div class="agents-list" id="agents-list"></div>
             </div>
 
             <!-- Section 3: Knowledge Base (hidden until KB is enabled and has files) -->
-            <div id="kb-panel" class="sidebar-section sidebar-section--kb kb-panel--hidden">
+            <div class="sidebar-section sidebar-section--kb kb-panel--hidden" id="kb-panel">
                 <hr class="sidebar-divider">
                 <div class="sidebar-section-label kb-panel-header">
-                    <span>Knowledge Base <span id="kb-panel-count" class="kb-panel-count"></span></span>
-                    <a id="kb-panel-view-all" href="#" class="kb-panel-view-all">View all</a>
+                    <span>Knowledge Base <span class="kb-panel-count" id="kb-panel-count"></span></span>
+                    <a class="kb-panel-view-all" href="#" id="kb-panel-view-all">View all</a>
                 </div>
-                <div id="kb-panel-files" class="kb-panel-files"></div>
+                <div class="kb-panel-files" id="kb-panel-files"></div>
             </div>
 
             <!-- Section 4: Chat History -->
             <div class="sidebar-section sidebar-section--history">
                 <hr class="sidebar-divider">
-                <div id="conversation-history" class="conv-history-list"></div>
+                <div class="conv-history-list" id="conversation-history"></div>
             </div>
 
             <!-- Section 5: Status -->
@@ -97,13 +100,13 @@
             </main>
 
             <!-- File Viewer Panel (hidden by default) -->
-            <div id="file-viewer" class="file-viewer file-viewer--hidden">
+            <div class="file-viewer file-viewer--hidden" id="file-viewer">
                 <div class="file-viewer-toolbar">
                     <span class="file-viewer-name"></span>
                     <div class="file-viewer-toolbar-actions">
                         <button class="file-viewer-toggle-btn" hidden>Code</button>
                         <button class="file-viewer-download-btn" title="Download">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
                                 <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/>
                             </svg>
                         </button>
@@ -116,28 +119,28 @@
 
         <!-- Input Area -->
         <footer class="input-container">
-        <!-- Uploaded Files Display -->
-        <div id="uploaded-files-container" class="uploaded-files-container"></div>
+            <!-- Uploaded Files Display -->
+            <div class="uploaded-files-container" id="uploaded-files-container"></div>
 
-        <div class="input-wrapper">
-            <button id="upload-button" class="upload-button" title="Upload Files">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
-                </svg>
-            </button>
-            <input type="file" id="file-input" multiple hidden accept="*/*">
+            <div class="input-wrapper">
+                <button class="upload-button" id="upload-button" title="Upload Files">
+                    <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
+                        <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                    </svg>
+                </button>
+                <input accept="*/*" hidden id="file-input" multiple type="file">
                 <textarea
                     id="message-input"
                     maxlength="10000"
                     placeholder="Ask me anything..."
                     rows="1"
                 ></textarea>
-            <button disabled id="send-button">
-                <svg height="24" viewBox="0 0 24 24" width="24">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                </svg>
-            </button>
-        </div>
+                <button disabled id="send-button">
+                    <svg height="24" viewBox="0 0 24 24" width="24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
         </footer>
     </div><!-- end .content-area -->
 </div>

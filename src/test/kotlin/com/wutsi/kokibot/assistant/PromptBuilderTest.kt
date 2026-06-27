@@ -608,4 +608,55 @@ class PromptBuilderTest {
         assertTrue(instructions.contains("Entry A"))
         assertTrue(instructions.contains("Entry B"))
     }
+
+    @Test
+    fun `should include identity section when fullName is set`() {
+        doReturn("Koki Bot").whenever(assistant).getFullName()
+        doReturn(null).whenever(assistant).getEmail()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("# Assistant Identity"))
+        assertTrue(instructions.contains("test-assistant"))
+        assertTrue(instructions.contains("Koki Bot"))
+    }
+
+    @Test
+    fun `should include identity section when email is set`() {
+        doReturn(null).whenever(assistant).getFullName()
+        doReturn("bot@example.com").whenever(assistant).getEmail()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("# Assistant Identity"))
+        assertTrue(instructions.contains("test-assistant"))
+        assertTrue(instructions.contains("bot@example.com"))
+    }
+
+    @Test
+    fun `should include full identity when all fields are set`() {
+        doReturn("Koki Bot").whenever(assistant).getFullName()
+        doReturn("bot@example.com").whenever(assistant).getEmail()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertTrue(instructions.contains("# Assistant Identity"))
+        assertTrue(instructions.contains("test-assistant"))
+        assertTrue(instructions.contains("Koki Bot"))
+        assertTrue(instructions.contains("bot@example.com"))
+    }
+
+    @Test
+    fun `should omit identity section when only handle is available`() {
+        doReturn(null).whenever(assistant).getFullName()
+        doReturn(null).whenever(assistant).getEmail()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, false, context)
+
+        assertFalse(instructions.contains("# Assistant Identity"))
+    }
 }

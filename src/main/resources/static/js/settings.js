@@ -75,6 +75,10 @@ const Settings = {
                 this.loadGeneral();
                 this.loadedTabs.add(tabName);
                 break;
+            case 'memory':
+                this.loadMemory();
+                this.loadedTabs.add(tabName);
+                break;
             case 'heartbeat':
                 this.loadHeartbeat();
                 this.loadedTabs.add(tabName);
@@ -210,10 +214,7 @@ const Settings = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const [agentResponse, memoryResponse] = await Promise.all([
-                fetch(`/assistants/${this.agentName}`, { signal: controller.signal }),
-                fetch(`/assistants/${this.agentName}/memory`, { signal: controller.signal }),
-            ]);
+            const agentResponse = await fetch(`/assistants/${this.agentName}`, { signal: controller.signal });
 
             clearTimeout(timeoutId);
 
@@ -222,10 +223,9 @@ const Settings = {
             }
 
             const agentData = await agentResponse.json();
-            const memoryData = memoryResponse.ok ? await memoryResponse.json() : null;
 
             // Display general info
-            this.displayGeneralInfo(agentData, memoryData);
+            this.displayGeneralInfo(agentData);
         } catch (error) {
             console.error('Error loading general information:', error);
 
@@ -241,23 +241,20 @@ const Settings = {
         }
     },
 
-    displayGeneralInfo(agentData, memoryData) {
+    displayGeneralInfo(agentData) {
         const contentElement = document.getElementById('general-content');
         if (!contentElement) return;
 
         const name = this.formatAgentName(agentData.name || '');
         const description = agentData.description || '';
         const instructions = agentData.instructions || '';
+        const firstName = agentData.firstName || '';
+        const email = agentData.email || '';
+        const language = agentData.language || '';
         const iconUrl = `/assistants/${this.escapeHtml(this.agentName)}/icon.png`;
 
         this.generalInstructionsContent = instructions;
         this.generalDescription = description;
-        this.memoryData = memoryData || { enabled: true, maxLength: 10240, window: 7 };
-
-        const memoryEnabled = this.memoryData.enabled;
-        const memoryMaxLengthKb = Math.max(1, Math.round(this.memoryData.maxLength / 1024));
-        const memoryWindow = this.memoryData.window;
-        const memoryFieldsClass = memoryEnabled ? '' : ' memory-fields-disabled';
 
         const instructionsBodyHtml = instructions.trim()
             ? `<div class="instructions-text markdown-body" id="general-instructions-body">${new MarkdownRenderer().render(instructions)}</div>`
@@ -291,40 +288,31 @@ const Settings = {
                     </div>
                 </div>
                 <div class="general-section">
-                    <h3 class="general-section-title">Memory</h3>
-                    <div class="memory-setting-row">
-                        <div class="memory-setting-label-group">
-                            <span class="memory-setting-name">Enable Memory</span>
-                            <span class="memory-setting-hint">Store long-term and short-term memories</span>
+                    <h3 class="general-section-title">Identity</h3>
+                    <div class="identity-setting-row">
+                        <div class="identity-setting-label-group">
+                            <span class="identity-setting-name">Full Name</span>
+                            <span class="identity-setting-hint">Display name for this assistant</span>
                         </div>
-                        <label class="memory-toggle" title="Toggle memory">
-                            <input type="checkbox" id="memory-enabled-toggle" ${memoryEnabled ? 'checked' : ''}>
-                            <span class="memory-toggle-slider"></span>
-                        </label>
+                        <input type="text" id="identity-full-name-input" class="identity-text-input"
+                               value="${this.escapeHtml(firstName)}" placeholder="Not set">
                     </div>
-                    <div id="memory-numeric-fields" class="${memoryFieldsClass}">
-                        <div class="memory-setting-row">
-                            <div class="memory-setting-label-group">
-                                <span class="memory-setting-name">Max Length</span>
-                                <span class="memory-setting-hint">Maximum memory file size (min. 1 KB)</span>
-                            </div>
-                            <div class="memory-number-control">
-                                <input type="number" id="memory-max-length-input" class="memory-number-input"
-                                       min="1" value="${memoryMaxLengthKb}" ${memoryEnabled ? '' : 'disabled'}>
-                                <span class="memory-number-unit">KB</span>
-                            </div>
+                    <div class="identity-setting-row">
+                        <div class="identity-setting-label-group">
+                            <span class="identity-setting-name">Email</span>
+                            <span class="identity-setting-hint">Email address of this assistant</span>
                         </div>
-                        <div class="memory-setting-row memory-setting-row-last">
-                            <div class="memory-setting-label-group">
-                                <span class="memory-setting-name">Window</span>
-                                <span class="memory-setting-hint">Days of history to remember</span>
-                            </div>
-                            <div class="memory-number-control">
-                                <input type="number" id="memory-window-input" class="memory-number-input"
-                                       min="1" value="${memoryWindow}" ${memoryEnabled ? '' : 'disabled'}>
-                                <span class="memory-number-unit">days</span>
-                            </div>
+                        <input type="email" id="identity-email-input" class="identity-text-input"
+                               value="${this.escapeHtml(email)}" placeholder="Not set">
+                    </div>
+                    <div class="identity-setting-row identity-setting-row-last">
+                        <div class="identity-setting-label-group">
+                            <span class="identity-setting-name">Language</span>
+                            <span class="identity-setting-hint">Preferred language for responses</span>
                         </div>
+                        <select id="identity-language-input" class="identity-language-select">
+                            ${this.buildLanguageOptions(language)}
+                        </select>
                     </div>
                 </div>
                 <div class="general-section">
@@ -370,7 +358,7 @@ const Settings = {
             this.enterDescriptionEditMode();
         });
 
-        this.bindMemoryEvents();
+        this.bindIdentityEvents();
 
         const iconContainer = document.getElementById('general-agent-icon-container');
         const iconInput = document.getElementById('general-icon-upload-input');
@@ -380,6 +368,172 @@ const Settings = {
                 const file = e.target.files[0];
                 if (file) this.uploadIcon(file);
             });
+        }
+    },
+
+    async loadMemory() {
+        if (!this.agentName) return;
+
+        const contentElement = document.getElementById('memory-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="memory-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading memory settings...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/memory`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            const memoryData = response.ok ? await response.json() : null;
+            this.displayMemory(memoryData);
+        } catch (error) {
+            console.error('Error loading memory settings:', error);
+            contentElement.innerHTML = `<p class="settings-error">Failed to load memory settings. Please try again.</p>`;
+            Notifications.error('Failed to load memory settings', { duration: 5000 });
+        }
+    },
+
+    displayMemory(memoryData) {
+        const contentElement = document.getElementById('memory-content');
+        if (!contentElement) return;
+
+        this.memoryData = memoryData || { enabled: true, maxLength: 10240, window: 7 };
+
+        const memoryEnabled = this.memoryData.enabled;
+        const memoryMaxLengthKb = Math.max(1, Math.round(this.memoryData.maxLength / 1024));
+        const memoryWindow = this.memoryData.window;
+        const memoryFieldsClass = memoryEnabled ? '' : ' memory-fields-disabled';
+
+        contentElement.innerHTML = `
+            <div class="memory-setting-row">
+                <div class="memory-setting-label-group">
+                    <span class="memory-setting-name">Enable Memory</span>
+                    <span class="memory-setting-hint">Store long-term and short-term memories</span>
+                </div>
+                <label class="memory-toggle" title="Toggle memory">
+                    <input type="checkbox" id="memory-enabled-toggle" ${memoryEnabled ? 'checked' : ''}>
+                    <span class="memory-toggle-slider"></span>
+                </label>
+            </div>
+            <div id="memory-numeric-fields" class="${memoryFieldsClass}">
+                <div class="memory-setting-row">
+                    <div class="memory-setting-label-group">
+                        <span class="memory-setting-name">Max Length</span>
+                        <span class="memory-setting-hint">Maximum memory file size (min. 1 KB)</span>
+                    </div>
+                    <div class="memory-number-control">
+                        <input type="number" id="memory-max-length-input" class="memory-number-input"
+                               min="1" value="${memoryMaxLengthKb}" ${memoryEnabled ? '' : 'disabled'}>
+                        <span class="memory-number-unit">KB</span>
+                    </div>
+                </div>
+                <div class="memory-setting-row memory-setting-row-last">
+                    <div class="memory-setting-label-group">
+                        <span class="memory-setting-name">Window</span>
+                        <span class="memory-setting-hint">Days of history to remember</span>
+                    </div>
+                    <div class="memory-number-control">
+                        <input type="number" id="memory-window-input" class="memory-number-input"
+                               min="1" value="${memoryWindow}" ${memoryEnabled ? '' : 'disabled'}>
+                        <span class="memory-number-unit">days</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.bindMemoryEvents();
+    },
+
+    buildLanguageOptions(selected) {
+        const languages = [
+            { code: '',   label: 'Not set' },
+            { code: 'ar', label: 'Arabic' },
+            { code: 'zh', label: 'Chinese' },
+            { code: 'nl', label: 'Dutch' },
+            { code: 'en', label: 'English' },
+            { code: 'fr', label: 'French' },
+            { code: 'de', label: 'German' },
+            { code: 'hi', label: 'Hindi' },
+            { code: 'id', label: 'Indonesian' },
+            { code: 'it', label: 'Italian' },
+            { code: 'ja', label: 'Japanese' },
+            { code: 'ko', label: 'Korean' },
+            { code: 'pl', label: 'Polish' },
+            { code: 'pt', label: 'Portuguese' },
+            { code: 'ru', label: 'Russian' },
+            { code: 'es', label: 'Spanish' },
+            { code: 'sv', label: 'Swedish' },
+            { code: 'tr', label: 'Turkish' },
+            { code: 'uk', label: 'Ukrainian' },
+            { code: 'vi', label: 'Vietnamese' },
+        ];
+        return languages
+            .map(({ code, label }) => `<option value="${code}" ${selected === code ? 'selected' : ''}>${label}</option>`)
+            .join('');
+    },
+
+    bindIdentityEvents() {
+        const fullNameInput = document.getElementById('identity-full-name-input');
+        if (fullNameInput) {
+            const save = () => this.saveAssistantSetting('assistant.full-name', fullNameInput.value.trim(), 'Full name saved');
+            fullNameInput.addEventListener('blur', save);
+            fullNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') fullNameInput.blur(); });
+        }
+
+        const emailInput = document.getElementById('identity-email-input');
+        if (emailInput) {
+            const save = () => {
+                const value = emailInput.value.trim();
+                if (value && !emailInput.validity.valid) {
+                    Notifications.error('Please enter a valid email address.');
+                    return;
+                }
+                this.saveAssistantSetting('assistant.email', value, 'Email saved');
+            };
+            emailInput.addEventListener('blur', save);
+            emailInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') emailInput.blur(); });
+        }
+
+        const languageSelect = document.getElementById('identity-language-input');
+        if (languageSelect) {
+            languageSelect.addEventListener('change', () => {
+                this.saveAssistantSetting('assistant.language', languageSelect.value, 'Language saved');
+            });
+        }
+    },
+
+    async saveAssistantSetting(key, value, successMsg) {
+        if (!this.agentName) return;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value }),
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+
+            Notifications.success(successMsg, { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving assistant setting:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
         }
     },
 
@@ -702,7 +856,7 @@ const Settings = {
     renderHeartbeat(contentElement) {
         const data = this.heartbeatData;
         const enabled = data.enabled !== false;
-        const frequency = data.frequency || "30m";
+        const frequency = data.frequency || "1h";
         const disabledClass = enabled ? '' : ' memory-fields-disabled';
 
         const FREQUENCY_OPTIONS = [

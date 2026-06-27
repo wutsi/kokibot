@@ -129,6 +129,35 @@ class AssistantTest {
     }
 
     @Test
+    fun `init with full-name, language and email`() {
+        // WHEN
+        assistant.init(mapOf("full-name" to "My Bot", "language" to "fr", "email" to "bot@example.com"), context)
+
+        // THEN
+        assertEquals("My Bot", assistant.getFullName())
+        assertEquals("fr", assistant.getLanguage())
+        assertEquals("bot@example.com", assistant.getEmail())
+    }
+
+    @Test
+    fun `apply full-name`() {
+        assistant.apply("full-name", "Updated Bot")
+        assertEquals("Updated Bot", assistant.getFullName())
+    }
+
+    @Test
+    fun `apply language`() {
+        assistant.apply("language", "es")
+        assertEquals("es", assistant.getLanguage())
+    }
+
+    @Test
+    fun `apply email`() {
+        assistant.apply("email", "bot@example.com")
+        assertEquals("bot@example.com", assistant.getEmail())
+    }
+
+    @Test
     fun process() {
         // GIVEN
         doReturn(

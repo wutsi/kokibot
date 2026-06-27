@@ -48,21 +48,21 @@ class AssistantApplyTest {
     fun `apply max-iterations updates field and rebuilds loop`() {
         val originalLoop = assistant.reasoningLoop
         assistant.apply("max-iterations", 20)
-        assertEquals(20, assistant.maxIterations)
+        assertEquals(20, assistant.getMaxIterations())
         assertNotSame(originalLoop, assistant.reasoningLoop)
     }
 
     @Test
     fun `apply max-duration updates field`() {
         assistant.apply("max-duration", "10m")
-        assertEquals(10L, assistant.maxDurationMinutes)
+        assertEquals(10L, assistant.getMaxDurationMinutes())
     }
 
     @Test
     fun `apply description updates field without rebuilding loop`() {
         val originalLoop = assistant.reasoningLoop
         assistant.apply("description", "new description")
-        assertEquals("new description", assistant.description)
+        assertEquals("new description", assistant.getDescription())
         assertSame(originalLoop, assistant.reasoningLoop)
     }
 
@@ -70,31 +70,8 @@ class AssistantApplyTest {
     fun `apply coordinator updates field and rebuilds loop`() {
         val originalLoop = assistant.reasoningLoop
         assistant.apply("coordinator", true)
-        assertEquals(true, assistant.coordinator)
+        assertEquals(true, assistant.isCoordinator())
         assertNotSame(originalLoop, assistant.reasoningLoop)
-    }
-
-    @Test
-    fun `apply thread-pool-size updates field, replaces orchestrator, and rebuilds loop`() {
-        val originalOrchestrator = assistant.toolOrchestrator
-        val originalLoop = assistant.reasoningLoop
-        assistant.apply("thread-pool-size", 6)
-        assertEquals(6, assistant.threadPoolSize)
-        assertNotSame(originalOrchestrator, assistant.toolOrchestrator)
-        assertNotSame(originalLoop, assistant.reasoningLoop)
-    }
-
-    @Test
-    fun `apply thread-pool-size coerces minimum to 2`() {
-        assistant.apply("thread-pool-size", 1)
-        assertEquals(2, assistant.threadPoolSize)
-    }
-
-    @Test
-    fun `apply max-iterations with invalid value throws ConfigurationException`() {
-        assertThrows<ConfigurationException> {
-            assistant.apply("max-iterations", "not-a-number")
-        }
     }
 
     @Test

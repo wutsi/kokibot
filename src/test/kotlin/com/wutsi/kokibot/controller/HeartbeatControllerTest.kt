@@ -189,7 +189,7 @@ class HeartbeatControllerTest {
 
         val assistant = mock<Assistant>()
         doReturn(name).whenever(assistant).name
-        doReturn(description).whenever(assistant).description
+        doReturn(description).whenever(assistant).getDescription()
         doReturn(instructions).whenever(assistant).getInstructions()
         doReturn(ContextWindow(baseline = 500, max = MAX_CONTEXT_WINDOW)).whenever(assistant)
             .contextWindow(any(), any(), anyOrNull())

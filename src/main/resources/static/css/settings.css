@@ -984,6 +984,72 @@
     }
 }
 
+/* ===== Identity Settings ===== */
+.identity-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border-light);
+    gap: 16px;
+}
+
+.identity-setting-row-last {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.identity-setting-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.identity-setting-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.identity-setting-hint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.identity-text-input {
+    width: 220px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 6px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    outline: none;
+    flex-shrink: 0;
+}
+
+.identity-text-input:focus {
+    border-color: var(--color-accent-blue);
+}
+
+.identity-language-select {
+    width: 220px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 6px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    outline: none;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.identity-language-select:focus {
+    border-color: var(--color-accent-blue);
+}
+
 /* ===== Memory Settings ===== */
 .memory-setting-row {
     display: flex;

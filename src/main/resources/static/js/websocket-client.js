@@ -24,7 +24,7 @@ class WebSocketClient {
     connect() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
-        const path = `/ws/${this.agentName}`;
+        const path = `/ws?agent=${encodeURIComponent(this.agentName)}`;
         const wsUrl = `${protocol}//${host}${path}`;
 
         console.log(`Connecting to WebSocket: ${wsUrl}`);

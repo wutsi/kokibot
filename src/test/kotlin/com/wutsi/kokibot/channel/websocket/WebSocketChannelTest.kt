@@ -50,9 +50,9 @@ class WebSocketChannelTest {
     @Test
     fun source() {
         val channel = WebSocketChannel()
-        channel.init(mapOf("path" to "/ws/test"), context)
+        channel.init(emptyMap<String, Any>(), context)
 
-        Assertions.assertEquals("/ws/test", channel.source())
+        Assertions.assertEquals("test-agent", channel.source())
     }
 
     @Test
@@ -224,28 +224,6 @@ class WebSocketChannelTest {
         )
 
         assertFalse(channel.send(message))
-    }
-
-    @Test
-    fun `getPath returns configured path`() {
-        whenever(context.assistant).doReturn(assistant)
-        whenever(assistant.name).doReturn("test-agent")
-
-        val channel = WebSocketChannel()
-        channel.init(mapOf("path" to "/ws/custom"), context)
-
-        assertEquals("/ws/custom", channel.getPath())
-    }
-
-    @Test
-    fun `getPath uses default when not configured`() {
-        whenever(context.assistant).doReturn(assistant)
-        whenever(assistant.name).doReturn("test-agent")
-
-        val channel = WebSocketChannel()
-        channel.init(emptyMap<String, Any>(), context)
-
-        assertEquals("/ws/test-agent", channel.getPath())
     }
 
     @Test

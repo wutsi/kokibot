@@ -2,39 +2,26 @@ package com.wutsi.kokibot.channel.websocket
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class WebSocketChannelRegistry {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebSocketChannelRegistry::class.java)
-
-        // Static registry - accessible without Spring injection
         private val channels = ConcurrentHashMap<String, WebSocketChannel>()
 
-        // Static methods for registration (called by WebSocketChannel instances)
-        fun registerChannel(channel: WebSocketChannel) {
-            val path = channel.getPath()
-            channels[path] = channel
+        fun registerChannel(agentName: String, channel: WebSocketChannel) {
+            LOGGER.info("Registering WebSocket channel for agent: $agentName")
+            channels[agentName.lowercase()] = channel
         }
 
-        fun unregisterChannel(channel: WebSocketChannel) {
-            val path = channel.getPath()
-            channels.remove(path)
+        fun unregisterChannel(agentName: String) {
+            LOGGER.info("Unregistering WebSocket channel for agent: $agentName")
+            channels.remove(agentName.lowercase())
         }
 
-        fun getAllChannels(): List<WebSocketChannel> {
-            return channels.values.toList()
-        }
-    }
+        fun findChannel(agentName: String): WebSocketChannel? = channels[agentName.lowercase()]
 
-    // Instance method called by WebSocketConfiguration
-    fun registerHandlers(registry: WebSocketHandlerRegistry) {
-        channels.values.forEach { channel ->
-            LOGGER.info("Registering WebSocket handler at ${channel.getPath()}")
-            registry.addHandler(channel.getHandler(), channel.getPath())
-                .setAllowedOrigins("*") // TODO: Configure for production
-        }
+        fun getAllChannels(): List<WebSocketChannel> = channels.values.toList()
     }
 }

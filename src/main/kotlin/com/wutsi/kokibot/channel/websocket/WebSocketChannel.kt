@@ -20,27 +20,17 @@ class WebSocketChannel : Channel() {
     }
 
     private lateinit var context: Context
-    private lateinit var path: String
-    private lateinit var handler: WebSocketHandler
     private val sessions = ConcurrentHashMap<String, WebSocketSession>() // userId -> session
     private val jsonMapper = JsonMapper()
 
     override fun name(): String = "websocket"
 
-    override fun source(): String = path
+    override fun source(): String = context.assistant.name
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-        this.path = config["path"]?.toString() ?: "/ws/${context.assistant.name}"
-
-        // Create handler
-        handler = WebSocketHandler(this)
-
-        // Register with global WebSocket registry (static access)
-        WebSocketChannelRegistry.registerChannel(this)
-
-        LOGGER.info("Channel: websocket")
-        LOGGER.info("  path: $path")
+        WebSocketChannelRegistry.registerChannel(context.assistant.name, this)
+        LOGGER.info("Channel: websocket (agent=${context.assistant.name})")
     }
 
     override fun destroy() {
@@ -54,8 +44,7 @@ class WebSocketChannel : Channel() {
         }
         sessions.clear()
 
-        // Unregister from global registry (static access)
-        WebSocketChannelRegistry.unregisterChannel(this)
+        WebSocketChannelRegistry.unregisterChannel(context.assistant.name)
     }
 
     override fun health(): Health {
@@ -203,9 +192,6 @@ class WebSocketChannel : Channel() {
             )
         }
     }
-
-    fun getHandler(): WebSocketHandler = handler
-    fun getPath(): String = path
 
     internal fun getSession(userId: String): WebSocketSession? = sessions[userId]
 }

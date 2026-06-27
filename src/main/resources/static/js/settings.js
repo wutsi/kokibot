@@ -702,7 +702,7 @@ const Settings = {
     renderHeartbeat(contentElement) {
         const data = this.heartbeatData;
         const enabled = data.enabled !== false;
-        const frequency = data.frequency || 30;
+        const frequency = data.frequency || "30m";
         const disabledClass = enabled ? '' : ' memory-fields-disabled';
 
         const FREQUENCY_OPTIONS = [
@@ -808,7 +808,7 @@ const Settings = {
         });
 
         document.getElementById('heartbeat-frequency-select')?.addEventListener('change', (e) => {
-            this.saveHeartbeatSetting('frequency', parseInt(e.target.value, 10), 'Frequency saved');
+            this.saveHeartbeatSetting('frequency', e.target.value, 'Frequency saved');
         });
 
         document.getElementById('heartbeat-edit-btn')?.addEventListener('click', () => this.enterHeartbeatEditMode());

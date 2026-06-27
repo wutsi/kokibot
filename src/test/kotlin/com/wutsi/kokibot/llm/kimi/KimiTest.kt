@@ -24,7 +24,7 @@ class KimiTest {
 
     @Test
     fun contextLength() {
-        assertEquals(1024 * 1024, llm.maxContextWindow())
+        assertEquals(256 * 1024, llm.maxContextWindow())
     }
 
     @Test

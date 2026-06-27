@@ -885,7 +885,7 @@ const Settings = {
                 <div class="memory-setting-row">
                     <div class="memory-setting-label-group">
                         <span class="memory-setting-name">Enable Heartbeat</span>
-                        <span class="memory-setting-hint">Run periodic health checks automatically</span>
+                        <span class="memory-setting-hint">Run periodic tasks automatically</span>
                     </div>
                     <label class="memory-toggle" title="Toggle heartbeat">
                         <input type="checkbox" id="heartbeat-enabled-toggle"${enabled ? ' checked' : ''}>

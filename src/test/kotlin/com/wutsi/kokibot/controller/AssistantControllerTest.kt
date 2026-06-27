@@ -57,8 +57,38 @@ class AssistantControllerTest {
 
         val response = rest.getForEntity("/assistants", List::class.java)
 
-        assertEquals(2, response.body!!.size)
-        assertEquals(listOf("007", "008"), response.body)
+        assertEquals(2, response.body?.size)
+        assertEquals(listOf("007", "008"), response.body?.map { item ->
+            (item as Map<*, *>).get("name")
+        })
+    }
+
+    @Test
+    fun `list - limit`() {
+        doReturn(
+            listOf(createBootstrap("007"), createBootstrap("008"))
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants?limit=1", List::class.java)
+
+        assertEquals(1, response.body?.size)
+        assertEquals(listOf("007"), response.body?.map { item ->
+            (item as Map<*, *>).get("name")
+        })
+    }
+
+    @Test
+    fun `list - exclude`() {
+        doReturn(
+            listOf(createBootstrap("007"), createBootstrap("008"))
+        ).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants?exclude=008", List::class.java)
+
+        assertEquals(1, response.body?.size)
+        assertEquals(listOf("007"), response.body?.map { item ->
+            (item as Map<*, *>).get("name")
+        })
     }
 
     @Test

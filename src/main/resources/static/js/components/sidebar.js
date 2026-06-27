@@ -83,16 +83,19 @@ const Sidebar = {
         if (!listEl) return;
 
         try {
-            const res = await fetch('/assistants');
+            const res = await fetch(`/assistants?limit=3&exclude=${encodeURIComponent(agentName)}`);
             if (!res.ok) return;
             const agents = await res.json();
 
+            const totalCount = res.headers.get('X-Total-Count');
+            const countEl = document.getElementById('agents-count');
+            if (countEl && totalCount !== null) countEl.textContent = `(${Math.max(0, parseInt(totalCount, 10))})`;
+
             let html = '';
-            for (const name of agents) {
-                if (name === agentName) continue;
-                html += `<button class="agent-list-item" data-agent="${escapeHtml(name)}">
-                    <div class="agent-avatar agent-avatar--sm">${this._avatarContent(name)}</div>
-                    <span class="agent-list-name">${escapeHtml(this._formatName(name))}</span>
+            for (const agent of agents) {
+                html += `<button class="agent-list-item" data-agent="${escapeHtml(agent.name)}">
+                    <div class="agent-avatar agent-avatar--sm">${this._avatarContent(agent.name)}</div>
+                    <span class="agent-list-name">${escapeHtml(this._formatName(agent.name))}</span>
                 </button>`;
             }
             listEl.innerHTML = html;
@@ -116,7 +119,8 @@ const Sidebar = {
     },
 
     _formatName(name) {
-        return name.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        //return name.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        return name;
     },
 
     _initials(name) {

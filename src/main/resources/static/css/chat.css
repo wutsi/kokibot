@@ -1394,6 +1394,38 @@ ol, li {
     padding: 0 4px 4px 4px;
 }
 
+.agents-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-tertiary);
+    border-radius: 8px;
+    padding: 1px 5px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.agents-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.agents-panel-view-all {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: auto;
+}
+
+.agents-panel-view-all:hover {
+    color: var(--color-text-primary);
+    text-decoration: underline;
+}
+
 /* ===== Agents List (Section 2) ===== */
 .agents-list {
     display: flex;

@@ -37,7 +37,7 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
     fun entries(
         @PathVariable name: String,
         @RequestParam(required = false) status: String? = null,
-        @RequestParam(required = false) limit: Int = 5,
+        @RequestParam(required = false) limit: Int = 10,
     ): ResponseEntity<List<Map<String, Any?>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()

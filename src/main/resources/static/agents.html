@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Assistants - Kokibot</title>
+    <link href="css/chat.css" rel="stylesheet">
+    <link href="css/notifications.css" rel="stylesheet">
+    <link href="css/agents.css" rel="stylesheet">
+</head>
+<body>
+<div class="agents-page">
+    <header class="agents-header">
+        <a class="agents-back-btn" href="/index.html" title="Back to Chat">
+            <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+            </svg>
+        </a>
+        <h1 class="agents-title">Assistants</h1>
+        <span class="agents-header-count" id="agents-header-count"></span>
+    </header>
+
+    <main class="agents-main">
+        <div class="agents-grid" id="agents-grid">
+            <div class="agents-loading">
+                <svg class="loading-spinner" fill="currentColor" height="48" viewBox="0 0 24 24" width="48">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading assistants...</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/components/notification-manager.js"></script>
+<script>
+    async function loadAgents() {
+        const grid = document.getElementById('agents-grid');
+        const countEl = document.getElementById('agents-header-count');
+
+        try {
+            const res = await fetch('/assistants?limit=100');
+            if (!res.ok) throw new Error('Failed to load assistants');
+
+            const agents = await res.json();
+            const total = res.headers.get('X-Total-Count') ?? agents.length;
+            if (countEl) countEl.textContent = `(${total})`;
+
+            if (agents.length === 0) {
+                grid.innerHTML = '<p class="agents-empty">No assistants found.</p>';
+                return;
+            }
+
+            grid.innerHTML = agents.map(agent => {
+                const name = escapeHtml(agent.name || '');
+                const displayName = escapeHtml(agent.name || '');
+                const description = escapeHtml(agent.description || '');
+                const iconUrl = `/assistants/${encodeURIComponent(agent.name)}/icon.png`;
+                const initials = agentInitials(agent.name || '');
+
+                return `
+                    <a class="agent-card" href="/index.html?agent=${encodeURIComponent(agent.name)}">
+                        <div class="agent-card-avatar agent-avatar">
+                            <img src="${iconUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                            <span style="display:none">${escapeHtml(initials)}</span>
+                        </div>
+                        <div class="agent-card-body">
+                            <span class="agent-card-name">${displayName}</span>
+                            ${description ? `<span class="agent-card-description">${description}</span>` : ''}
+                        </div>
+                        <svg class="agent-card-chevron" fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
+                            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
+                        </svg>
+                    </a>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading assistants:', error);
+            grid.innerHTML = '<p class="agents-empty">Failed to load assistants. Please try again.</p>';
+        }
+    }
+
+    function agentInitials(name) {
+        const parts = name.split(/[-_\s]+/).filter(Boolean);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name.substring(0, 2).toUpperCase();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAgents);
+</script>
+</body>
+</html>

@@ -7,9 +7,11 @@
     <link href="css/chat.css" rel="stylesheet">
     <link href="css/notifications.css" rel="stylesheet">
     <link href="css/settings.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css" media="(prefers-color-scheme: light)"
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github.min.css"
+          media="(prefers-color-scheme: light)"
           rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css" media="(prefers-color-scheme: dark)"
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+          media="(prefers-color-scheme: dark)"
           rel="stylesheet">
 </head>
 <body>
@@ -25,8 +27,8 @@
             <!-- Agent header: click to return to chat -->
             <div class="sidebar-section">
                 <div class="sidebar-agent-header sidebar-agent-header--link" id="chat-btn" title="Back to Chat">
-                    <div id="sidebar-agent-avatar" class="agent-avatar"></div>
-                    <span id="sidebar-agent-name" class="sidebar-agent-name">Kokibot</span>
+                    <div class="agent-avatar" id="sidebar-agent-avatar"></div>
+                    <span class="sidebar-agent-name" id="sidebar-agent-name">Kokibot</span>
                 </div>
             </div>
 
@@ -52,7 +54,8 @@
 
                 <button class="sidebar-nav-item settings-nav-item" data-tab="memory">
                     <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
-                        <path d="M15 2H9c-1.1 0-2 .9-2 2v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-2V4c0-1.1-.9-2-2-2zm-1 2v2h-4V4h4zm5 16H5V8h14v12zm-7-9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        <path
+                            d="M15 2H9c-1.1 0-2 .9-2 2v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-2V4c0-1.1-.9-2-2-2zm-1 2v2h-4V4h4zm5 16H5V8h14v12zm-7-9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                     </svg>
                     <span>Memory</span>
                 </button>
@@ -135,7 +138,8 @@
                 <div class="settings-tab-content" data-content="memory">
                     <div class="settings-section">
                         <h2 class="settings-section-title">Memory</h2>
-                        <p class="settings-section-description">Configure how your assistant stores and recalls information</p>
+                        <p class="settings-section-description">Configure how your assistant stores and recalls
+                            information</p>
 
                         <div class="memory-content" id="memory-content">
                             <div class="memory-loading">
@@ -153,7 +157,7 @@
                 <div class="settings-tab-content" data-content="heartbeat">
                     <div class="settings-section">
                         <h2 class="settings-section-title">Heartbeat</h2>
-                        <p class="settings-section-description">Configure periodic health checks for your assistant</p>
+                        <p class="settings-section-description">Configure periodic tasks for your assistant</p>
 
                         <div class="heartbeat-content" id="heartbeat-content">
                             <div class="heartbeat-loading">

@@ -20,9 +20,25 @@ import java.io.File
 @RestController
 class AssistantController(private val multi: MultiBootstrap) {
     @GetMapping
-    fun list(): List<String> {
-        return multi.bootstraps
-            .map { bootstrap -> bootstrap.getContext().assistant.name }
+    fun list(
+        @RequestParam(required = false) exclude: String? = null,
+        @RequestParam(required = false) limit: Int = 10,
+    ): ResponseEntity<List<Map<String, Any?>>> {
+        val items = multi.bootstraps
+            .map { bootstrap ->
+                mapOf(
+                    "name" to bootstrap.getContext().assistant.name,
+                    "description" to bootstrap.getContext().assistant.getDescription(),
+                )
+            }
+        val result = items
+            .filter { item -> item["name"] != exclude }
+            .take(limit)
+
+        return ResponseEntity
+            .status(200)
+            .header("X-Total-Count", items.size.toString())
+            .body(result)
     }
 
     private fun hasChannel(context: Context, channelId: String): Boolean {

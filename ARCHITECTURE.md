@@ -1,8 +1,10 @@
 # Architecture
 
-This document provides a comprehensive overview of Kokibot's system architecture, including core components, data flow, subsystems, and design patterns.
+This document provides a comprehensive overview of Kokibot's system architecture, including core components, data flow,
+subsystems, and design patterns.
 
 ## Table of Contents
+
 - [System Overview](#system-overview)
 - [Multi-Agent Architecture](#multi-agent-architecture)
 - [Core Components](#core-components)
@@ -30,11 +32,10 @@ graph TB
     Skills --> Tools
     LLM -->|Function Calls| Tools
     Assistant -.->|Delegates| OtherAssistants[Other Assistants]
-    
-    style Assistant fill:#4CAF50
-    style Channel fill:#2196F3
-    style LLM fill:#FF9800
-    style Tools fill:#9C27B0
+    style Assistant fill: #4CAF50
+    style Channel fill: #2196F3
+    style LLM fill: #FF9800
+    style Tools fill: #9C27B0
 ```
 
 ### Key Architectural Principles
@@ -64,12 +65,10 @@ graph TB
     CRM -->|Result| Coordinator
     Finance -->|Result| Coordinator
     Coordinator -->|Response| User
-    
     MultiBootstrap[MultiBootstrap] -->|Initializes| Coordinator
     MultiBootstrap -->|Initializes| Weather
     MultiBootstrap -->|Initializes| CRM
     MultiBootstrap -->|Initializes| Finance
-    
     Registry[AssistantRegistry] -.->|Registers| Coordinator
     Registry -.->|Registers| Weather
     Registry -.->|Registers| CRM
@@ -79,6 +78,7 @@ graph TB
 ### Key Components
 
 **MultiBootstrap** (`MultiBootstrap.kt`)
+
 - Main Spring Boot service that initializes the system
 - Discovers agents from `~/kokibot/agents/` directory
 - Each subdirectory becomes a separate assistant with isolated workspace
@@ -86,6 +86,7 @@ graph TB
 - All agents share the same `AssistantRegistry` for cross-agent communication
 
 **AssistantRegistry** (`AssistantRegistry.kt`)
+
 - Central registry for all assistant instances
 - `register(assistant)` - Adds agent to registry
 - `get(name)` - Retrieves agent by name (case-insensitive)
@@ -93,12 +94,14 @@ graph TB
 - Thread-safe for concurrent access
 
 **SwarmDelegateTool** (`tools/swarm/SwarmDelegateTool.kt`)
+
 - Enables task delegation between agents
 - Parameters: `name` (specialist agent name), `task` (task description), `context` (optional)
 - Returns results prefixed with agent name
 - Used by coordinator agents to delegate work
 
 **DelegationStack** (`service/swarm/DelegationStack.kt`)
+
 - Tracks delegation chains to prevent stack overflow
 - Max depth validation (default: 5)
 - Cycle detection (A→B→C→A)
@@ -155,6 +158,7 @@ graph LR
 ```
 
 **Key Functions:**
+
 - Discovers all agent directories from `~/kokibot/agents/`
 - Creates separate `Bootstrap` instance for each agent
 - Determines home directory based on Spring profile (dev: `~/kokibot`, prod: `~/.kokibot`)
@@ -162,6 +166,7 @@ graph LR
 - Logs warning if `agents/` directory doesn't exist
 
 **Configuration:**
+
 - **Development mode** (default): `~/kokibot/`
 - **Production mode** (`prod` profile): `~/.kokibot/`
 
@@ -182,6 +187,7 @@ graph LR
 ```
 
 **Key Functions:**
+
 - Loads configuration from agent's `config/settings.json`
 - Creates `Context` via `ContextFactory`
 - Initializes assistant, channels, tools, skills, memory
@@ -197,38 +203,40 @@ graph LR
 
 The Context object contains all resources needed by an assistant:
 
-| Component | Type | Purpose |
-|-----------|------|---------|
-| `home` | File | Agent's home directory |
-| `assistant` | Assistant | Main reasoning engine |
-| `llm` | LLM | Language model provider |
-| `toolRegistry` | ToolRegistry | Registry of available tools |
-| `skillRegistry` | SkillRegistry | Registry of discovered skills |
-| `commandRegistry` | CommandRegistry | Registry of system commands |
-| `channelRegistry` | ChannelRegistry | Registry of communication channels |
-| `marketplaceRegistry` | MarketplaceRegistry | Registry of skill marketplaces |
-| `mcpRegistry` | McpRegistry | Registry of MCP servers |
-| `assistantRegistry` | AssistantRegistry | Registry of all assistants (shared) |
-| `memory` | Memory | Long-term memory compaction |
-| `dailyLog` | DailyLog | Daily activity journal |
-| `sessionLog` | SessionLog | Detailed execution trace |
-| `chatHistory` | ChatHistory | Conversation storage |
-| `conversationRepository` | ConversationRepository | Conversation index and retrieval |
-| `knowledgeBase` | KnowledgeBase | Document ingestion and retrieval |
-| `fileService` | FileService | File operations service |
-| `heartbeat` | Heartbeat | Periodic task scheduler |
-| `delegationStack` | DelegationStack | Multi-agent delegation tracking |
-| `activatedMcps` | List | MCP servers activated for this session |
-| `config` | Map | Configuration settings |
-| `jsonMapper` | JsonMapper | JSON serialization |
+| Component                | Type                   | Purpose                                |
+|--------------------------|------------------------|----------------------------------------|
+| `home`                   | File                   | Agent's home directory                 |
+| `assistant`              | Assistant              | Main reasoning engine                  |
+| `llm`                    | LLM                    | Language model provider                |
+| `toolRegistry`           | ToolRegistry           | Registry of available tools            |
+| `skillRegistry`          | SkillRegistry          | Registry of discovered skills          |
+| `commandRegistry`        | CommandRegistry        | Registry of system commands            |
+| `channelRegistry`        | ChannelRegistry        | Registry of communication channels     |
+| `marketplaceRegistry`    | MarketplaceRegistry    | Registry of skill marketplaces         |
+| `mcpRegistry`            | McpRegistry            | Registry of MCP servers                |
+| `assistantRegistry`      | AssistantRegistry      | Registry of all assistants (shared)    |
+| `memory`                 | Memory                 | Long-term memory compaction            |
+| `dailyLog`               | DailyLog               | Daily activity journal                 |
+| `sessionLog`             | SessionLog             | Detailed execution trace               |
+| `chatHistory`            | ChatHistory            | Conversation storage                   |
+| `conversationRepository` | ConversationRepository | Conversation index and retrieval       |
+| `knowledgeBase`          | KnowledgeBase          | Document ingestion and retrieval       |
+| `fileService`            | FileService            | File operations service                |
+| `heartbeat`              | Heartbeat              | Periodic task scheduler                |
+| `delegationStack`        | DelegationStack        | Multi-agent delegation tracking        |
+| `activatedMcps`          | List                   | MCP servers activated for this session |
+| `config`                 | Map                    | Configuration settings                 |
+| `jsonMapper`             | JsonMapper             | JSON serialization                     |
 
 **Lifecycle:**
+
 - `init(config)` - Initializes all subsystems in order
 - `destroy()` - Cleanup all resources
 - `health()` - Returns health status of all components
 - `resources()` - Returns list of all managed resources
 
 **Initialization Order:**
+
 1. Assistant
 2. Channels
 3. Marketplaces (before skills, as skills may come from marketplaces)
@@ -256,29 +264,29 @@ sequenceDiagram
     participant LLM
     participant Tools
     participant Memory
-    
-    User->>Assistant: Send Query
-    Assistant->>Memory: Load Memory & History
-    Memory-->>Assistant: Context
+    User ->> Assistant: Send Query
+    Assistant ->> Memory: Load Memory & History
+    Memory -->> Assistant: Context
     loop Iteration (max configurable)
-        Assistant->>LLM: Send Prompt + Context
-        LLM-->>Assistant: Response (Text or Tool Calls)
+        Assistant ->> LLM: Send Prompt + Context
+        LLM -->> Assistant: Response (Text or Tool Calls)
         alt Multiple Tool Calls
             par Parallel Execution
-                Assistant->>Tools: Execute Tool 1
-                Assistant->>Tools: Execute Tool 2
-                Assistant->>Tools: Execute Tool N
+                Assistant ->> Tools: Execute Tool 1
+                Assistant ->> Tools: Execute Tool 2
+                Assistant ->> Tools: Execute Tool N
             end
-            Tools-->>Assistant: All Results
-            Assistant->>Assistant: Add to Iteration Memory
+            Tools -->> Assistant: All Results
+            Assistant ->> Assistant: Add to Iteration Memory
         else Text Response
-            Assistant->>Memory: Persist Conversation
-            Assistant-->>User: Return Answer
+            Assistant ->> Memory: Persist Conversation
+            Assistant -->> User: Return Answer
         end
     end
 ```
 
 **Key Features:**
+
 - **Iterative Reasoning Loop** - Max iterations configurable (default: 10)
 - **Parallel Tool Execution** - Multiple independent tool calls run concurrently via thread pool
 - **Timeout Protection** - Max duration per request (default: 5 minutes)
@@ -289,24 +297,27 @@ sequenceDiagram
 - **Error Handling** - Graceful handling of timeouts, failures, and iteration limits
 
 **Configuration:**
+
 ```json
 {
-  "assistant": {
-    "coordinator": false,
-    "max-iterations": 10,
-    "max-duration": "5m",
-    "thread-pool-size": 4
-  }
+    "assistant": {
+        "coordinator": false,
+        "max-iterations": 10,
+        "max-duration": "5m",
+        "thread-pool-size": 4
+    }
 }
 ```
 
 **Parallel Tool Execution:**
+
 - Thread pool executes independent tool calls concurrently
 - Configurable thread pool size (default: 4, minimum: 2)
 - Results collected and added to iteration memory in order
 - Errors in individual tools don't block others
 
 **Prompt Structure:**
+
 1. System instructions (`ASSISTANT.md`)
 2. Coordinator instructions (if `coordinator: true`, from `COORDINATOR.md`)
 3. Daily log (from `DailyLog`)
@@ -331,6 +342,7 @@ ContextFactory
 ```
 
 **Discovered Tools:**
+
 - `FileReadTool`, `FileWriteTool`, `FileEditTool`
 - `McpActivationTool`, `McpCallTool`
 - `PythonTool`
@@ -342,6 +354,7 @@ ContextFactory
 - `WebSearchTool`, `WebFetchTool`
 
 **Discovered Commands:**
+
 - `CompactCommand`
 - `HealthCommand`
 - `HelpCommand`
@@ -368,26 +381,26 @@ classDiagram
         +supportsStreaming() boolean
         +destroy()
     }
-    
+
     class Deepseek {
         +completion(request, tools)
         +completionStream(request, tools, onChunk)
         +supportsStreaming() true
         #createClient(apiKey, model, config) DeepseekClient
     }
-    
+
     class Kimi {
         +createClient(apiKey, model, config) KimiClient
     }
-    
+
     class Gemini {
         +createClient(apiKey, model, config) GeminiClient
     }
-    
+
     class LLMFactory {
         +create(type) LLM
     }
-    
+
     LLM <|-- Deepseek
     Deepseek <|-- Kimi
     Deepseek <|-- Gemini
@@ -398,33 +411,37 @@ classDiagram
 
 All providers share the base Deepseek implementation and support the OpenAI-compatible chat completion API:
 
-| Provider | Streaming | Thinking Mode | Notes |
-|----------|-----------|---------------|-------|
-| **Deepseek** | ✅ | ✅ | Base implementation with full feature support |
-| **Kimi** | ✅ | ✅ | Extends Deepseek with Kimi API endpoint |
-| **Gemini** | ✅ | ✅ | Extends Deepseek with Gemini API endpoint |
+| Provider     | Streaming | Thinking Mode | Notes                                         |
+|--------------|-----------|---------------|-----------------------------------------------|
+| **Deepseek** | ✅         | ✅             | Base implementation with full feature support |
+| **Kimi**     | ✅         | ✅             | Extends Deepseek with Kimi API endpoint       |
+| **Gemini**   | ✅         | ✅             | Extends Deepseek with Gemini API endpoint     |
 
 **Configuration Example:**
+
 ```json
 {
-  "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
-    "model": "deepseek-chat",
-    "temperature": 0.7,
-    "max-tokens": 2048,
-    "streaming": true,
-    "thinking": false,
-    "reasoning-effort": null,
-    "read-timeout-millis": 60000,
-    "connect-timeout-millis": 5000
-  }
+    "llm": {
+        "type": "deepseek",
+        "api-key": "${DEEPSEEK_API_KEY}",
+        "model": "deepseek-chat",
+        "temperature": 0.7,
+        "max-tokens": 2048,
+        "streaming": true,
+        "thinking": false,
+        "reasoning-effort": null,
+        "read-timeout-millis": 60000,
+        "connect-timeout-millis": 5000
+    }
 }
 ```
 
-**Note:** All providers (Deepseek, Kimi, Gemini) share the same configuration structure since Kimi and Gemini extend Deepseek's implementation. Just change the `type` field and use the appropriate API key and model name for the chosen provider.
+**Note:** All providers (Deepseek, Kimi, Gemini) share the same configuration structure since Kimi and Gemini extend
+Deepseek's implementation. Just change the `type` field and use the appropriate API key and model name for the chosen
+provider.
 
 **Request Flow:**
+
 1. Assistant creates `LLMRequest` with messages and available tool metadata
 2. LLM provider formats request for specific API
 3. API returns response with text and/or function calls
@@ -447,43 +464,44 @@ classDiagram
         +destroy()
         +health() Health
     }
-    
+
     class ToolMetadata {
         +name: String
         +description: String
         +parameters: List~ToolParameter~
     }
-    
+
     class ToolRegistry {
         +register(tool)
         +get(name) Tool
         +all() List~Tool~
         +init(context)
     }
-    
+
     Tool --> ToolMetadata
     ToolRegistry o-- Tool
 ```
 
 **Built-in Tools:**
 
-| Category | Tool | Description |
-|----------|------|-------------|
-| **Web** | `web_search` | Search the web using search APIs |
-| **Web** | `web_fetch` | Fetch and parse web page content |
-| **Code** | `python` | Execute Python code via subprocess |
-| **Code** | `shell` | Execute shell commands (with security restrictions) |
-| **Files** | `file_read` | Read files from agent's workspace |
-| **Files** | `file_write` | Write files to agent's workspace |
-| **Files** | `file_edit` | Edit existing files in workspace |
-| **Skills** | `skill_activation` | Dynamically activate skills during conversation |
-| **MCP** | `mcp_activate` | Activate an MCP server for the current session |
-| **MCP** | `mcp_call` | Call a tool on an activated MCP server |
-| **Multi-Agent** | `swarm_delegate` | Delegate tasks to specialist agents |
-| **Messaging** | `telegram_send` | Send a Telegram message to a user |
-| **Interaction** | `user_ask` | Pause execution and ask the user a question |
+| Category        | Tool               | Description                                         |
+|-----------------|--------------------|-----------------------------------------------------|
+| **Web**         | `web_search`       | Search the web using search APIs                    |
+| **Web**         | `web_fetch`        | Fetch and parse web page content                    |
+| **Code**        | `python`           | Execute Python code via subprocess                  |
+| **Code**        | `shell`            | Execute shell commands (with security restrictions) |
+| **Files**       | `file_read`        | Read files from agent's workspace                   |
+| **Files**       | `file_write`       | Write files to agent's workspace                    |
+| **Files**       | `file_edit`        | Edit existing files in workspace                    |
+| **Skills**      | `skill_activation` | Dynamically activate skills during conversation     |
+| **MCP**         | `mcp_activate`     | Activate an MCP server for the current session      |
+| **MCP**         | `mcp_call`         | Call a tool on an activated MCP server              |
+| **Multi-Agent** | `swarm_delegate`   | Delegate tasks to specialist agents                 |
+| **Messaging**   | `telegram_send`    | Send a Telegram message to a user                   |
+| **Interaction** | `user_ask`         | Pause execution and ask the user a question         |
 
 **Tool Lifecycle:**
+
 1. **Discovery** - Tools discovered by `ContextFactory.discoverTools()`
 2. **Registration** - Registered in `ToolRegistry`
 3. **Initialization** - `init(config, context)` called with tool-specific config
@@ -499,7 +517,7 @@ classDiagram
 ```kotlin
 class MyTool : Tool {
     override fun id() = "tool:my_tool"
-    
+
     override fun metadata() = ToolMetadata(
         name = "my_tool",
         description = "What the tool does",
@@ -507,7 +525,7 @@ class MyTool : Tool {
             ToolParameter("param1", "Description", ToolParameterType.STRING, true)
         )
     )
-    
+
     override fun exec(arguments: Map<*, *>): String {
         val param1 = arguments["param1"]?.toString()
         // Implementation
@@ -542,12 +560,12 @@ graph TB
     Skills -->|Activated| Instructions[Inject Instructions]
     Tools --> LLM[LLM Context]
     Instructions --> LLM
-    
     Marketplaces[Git Marketplaces] -->|Clone/Update| Registry
     LocalSkills[Local Skills] -->|Discover| Registry
 ```
 
 **Skill Discovery:**
+
 - **Local skills:** `~/kokibot/agents/{agent}/skills/*/SKILL.md`
 - **Marketplace skills:** Git repositories configured in `marketplaces` section
 - Discovered at startup by `SkillRegistry`
@@ -600,6 +618,7 @@ Assistant: Call `my_tool(param="value")`
 ```
 
 **Activation Flow:**
+
 1. User sends query
 2. LLM decides to call `skill_activation` tool with list of skill names
 3. `SkillActivationTool` activates specified skills for this request
@@ -608,6 +627,7 @@ Assistant: Call `my_tool(param="value")`
 6. LLM can now use skill tools
 
 **Components:**
+
 - `SkillRegistry` - Discovers and manages skills
 - `SkillParser` - Parses SKILL.md into metadata
 - `SkillActivationTool` - Tool for activating skills
@@ -629,32 +649,32 @@ classDiagram
         +send(message) boolean
         +health() Health
     }
-    
+
     class TelegramChannel {
         -bot: TelegramLongPollingBot
         -threadPoolSize: int
         +init(config, context)
     }
-    
+
     class EmailChannel {
         -scheduler: ScheduledExecutorService
         +init(config, context)
     }
-    
+
     class WebSocketChannel {
         -sessions: Map
         +init(config, context)
     }
-    
+
     class ChannelFactory {
         +create(type) Channel
     }
-    
+
     class ChannelRegistry {
         +init(config, context)
         +all() List~Channel~
     }
-    
+
     Channel <|-- TelegramChannel
     Channel <|-- EmailChannel
     Channel <|-- WebSocketChannel
@@ -664,13 +684,14 @@ classDiagram
 
 **Supported Channels:**
 
-| Channel | Type | Polling | Streaming | Whitelist |
-|---------|------|---------|-----------|-----------|
-| **Telegram** | Messaging | Long polling | ✅ | Username-based |
-| **Email** | Messaging | Periodic IMAP | ❌ | Email-based |
-| **WebSocket** | Real-time | Push | ✅ | None |
+| Channel       | Type      | Polling       | Streaming | Whitelist      |
+|---------------|-----------|---------------|-----------|----------------|
+| **Telegram**  | Messaging | Long polling  | ✅         | Username-based |
+| **Email**     | Messaging | Periodic IMAP | ❌         | Email-based    |
+| **WebSocket** | Real-time | Push          | ✅         | None           |
 
 **Message Flow:**
+
 1. Channel receives message from external service
 2. Channel creates `Message` object with userId, channelId, text, files
 3. Channel calls `assistant.process(message, streamCallback)`
@@ -680,6 +701,7 @@ classDiagram
 7. For streaming: callback sends intermediate results
 
 **Telegram Channel:**
+
 - Long polling for receiving messages
 - Markdown→HTML conversion for formatting
 - File upload/download support
@@ -687,6 +709,7 @@ classDiagram
 - Configurable sender whitelist
 
 **Email Channel:**
+
 - IMAP polling for incoming emails (configurable frequency)
 - SMTP for sending replies
 - Attachment support
@@ -694,6 +717,7 @@ classDiagram
 - Configurable sender whitelist
 
 **WebSocket Channel:**
+
 - Real-time bidirectional communication
 - JSON message protocol
 - Session management per user
@@ -704,43 +728,49 @@ classDiagram
 
 The built-in web interface (`/index.html`) provides a full chat UI including:
 
-- **Conversation sidebar** — lists the last 30 conversations grouped by date (Today / Yesterday / Previous 30 days / `yyyy-MM`)
-- **Conversation navigation** — clicking a sidebar entry navigates to `/index.html?agent=<agent>&conv=<id>`, loading that conversation's messages
-- **URL-driven loading** — on page load, `?conv=<id>` query param overrides localStorage to restore a specific conversation; param is cleaned from URL after loading via `history.replaceState`
-- **Active highlight** — the current conversation is highlighted in the sidebar after history loads or after a new reply arrives
+- **Conversation sidebar** — lists the last 30 conversations grouped by date (Today / Yesterday / Previous 30 days /
+  `yyyy-MM`)
+- **Conversation navigation** — clicking a sidebar entry navigates to `/index.html?agent=<agent>&conv=<id>`, loading
+  that conversation's messages
+- **URL-driven loading** — on page load, `?conv=<id>` query param overrides localStorage to restore a specific
+  conversation; param is cleaned from URL after loading via `history.replaceState`
+- **Active highlight** — the current conversation is highlighted in the sidebar after history loads or after a new reply
+  arrives
 
 **Key frontend components:**
+
 - `js/components/conversation-history.js` — async sidebar list: fetch, group, render, navigate
 - `js/components/sidebar.js` — sidebar toggle and state persistence
 - `js/chat-ui.js` — orchestrator: WebSocket, message rendering, conversation loading
 
 **Configuration:**
+
 ```json
 {
-  "channels": [
-    {
-      "type": "telegram",
-      "token": "${TELEGRAM_TOKEN}",
-      "thread-pool-size": 4,
-      "sender-whitelist": []
-    },
-    {
-      "type": "email",
-      "email": "bot@example.com",
-      "username": "bot@example.com",
-      "password": "${EMAIL_PASSWORD}",
-      "imap-host": "imap.example.com",
-      "imap-port": 993,
-      "smtp-host": "smtp.example.com",
-      "smtp-port": 465,
-      "fetch-frequency": "15m",
-      "sender-whitelist": []
-    },
-    {
-      "type": "websocket",
-      "path": "/ws/agent"
-    }
-  ]
+    "channels": [
+        {
+            "type": "telegram",
+            "token": "${TELEGRAM_TOKEN}",
+            "thread-pool-size": 4,
+            "sender-whitelist": []
+        },
+        {
+            "type": "email",
+            "email": "bot@example.com",
+            "username": "bot@example.com",
+            "password": "${EMAIL_PASSWORD}",
+            "imap-host": "imap.example.com",
+            "imap-port": 993,
+            "smtp-host": "smtp.example.com",
+            "smtp-port": 465,
+            "fetch-frequency": "15m",
+            "sender-whitelist": []
+        },
+        {
+            "type": "websocket",
+            "path": "/ws/agent"
+        }
+    ]
 }
 ```
 
@@ -771,6 +801,7 @@ graph TB
 - **Retention:** Permanent (no automatic cleanup)
 
 **Logged Events:**
+
 - Query with files, userId, channelId
 - LLM response with content, reasoning, tool calls
 - Tool use requests with arguments
@@ -779,6 +810,7 @@ graph TB
 - Iteration memory state
 
 **Use Cases:**
+
 - Debugging tool execution
 - Analyzing token usage and costs
 - Understanding reasoning flow
@@ -797,34 +829,43 @@ graph TB
 - **Thread-safety:** ReentrantReadWriteLock for concurrent access
 
 **Structure:**
+
 ```markdown
 # Daily Log - 2026-05-23
 
 ## 🎯 Daily Objectives
+
 - [ ] Task 1
 - [ ] Task 2
 
 ## 📝 Activity Stream
+
 ### 10:30 AM - Session abc123
+
 **Intent:** User asked about...
 **Action:** Executed tool...
 **Result:** Completed successfully
 
 ## 💡 Knowledge Capture
+
 - Learned that...
 - Configuration changed...
 
 ## 🚧 Blockers & Next Steps
+
 **Blockers:**
+
 - Issue with...
 
 **Next Steps:**
+
 - Continue working on...
 ```
 
 **Loaded into Prompt:** Yes (under "# Daily Log Protocol")
 
 **Operations:**
+
 - `get()` - Returns today's log content
 - `clear()` - Deletes today's log
 
@@ -841,26 +882,35 @@ graph TB
 - **Thread-safety:** ReentrantReadWriteLock
 
 **Structure:**
+
 ```markdown
+<!-- kokibot:conv:abc123 -->
+
 # 2026-05-23T10:30:00Z: Session abc123
+
 ## user
+
 ### Query:
-```markdown
+
+<query>
 What is the weather?
-```
+</query>
 ### Files:
 - /path/to/file1.txt
 
 ## assistant
-### Response:
-```markdown
-The weather is sunny.
-```
 
----
+### Response:
+
+<response>
+The weather is sunny.
+</response>
+
+<!-- kokibot:end -->
 ```
 
 **Operations:**
+
 - `append(query, response)` - Appends conversation to daily log
 - `clear(userId, channelId)` - Archives and clears history for user
 
@@ -871,22 +921,25 @@ The weather is sunny.
 **Purpose:** Conversation index and message retrieval for the web UI
 
 - **Index storage:** `~/kokibot/agents/{agent}/memory/chat/{userId}/{channelId}/conversations.json`
-- **Message storage:** Reads from existing ChatHistory markdown files (`~/kokibot/agents/{agent}/memory/chat/{userId}/{channelId}/YYYY-MM-DD.md`)
+- **Message storage:** Reads from existing ChatHistory markdown files (
+  `~/kokibot/agents/{agent}/memory/chat/{userId}/{channelId}/YYYY-MM-DD.md`)
 - **Format:** JSON array of `Conversation` objects (id, channelId, title, startDate)
 - **Thread-safety:** ReentrantReadWriteLock
 - **Atomic writes:** write-to-tmp + rename to prevent partial reads
 
 **Operations:**
-- `createConversation(userId, channelId, firstMessage)` — Creates a new conversation entry (title = first 60 chars of message)
+
+- `createConversation(userId, channelId, firstMessage)` — Creates a new conversation entry (title = first 60 chars of
+  message)
 - `getConversations(userId, channelId?, limit, offset)` — Returns paginated list sorted by `startDate` descending
 - `getMessages(conversationId, userId)` — Reconstructs message list from ChatHistory markdown files
 
 **REST API:**
 
-| Endpoint | Description |
-|---|---|
-| `GET /assistants/{name}/conversations?limit=30&offset=0` | Paginated conversation list |
-| `GET /assistants/{name}/conversations/{id}` | Conversation detail with messages |
+| Endpoint                                                 | Description                       |
+|----------------------------------------------------------|-----------------------------------|
+| `GET /assistants/{name}/conversations?limit=30&offset=0` | Paginated conversation list       |
+| `GET /assistants/{name}/conversations/{id}`              | Conversation detail with messages |
 
 - `userId` is always hardcoded to `"anonymous"` — never a request parameter
 - `startDate` serialized as ISO-8601 string (Jackson `DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS` disabled)
@@ -904,6 +957,7 @@ The weather is sunny.
 - **Thread-safety:** ReentrantLock for compaction serialization
 
 **Compaction Process:**
+
 1. Scheduler triggers every `compaction-frequency` (default: 6h)
 2. Extracts last `window` period from DailyLog (default: 7d)
 3. Sends to LLM with memory compaction prompt
@@ -913,17 +967,19 @@ The weather is sunny.
 7. Truncates to `max-length` if needed
 
 **Configuration:**
+
 ```json
 {
-  "memory": {
-    "window": "3d",
-    "compaction-frequency": "6h",
-    "max-length": 10240
-  }
+    "memory": {
+        "window": "3d",
+        "compaction-frequency": "6h",
+        "max-length": 10240
+    }
 }
 ```
 
 **Commands:**
+
 - `/compact` - Manually trigger compaction
 
 **Loaded into Prompt:** Yes (under "# Long-Term Memory")
@@ -935,6 +991,7 @@ The weather is sunny.
 **MCP servers** extend the assistant with external tools via the Model Context Protocol standard.
 
 **Components:**
+
 - `McpRegistry` - Loads and manages MCP server configurations from `config/mcps/`
 - `McpServer` - Represents a single MCP server connection
 - `McpClient` / `McpOkHttpTransport` - HTTP transport for MCP protocol
@@ -944,7 +1001,8 @@ The weather is sunny.
 
 **Configuration:**
 
-Each MCP server is defined as a separate JSON file in `config/mcps/`. Adding or removing a server requires no changes to `settings.json`.
+Each MCP server is defined as a separate JSON file in `config/mcps/`. Adding or removing a server requires no changes to
+`settings.json`.
 
 ```
 config/
@@ -974,17 +1032,20 @@ config/
 **KnowledgeBase** provides document ingestion, summarization, and retrieval capabilities.
 
 **Components:**
+
 - `KnowledgeBase` (`service/kb/KnowledgeBase.kt`) - Core service for ingestion and retrieval
 - `KBEntry` - Index entry with name, scope, keywords, summary, source path, and content type
 - `KnowledgeBaseController` - REST API for managing KB files
 - `KBSumaryResult` - Result of LLM-based summarization
 
 **Storage:**
+
 - **Index:** `~/kokibot/agents/{agent}/kb/index.json`
 - **Source files:** `~/kokibot/agents/{agent}/kb/source/`
 - **Summaries:** `~/kokibot/agents/{agent}/kb/raw/*.summary.md`
 
 **Ingestion Flow:**
+
 1. File uploaded via REST API → stored in `kb/source/`
 2. Entry added to `kb/index.json` with empty keywords and summary
 3. Async worker converts file to Markdown using `MarkdownConverter`
@@ -1003,19 +1064,19 @@ config/
 }
 ```
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `enabled` | boolean | `false` | Enable the knowledge base |
-| `exclusive` | boolean | `true` | When `true`, LLM uses only KB content and ignores other context |
-| `webSearch` | boolean | `true` | Allow web search fallback when KB has no matching content |
+| Parameter   | Type    | Default | Description                                                     |
+|-------------|---------|---------|-----------------------------------------------------------------|
+| `enabled`   | boolean | `false` | Enable the knowledge base                                       |
+| `exclusive` | boolean | `true`  | When `true`, LLM uses only KB content and ignores other context |
+| `webSearch` | boolean | `true`  | Allow web search fallback when KB has no matching content       |
 
 **REST API:**
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/assistants/{name}/kb` | List all KB entries |
-| `POST` | `/assistants/{name}/kb` | Ingest a new file |
-| `DELETE` | `/assistants/{name}/kb/{entryName}` | Remove a KB entry |
+| Method   | Path                                | Description         |
+|----------|-------------------------------------|---------------------|
+| `GET`    | `/assistants/{name}/kb`             | List all KB entries |
+| `POST`   | `/assistants/{name}/kb`             | Ingest a new file   |
+| `DELETE` | `/assistants/{name}/kb/{entryName}` | Remove a KB entry   |
 
 ---
 
@@ -1032,28 +1093,31 @@ graph LR
 ```
 
 **Components:**
+
 - `MarketplaceRegistry` - Manages marketplace lifecycle
 - `GitSkillFinder` - Clones and discovers skills from Git repos
 - `Marketplace` - Represents a single marketplace
 
 **Configuration:**
+
 ```json
 {
-  "marketplaces": [
-    {
-      "url": "https://github.com/wutsi/kokibot-skills.git",
-      "branch": "main"
-    }
-  ]
+    "marketplaces": [
+        {
+            "url": "https://github.com/wutsi/kokibot-skills.git",
+            "branch": "main"
+        }
+    ]
 }
 ```
 
 **Lifecycle:**
+
 1. On initialization, registry reads `marketplaces` config
 2. For each marketplace:
-   - Clone Git repository to `~/kokibot/agents/{agent}/skills/marketplace-{hash}/`
-   - Discover all `SKILL.md` files
-   - Register skills in `SkillRegistry`
+    - Clone Git repository to `~/kokibot/agents/{agent}/skills/marketplace-{hash}/`
+    - Discover all `SKILL.md` files
+    - Register skills in `SkillRegistry`
 3. Skills from marketplaces treated identically to local skills
 4. Repositories updated on restart
 
@@ -1070,13 +1134,13 @@ classDiagram
         +metadata() CommandMetadata
         +exec(input, context) String
     }
-    
+
     class CommandRegistry {
         +register(command)
         +get(name) Command
         +all() List~Command~
     }
-    
+
     class HelpCommand
     class CompactCommand
     class HealthCommand
@@ -1084,7 +1148,7 @@ classDiagram
     class SkillCommand
     class ToolCommand
     class HeartbeatCommand
-    
+
     Command <|-- HelpCommand
     Command <|-- CompactCommand
     Command <|-- HealthCommand
@@ -1097,17 +1161,18 @@ classDiagram
 
 **Built-in Commands:**
 
-| Command | Purpose |
-|---------|---------|
-| `/help [cmd]` | Display available commands or details about specific command |
-| `/compact` | Manually trigger memory compaction |
-| `/health` | System health check showing status of all components |
-| `/mcp [name]` | List available MCP servers or show details about a specific one |
-| `/skill [name]` | Show skill details or list all available skills |
-| `/tool [name]` | Show tool details or list all available tools |
-| `/heartbeat` | Manually trigger heartbeat task |
+| Command         | Purpose                                                         |
+|-----------------|-----------------------------------------------------------------|
+| `/help [cmd]`   | Display available commands or details about specific command    |
+| `/compact`      | Manually trigger memory compaction                              |
+| `/health`       | System health check showing status of all components            |
+| `/mcp [name]`   | List available MCP servers or show details about a specific one |
+| `/skill [name]` | Show skill details or list all available skills                 |
+| `/tool [name]`  | Show tool details or list all available tools                   |
+| `/heartbeat`    | Manually trigger heartbeat task                                 |
 
 **Command Flow:**
+
 1. User sends message starting with `/`
 2. Assistant detects command syntax
 3. `CommandRegistry` retrieves command by name
@@ -1121,39 +1186,45 @@ classDiagram
 **Heartbeat** schedules periodic automated tasks for maintenance and monitoring.
 
 **Components:**
+
 - `Heartbeat` (`service/heartbeat/Heartbeat.kt`) - Scheduler and executor
 - `HEARTBEAT.md` - User-defined heartbeat instructions
 
 **Configuration:**
+
 ```json
 {
-  "heartbeat": {
-    "frequency": "30m"
-  }
+    "heartbeat": {
+        "frequency": "30m"
+    }
 }
 ```
 
 **How It Works:**
+
 1. On initialization, reads `frequency` from config
 2. Schedules periodic task at specified interval
 3. On each tick:
-   - Reads `~/kokibot/agents/{agent}/HEARTBEAT.md`
-   - Sends content as system message to assistant
-   - Assistant processes instructions
+    - Reads `~/kokibot/agents/{agent}/HEARTBEAT.md`
+    - Sends content as system message to assistant
+    - Assistant processes instructions
 
 **Example `HEARTBEAT.md`:**
+
 ```markdown
 Check for pending tasks and log their status to the daily log.
 If any critical issues found, report them.
 ```
 
 **Use Cases:**
+
 - System health monitoring
 - Scheduled reports
 - Cleanup tasks
 - Reminder notifications
 
 **Commands:**
+
 - `/heartbeat` - Manually trigger heartbeat task
 
 ---
@@ -1163,16 +1234,19 @@ If any critical issues found, report them.
 **FileService** manages file operations for tools.
 
 **Components:**
+
 - `FileService` (`service/FileService.kt`) - File management
 - File extractors - Extract text from various formats
 
 **Supported Formats:**
+
 - **Text:** `.txt`, `.md`, `.json`, `.xml`, `.csv`
 - **Documents:** `.pdf`, `.doc`, `.docx`, `.ppt`, `.pptx`, `.xls`, `.xlsx`
 - **Code:** `.kt`, `.java`, `.py`, `.js`, `.ts`, etc.
 - **Web:** `.html`, `.htm`
 
 **Operations:**
+
 - Read files from workspace
 - Write files to workspace
 - Edit existing files
@@ -1198,33 +1272,32 @@ sequenceDiagram
     participant M as Memory
     participant CH as ChatHistory
     participant SL as SessionLog
-    
-    U->>C: Send Message
-    C->>A: process(message, streamCallback)
-    A->>SL: Log query
-    A->>DL: Load today's log
-    DL-->>A: Daily context
-    A->>M: Load long-term memory
-    M-->>A: Facts
-    
+    U ->> C: Send Message
+    C ->> A: process(message, streamCallback)
+    A ->> SL: Log query
+    A ->> DL: Load today's log
+    DL -->> A: Daily context
+    A ->> M: Load long-term memory
+    M -->> A: Facts
+
     loop Max Iterations (with timeout)
-        A->>L: completion(request, tools)
-        L-->>A: Response (text or tool calls)
-        A->>SL: Log LLM response
-        
+        A ->> L: completion(request, tools)
+        L -->> A: Response (text or tool calls)
+        A ->> SL: Log LLM response
+
         alt Multiple Tool Calls
             par Parallel Execution
-                A->>T: exec(tool1, args)
-                A->>T: exec(tool2, args)
+                A ->> T: exec(tool1, args)
+                A ->> T: exec(tool2, args)
             end
-            T-->>A: Results
-            A->>SL: Log tool results
-            A->>A: Add to iteration memory
+            T -->> A: Results
+            A ->> SL: Log tool results
+            A ->> A: Add to iteration memory
         else Text Response
-            A->>CH: append(query, response)
-            A->>SL: Log final response
-            A-->>C: Return message
-            C-->>U: Display response
+            A ->> CH: append(query, response)
+            A ->> SL: Log final response
+            A -->> C: Return message
+            C -->> U: Display response
         end
     end
 ```
@@ -1238,21 +1311,20 @@ sequenceDiagram
     participant DS as DelegationStack
     participant R as AssistantRegistry
     participant S as Specialist
-    
-    U->>C: Complex task
-    C->>C: Analyze and decompose
-    C->>DS: Push coordinator to stack
-    C->>DS: Validate depth and cycles
-    DS-->>C: OK
-    C->>C: Call swarm_delegate(name, task)
-    C->>R: get(specialist-name)
-    R-->>C: Specialist instance
-    C->>S: process(task)
-    S->>S: Execute with own tools/skills
-    S-->>C: Result
-    C->>DS: Pop coordinator from stack
-    C->>C: Synthesize results
-    C-->>U: Final response
+    U ->> C: Complex task
+    C ->> C: Analyze and decompose
+    C ->> DS: Push coordinator to stack
+    C ->> DS: Validate depth and cycles
+    DS -->> C: OK
+    C ->> C: Call swarm_delegate(name, task)
+    C ->> R: get(specialist-name)
+    R -->> C: Specialist instance
+    C ->> S: process(task)
+    S ->> S: Execute with own tools/skills
+    S -->> C: Result
+    C ->> DS: Pop coordinator from stack
+    C ->> C: Synthesize results
+    C -->> U: Final response
 ```
 
 ---
@@ -1260,11 +1332,13 @@ sequenceDiagram
 ## Design Patterns
 
 ### Factory Pattern
+
 - **LLMFactory** - Creates LLM provider instances based on type
 - **ChannelFactory** - Creates communication channel instances
 - **ContextFactory** - Creates and configures Context with all dependencies
 
 ### Registry Pattern
+
 - **ToolRegistry** - Manages available tools
 - **SkillRegistry** - Manages discovered skills
 - **CommandRegistry** - Manages system commands
@@ -1273,17 +1347,20 @@ sequenceDiagram
 - **AssistantRegistry** - Manages multiple assistants (multi-agent)
 
 ### Strategy Pattern
+
 - **Tool interface** - Different tool implementations
 - **LLM interface** - Different LLM providers
 - **Channel abstract class** - Different communication channels
 - **Command interface** - Different system commands
 
 ### Template Method Pattern
+
 - **Channel** - Defines communication flow, subclasses implement details
 - **Tool** - Defines tool lifecycle, subclasses implement logic
 - **Resource** - Defines initialization/cleanup, implementations provide specifics
 
 ### Observer Pattern
+
 - **Streaming callbacks** - LLM streams chunks to channel
 - **SessionLog** - Observes and logs all assistant events
 
@@ -1292,73 +1369,83 @@ sequenceDiagram
 ## Technology Stack
 
 ### Core Framework
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Spring Boot** | 4.1.0 | Application framework, DI, lifecycle management |
-| **Kotlin** | 2.2.0 | Primary language |
-| **Java** | 17 | Runtime environment |
+
+| Technology      | Version | Purpose                                         |
+|-----------------|---------|-------------------------------------------------|
+| **Spring Boot** | 4.1.0   | Application framework, DI, lifecycle management |
+| **Kotlin**      | 2.2.0   | Primary language                                |
+| **Java**        | 17      | Runtime environment                             |
 
 ### LLM & AI
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Deepseek API** | - | Primary LLM provider with streaming |
-| **Kimi API** | - | Alternative LLM provider |
-| **Gemini API** | - | Alternative LLM provider |
+
+| Technology       | Version | Purpose                             |
+|------------------|---------|-------------------------------------|
+| **Deepseek API** | -       | Primary LLM provider with streaming |
+| **Kimi API**     | -       | Alternative LLM provider            |
+| **Gemini API**   | -       | Alternative LLM provider            |
 
 ### Communication
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Telegram Bots SDK** | 10.0.0 | Telegram Bot API integration |
-| **Jakarta Mail API** | 2.1.5 | Email (IMAP/SMTP) functionality |
-| **Spring WebSocket** | 4.1.0 | WebSocket real-time communication |
+
+| Technology            | Version | Purpose                           |
+|-----------------------|---------|-----------------------------------|
+| **Telegram Bots SDK** | 10.0.0  | Telegram Bot API integration      |
+| **Jakarta Mail API**  | 2.1.5   | Email (IMAP/SMTP) functionality   |
+| **Spring WebSocket**  | 4.1.0   | WebSocket real-time communication |
 
 ### Data Processing
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Jackson Kotlin** | 2.22.0 | JSON serialization/deserialization |
-| **JSoup** | 1.22.2 | HTML parsing for web content |
-| **Apache PDFBox** | 3.0.7 | PDF text extraction |
-| **Apache POI** | 5.5.1 | Microsoft Office document parsing |
-| **Flexmark** | 0.64.8 | Markdown/HTML conversion |
-| **JGit** | 7.7.0 | Git operations for marketplaces |
-| **OkHttp** | 5.4.0 | HTTP client for API calls |
-| **Kotlinx Coroutines** | 1.11.0 | Asynchronous programming |
+
+| Technology             | Version | Purpose                            |
+|------------------------|---------|------------------------------------|
+| **Jackson Kotlin**     | 2.22.0  | JSON serialization/deserialization |
+| **JSoup**              | 1.22.2  | HTML parsing for web content       |
+| **Apache PDFBox**      | 3.0.7   | PDF text extraction                |
+| **Apache POI**         | 5.5.1   | Microsoft Office document parsing  |
+| **Flexmark**           | 0.64.8  | Markdown/HTML conversion           |
+| **JGit**               | 7.7.0   | Git operations for marketplaces    |
+| **OkHttp**             | 5.4.0   | HTTP client for API calls          |
+| **Kotlinx Coroutines** | 1.11.0  | Asynchronous programming           |
 
 ### Testing
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **JUnit** | 5 | Unit testing framework |
-| **Mockito Kotlin** | 2.2.0 | Mocking for tests |
-| **GreenMail** | 2.1.8 | Email server testing |
+
+| Technology         | Version | Purpose                |
+|--------------------|---------|------------------------|
+| **JUnit**          | 5       | Unit testing framework |
+| **Mockito Kotlin** | 2.2.0   | Mocking for tests      |
+| **GreenMail**      | 2.1.8   | Email server testing   |
 
 ---
 
 ## Security Considerations
 
 ### Shell Command Security (`ShellTool`)
+
 - **Blacklist:** `sudo`, `rm -rf`, `chmod`, `chown`, `> /etc/`
 - **Timeout:** Configurable (default: 5 seconds)
 - **No redirection** to system directories
 - **Whitelist-based** for production use recommended
 
 ### Python Execution (`PythonTool`)
+
 - Executes via **subprocess** (isolated process)
 - **Timeout protection**
 - **No direct file system** access outside workspace
 - Output captured and sanitized
 
 ### Configuration Security
+
 - **Sensitive data** in environment variables only
 - **No credentials** in code or config files checked into version control
 - **Environment variable substitution:** `${VAR_NAME}`
 - Config files should have restrictive permissions
 
 ### Channel Security
+
 - **Whitelist support** for Telegram (username-based)
 - **Whitelist support** for Email (email address-based)
 - **WebSocket** currently has no authentication (use reverse proxy for auth)
 
 ### Multi-Agent Security
+
 - **Delegation depth limits** prevent stack overflow
 - **Cycle detection** prevents infinite delegation loops
 - **Session isolation** prevents cross-session interference
@@ -1368,6 +1455,7 @@ sequenceDiagram
 ## Performance
 
 ### Optimization Strategies
+
 - **Tool metadata cached** in registries (loaded once at startup)
 - **Skills discovered once** at startup, not per-request
 - **Parallel tool execution** via thread pools
@@ -1376,6 +1464,7 @@ sequenceDiagram
 - **Thread-safe data structures** for concurrent access
 
 ### Scalability Considerations
+
 - **Iterative reasoning loop** is single-threaded per request (intentional for determinism)
 - **Multiple channels** supported concurrently
 - **Multiple agents** run independently with isolated workspaces
@@ -1384,6 +1473,7 @@ sequenceDiagram
 - **Configurable timeouts** prevent runaway requests
 
 ### Resource Management
+
 - **Thread pool sizing:** Configurable per assistant and channel
 - **Graceful shutdown:** Proper cleanup of executors, connections
 - **File handles:** Properly closed after operations
@@ -1396,50 +1486,65 @@ sequenceDiagram
 Kokibot is designed for extensibility at multiple levels:
 
 ### 1. New Tools
+
 Implement `Tool` interface and register in `ContextFactory.discoverTools()`
 
 ```kotlin
 class MyTool : Tool {
     override fun metadata() = ToolMetadata(...)
-    override fun exec(arguments: Map<*, *>): String { ... }
+    override fun exec(arguments: Map<*, *>): String {
+        ...
+    }
 }
 ```
 
 ### 2. New Skills
+
 Add `SKILL.md` to `~/kokibot/agents/{agent}/skills/` or publish in marketplace
 
 ### 3. New Channels
+
 Extend `Channel` abstract class and register in `ChannelFactory.create()`
 
 ```kotlin
 class MyChannel : Channel() {
-    override fun init(config: Map<*, *>, context: Context) { ... }
+    override fun init(config: Map<*, *>, context: Context) {
+        ...
+    }
 }
 ```
 
 ### 4. New LLM Providers
+
 Implement `LLM` interface and register in `LLMFactory.create()`
 
 ```kotlin
 class MyLLM : LLM {
-    override fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse { ... }
+    override fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
+        ...
+    }
 }
 ```
 
 ### 5. New Commands
+
 Implement `Command` interface and register in `ContextFactory.discoverCommands()`
 
 ```kotlin
 class MyCommand : Command {
     override fun metadata() = CommandMetadata(...)
-    override fun exec(input: String, context: Context): String { ... }
+    override fun exec(input: String, context: Context): String {
+        ...
+    }
 }
 ```
 
 ### 6. New Marketplaces
+
 Add Git repository URL to `marketplaces` configuration section
 
 ### 7. New Agents
+
 Create new directory under `~/kokibot/agents/` with `config/settings.json`
 
 ---

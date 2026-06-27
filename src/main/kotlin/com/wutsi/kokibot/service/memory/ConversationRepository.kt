@@ -102,8 +102,8 @@ class ConversationRepository : Resource {
             .forEach { block ->
                 val trimmed = block.trim()
                 val dateTime = extractDateTime(trimmed) ?: return@forEach
-                val userText = extractSection(trimmed, "### Query:") ?: return@forEach
-                val assistantText = extractSection(trimmed, "### Response:")
+                val userText = extractTag(trimmed, "query") ?: return@forEach
+                val assistantText = extractTag(trimmed, "response")
                 val files = extractFiles(trimmed)
                 messages.add(ConversationMessage(role = "user", text = userText, files = files, dateTime = dateTime))
                 if (assistantText != null) {
@@ -126,31 +126,17 @@ class ConversationRepository : Resource {
             .filter { it.isNotEmpty() }
     }
 
-    private fun extractSection(block: String, header: String): String? {
-        val marker = "$header\n```markdown\n"
-        val start = block.indexOf(marker)
+    // Extracts the content wrapped between <tag> and </tag> markers written by ChatHistory.
+    // The writer pads the content with newlines (<tag>\n...\n</tag>); those padding newlines are stripped.
+    private fun extractTag(block: String, tag: String): String? {
+        val open = "<$tag>"
+        val close = "</$tag>"
+        val start = block.indexOf(open)
         if (start == -1) return null
-        val contentStart = start + marker.length
-        val end = closingFence(block, contentStart, header)
+        val contentStart = start + open.length
+        val end = block.indexOf(close, contentStart)
         if (end < contentStart) return null
-        return block.substring(contentStart, end)
-    }
-
-    // Finds the position of the closing \n``` for a section.
-    // Response is always the last section in the block, so its fence is the last \n``` in the block.
-    // Query ends at a known boundary: \n```\n\n## (no files) or \n```\n### Files: (with files).
-    // Using these exact patterns avoids false matches on ## headings or code fences inside LLM content.
-    private fun closingFence(block: String, contentStart: Int, header: String): Int {
-        if (header == "### Response:") {
-            return block.lastIndexOf("\n```")
-        }
-        val beforeFiles = block.indexOf("\n```\n### Files:", contentStart).takeIf { it >= contentStart }
-        val beforeRole = block.indexOf("\n```\n\n## ", contentStart).takeIf { it >= contentStart }
-        return when {
-            beforeFiles != null && (beforeRole == null || beforeFiles < beforeRole) -> beforeFiles
-            beforeRole != null -> beforeRole
-            else -> block.lastIndexOf("\n```")
-        }
+        return block.substring(contentStart, end).trim('\n')
     }
 
     private fun extractDateTime(block: String): LocalDateTime? {

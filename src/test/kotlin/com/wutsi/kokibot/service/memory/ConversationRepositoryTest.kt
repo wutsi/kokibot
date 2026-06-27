@@ -111,15 +111,15 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "What is the weather?\n" +
-                "```\n" +
+                "</query>\n" +
                 "\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "Sunny, 22°C.\n" +
-                "```" + ConversationRepository.BLOCK_SEPARATOR
+                "</response>" + ConversationRepository.BLOCK_SEPARATOR
         )
 
         val messages = repo.getMessages(conv.id, "user-1", "telegram")
@@ -167,26 +167,26 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "First question\n" +
-                "```\n\n" +
+                "</query>\n\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "First answer\n" +
-                "```" + ConversationRepository.BLOCK_SEPARATOR +
+                "</response>" + ConversationRepository.BLOCK_SEPARATOR +
                 "<!-- kokibot:conv:${conv2.id} -->\n" +
                 "# $later: Session def\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "Second question\n" +
-                "```\n\n" +
+                "</query>\n\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "Second answer\n" +
-                "```" + ConversationRepository.BLOCK_SEPARATOR
+                "</response>" + ConversationRepository.BLOCK_SEPARATOR
         )
 
         val messages = repo.getMessages(conv1.id, "user-1", "telegram")
@@ -208,18 +208,18 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "Summarize this\n" +
-                "```\n" +
+                "</query>\n" +
                 "### Files:\n" +
                 "- /workspace/files/report.pdf\n" +
                 "- /workspace/files/data.csv\n" +
                 "\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "Here is the summary.\n" +
-                "```" + ConversationRepository.BLOCK_SEPARATOR
+                "</response>" + ConversationRepository.BLOCK_SEPARATOR
         )
 
         val messages = repo.getMessages(conv.id, "user-1", "telegram")
@@ -244,14 +244,14 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "Hello\n" +
-                "```\n\n" +
+                "</query>\n\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "Hi there.\n" +
-                "```" + ConversationRepository.BLOCK_SEPARATOR
+                "</response>" + ConversationRepository.BLOCK_SEPARATOR
         )
 
         val messages = repo.getMessages(conv.id, "user-1", "telegram")
@@ -273,19 +273,19 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "Fix this code\n" +
-                "```\n" +
+                "</query>\n" +
                 "\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "Here is the fix:\n" +
                 "```python\n" +
                 "x = 2\n" +
                 "```\n" +
                 "Done.\n" +
-                "```" +
+                "</response>" +
                 ConversationRepository.BLOCK_SEPARATOR
         )
 
@@ -307,19 +307,19 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "Fix this:\n" +
                 "```python\n" +
                 "x = 1\n" +
                 "```\n" +
                 "Please.\n" +
-                "```\n" +
+                "</query>\n" +
                 "\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "Done.\n" +
-                "```" +
+                "</response>" +
                 ConversationRepository.BLOCK_SEPARATOR
         )
 
@@ -368,19 +368,19 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "Explain something\n" +
-                "```\n" +
+                "</query>\n" +
                 "\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "## Overview\n" +
                 "Here is the overview.\n" +
                 "\n" +
                 "## Details\n" +
                 "More details here.\n" +
-                "```" +
+                "</response>" +
                 ConversationRepository.BLOCK_SEPARATOR
         )
 
@@ -426,19 +426,19 @@ class ConversationRepositoryTest {
                 "# $now: Session abc\n" +
                 "## user\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "Summarize\n" +
-                "```\n" +
+                "</query>\n" +
                 "\n" +
                 "## assistant\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "Part one.\n" +
                 "\n" +
                 "---\n" +
                 "\n" +
                 "Part two.\n" +
-                "```" +
+                "</response>" +
                 ConversationRepository.BLOCK_SEPARATOR
         )
 

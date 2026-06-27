@@ -260,7 +260,9 @@ class KnowledgeBase : Resource {
         )
         val response = context.llm.completion(request, emptyList())
 
-        val content = response.choices[0].content!!.trim()
+        val content = response.choices.firstOrNull()?.content?.trim()
+            ?: throw IllegalStateException("No content returned from LLM")
+        
         val json = if (content.startsWith("```json")) {
             val start = content.indexOf("```json") + 7
             val end = content.lastIndexOf("```")

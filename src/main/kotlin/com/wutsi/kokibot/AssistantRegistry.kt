@@ -1,10 +1,11 @@
 package com.wutsi.kokibot
 
 import org.springframework.stereotype.Service
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class AssistantRegistry {
-    private val assistants = mutableMapOf<String, Assistant>()
+    private val assistants = ConcurrentHashMap<String, Assistant>()
 
     fun all(): List<Assistant> {
         return assistants.values.toList()

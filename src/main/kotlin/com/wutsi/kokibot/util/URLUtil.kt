@@ -22,14 +22,14 @@ object URLUtil {
         "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
     const val BUFFER_SIZE = 1024 * 1024 // 1M
     const val MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
+    private val client = OkHttpClient.Builder()
+        .protocols(Arrays.asList(Protocol.HTTP_1_1))
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(120, TimeUnit.SECONDS)
+        .callTimeout(120, TimeUnit.SECONDS)
+        .build()
 
     fun fetch(url: URL, maxLength: Int = MAX_FILE_SIZE): File {
-        val client = OkHttpClient.Builder()
-            .protocols(Arrays.asList(Protocol.HTTP_1_1))
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .callTimeout(120, TimeUnit.SECONDS)
-            .build()
         val request = Request.Builder()
             .url(url)
             .header("User-Agent", USER_AGENT)

@@ -38,6 +38,7 @@ class Bootstrap(
         return context
     }
 
+    @Synchronized
     @Suppress("UNCHECKED_CAST")
     fun set(key: String, value: Any) {
         val dot = key.indexOf('.')

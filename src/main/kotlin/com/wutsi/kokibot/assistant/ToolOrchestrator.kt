@@ -167,31 +167,35 @@ class ToolOrchestrator(
     ): Callable<ToolExecutionResult> {
         return Callable {
             ExecutionContext.set(id, assistantName, query.userId, query.channelId)
-            val startTime = System.currentTimeMillis()
-            LOGGER.info(
-                "$iteration $assistantName TOOL ${call.name} " +
-                    call.arguments.map { entry ->
-                        "${entry.key}=" + entry.value?.let { value -> StringUtil.take(value.toString(), 200) }
-                    }.joinToString(",")
-            )
-            context.sessionLog.onToolUse(id, iteration, call)
+            try {
+                val startTime = System.currentTimeMillis()
+                LOGGER.info(
+                    "$iteration $assistantName TOOL ${call.name} " +
+                        call.arguments.map { entry ->
+                            "${entry.key}=" + entry.value?.let { value -> StringUtil.take(value.toString(), 200) }
+                        }.joinToString(",")
+                )
+                context.sessionLog.onToolUse(id, iteration, call)
 
-            var exception: Exception? = null
-            val result = tools[call.name]?.let { tool ->
-                try {
-                    tool.exec(call.arguments)
-                } catch (e: Exception) {
-                    exception = e
-                    val duration = System.currentTimeMillis() - startTime
-                    LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
-                    "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                var exception: Exception? = null
+                val result = tools[call.name]?.let { tool ->
+                    try {
+                        tool.exec(call.arguments)
+                    } catch (e: Exception) {
+                        exception = e
+                        val duration = System.currentTimeMillis() - startTime
+                        LOGGER.warn("Unexpected error while executing tool `${call.name}` after ${duration}ms. Error=${e.message}")
+                        "Unexpected error while executing tool `${call.name}`. Error=${e.message}"
+                    }
                 }
+                ToolExecutionResult(
+                    call = call,
+                    result = result ?: "Tool `${call.name}` not found",
+                    error = exception,
+                )
+            } finally {
+                ExecutionContext.clear()
             }
-            ToolExecutionResult(
-                call = call,
-                result = result ?: "Tool `${call.name}` not found",
-                error = exception,
-            )
         }
     }
 

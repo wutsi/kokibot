@@ -195,6 +195,10 @@ class AssistantTest {
         val instructionsFile = File(home, "ASSISTANT.md")
         instructionsFile.parentFile.mkdirs()
 
+        assistant.init(
+            mapOf("max-iterations" to 3),
+            Context(home = home, llm = mock())
+        )
         assistant.apply("instructions", "You are a helpful assistant")
 
         assertEquals("You are a helpful assistant", instructionsFile.readText())

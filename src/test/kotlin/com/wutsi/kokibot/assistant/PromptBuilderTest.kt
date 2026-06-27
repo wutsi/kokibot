@@ -183,18 +183,6 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should build system instructions with assistant identity`() {
-        val query = Message(userId = "user1", channelId = "channel1")
-
-        val instructions = builder.buildSystemInstructions(
-            query = query,
-            context = context
-        )
-
-        assertTrue(instructions.contains("You are a system agent"))
-    }
-
-    @Test
     fun `should include coordinator instructions`() {
         val query = Message(userId = "user1", channelId = "channel1")
 

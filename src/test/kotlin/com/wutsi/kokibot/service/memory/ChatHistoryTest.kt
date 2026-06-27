@@ -60,17 +60,17 @@ class ChatHistoryTest {
                 "# ${query.dateTime}: Session ${query.id}\n" +
                 "## ${query.role}\n" +
                 "### Query:\n" +
-                "```markdown\n" +
+                "<query>\n" +
                 "${query.text}\n" +
-                "```\n" +
+                "</query>\n" +
                 "### Files:\n" +
                 "- file1.txt\n" +
                 "- file2.txt\n\n" +
                 "## ${response.role}\n" +
                 "### Response:\n" +
-                "```markdown\n" +
+                "<response>\n" +
                 "${response.text}\n" +
-                "```" +
+                "</response>" +
                 ConversationRepository.BLOCK_SEPARATOR
 
         val today = query.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))

@@ -39,11 +39,11 @@ class ChatHistory : Resource {
             "# ${query.dateTime}: Session ${query.id}\n" +
             "## ${query.role}\n" +
             "### Query:\n" +
-            "```markdown\n${query.text}\n```\n" +
+            "<query>\n${query.text}\n</query>\n" +
             (if (files.isNotEmpty()) "### Files:\n$files\n\n" else "\n") +
             "## ${response.role}\n" +
             "### Response:\n" +
-            "```markdown\n${response.text}\n```" +
+            "<response>\n${response.text}\n</response>" +
             BLOCK_SEPARATOR
 
         val file = getFile(userId, channelId)

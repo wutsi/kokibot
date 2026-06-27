@@ -41,6 +41,7 @@ class ContextTest {
         chatHistory = mock(),
         conversationRepository = mock(),
         knowledgeBase = mock(),
+        delegationStack = mock(),
     )
 
     private val llmConfig = mapOf("type" to "gpt-3.5-turbo")
@@ -77,6 +78,7 @@ class ContextTest {
         doReturn(Health(id = "-", up = true)).whenever(context.fileService).health()
         doReturn(Health(id = "-", up = true)).whenever(context.heartbeat).health()
         doReturn(Health(id = "-", up = true)).whenever(context.knowledgeBase).health()
+        doReturn(Health(id = "-", up = true)).whenever(context.delegationStack).health()
     }
 
     @Test
@@ -89,18 +91,22 @@ class ContextTest {
 
         verify(context.assistant).destroy()
         verify(context.llm).destroy()
+        verify(context.channelRegistry).destroy()
+        verify(context.marketplaceRegistry).destroy()
+        verify(context.mcpRegistry).destroy()
+        verify(context.skillRegistry).destroy()
+        verify(context.toolRegistry).destroy()
+        verify(context.commandRegistry).destroy()
+        verify(context.fileService).destroy()
+        verify(context.heartbeat).destroy()
+        verify(context.delegationStack).destroy()
+        verify(context.knowledgeBase).destroy()
+
         verify(context.memory).destroy()
         verify(context.dailyLog).destroy()
         verify(context.sessionLog).destroy()
-        verify(context.fileService).destroy()
         verify(context.chatHistory).destroy()
         verify(context.conversationRepository).destroy()
-        verify(context.heartbeat).destroy()
-        verify(channel).destroy()
-        verify(context.knowledgeBase).destroy()
-        verify(context.memory).destroy()
-        verify(context.dailyLog).destroy()
-        verify(context.chatHistory).destroy()
     }
 
     @Test

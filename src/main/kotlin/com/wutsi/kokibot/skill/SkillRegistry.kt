@@ -60,7 +60,14 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) {
     }
 
     fun destroy() {
-        skills.values.forEach { it.destroy() }
+        skills.values.forEach {
+            try {
+                it.destroy()
+            } catch (ex: Exception) {
+                LOGGER.warn("Unable to destroy the Skill ${it.metadata.name} - Error:" + ex.message)
+            }
+        }
+        skills.clear()
     }
 
     fun all(): List<Skill> {

@@ -80,9 +80,11 @@ class Assistant(val name: String = "") {
     }
 
     fun destroy() {
-        if (::toolOrchestrator.isInitialized) {
-            LOGGER.info("Shutting down tool orchestrator for assistant: $name")
+        context.assistantRegistry.unregister(this)
+        try {
             toolOrchestrator.destroy()
+        } catch (ex: Exception) {
+            LOGGER.error("Error while destroying tool orchestrator for assistant $name", ex)
         }
     }
 

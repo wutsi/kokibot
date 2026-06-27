@@ -77,6 +77,28 @@ class ChannelRegistryTest {
     }
 
     @Test
+    fun destroy() {
+        registry.init(context)
+        registry.destroy()
+
+        verify(channel1).destroy()
+        verify(channel2).destroy()
+        assertEquals(0, registry.all().size)
+    }
+
+    @Test
+    fun `destroy - ignore channel failure`() {
+        doThrow(RuntimeException::class).whenever(channel1).destroy()
+
+        registry.init(context)
+        registry.destroy()
+
+        verify(channel1).destroy()
+        verify(channel2).destroy()
+        assertEquals(0, registry.all().size)
+    }
+
+    @Test
     fun all() {
         registry.init(context)
 

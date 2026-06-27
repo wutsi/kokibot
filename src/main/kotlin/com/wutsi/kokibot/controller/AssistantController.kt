@@ -1,8 +1,6 @@
 package com.wutsi.kokibot.controller
 
-import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.ConfigurationException
-import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -39,16 +37,6 @@ class AssistantController(private val multi: MultiBootstrap) {
             .status(200)
             .header("X-Total-Count", items.size.toString())
             .body(result)
-    }
-
-    private fun hasChannel(context: Context, channelId: String): Boolean {
-        try {
-            val name = if (channelId.startsWith("channel:")) channelId else "channel:$channelId"
-            context.channelRegistry.get(name)
-            return true
-        } catch (_: ChannelNotFoundException) {
-            return false
-        }
     }
 
     @GetMapping("/{name}")
@@ -111,33 +99,6 @@ class AssistantController(private val multi: MultiBootstrap) {
         return ResponseEntity.ok(mapOf("success" to true))
     }
 
-    @GetMapping("/{name}/heartbeat.md")
-    fun heartbeat(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
-        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val context = bootstrap.getContext()
-        val identity = context.heartbeat.getInstructions()
-        return ResponseEntity.ok(
-            mapOf(
-                "content" to (identity ?: "")
-            )
-        )
-    }
-
-    @PostMapping("/{name}/heartbeat.md")
-    fun heartbeat(
-        @PathVariable name: String,
-        @RequestBody body: Map<String, Any>
-    ): ResponseEntity<Map<String, Any>> {
-        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
-        val context = bootstrap.getContext()
-        context.heartbeat.apply("instructions", body["content"] as? String ?: "")
-        return ResponseEntity.ok(
-            mapOf(
-                "success" to true
-            )
-        )
-    }
-
     @PostMapping("/{name}/settings")
     fun set(
         @PathVariable name: String,
@@ -147,7 +108,11 @@ class AssistantController(private val multi: MultiBootstrap) {
         val key = body["key"] as? String ?: return ResponseEntity.badRequest().build()
         val value = body["value"] ?: return ResponseEntity.badRequest().build()
         return try {
-            bootstrap.set(key, value)
+            if (key == "assistant.name") {
+                multi.rename(name, (value as? String) ?: "")
+            } else {
+                bootstrap.set(key, value)
+            }
             ResponseEntity.ok(mapOf("success" to true))
         } catch (e: ConfigurationException) {
             ResponseEntity.badRequest().body(mapOf("error" to (e.message ?: "Invalid setting")))

@@ -49,7 +49,7 @@ class HeartbeatTest {
     fun tick() {
         doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
 
-        heartbeat.init(mapOf("frequency" to "30m"), context)
+        heartbeat.init(mapOf("frequency" to "30m", "enabled" to true), context)
         heartbeat.tick()
 
         val msg = argumentCaptor<Message>()
@@ -87,7 +87,7 @@ class HeartbeatTest {
     fun `init - defaults`() {
         heartbeat.init(emptyMap<String, Any>(), context)
 
-        assertTrue(heartbeat.isEnabled())
+        assertFalse(heartbeat.isEnabled())
         assertEquals(Heartbeat.DEFAULT_FREQUENCY, heartbeat.getFrequency())
     }
 

@@ -23,4 +23,8 @@ class AssistantRegistry {
         return assistants[name.lowercase()]
             ?: throw AssistantNotFoundException("Assistant not found: $name")
     }
+
+    fun unregister(assistant: Assistant) {
+        assistants.remove(assistant.name.lowercase())
+    }
 }

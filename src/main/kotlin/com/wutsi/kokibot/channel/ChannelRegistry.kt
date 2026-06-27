@@ -33,6 +33,17 @@ class ChannelRegistry(
             }
     }
 
+    fun destroy() {
+        channels.values.forEach { channel ->
+            try {
+                channel.destroy()
+            } catch (ex: Exception) {
+                LOGGER.warn("Failed to destroy the channel ${channel.id()} - ${ex.message}")
+            }
+        }
+        channels.clear()
+    }
+
     private fun loadConfig(file: File): Map<*, *> {
         val config = JsonMapper().readValue(file, Map::class.java)
         return MapUtil.applyEnv(config)
@@ -58,5 +69,10 @@ class ChannelRegistry(
 
     fun register(channel: Channel) {
         channels[channel.id().lowercase()] = channel
+    }
+
+    fun restart(context: Context) {
+        destroy()
+        init(context)
     }
 }

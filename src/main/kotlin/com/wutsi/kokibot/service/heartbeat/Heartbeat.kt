@@ -37,7 +37,7 @@ class Heartbeat() : Resource {
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
-        this.enabled = MapUtil.toBoolean("enabled", config) ?: true
+        this.enabled = MapUtil.toBoolean("enabled", config) ?: false
         this.frequency = MapUtil.toString("frequency", config) ?: DEFAULT_FREQUENCY
 
         if (enabled) {

@@ -6,6 +6,7 @@ import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.command.HealthCommand
 import com.wutsi.kokibot.command.HelpCommand
+import com.wutsi.kokibot.command.RenameCommand
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.mcp.McpCommand
@@ -45,6 +46,7 @@ class ContextFactory(
     private val skillRegistry: SkillRegistry = SkillRegistry(),
     private val jsonMapper: JsonMapper,
     private val assistantRegistry: AssistantRegistry,
+    private val multiBootstrap: MultiBootstrap,
 ) {
     fun create(home: File, config: Map<*, *>): Context {
         // Tools
@@ -108,6 +110,7 @@ class ContextFactory(
             HealthCommand(),
             HelpCommand(),
             McpCommand(),
+            RenameCommand(multiBootstrap),
             SkillCommand(),
             ToolCommand(),
             HeartbeatCommand(),

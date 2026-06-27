@@ -59,8 +59,9 @@ class Bootstrap(
         // instructions are persisted to ASSISTANT.md by Assistant.apply(); skip settings.json
         if (section == "assistant" && property == "instructions") return
 
+        // Update the settings.json file
         val file = File(File(context.home, "config"), "settings.json")
-        val rawConfig = JsonMapper().readValue(file, Map::class.java).toMutableMap() as MutableMap<Any?, Any?>
+        val rawConfig = JsonMapper().readValue(file, Map::class.java).toMutableMap()
         val sectionMap = rawConfig.getOrPut(section) { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
         sectionMap[property] = value
         JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)

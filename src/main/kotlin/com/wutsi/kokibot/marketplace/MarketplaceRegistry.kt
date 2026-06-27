@@ -49,7 +49,13 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
     }
 
     fun destroy() {
-        marketplaces.values.forEach { marketplace -> marketplace.destroy() }
+        marketplaces.values.forEach { marketplace ->
+            try {
+                marketplace.destroy()
+            } catch (e: Exception) {
+                LOGGER.warn("Failed to destroy the marketplace ${marketplace.id()} - ${e.message}")
+            }
+        }
         marketplaces.clear()
     }
 

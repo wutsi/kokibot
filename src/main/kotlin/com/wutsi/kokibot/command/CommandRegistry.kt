@@ -14,6 +14,7 @@ class CommandRegistry {
     }
 
     fun destroy() {
+        commands.clear()
     }
 
     fun all(): List<Command> {

@@ -120,9 +120,16 @@ class AssistantTest {
     }
 
     @Test
+    fun destroy() {
+        assistant.destroy()
+
+        verify(assistantRegistry).unregister(assistant)
+    }
+
+    @Test
     fun init() {
         // WHEN
-        // init() called in setup()
+        // assistant.init() called in setup()
 
         // THEN
         verify(assistantRegistry).register(assistant)

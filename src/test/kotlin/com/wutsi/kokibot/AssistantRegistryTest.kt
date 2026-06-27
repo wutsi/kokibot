@@ -51,4 +51,14 @@ class AssistantRegistryTest {
 
         assertEquals(2, registry.all().size)
     }
+
+    @Test
+    fun unregister() {
+        val assistant = Assistant("Foo")
+        registry.register(assistant)
+
+        registry.unregister(assistant)
+
+        assertThrows<AssistantNotFoundException> { registry.get("Foo") }
+    }
 }

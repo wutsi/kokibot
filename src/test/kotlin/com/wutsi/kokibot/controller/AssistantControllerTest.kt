@@ -234,7 +234,7 @@ class AssistantControllerTest {
         val context = Context(
             assistant = assistant,
             home = File("target/assistant-controller/007"),
-            llm = mock<LLM>(),
+            llm = mock(),
         )
         doReturn(context).whenever(bootstrap).getContext()
         doReturn(listOf(bootstrap)).whenever(multi).bootstraps
@@ -248,6 +248,30 @@ class AssistantControllerTest {
         assertEquals(200, response.statusCode.value())
         assertEquals(true, response.body!!["success"])
         verify(bootstrap).set("description", "hello")
+    }
+
+    @Test
+    fun `set - name`() {
+        val bootstrap = mock(Bootstrap::class.java)
+        val assistant = mock<Assistant>()
+        doReturn("007").whenever(assistant).name
+        val context = Context(
+            assistant = assistant,
+            home = File("target/assistant-controller/007"),
+            llm = mock(),
+        )
+        doReturn(context).whenever(bootstrap).getContext()
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/007/settings",
+            mapOf("key" to "assistant.name", "value" to "hello"),
+            Map::class.java,
+        )
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(true, response.body!!["success"])
+        verify(multi).rename("007", "hello")
     }
 
     @Test

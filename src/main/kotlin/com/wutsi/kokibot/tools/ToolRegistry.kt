@@ -31,7 +31,14 @@ class ToolRegistry {
     }
 
     fun destroy() {
-        tools.values.forEach { tool -> tool.destroy() }
+        tools.values.forEach { tool ->
+            try {
+                tool.destroy()
+            } catch (e: Exception) {
+                LOGGER.warn("Unable to destroy the Tool ${tool.metadata().name} - Error:" + e.message)
+            }
+        }
+        tools.clear()
     }
 
     fun register(tool: Tool) {

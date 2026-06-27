@@ -39,6 +39,13 @@ class McpRegistry : Resource {
     override fun health(): Health = Health(id = id(), up = true)
 
     override fun destroy() {
+        servers.values.forEach { service ->
+            try {
+                service.destroy()
+            } catch (e: Exception) {
+                LOGGER.warn("Unable to destroy MCP ${service.config.name}: ${e.message}")
+            }
+        }
         servers.clear()
     }
 

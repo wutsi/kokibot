@@ -30,7 +30,6 @@ const Settings = {
         this.tabs = Array.from(document.querySelectorAll('.settings-nav-item[data-tab]'));
         this.tabContents = Array.from(document.querySelectorAll('.settings-tab-content'));
         this.chatButton = document.getElementById('chat-btn');
-        this.backToChatLink = document.querySelector('.back-to-chat-btn');
     },
 
     setupEventListeners() {
@@ -43,21 +42,12 @@ const Settings = {
             });
         });
 
-        // Chat button - navigate back to chat with agent parameter
+        // Back to Chat button
         if (this.chatButton) {
             this.chatButton.addEventListener('click', () => {
                 this.navigateToChat();
             });
         }
-
-        // Back to chat link - add agent parameter
-        if (this.backToChatLink) {
-            this.backToChatLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.navigateToChat();
-            });
-        }
-
     },
 
     setupTabLoaders() {
@@ -245,7 +235,7 @@ const Settings = {
         const contentElement = document.getElementById('general-content');
         if (!contentElement) return;
 
-        const name = this.formatAgentName(agentData.name || '');
+        const name = agentData.name || '';
         const description = agentData.description || '';
         const instructions = agentData.instructions || '';
         const firstName = agentData.firstName || '';
@@ -275,7 +265,14 @@ const Settings = {
                             <input type="file" accept=".png,image/png" id="general-icon-upload-input" style="display:none;">
                         </div>
                         <div class="general-agent-details">
-                            <h3 class="general-agent-name">${name}</h3>
+                            <div class="general-name-row" id="general-name-row">
+                                <span class="general-agent-name" id="general-name-text">${this.escapeHtml(name)}</span>
+                                <button class="general-description-edit-btn" id="general-name-edit-btn" title="Edit name">
+                                    <svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14">
+                                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                    </svg>
+                                </button>
+                            </div>
                             <div class="general-description-row">
                                 <p class="general-agent-description" id="general-description-text">${description ? this.escapeHtml(description) : '<span class="general-description-placeholder">No description</span>'}</p>
                                 <button class="general-description-edit-btn" id="general-description-edit-btn" title="Edit description">
@@ -352,6 +349,10 @@ const Settings = {
         });
         document.getElementById('general-instructions-cancel-btn')?.addEventListener('click', () => {
             this.exitGeneralInstructionsEditMode();
+        });
+
+        document.getElementById('general-name-edit-btn')?.addEventListener('click', () => {
+            this.enterNameEditMode();
         });
 
         document.getElementById('general-description-edit-btn')?.addEventListener('click', () => {
@@ -510,7 +511,7 @@ const Settings = {
         }
     },
 
-    async saveAssistantSetting(key, value, successMsg) {
+    async saveAssistantSetting(key, value, successMsg, onSuccess = null) {
         if (!this.agentName) return;
         try {
             const controller = new AbortController();
@@ -531,6 +532,7 @@ const Settings = {
             }
 
             Notifications.success(successMsg, { duration: 3000 });
+            if (onSuccess) onSuccess();
         } catch (error) {
             console.error('Error saving assistant setting:', error);
             Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
@@ -687,6 +689,77 @@ const Settings = {
         document.getElementById('general-instructions-edit-btn').style.display = 'flex';
         document.getElementById('general-instructions-save-btn').style.display = 'none';
         document.getElementById('general-instructions-cancel-btn').style.display = 'none';
+    },
+
+    enterNameEditMode() {
+        const row = document.getElementById('general-name-row');
+        if (!row) return;
+
+        const currentName = document.getElementById('general-name-text')?.textContent || this.agentName;
+        row.innerHTML = `
+            <input type="text" class="general-name-input" id="general-name-input"
+                   value="${this.escapeHtml(currentName)}" placeholder="Agent name"
+                   autocomplete="off" spellcheck="false">
+            <button class="settings-action-btn settings-action-btn-primary" id="general-name-save-btn">Save</button>
+            <button class="settings-action-btn settings-action-btn-secondary" id="general-name-cancel-btn">Cancel</button>
+        `;
+
+        const input = document.getElementById('general-name-input');
+        input?.focus();
+        input?.select();
+
+        document.getElementById('general-name-save-btn')?.addEventListener('click', () => this.saveAgentName());
+        document.getElementById('general-name-cancel-btn')?.addEventListener('click', () => this.exitNameEditMode());
+        input?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.saveAgentName();
+            if (e.key === 'Escape') this.exitNameEditMode();
+        });
+    },
+
+    async saveAgentName() {
+        const input = document.getElementById('general-name-input');
+        if (!input) return;
+
+        const newName = input.value.trim();
+        if (!newName) {
+            Notifications.error('Name cannot be empty.');
+            return;
+        }
+
+        const saveBtn = document.getElementById('general-name-save-btn');
+        const cancelBtn = document.getElementById('general-name-cancel-btn');
+        if (saveBtn) saveBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        await this.saveAssistantSetting('assistant.name', newName, 'Name saved', () => {
+            this.agentName = newName;
+            const url = new URL(window.location.href);
+            url.searchParams.set('agent', newName);
+            window.history.replaceState({}, '', url.toString());
+            const sidebarName = document.getElementById('sidebar-agent-name');
+            if (sidebarName) sidebarName.textContent = newName;
+        });
+
+        if (saveBtn) saveBtn.disabled = false;
+        if (cancelBtn) cancelBtn.disabled = false;
+        this.exitNameEditMode();
+    },
+
+    exitNameEditMode() {
+        const row = document.getElementById('general-name-row');
+        if (!row) return;
+
+        const name = this.agentName;
+        row.innerHTML = `
+            <span class="general-agent-name" id="general-name-text">${this.escapeHtml(name)}</span>
+            <button class="general-description-edit-btn" id="general-name-edit-btn" title="Edit name">
+                <svg fill="currentColor" height="14" viewBox="0 0 24 24" width="14">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+            </button>
+        `;
+
+        document.getElementById('general-name-edit-btn')?.addEventListener('click', () => this.enterNameEditMode());
     },
 
     enterDescriptionEditMode() {

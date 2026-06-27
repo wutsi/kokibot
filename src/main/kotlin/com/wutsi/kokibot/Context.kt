@@ -1,6 +1,5 @@
 package com.wutsi.kokibot
 
-import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.channel.ChannelFactory
 import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
@@ -54,27 +53,41 @@ class Context(
         private val LOGGER = LoggerFactory.getLogger(Context::class.java)
     }
 
-    private val channels: MutableList<Channel> = mutableListOf()
-
     fun destroy() {
         assistant.destroy()
-        resources().forEach { resource -> resource.destroy() }
+        llm.destroy()
+        channelRegistry.destroy()
+        marketplaceRegistry.destroy()
+        mcpRegistry.destroy()
+        skillRegistry.destroy()
+        toolRegistry.destroy()
+        commandRegistry.destroy()
+        fileService.destroy()
+        heartbeat.destroy()
+        delegationStack.destroy()
+        knowledgeBase.destroy()
+
+        memory.destroy()
+        chatHistory.destroy()
+        dailyLog.destroy()
+        sessionLog.destroy()
+        conversationRepository.destroy()
     }
 
     fun init(config: Map<*, *>) {
         initAssistant(config)
+        initLLM(config)
         initChannels()
         initMarketplaces() // IMPORTANT: Before initSkills() because some skills may depend on marketplaces.
         initMcps()
         initSkills()
         initTools()
-        initLLM(config)
-        initMemory(config)
         initCommands()
         initFileService()
         initHeartbeat(config)
         initDelegationStack(config)
         initKnowledgeBase(config)
+        initMemory(config)
     }
 
     fun health(): Health {
@@ -87,8 +100,7 @@ class Context(
     }
 
     fun resources(): List<Resource> {
-        return channels +
-            skillRegistry.all() +
+        return skillRegistry.all() +
             toolRegistry.all() +
             channelRegistry.all() +
             marketplaceRegistry.all() +

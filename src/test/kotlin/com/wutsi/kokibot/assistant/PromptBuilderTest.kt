@@ -83,7 +83,7 @@ class PromptBuilderTest {
             com.nhaarman.mockitokotlin2.any()
         )
 
-        builder = PromptBuilder(assistantName = "test-assistant", clock = fixedClock)
+        builder = PromptBuilder(clock = fixedClock)
     }
 
     @Test
@@ -188,7 +188,6 @@ class PromptBuilderTest {
 
         val instructions = builder.buildSystemInstructions(
             query = query,
-            coordinator = false,
             context = context
         )
 
@@ -196,12 +195,11 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should include coordinator instructions when enabled`() {
+    fun `should include coordinator instructions`() {
         val query = Message(userId = "user1", channelId = "channel1")
 
         val instructions = builder.buildSystemInstructions(
             query = query,
-            coordinator = true,
             context = context
         )
 
@@ -209,23 +207,10 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should not include coordinator instructions when disabled`() {
-        val query = Message(userId = "user1", channelId = "channel1")
-
-        val instructions = builder.buildSystemInstructions(
-            query = query,
-            coordinator = false,
-            context = context
-        )
-
-        assertFalse(instructions.contains("# Coordinator"))
-    }
-
-    @Test
     fun `should include daily log instructions`() {
         val query = Message(userId = "user1", channelId = "channel1")
 
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Daily Log Protocol"))
     }
@@ -285,7 +270,7 @@ class PromptBuilderTest {
         doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Available skills"))
         assertTrue(instructions.contains("## Skill: weather"))
@@ -319,7 +304,7 @@ class PromptBuilderTest {
         doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("weather"))
         assertFalse(instructions.contains("broken"))
@@ -329,7 +314,7 @@ class PromptBuilderTest {
     fun `should include security instructions`() {
         val query = Message(userId = "user1", channelId = "channel1")
 
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Security"))
         assertTrue(instructions.contains(home.absolutePath))
@@ -347,11 +332,11 @@ class PromptBuilderTest {
         doReturn(tempHome).whenever(context).home
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val customBuilder = PromptBuilder(assistantName = "MyCustomBot")
+        val customBuilder = PromptBuilder()
 
-        val instructions = customBuilder.buildSystemInstructions(query, false, context)
+        val instructions = customBuilder.buildSystemInstructions(query, context)
 
-        assertTrue(instructions.contains("MyCustomBot"))
+        assertTrue(instructions.contains("test-assistant"))
         assertFalse(instructions.contains("{{ASSISTANT_NAME}}"))
 
         // Cleanup
@@ -365,7 +350,7 @@ class PromptBuilderTest {
         doReturn(emptyHome).whenever(context).home
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         // Should still have other instructions even without ASSISTANT.md
         assertTrue(instructions.contains("# Security"))
@@ -411,7 +396,7 @@ class PromptBuilderTest {
         doReturn(listOf(server1, server2)).whenever(mcpRegistry).all()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
+        val instructions = builder.buildSystemInstructions(query = query, context = context)
 
         assertTrue(instructions.contains("# Available MCP Servers"))
         assertTrue(instructions.contains("weather-mcp"))
@@ -426,7 +411,7 @@ class PromptBuilderTest {
         doReturn(emptyList<McpServer>()).whenever(mcpRegistry).all()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
+        val instructions = builder.buildSystemInstructions(query = query, context = context)
 
         assertFalse(instructions.contains("# Available MCP Servers"))
     }
@@ -445,7 +430,7 @@ class PromptBuilderTest {
         activatedMcps.add(server)
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query = query, coordinator = false, context = context)
+        val instructions = builder.buildSystemInstructions(query = query, context = context)
 
         assertTrue(instructions.contains("# Available MCP Servers"))
         assertTrue(instructions.contains("weather-mcp"))
@@ -477,7 +462,7 @@ class PromptBuilderTest {
     fun `should not include knowledge base instructions when KB is disabled`() {
         // kb.isEnabled() returns false by default (set in @BeforeEach)
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
         assertFalse(instructions.contains("# Knowledge Base Instructions"))
     }
 
@@ -486,7 +471,7 @@ class PromptBuilderTest {
         doReturn(true).whenever(kb).isEnabled()
         // entries() already returns emptyList in @BeforeEach
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
         assertFalse(instructions.contains("# Knowledge Base Instructions"))
     }
 
@@ -498,7 +483,7 @@ class PromptBuilderTest {
         doReturn(listOf(sampleEntry())).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Knowledge Base Instructions"))
         assertTrue(instructions.contains("## Knowledge Base Content"))
@@ -516,7 +501,7 @@ class PromptBuilderTest {
         doReturn(listOf(entry)).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("Use only your knowledge base"))
         assertTrue(instructions.contains("Do not use your own training knowledge"))
@@ -533,7 +518,7 @@ class PromptBuilderTest {
         doReturn(listOf(sampleEntry())).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("Prefer your knowledge base content over your own training knowledge"))
     }
@@ -546,7 +531,7 @@ class PromptBuilderTest {
         doReturn(listOf(sampleEntry())).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertFalse(instructions.contains("Do not use web search"))
     }
@@ -559,7 +544,7 @@ class PromptBuilderTest {
         doReturn(listOf(sampleEntry(status = KBEntryStatus.PROCESSING))).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertFalse(instructions.contains("# Knowledge Base Instructions"))
     }
@@ -572,7 +557,7 @@ class PromptBuilderTest {
         doReturn(listOf(sampleEntry(status = KBEntryStatus.ERROR))).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertFalse(instructions.contains("# Knowledge Base Instructions"))
     }
@@ -585,7 +570,7 @@ class PromptBuilderTest {
         doReturn(listOf(sampleEntry(raw = "raw/guide.txt"))).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("${home.absolutePath}/raw/guide.txt"))
     }
@@ -603,7 +588,7 @@ class PromptBuilderTest {
         ).whenever(kb).entries()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("Entry A"))
         assertTrue(instructions.contains("Entry B"))
@@ -615,7 +600,7 @@ class PromptBuilderTest {
         doReturn(null).whenever(assistant).getEmail()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Assistant Identity"))
         assertTrue(instructions.contains("test-assistant"))
@@ -628,7 +613,7 @@ class PromptBuilderTest {
         doReturn("bot@example.com").whenever(assistant).getEmail()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Assistant Identity"))
         assertTrue(instructions.contains("test-assistant"))
@@ -641,7 +626,7 @@ class PromptBuilderTest {
         doReturn("bot@example.com").whenever(assistant).getEmail()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Assistant Identity"))
         assertTrue(instructions.contains("test-assistant"))
@@ -655,7 +640,7 @@ class PromptBuilderTest {
         doReturn(null).whenever(assistant).getEmail()
 
         val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, false, context)
+        val instructions = builder.buildSystemInstructions(query, context)
 
         assertFalse(instructions.contains("# Assistant Identity"))
     }

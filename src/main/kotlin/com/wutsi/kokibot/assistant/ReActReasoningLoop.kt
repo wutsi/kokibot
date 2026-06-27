@@ -32,7 +32,6 @@ import java.io.File
 class ReActReasoningLoop(
     private val assistantName: String,
     private val maxIterations: Int,
-    private val coordinator: Boolean,
     private val promptBuilder: PromptBuilder,
     private val toolOrchestrator: ToolOrchestrator
 ) : ReasoningLoop {
@@ -103,7 +102,7 @@ class ReActReasoningLoop(
         // Call LLM
         val request = LLMRequest(
             prompt = promptBuilder.buildPrompt(query, memory, context),
-            systemInstructions = promptBuilder.buildSystemInstructions(query, coordinator, context),
+            systemInstructions = promptBuilder.buildSystemInstructions(query, context),
             files = query.filePaths.map { path -> File(path) }
         )
 

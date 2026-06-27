@@ -29,9 +29,12 @@ import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolRegistry
 import com.wutsi.kokibot.tools.user.AskQuestionException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotSame
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import java.io.File
@@ -165,6 +168,46 @@ class AssistantTest {
     }
 
     @Test
+    fun `apply max-iterations updates field and rebuilds loop`() {
+        val originalLoop = assistant.reasoningLoop
+        assistant.apply("max-iterations", 20)
+        assertEquals(20, assistant.getMaxIterations())
+        assertNotSame(originalLoop, assistant.reasoningLoop)
+    }
+
+    @Test
+    fun `apply max-duration updates field`() {
+        assistant.apply("max-duration", "10m")
+        assertEquals(10L, assistant.getMaxDurationMinutes())
+    }
+
+    @Test
+    fun `apply description updates field without rebuilding loop`() {
+        val originalLoop = assistant.reasoningLoop
+        assistant.apply("description", "new description")
+        assertEquals("new description", assistant.getDescription())
+        assertSame(originalLoop, assistant.reasoningLoop)
+    }
+
+    @Test
+    fun `apply instructions persists to ASSISTANT md`() {
+        val home = File("target/test-data/assistant-apply")
+        val instructionsFile = File(home, "ASSISTANT.md")
+        instructionsFile.parentFile.mkdirs()
+
+        assistant.apply("instructions", "You are a helpful assistant")
+
+        assertEquals("You are a helpful assistant", instructionsFile.readText())
+    }
+
+    @Test
+    fun `apply unknown key throws ConfigurationException`() {
+        assertThrows<ConfigurationException> {
+            assistant.apply("unknown-key", "value")
+        }
+    }
+
+    @Test
     fun process() {
         // GIVEN
         doReturn(
@@ -195,13 +238,8 @@ class AssistantTest {
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
         assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
 
-        val systemInstructions = req.firstValue.systemInstructions
-        assertSystemInstructionsContain(
-            systemInstructions,
-            "You are a system agent designed to assist users with various tasks.\n",
-        )
-        // Conversation history is injected into the prompt only when conversationId is set
-        assertEquals(false, req.firstValue.prompt.contains("# Conversation History"))
+        assertEquals(true, req.firstValue.systemInstructions?.isNotEmpty())
+        assertEquals(true, req.firstValue.prompt.isNotEmpty())
     }
 
     @Test

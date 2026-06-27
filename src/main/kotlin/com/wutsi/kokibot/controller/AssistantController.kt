@@ -50,7 +50,6 @@ class AssistantController(private val multi: MultiBootstrap) {
             mapOf(
                 "name" to assistant.name,
                 "description" to assistant.getDescription(),
-                "coordinator" to assistant.isCoordinator(),
                 "firstName" to assistant.getFullName(),
                 "email" to assistant.getEmail(),
                 "language" to assistant.getLanguage(),

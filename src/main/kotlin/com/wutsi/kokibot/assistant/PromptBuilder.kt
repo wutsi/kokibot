@@ -12,7 +12,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class PromptBuilder(
-    private val assistantName: String,
     private val clock: Clock = Clock.systemDefaultZone()
 ) {
     companion object {
@@ -70,13 +69,12 @@ class PromptBuilder(
 
     fun buildSystemInstructions(
         query: Message,
-        coordinator: Boolean,
         context: Context
     ): String {
         val entries = listOfNotNull(
             loadInstructions(context),
             identityInstructions(context),
-            if (coordinator) coordinatorInstructions() else null,
+            coordinatorInstructions(),
             dailyLogInstructions(context),
             knowledgeBaseInstructions(context),
             skillsInstructions(context),
@@ -236,7 +234,7 @@ class PromptBuilder(
         val userId = query.userId ?: "-"
         val channelId = query.channelId?.removePrefix("channel:") ?: "-"
 
-        return text.replace("{{ASSISTANT_NAME}}", assistantName)
+        return text.replace("{{ASSISTANT_NAME}}", context.assistant.name)
             .replace("{{HOME}}", context.home.absolutePath)
             .replace("{{USER_ID}}", userId)
             .replace("{{CHANNEL_ID}}", channelId.removePrefix("channel:"))

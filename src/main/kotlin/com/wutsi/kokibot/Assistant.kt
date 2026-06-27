@@ -30,7 +30,6 @@ class Assistant(val name: String = "") {
     private var maxIterations: Int = DEFAULT_ITERATIONS
     private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
     private lateinit var description: String
-    private var coordinator: Boolean = false
     private var fullName: String? = null
     private var language: String? = null
     private var email: String? = null
@@ -42,7 +41,6 @@ class Assistant(val name: String = "") {
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         description = MapUtil.toString("description", config) ?: ""
-        coordinator = MapUtil.toBoolean("coordinator", config) ?: false
         fullName = MapUtil.toString("full-name", config)
         language = MapUtil.toString("language", config) ?: DEFAULT_LANGUAGE
         email = MapUtil.toString("email", config)
@@ -57,11 +55,10 @@ class Assistant(val name: String = "") {
             threadPoolSize = 2
         }
         toolOrchestrator = ToolOrchestrator(threadPoolSize = threadPoolSize)
-        promptBuilder = PromptBuilder(assistantName = name)
+        promptBuilder = PromptBuilder()
         reasoningLoop = ReActReasoningLoop(
             assistantName = name,
             maxIterations = maxIterations,
-            coordinator = coordinator,
             promptBuilder = promptBuilder,
             toolOrchestrator = toolOrchestrator
         )
@@ -70,7 +67,6 @@ class Assistant(val name: String = "") {
         context.assistantRegistry.register(this)
 
         LOGGER.info("Assistant: $name")
-        LOGGER.info("  coordinator: $coordinator")
         LOGGER.info("  full-name: $fullName")
         LOGGER.info("  language: $language")
         LOGGER.info("  email: $email")
@@ -94,7 +90,6 @@ class Assistant(val name: String = "") {
     fun getFullName(): String? = fullName
     fun getLanguage(): String? = language
     fun getEmail(): String? = email
-    fun isCoordinator(): Boolean = coordinator
 
     fun apply(key: String, value: Any) {
         when (key) {
@@ -109,20 +104,10 @@ class Assistant(val name: String = "") {
             }
 
             "description" -> description = value.toString()
-            "coordinator" -> {
-                coordinator = value.toString().toBoolean()
-                rebuildReasoningLoop()
-            }
 
-            "full-name" -> {
-                fullName = value.toString()
-                rebuildPromptBuilder()
-            }
+            "full-name" -> fullName = value.toString()
 
-            "language" -> {
-                language = value.toString()
-                rebuildPromptBuilder()
-            }
+            "language" -> language = value.toString()
 
             "email" -> email = value.toString()
 
@@ -133,7 +118,7 @@ class Assistant(val name: String = "") {
     }
 
     private fun rebuildPromptBuilder() {
-        promptBuilder = PromptBuilder(assistantName = name)
+        promptBuilder = PromptBuilder()
         rebuildReasoningLoop()
     }
 
@@ -141,7 +126,6 @@ class Assistant(val name: String = "") {
         reasoningLoop = ReActReasoningLoop(
             assistantName = name,
             maxIterations = maxIterations,
-            coordinator = coordinator,
             promptBuilder = promptBuilder,
             toolOrchestrator = toolOrchestrator,
         )
@@ -149,7 +133,7 @@ class Assistant(val name: String = "") {
 
     fun contextWindow(userId: String, channelId: String, conversationId: String? = null): ContextWindow {
         val message = Message(userId = userId, channelId = channelId, conversationId = conversationId)
-        val systemInstructions = promptBuilder.buildSystemInstructions(message, coordinator, context)
+        val systemInstructions = promptBuilder.buildSystemInstructions(message, context)
         val prompt = promptBuilder.buildPrompt(message, emptyList(), context)
         val baseline = (systemInstructions.length + prompt.length) / BYTES_PER_TOKENS
         return ContextWindow(

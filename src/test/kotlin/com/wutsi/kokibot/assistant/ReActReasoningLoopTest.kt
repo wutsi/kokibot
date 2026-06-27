@@ -61,12 +61,11 @@ class ReActReasoningLoopTest {
 
         doReturn(false).whenever(llm).supportsStreaming()
         doReturn("Test prompt").whenever(promptBuilder).buildPrompt(any(), any(), any())
-        doReturn("Test instructions").whenever(promptBuilder).buildSystemInstructions(any(), any(), any())
+        doReturn("Test instructions").whenever(promptBuilder).buildSystemInstructions(any(), any())
 
         reasoningLoop = ReActReasoningLoop(
             assistantName = "test-assistant",
             maxIterations = 5,
-            coordinator = false,
             promptBuilder = promptBuilder,
             toolOrchestrator = toolOrchestrator
         )
@@ -302,34 +301,6 @@ class ReActReasoningLoopTest {
         reasoningLoop.execute(query, null, 0, memory, context)
 
         verify(toolOrchestrator, times(0)).executeTools(any(), any(), any(), any(), any(), any(), any(), any())
-    }
-
-    @Test
-    fun `should use coordinator instructions when coordinator mode enabled`() {
-        val coordinatorLoop = ReActReasoningLoop(
-            assistantName = "coordinator",
-            maxIterations = 5,
-            coordinator = true,
-            promptBuilder = promptBuilder,
-            toolOrchestrator = toolOrchestrator
-        )
-
-        val query = Message(text = "Test", userId = "user1", channelId = "channel1")
-        val memory = mutableListOf<String>()
-
-        val llmResponse = LLMResponse(
-            choices = listOf(
-                LLMResponseChoice(
-                    content = "Response",
-                    finishReason = LLMFinishReason.STOP
-                )
-            )
-        )
-        doReturn(llmResponse).whenever(llm).completion(any(), any())
-
-        coordinatorLoop.execute(query, null, 0, memory, context)
-
-        verify(promptBuilder).buildSystemInstructions(eq(query), eq(true), eq(context))
     }
 
     @Test

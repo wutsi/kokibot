@@ -12,17 +12,12 @@ import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This is the long term memory of the assistant, which is used to store facts and information that can be used to answer questions.
  * It's build by compacting the chat history, and extracting facts and information that can be used to answer questions.
  * The long term memory is stored into workspace/memory/MEMORY.md
- *
- * Thread-safety: `compact()` and `get()` are serialized by a [ReentrantLock] so that
- * concurrent invocations (scheduler tick + `/compact` command) cannot interleave their
- * read-modify-write of `MEMORY.md`. The underlying chat history reads are additionally
- * guarded by [DailyLog]'s own lock. File writes are atomic (temp file + atomic move).
  */
 class Memory : Resource {
     companion object {
@@ -35,13 +30,20 @@ class Memory : Resource {
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
-    private var enabled: Boolean = true
-    private var window: Long = DEFAULT_WINDOW
-    private var maxLength: Int = DEFAULT_MAX_LENGTH
     private var compactionFrequency: String = DEFAULT_COMPACTION_FREQUENCY
     private lateinit var context: Context
     private var job: ScheduledFuture<*>? = null
     private var consecutiveFailures: Int = 0
+    private val running: AtomicBoolean = AtomicBoolean(false)
+
+    @Volatile
+    private var window: Long = DEFAULT_WINDOW
+
+    @Volatile
+    private var maxLength: Int = DEFAULT_MAX_LENGTH
+
+    @Volatile
+    private var enabled: Boolean = true
 
     override fun id(): String {
         return ID
@@ -112,32 +114,42 @@ class Memory : Resource {
             LOGGER.info("Memory compaction is disabled, skipping")
             return
         }
+        if (!running.compareAndSet(false, true)) {
+            LOGGER.info("Memory compaction is already running, skipping.")
+            return
+        }
 
-        val prompt = this::class.java.getResourceAsStream("/instructions/MEMORY.md")!!
-            .bufferedReader()
-            .readText()
-            .replace("{{HOME}}", context.home.absolutePath)
-            .replace("{{DAYS}}", window.toString())
-            .replace("{{MAX_LENGTH}}", maxLength.toString())
+        try {
+            val prompt = this::class.java.getResourceAsStream("/instructions/MEMORY.md")!!
+                .bufferedReader()
+                .readText()
+                .replace("{{HOME}}", context.home.absolutePath)
+                .replace("{{DAYS}}", window.toString())
+                .replace("{{MAX_LENGTH}}", maxLength.toString())
 
-        context.assistant.process(
-            query = Message(
-                role = Role.SYSTEM,
-                text = prompt,
-            ),
-        )
+            context.assistant.process(
+                query = Message(
+                    role = Role.SYSTEM,
+                    text = prompt,
+                ),
+            )
+        } finally {
+            running.set(false)
+        }
     }
 
+    @Synchronized
     fun apply(key: String, value: Any) {
         when (key) {
             "enabled" -> {
                 enabled = value.toString().toBoolean()
                 if (enabled) {
-                    job = launchJob(compactionFrequency)
+                    if (job == null) {
+                        job = launchJob(compactionFrequency)
+                    }
                 } else {
                     job?.cancel(false)
                     job = null
-                    LOGGER.info("Memory compaction is disabled")
                 }
             }
 
@@ -164,7 +176,7 @@ class Memory : Resource {
                 compact()
                 consecutiveFailures = 0
                 LOGGER.info("Memory compaction completed successfully in ${(System.currentTimeMillis() - now) / 1000} s")
-            } catch (ex: Throwable) {
+            } catch (ex: Exception) {
                 consecutiveFailures++
                 LOGGER.error("Memory compaction failed", ex)
 

@@ -11,6 +11,7 @@ import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -26,6 +27,11 @@ class HeartbeatTest {
         llm = mock(),
         assistant = mock(),
     )
+
+    @AfterEach
+    fun tearDown() {
+        heartbeat.destroy()
+    }
 
     @Test
     fun id() {
@@ -50,23 +56,22 @@ class HeartbeatTest {
         verify(context.assistant).process(msg.capture(), anyOrNull())
 
         assertEquals(Role.SYSTEM, msg.firstValue.role)
-//        assertEquals("Run every hour", msg.firstValue.text)
+        assertEquals("Run every hour", msg.firstValue.text)
         assertEquals(heartbeat.id(), msg.firstValue.channelId)
         assertEquals(System.getProperty("user.name"), msg.firstValue.userId)
     }
 
     @Test
     fun `tick - no HEARTBEAT file`() {
-        doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
-
         val ctx = Context(
-            home = File("target/test-data/heartbeat"),
+            home = File("target/test-data/heartbeat/no-heartbeat"),
             llm = mock(),
+            assistant = mock(),
         )
-        heartbeat.init(mapOf("frequency" to 30), ctx)
+        heartbeat.init(mapOf("frequency" to "30m"), ctx)
         heartbeat.tick()
 
-        verify(context.assistant, never()).process(any(), anyOrNull())
+        verify(ctx.assistant, never()).process(any(), anyOrNull())
     }
 
     @Test
@@ -89,20 +94,24 @@ class HeartbeatTest {
 
     @Test
     fun `apply - enabled false`() {
-        heartbeat.init(mapOf("frequency" to 30), context)
+        heartbeat.init(mapOf("frequency" to "2s"), context)
 
         heartbeat.apply("enabled", false)
+        Thread.sleep(3000) // What for 3s
 
         assertFalse(heartbeat.isEnabled())
+        verify(context.assistant, never()).process(any(), anyOrNull())
     }
 
     @Test
     fun `apply - enabled true`() {
-        heartbeat.init(mapOf("frequency" to 30, "enabled" to false), context)
+        heartbeat.init(mapOf("frequency" to "2s", "enabled" to false), context)
 
         heartbeat.apply("enabled", true)
+        Thread.sleep(3000) // What for 3s
 
         assertTrue(heartbeat.isEnabled())
+        verify(context.assistant).process(any(), anyOrNull())
     }
 
     @Test

@@ -12,6 +12,7 @@ import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class Heartbeat() : Resource {
     companion object {
@@ -24,8 +25,11 @@ class Heartbeat() : Resource {
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private lateinit var context: Context
     private var job: ScheduledFuture<*>? = null
-    private var enabled: Boolean = true
     private var frequency: String = DEFAULT_FREQUENCY
+    private val running: AtomicBoolean = AtomicBoolean(false)
+
+    @Volatile
+    private var enabled: Boolean = true
 
     override fun id(): String {
         return ID
@@ -53,19 +57,26 @@ class Heartbeat() : Resource {
             LOGGER.info("Heartbeat is disabled. Skipping tick.")
             return
         }
+        if (!running.compareAndSet(false, true)) {
+            LOGGER.info("Heartbeat is already running. Skipping tick.")
+            return
+        }
+        try {
+            LOGGER.info("Tick")
 
-        LOGGER.info("Tick")
-
-        val query = getInstructions()
-        if (!query.isNullOrEmpty()) {
-            context.assistant.process(
-                Message(
-                    userId = System.getProperty("user.name"),
-                    channelId = id(),
-                    text = query,
-                    role = Role.SYSTEM,
+            val query = getInstructions()
+            if (!query.isNullOrEmpty()) {
+                context.assistant.process(
+                    Message(
+                        userId = System.getProperty("user.name"),
+                        channelId = id(),
+                        text = query,
+                        role = Role.SYSTEM,
+                    )
                 )
-            )
+            }
+        } finally {
+            running.set(false)
         }
     }
 
@@ -87,16 +98,18 @@ class Heartbeat() : Resource {
         file.writeText(content)
     }
 
+    @Synchronized
     fun apply(key: String, value: Any) {
         when (key) {
             "enabled" -> {
                 enabled = value.toString().toBoolean()
                 if (enabled) {
-                    job = launchJob(frequency)
+                    if (job == null) {
+                        job = launchJob(frequency)
+                    }
                 } else {
                     job?.cancel(false)
                     job = null
-                    LOGGER.info("Heartbeat is disabled")
                 }
             }
 
@@ -116,10 +129,14 @@ class Heartbeat() : Resource {
         val heartbeat = this
         val task = Runnable {
             LOGGER.info("Heartbeat tick")
-            heartbeat.tick()
+            try {
+                heartbeat.tick()
+            } catch (e: Exception) {
+                LOGGER.error("Failed to launch heartbeat", e)
+            }
         }
 
-        val delay = DurationUtil.millis(frequency, DurationUtil.ONE_HOUR / 2)
+        val delay = DurationUtil.millis(frequencyMinutes, DurationUtil.ONE_HOUR / 2)
         LOGGER.info("Scheduling Heartbeat every ${frequencyMinutes}m ($delay ms)")
         return scheduler.scheduleAtFixedRate(task, delay, delay, TimeUnit.MILLISECONDS)
     }

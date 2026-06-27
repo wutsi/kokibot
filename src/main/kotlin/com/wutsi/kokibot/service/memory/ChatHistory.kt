@@ -28,27 +28,28 @@ class ChatHistory : Resource {
     }
 
     fun append(query: Message, response: Message): String {
+        val userId = query.userId ?: return ""
+        val channelId = query.channelId ?: return ""
+
+        val conversationId = query.conversationId
+            ?: context.conversationRepository.createConversation(userId, channelId, query.text).id
+
+        val files = query.filePaths.joinToString("\n") { file -> "- $file" }
+        val content = "<!-- kokibot:conv:$conversationId -->\n" +
+            "# ${query.dateTime}: Session ${query.id}\n" +
+            "## ${query.role}\n" +
+            "### Query:\n" +
+            "```markdown\n${query.text}\n```\n" +
+            (if (files.isNotEmpty()) "### Files:\n$files\n\n" else "\n") +
+            "## ${response.role}\n" +
+            "### Response:\n" +
+            "```markdown\n${response.text}\n```" +
+            BLOCK_SEPARATOR
+
+        val file = getFile(userId, channelId)
+        file.parentFile.mkdirs()
         lock.write {
-            val userId = query.userId ?: return ""
-            val channelId = query.channelId ?: return ""
-
-            val conversationId = query.conversationId
-                ?: context.conversationRepository.createConversation(userId, channelId, query.text).id
-
-            val files = query.filePaths.joinToString("\n") { file -> "- $file" }
-
-            val content = "<!-- kokibot:conv:$conversationId -->\n" +
-                "# ${query.dateTime}: Session ${query.id}\n" +
-                "## ${query.role}\n" +
-                "### Query:\n" +
-                "```markdown\n${query.text}\n```\n" +
-                (if (files.isNotEmpty()) "### Files:\n$files\n\n" else "\n") +
-                "## ${response.role}\n" +
-                "### Response:\n" +
-                "```markdown\n${response.text}\n```" +
-                BLOCK_SEPARATOR
-
-            getFile(userId, channelId).appendText(content)
+            file.appendText(content)
             return conversationId
         }
     }
@@ -86,9 +87,6 @@ class ChatHistory : Resource {
         val dir = File(
             context.home.absolutePath + "/memory/chat/$xuserId/$xchannelId"
         )
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
         return File(dir, "$today.md")
     }
 

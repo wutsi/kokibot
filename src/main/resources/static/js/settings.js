@@ -709,6 +709,16 @@ const Settings = {
             { value: '30m', label: 'Every 30 minutes' },
             { value: '1h', label: 'Every hour' },
             { value: '2h', label: 'Every 2 hours' },
+            { value: '3h', label: 'Every 3 hours' },
+            { value: '4h', label: 'Every 4 hours' },
+            { value: '5h', label: 'Every 5 hours' },
+            { value: '6h', label: 'Every 6 hours' },
+            { value: '7h', label: 'Every 7 hours' },
+            { value: '8h', label: 'Every 8 hours' },
+            { value: '9h', label: 'Every 9 hours' },
+            { value: '10h', label: 'Every 10 hours' },
+            { value: '11h', label: 'Every 11 hours' },
+            { value: '12h', label: 'Every 12 hours' },
             { value: '1d', label: 'Every day' },
         ];
 

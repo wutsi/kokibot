@@ -1691,20 +1691,23 @@ const Settings = {
         const html = marketplaces.map(mp => {
             const iconHtml = mp.icon
                 ? `<img src="${this.escapeHtml(mp.icon)}" alt="${this.escapeHtml(mp.name)}" class="channel-icon" onerror="this.style.display='none'">`
-                : '';
+                : `<div class="marketplace-icon-placeholder"><svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>`;
             const skillsHtml = mp.skills && mp.skills.length > 0
                 ? mp.skills.map(s => `<span class="marketplace-skill-tag">${this.escapeHtml(s)}</span>`).join('')
                 : '<span class="marketplace-no-skills">No skills</span>';
 
             return `
                 <div class="marketplace-item">
-                    <div class="marketplace-header">
-                        ${iconHtml}
-                        <h3 class="marketplace-name">${this.escapeHtml(mp.name)}</h3>
-                        <span class="marketplace-skill-count">${mp.skills ? mp.skills.length : 0} skill${mp.skills && mp.skills.length === 1 ? '' : 's'}</span>
+                    ${iconHtml}
+                    <div class="marketplace-info">
+                        <div class="marketplace-info-header">
+                            <span class="marketplace-name">${this.escapeHtml(mp.name)}</span>
+                            <span class="marketplace-skill-count">${mp.skills ? mp.skills.length : 0} skill${mp.skills && mp.skills.length === 1 ? '' : 's'}</span>
+                        </div>
+                        ${mp.description ? `<span class="marketplace-description">${this.escapeHtml(mp.description)}</span>` : ''}
+                        <span class="marketplace-url">${this.escapeHtml(mp.repoUrl)}</span>
+                        <div class="marketplace-skills">${skillsHtml}</div>
                     </div>
-                    <p class="marketplace-url">${this.escapeHtml(mp.repoUrl)}</p>
-                    <div class="marketplace-skills">${skillsHtml}</div>
                 </div>
             `;
         }).join('');

@@ -1,0 +1,9 @@
+{
+  "name": "vercel-labs",
+  "repo-url": "https://github.com/vercel-labs/agent-browser",
+  "icon": "https://avatars.githubusercontent.com/u/108547162?s=200&v=4",
+  "description": "Public repository for skill development from Vercel Labs for Web automation",
+  "skill-whitelist": [
+    "core"
+  ]
+}

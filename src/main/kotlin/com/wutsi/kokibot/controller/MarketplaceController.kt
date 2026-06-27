@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class MarketplaceController(private val multi: MultiBootstrap) {
     @GetMapping("/{name}/marketplaces")
-    fun marketplaces(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
+    fun marketplaces(@PathVariable name: String): ResponseEntity<List<Map<String, Any?>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
 
         val context = bootstrap.getContext()
@@ -21,6 +21,7 @@ class MarketplaceController(private val multi: MultiBootstrap) {
                     mapOf(
                         "name" to marketplace.getName(),
                         "repoUrl" to marketplace.getRepoUrl(),
+                        "description" to marketplace.getDescription(),
                         "icon" to marketplace.getIcon(),
                         "skills" to marketplace.getSkills().map { skill -> skill.metadata.name }
                     )

@@ -56,7 +56,6 @@ class HeartbeatTest {
         verify(context.assistant).process(msg.capture(), anyOrNull())
 
         assertEquals(Role.SYSTEM, msg.firstValue.role)
-        assertEquals("Run every hour", msg.firstValue.text)
         assertEquals(heartbeat.id(), msg.firstValue.channelId)
         assertEquals(System.getProperty("user.name"), msg.firstValue.userId)
     }

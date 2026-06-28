@@ -53,11 +53,12 @@ class Bootstrap(
             "memory" -> context.memory.apply(property, value)
             "heartbeat" -> context.heartbeat.apply(property, value)
             "knowledge-base" -> context.knowledgeBase.apply(property, value)
+            "marketplace" -> context.marketplaceRegistry.apply(property, value)
             else -> throw ConfigurationException("Unknown setting section: $section")
         }
 
         // instructions are persisted to ASSISTANT.md by Assistant.apply(); skip settings.json
-        if (section == "assistant" && property == "instructions") return
+        if ((section == "assistant" && property == "instructions") || section == "marketplace") return
 
         // Update the settings.json file
         val file = File(File(context.home, "config"), "settings.json")

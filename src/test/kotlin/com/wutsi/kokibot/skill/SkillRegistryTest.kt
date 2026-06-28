@@ -55,7 +55,7 @@ class SkillRegistryTest {
     }
 
     @Test
-    fun `init - marketplace skills`() {
+    fun `init - marketplace enabled`() {
         // GIVEN
         doReturn(Pair(meta1, ""))
             .doReturn(Pair(meta2, ""))
@@ -69,6 +69,7 @@ class SkillRegistryTest {
         doReturn(meta11).whenever(skill11).metadata
 
         val marketplace = mock(Marketplace::class.java)
+        doReturn(true).whenever(marketplace).isEnabled()
         doReturn("obsidian").whenever(marketplace).id()
         doReturn(listOf(skill11)).whenever(marketplace).getSkills()
 
@@ -92,6 +93,45 @@ class SkillRegistryTest {
         assertEquals(meta1, skills[0].metadata)
         assertEquals(meta2, skills[1].metadata)
         assertEquals(meta11, skills[2].metadata)
+    }
+
+    @Test
+    fun `init - marketplace disabled`() {
+        // GIVEN
+        doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
+            .whenever(parser).parse(any())
+
+        val meta11 = SkillMetadata(
+            name = "obsidian:obsidian-cli",
+            home = File("target/obsidian-cli"),
+        )
+        val skill11 = mock<Skill>()
+        doReturn(meta11).whenever(skill11).metadata
+
+        val marketplace = mock(Marketplace::class.java)
+        doReturn(false).whenever(marketplace).isEnabled()
+        doReturn("obsidian").whenever(marketplace).id()
+        doReturn(listOf(skill11)).whenever(marketplace).getSkills()
+
+        val marketplaceRegistry = mock<MarketplaceRegistry>()
+        doReturn(listOf(marketplace)).whenever(marketplaceRegistry).all()
+
+        val context = Context(
+            home = getResourceFile("/home/007"),
+            llm = mock(),
+            marketplaceRegistry = marketplaceRegistry,
+        )
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skills = registry.all()
+
+        assertEquals(2, skills.size)
+        assertEquals(meta1, skills[0].metadata)
+        assertEquals(meta2, skills[1].metadata)
     }
 
     @Test
@@ -215,6 +255,34 @@ class SkillRegistryTest {
         // THEN
         verify(skill1).destroy()
         verify(skill2).destroy()
+        assertEquals(0, registry.all().size)
+    }
+
+    @Test
+    fun register() {
+        // GIVEN
+        val skill1 = mock<Skill>()
+        doReturn(meta1).whenever(skill1).metadata
+
+        // WHEN
+        registry.register(skill1)
+
+        // THEN
+        assertEquals(listOf(skill1), registry.all())
+    }
+
+    @Test
+    fun unregister() {
+        // GIVEN
+        val skill1 = mock<Skill>()
+        doReturn(meta1).whenever(skill1).metadata
+        registry.register(skill1)
+
+        // WHEN
+        registry.unregister(skill1)
+
+        // THEN
+        assertEquals(0, registry.all().size)
     }
 
     private fun getResourceFile(path: String): File {

@@ -4,6 +4,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.service.memory.Memory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -20,12 +21,14 @@ class BootstrapTest {
     private val context = mock<Context>()
     private val assistant = mock<Assistant>()
     private val memory = mock<Memory>()
+    private val marketplaceRegistry = mock<MarketplaceRegistry>()
 
     @BeforeEach
     fun setup() {
         doReturn(home).whenever(context).home
         doReturn(assistant).whenever(context).assistant
         doReturn(memory).whenever(context).memory
+        doReturn(marketplaceRegistry).whenever(context).marketplaceRegistry
         doReturn(Health(id = "-")).whenever(context).health()
         doReturn(context).whenever(contextFactory).create(any(), any())
     }
@@ -75,6 +78,18 @@ class BootstrapTest {
             Map::class.java,
         )
         assertEquals(false, (saved["memory"] as Map<*, *>)["enabled"])
+    }
+
+    @Test
+    fun `set - marketplace property`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+        val before = File(home, "config/settings.json").readText()
+
+        bootstrap.set("marketplace.foo.enabled", false)
+
+        verify(marketplaceRegistry).apply("foo.enabled", false)
+        assertEquals(before, File(home, "config/settings.json").readText())
     }
 
     @Test

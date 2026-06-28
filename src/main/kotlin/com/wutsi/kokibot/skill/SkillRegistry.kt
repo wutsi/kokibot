@@ -45,18 +45,20 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) {
     }
 
     private fun initMarketplacesSkills(context: Context) {
-        context.marketplaceRegistry.all().forEach { marketplace ->
-            try {
-                marketplace.getSkills().forEach { skill ->
-                    LOGGER.info("Skill: ${skill.metadata.name}")
+        context.marketplaceRegistry.all()
+            .filter { marketplace -> marketplace.isEnabled() }
+            .forEach { marketplace ->
+                try {
+                    marketplace.getSkills().forEach { skill ->
+                        LOGGER.info("Skill: ${skill.metadata.name}")
 
-                    register(skill)
-                    skill.init(EMPTY_MAP, context)
+                        register(skill)
+                        skill.init(EMPTY_MAP, context)
+                    }
+                } catch (ex: Exception) {
+                    LOGGER.warn("Unable to initialize the Marketplace ${marketplace.id()}", ex)
                 }
-            } catch (ex: Exception) {
-                LOGGER.warn("Unable to initialize the Marketplace ${marketplace.id()}", ex)
             }
-        }
     }
 
     fun destroy() {
@@ -77,6 +79,11 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) {
     fun register(skill: Skill) {
         val name = skill.metadata.name.lowercase()
         skills[name] = skill
+    }
+
+    fun unregister(skill: Skill) {
+        val name = skill.metadata.name.lowercase()
+        skills.remove(name)
     }
 
     fun get(name: String): Skill {

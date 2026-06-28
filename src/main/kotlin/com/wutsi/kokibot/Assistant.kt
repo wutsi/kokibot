@@ -30,9 +30,9 @@ class Assistant(val name: String = "") {
     private var maxIterations: Int = DEFAULT_ITERATIONS
     private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
     private lateinit var description: String
-    private var fullName: String? = null
-    private var language: String? = null
-    private var email: String? = null
+    private lateinit var fullName: String
+    private lateinit var language: String
+    private lateinit var email: String
     private var threadPoolSize: Int = 4
     internal lateinit var toolOrchestrator: ToolOrchestrator
 
@@ -45,9 +45,9 @@ class Assistant(val name: String = "") {
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
         description = MapUtil.toString("description", config) ?: ""
-        fullName = MapUtil.toString("full-name", config)
+        fullName = MapUtil.toString("full-name", config) ?: ""
         language = MapUtil.toString("language", config) ?: DEFAULT_LANGUAGE
-        email = MapUtil.toString("email", config)
+        email = MapUtil.toString("email", config) ?: ""
         maxDurationMinutes = MapUtil.toString("max-duration", config)
             ?.let { value -> DurationUtil.minutes(value, DEFAULT_MAX_DURATION_MINUTES) }
             ?: DEFAULT_MAX_DURATION_MINUTES
@@ -91,9 +91,9 @@ class Assistant(val name: String = "") {
     fun getMaxDurationMinutes(): Long = maxDurationMinutes
     fun getMaxIterations(): Int = maxIterations
     fun getDescription(): String = description
-    fun getFullName(): String? = fullName
-    fun getLanguage(): String? = language
-    fun getEmail(): String? = email
+    fun getFullName(): String = fullName
+    fun getLanguage(): String = language
+    fun getEmail(): String = email
 
     fun apply(key: String, value: Any) {
         when (key) {

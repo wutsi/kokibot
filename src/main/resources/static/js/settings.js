@@ -1688,7 +1688,7 @@ const Settings = {
         const contentElement = document.getElementById('marketplaces-content');
         if (!contentElement) return;
 
-        const html = marketplaces.map(mp => {
+        const html = marketplaces.map((mp, i) => {
             const iconHtml = mp.icon
                 ? `<img src="${this.escapeHtml(mp.icon)}" alt="${this.escapeHtml(mp.name)}" class="channel-icon" onerror="this.style.display='none'">`
                 : `<div class="marketplace-icon-placeholder"><svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>`;
@@ -1708,11 +1708,61 @@ const Settings = {
                         <span class="marketplace-url">${this.escapeHtml(mp.repoUrl)}</span>
                         <div class="marketplace-skills">${skillsHtml}</div>
                     </div>
+                    <label class="memory-toggle" title="Enable or disable this marketplace">
+                        <input type="checkbox" id="marketplace-toggle-${i}"
+                               data-marketplace="${this.escapeHtml(mp.name)}"
+                               ${mp.enabled ? 'checked' : ''}>
+                        <span class="memory-toggle-slider"></span>
+                    </label>
                 </div>
             `;
         }).join('');
 
         contentElement.innerHTML = `<div class="marketplaces-list">${html}</div>`;
+
+        contentElement.querySelectorAll('input[data-marketplace]').forEach(toggle => {
+            toggle.addEventListener('change', async (e) => {
+                const marketplaceName = toggle.dataset.marketplace;
+                const enabled = e.target.checked;
+                const ok = await this.saveMarketplaceSetting(
+                    marketplaceName, 'enabled', enabled,
+                    enabled ? `${marketplaceName} enabled` : `${marketplaceName} disabled`
+                );
+                if (ok) {
+                    this.loadSkills();
+                } else {
+                    toggle.checked = !enabled;
+                }
+            });
+        });
+    },
+
+    async saveMarketplaceSetting(marketplace, key, value, successMsg) {
+        if (!this.agentName) return false;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(
+                `/assistants/${this.agentName}/marketplaces/${encodeURIComponent(marketplace)}/settings`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, value }),
+                    signal: controller.signal,
+                }
+            );
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+            Notifications.success(successMsg, { duration: 3000 });
+            return true;
+        } catch (error) {
+            console.error('Error saving marketplace setting:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+            return false;
+        }
     },
 
     showMarketplacesEmpty() {

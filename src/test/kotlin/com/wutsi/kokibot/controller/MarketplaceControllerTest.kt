@@ -1,9 +1,13 @@
 package com.wutsi.kokibot.controller
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Bootstrap
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import com.wutsi.kokibot.llm.LLM
@@ -91,6 +95,51 @@ class MarketplaceControllerTest {
         val response = rest.getForEntity("/assistants/xxx/marketplaces", List::class.java)
 
         assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
+    fun `set marketplace setting`() {
+        val bootstrap = createBootstrap("007")
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/007/marketplaces/kokibot/settings",
+            mapOf("key" to "enabled", "value" to false),
+            Map::class.java,
+        )
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(true, response.body!!["success"])
+        verify(bootstrap).set("marketplace.kokibot.enabled", false)
+    }
+
+    @Test
+    fun `set memory setting - bad request when missing key`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.postForEntity(
+            "/assistants/007/marketplaces/kokibot/settings",
+            mapOf("value" to false),
+            Map::class.java,
+        )
+
+        assertEquals(400, response.statusCode.value())
+    }
+
+    @Test
+    fun `set marketplace setting - bad request on unknown key`() {
+        val bootstrap = createBootstrap("007")
+        doReturn(listOf(bootstrap)).whenever(multi).bootstraps
+        doThrow(ConfigurationException("Unknown marketplace setting: invalid")).whenever(bootstrap).set(any(), any())
+
+        val response = rest.postForEntity(
+            "/assistants/007/marketplaces/kokibot/settings",
+            mapOf("key" to "invalid", "value" to "x"),
+            Map::class.java,
+        )
+
+        assertEquals(400, response.statusCode.value())
+        assertEquals("Unknown marketplace setting: invalid", (response.body as Map<*, *>)["error"])
     }
 
     private fun createSkill(name: String): Skill {

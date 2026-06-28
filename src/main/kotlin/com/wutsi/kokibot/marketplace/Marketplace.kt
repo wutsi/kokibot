@@ -5,6 +5,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.skill.Skill
 import com.wutsi.kokibot.skill.SkillParser
+import com.wutsi.kokibot.util.MapUtil
 import java.io.File
 
 class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : Resource {
@@ -12,6 +13,7 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
         private val LOGGER = org.slf4j.LoggerFactory.getLogger(Marketplace::class.java)
     }
 
+    private var enabled: Boolean = false
     private lateinit var name: String
     private lateinit var repoUrl: String
     private var icon: String? = null
@@ -25,6 +27,7 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
     }
 
     override fun init(config: Map<*, *>, context: Context) {
+        this.enabled = MapUtil.toBoolean("enabled", config) ?: false
         this.name = config["name"] as? String
             ?: throw ConfigurationException("Missing required config: name")
 
@@ -56,11 +59,29 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
         return description
     }
 
+    fun isEnabled(): Boolean {
+        return enabled
+    }
+
     fun getSkills(): List<Skill> {
         if (skills.isEmpty()) {
             skills.addAll(loadSkills())
         }
         return skills
+    }
+
+    fun apply(key: String, value: Any) {
+        when (key) {
+            "enabled" -> {
+                enabled = value.toString().toBoolean()
+                val skills = getSkills()
+                if (enabled) {
+                    skills.forEach { skill -> context.skillRegistry.register(skill) }
+                } else {
+                    skills.forEach { skill -> context.skillRegistry.unregister(skill) }
+                }
+            }
+        }
     }
 
     override fun destroy() {

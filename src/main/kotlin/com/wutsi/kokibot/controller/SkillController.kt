@@ -26,11 +26,12 @@ class SkillController(private val multi: MultiBootstrap) {
                         "description" to skill.metadata.description,
                     )
                 }
+                .sortedBy { skill -> skill["name"] as String }
         )
     }
 
     @GetMapping("/{name}/skills/skill.md")
-    fun skillContent(
+    fun content(
         @PathVariable name: String,
         @RequestParam skill: String,
     ): ResponseEntity<Map<String, Any>> {

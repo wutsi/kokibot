@@ -16,7 +16,11 @@ import java.io.File
 
 class MarketplaceTest {
     private val file = File("target/test-data/marketplace")
-    private val context = Context(home = file, llm = mock())
+    private val context = Context(
+        home = file,
+        llm = mock(),
+        skillRegistry = mock(),
+    )
     private val finder = mock<GitSkillFinder>()
     private val marketplace = Marketplace(finder)
 
@@ -38,7 +42,6 @@ class MarketplaceTest {
         doReturn(files).whenever(finder).find(any(), any())
 
         // WHEN
-
         val config = mapOf(
             "name" to "obsidian",
             "repo-url" to "https://github.com/kepano/obsidian-skills"
@@ -70,6 +73,7 @@ class MarketplaceTest {
         // WHEN
 
         val config = mapOf(
+            "enabled" to true,
             "name" to "obsidian",
             "repo-url" to "https://github.com/kepano/obsidian-skills",
             "skill-whitelist" to listOf("land-title-verifier")
@@ -83,6 +87,9 @@ class MarketplaceTest {
             File(context.home.absolutePath + "/workspace/marketplaces/obsidian")
         )
 
+        assertEquals(true, marketplace.isEnabled())
+        assertEquals("obsidian", marketplace.getName())
+        assertEquals("https://github.com/kepano/obsidian-skills", marketplace.getRepoUrl())
         assertEquals("marketplace:obsidian", marketplace.id())
         assertEquals(1, skills.size)
         assertNotNull(skills.find { skill -> skill.metadata.name == "obsidian/land-title-verifier" })
@@ -104,5 +111,51 @@ class MarketplaceTest {
         )
 
         assertThrows<ConfigurationException> { marketplace.init(config, context) }
+    }
+
+    @Test
+    fun `apply - enabled`() {
+        // GIVEN
+        val files = listOf(
+            File(this::class.java.getResource("/home/007/config/skills/crm/SKILL.md")!!.file),
+            File(this::class.java.getResource("/home/007/config/skills/land-title-verifier/SKILL.md")!!.file)
+        )
+        doReturn(files).whenever(finder).find(any(), any())
+
+        val config = mapOf(
+            "enabled" to false,
+            "name" to "obsidian",
+            "repo-url" to "https://github.com/kepano/obsidian-skills"
+        )
+        marketplace.init(config, context)
+
+        // WHEN
+        marketplace.apply("enabled", true)
+
+        // THEN
+        marketplace.getSkills().forEach { skill -> verify(context.skillRegistry).register(skill) }
+    }
+
+    @Test
+    fun `apply - disabled`() {
+        // GIVEN
+        val files = listOf(
+            File(this::class.java.getResource("/home/007/config/skills/crm/SKILL.md")!!.file),
+            File(this::class.java.getResource("/home/007/config/skills/land-title-verifier/SKILL.md")!!.file)
+        )
+        doReturn(files).whenever(finder).find(any(), any())
+
+        val config = mapOf(
+            "enabled" to true,
+            "name" to "obsidian",
+            "repo-url" to "https://github.com/kepano/obsidian-skills"
+        )
+        marketplace.init(config, context)
+
+        // WHEN
+        marketplace.apply("enabled", "false")
+
+        // THEN
+        marketplace.getSkills().forEach { skill -> verify(context.skillRegistry).unregister(skill) }
     }
 }

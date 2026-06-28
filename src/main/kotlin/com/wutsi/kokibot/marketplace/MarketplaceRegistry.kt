@@ -13,6 +13,7 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
         private val LOGGER = LoggerFactory.getLogger(MarketplaceRegistry::class.java)
     }
 
+    private lateinit var context: Context
     private val marketplaces = mutableMapOf<String, Marketplace>()
 
     fun all(): List<Marketplace> {
@@ -20,7 +21,9 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
     }
 
     fun init(context: Context) {
-        val dir = File(context.home, "config/marketplaces")
+        this.context = context
+
+        val dir = getMarketplaceDir()
         if (!dir.exists()) return
 
         dir.listFiles { file -> file.isFile && file.extension == "json" }
@@ -37,6 +40,8 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
 
     private fun loadConfig(file: File): Map<*, *> {
         val config = JsonMapper().readValue(file, Map::class.java)
+            .toMutableMap()
+        config.set("name", file.nameWithoutExtension)
         return MapUtil.applyEnv(config)
     }
 
@@ -59,12 +64,35 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
         marketplaces.clear()
     }
 
-    private fun register(marketplace: Marketplace) {
-        marketplaces[marketplace.id().lowercase()] = marketplace
+    fun apply(property: String, value: Any) {
+        val dot = property.indexOf('.')
+        if (dot < 0) throw IllegalArgumentException("Marketplace property must use the format <marketplace>.<property> (e.g. my-marketplace.enabled)")
+
+        val name = property.substring(0, dot)
+        val marketplaceProperty = property.substring(dot + 1)
+
+        // Update
+        val marketplace = get("marketplace:" + name.lowercase())
+        marketplace.apply(marketplaceProperty, value)
+
+        // Update the marketplace JSON file
+        val file = File(getMarketplaceDir(), "$name.json")
+        file.parentFile.mkdirs()
+        val config = JsonMapper().readValue(file, Map::class.java).toMutableMap()
+        config[marketplaceProperty] = value
+        JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, config)
     }
 
     fun get(name: String): Marketplace {
         return marketplaces[name.lowercase()]
             ?: throw MarketplaceNotFoundException("Marketplace not found: $name")
+    }
+
+    private fun register(marketplace: Marketplace) {
+        marketplaces[marketplace.id().lowercase()] = marketplace
+    }
+
+    private fun getMarketplaceDir(): File {
+        return File(context.home, "config/marketplaces")
     }
 }

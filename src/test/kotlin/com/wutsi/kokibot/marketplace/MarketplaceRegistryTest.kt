@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
+import tools.jackson.databind.json.JsonMapper
 import java.io.File
 
 class MarketplaceRegistryTest {
@@ -83,5 +84,30 @@ class MarketplaceRegistryTest {
     fun `get - invalid id`() {
         registry.init(context)
         assertThrows<MarketplaceNotFoundException> { registry.get("invalid-id") }
+    }
+
+    @Test
+    fun `apply - invalid id`() {
+        registry.init(context)
+        assertThrows<MarketplaceNotFoundException> { registry.apply("invalid-id.enabled", true) }
+    }
+
+    @Test
+    fun `apply - invalid property`() {
+        registry.init(context)
+        assertThrows<IllegalArgumentException> { registry.apply("obsidian", true) }
+    }
+
+    @Test
+    fun `apply - valid property`() {
+        registry.init(context)
+        registry.apply("obsidian.enabled", true)
+
+        val marketplace = registry.get("marketplace:obsidian")
+        assertEquals(true, marketplace.isEnabled())
+
+        val file = File(home, "config/marketplaces/obsidian.json")
+        val content = JsonMapper().readValue(file.readText(), Map::class.java)
+        assertEquals(true, content["enabled"])
     }
 }

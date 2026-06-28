@@ -10,13 +10,14 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 
 class SessionLog : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(SessionLog::class.java)
     }
 
-    private val pausedSessionId = mutableMapOf<String, String>()
+    private val pausedSessionId = ConcurrentHashMap<String, String>()
     private lateinit var context: Context
 
     override fun id(): String {
@@ -177,6 +178,7 @@ class SessionLog : Resource {
         return ((userId ?: "-") + "_" + (channelId ?: "-")).lowercase()
     }
 
+    @Synchronized
     private fun append(sessionId: String, session: Session) {
         val file = getFile(sessionId)
         file.appendText(context.jsonMapper.writeValueAsString(session) + "\n")
@@ -185,9 +187,7 @@ class SessionLog : Resource {
     private fun getFile(sessionId: String): File {
         val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
         val dir = File(context.home.absolutePath + "/memory/sessions/$today")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
+        dir.mkdirs()
         return File(dir, "$sessionId.jsonl")
     }
 }

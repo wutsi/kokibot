@@ -7,7 +7,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 /**
  * This is the daily
@@ -40,21 +39,9 @@ class DailyLog : Resource {
         }
     }
 
-    fun clear() = lock.write {
-        lock.write {
-            val file = getFile(LocalDate.now())
-            if (file.exists()) {
-                val bak = File(file.parentFile, file.nameWithoutExtension + "." + System.currentTimeMillis() + ".md")
-                file.renameTo(bak)
-            }
-        }
-    }
-
     private fun getFile(date: LocalDate): File {
         val dir = File(context.home.absolutePath + "/memory/history")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
+        dir.mkdirs()
         val filename = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         return File(dir, "$filename.md")
     }

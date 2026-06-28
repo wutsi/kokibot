@@ -25,7 +25,6 @@ class DailyLogTest {
         home.deleteRecursively()
 
         log.init(emptyMap<String, Any>(), context)
-        log.clear()
     }
 
     @Test
@@ -56,20 +55,6 @@ class DailyLogTest {
 
         // THEN
         assertNull(result)
-    }
-
-    @Test
-    fun clear() {
-        // GIVEN
-        val file = File(home.absolutePath + "/memory/history/${LocalDate.now()}.md")
-        file.parentFile.mkdirs()
-        file.writeText("Hello\nHi there!")
-
-        // WHEN
-        log.clear()
-
-        // THEN
-        assertNull(log.get())
     }
 
     @Test

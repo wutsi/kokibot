@@ -34,8 +34,12 @@ class Assistant(val name: String = "") {
     private var language: String? = null
     private var email: String? = null
     private var threadPoolSize: Int = 4
-    internal lateinit var promptBuilder: PromptBuilder
     internal lateinit var toolOrchestrator: ToolOrchestrator
+
+    @Volatile
+    internal lateinit var promptBuilder: PromptBuilder
+
+    @Volatile
     internal lateinit var reasoningLoop: ReasoningLoop
 
     fun init(config: Map<*, *>, context: Context) {

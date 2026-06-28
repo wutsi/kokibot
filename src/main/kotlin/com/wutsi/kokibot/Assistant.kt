@@ -29,10 +29,10 @@ class Assistant(val name: String = "") {
     private lateinit var context: Context
     private var maxIterations: Int = DEFAULT_ITERATIONS
     private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
-    private lateinit var description: String
-    private lateinit var fullName: String
-    private lateinit var language: String
-    private lateinit var email: String
+    private var description: String = ""
+    private var fullName: String = ""
+    private var language: String = ""
+    private var email: String = ""
     private var threadPoolSize: Int = 4
     internal lateinit var toolOrchestrator: ToolOrchestrator
 

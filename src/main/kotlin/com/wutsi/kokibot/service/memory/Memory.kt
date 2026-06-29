@@ -13,9 +13,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 /**
  * This is the long term memory of the assistant, which is used to store facts and information that can be used to answer questions.
@@ -38,7 +35,6 @@ class Memory : Resource {
     private var job: ScheduledFuture<*>? = null
     private var consecutiveFailures: Int = 0
     private val running: AtomicBoolean = AtomicBoolean(false)
-    private val lock = ReentrantReadWriteLock()
 
     @Volatile
     private var window: Long = DEFAULT_WINDOW
@@ -105,13 +101,11 @@ class Memory : Resource {
     fun getCompactionFrequency(): String = compactionFrequency
 
     fun get(): String? {
-        lock.read {
-            val file = getFile()
-            if (!file.exists()) {
-                return null
-            } else {
-                return file.readText()
-            }
+        val file = getFile()
+        if (!file.exists()) {
+            return null
+        } else {
+            return file.readText()
         }
     }
 
@@ -133,14 +127,12 @@ class Memory : Resource {
                 .replace("{{DAYS}}", window.toString())
                 .replace("{{MAX_LENGTH}}", maxLength.toString())
 
-            lock.write { // Lock the memory file for writing to avoid concurrent compaction
-                context.assistant.process(
-                    query = Message(
-                        role = Role.SYSTEM,
-                        text = prompt,
-                    ),
-                )
-            }
+            context.assistant.process(
+                query = Message(
+                    role = Role.SYSTEM,
+                    text = prompt,
+                ),
+            )
         } finally {
             running.set(false)
         }

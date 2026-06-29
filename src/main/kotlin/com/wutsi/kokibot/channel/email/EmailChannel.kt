@@ -155,26 +155,25 @@ class EmailChannel : Channel() {
             val store = session.getStore(protocol)
             store.connect(imapHost, imapPort.toInt(), username, password)
             store.use {
-                // 3. Open the Inbox
-                val inbox = store.getFolder("INBOX")
-                inbox.open(Folder.READ_WRITE)
-                inbox.use {
+                val folder = store.getFolder("INBOX")
+                folder.open(Folder.READ_WRITE)
+                folder.use {
                     val unseenFlagTerm = FlagTerm(Flags(Flags.Flag.SEEN), false)
-                    val messages = inbox.search(unseenFlagTerm)
+                    val messages = folder.search(unseenFlagTerm)
                     var processed = 0
                     for (message in messages) {
                         if (!reject(message) && accept(message)) {
                             message.setFlag(Flags.Flag.SEEN, true)
                             try {
-                                process(message)
+                                submit(message)
                                 processed++
                             } catch (e: Exception) {
                                 LOGGER.warn("Failed to process message", e)
-                                message.setFlag(Flags.Flag.SEEN, false) // Reset the flag to process later
+                                message.setFlag(Flags.Flag.SEEN, false)
                             }
                         }
                     }
-                    LOGGER.info("${messages.size} new messages, $processed processed")
+                    LOGGER.info("${messages.size} new messages, $processed submitted to inbox")
                 }
             }
         } catch (e: Exception) {
@@ -207,33 +206,17 @@ class EmailChannel : Channel() {
             from.contains(email)
     }
 
-    private fun process(message: jakarta.mail.Message) {
-        val prompt = Message(
-            channelId = id(),
-            role = Role.USER,
-            userId = (message.from?.firstOrNull() as InternetAddress?)?.address,
-            id = message.getHeader("Message-ID")?.firstOrNull() ?: UUID.randomUUID().toString(),
-            subject = message.subject,
-            text = message.subject + "\n" + extractBodyText(message),
-            filePaths = extractAttachments(message).map { file -> file.absolutePath },
-        )
-        val result = context.assistant.process(
-            prompt,
-            {}
-        )
-        reply(prompt, result)
-    }
-
-    private fun reply(prompt: Message, result: Message) {
-        send(
-            message = Message(
+    private fun submit(message: jakarta.mail.Message) {
+        context.inbox.submit(
+            Message(
                 channelId = id(),
-                role = Role.ASSISTANT,
-                userId = prompt.userId,
-                subject = "Re: " + (prompt.subject ?: "").removePrefix("Re: "),
-                text = result.text,
-            ),
-            replyMessageId = prompt.id,
+                role = Role.USER,
+                userId = (message.from?.firstOrNull() as InternetAddress?)?.address,
+                id = message.getHeader("Message-ID")?.firstOrNull() ?: UUID.randomUUID().toString(),
+                subject = message.subject,
+                text = message.subject + "\n" + extractBodyText(message),
+                filePaths = extractAttachments(message).map { file -> file.absolutePath },
+            )
         )
     }
 

@@ -17,6 +17,7 @@ import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
 import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.llm.LLMStreamData
+import com.wutsi.kokibot.llm.LLMUsage
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -127,12 +128,13 @@ class InboxPollerTest {
     }
 
     @Test
-    fun `tick - forwards stream data to channel sendStatus`() {
+    fun `tick - forwards stream data and usage to channel sendStatus`() {
         val channel = mock<Channel>()
         doReturn(channel).whenever(channelRegistry).get("channel:telegram")
+        val usage = LLMUsage(totalTokens = 30, promptTokens = 10, completionTokens = 20)
         doAnswer { invocation ->
             val callback = invocation.getArgument<((LLMStreamData) -> Unit)?>(1)
-            callback?.invoke(LLMStreamData("partial..."))
+            callback?.invoke(LLMStreamData(text = "partial...", usage = usage))
             Message(text = "full response", role = Role.ASSISTANT)
         }.whenever(context.assistant).process(any(), anyOrNull())
 
@@ -143,7 +145,24 @@ class InboxPollerTest {
         val statusCaptor = argumentCaptor<Message>()
         verify(channel).sendStatus(statusCaptor.capture())
         assertEquals("partial...", statusCaptor.firstValue.text)
+        assertEquals(usage, statusCaptor.firstValue.usage)
         assertEquals(Role.ASSISTANT, statusCaptor.firstValue.role)
+    }
+
+    @Test
+    fun `tick - forwards conversationId in delivered response`() {
+        val channel = mock<Channel>()
+        doReturn(channel).whenever(channelRegistry).get("channel:telegram")
+        doReturn(Message(text = "reply", role = Role.ASSISTANT, conversationId = "conv-999"))
+            .whenever(context.assistant).process(any(), anyOrNull())
+
+        inbox.submit(message("msg-1", channelId = "channel:telegram"))
+
+        poller.tick()
+
+        val responseCaptor = argumentCaptor<Message>()
+        verify(channel).send(responseCaptor.capture())
+        assertEquals("conv-999", responseCaptor.firstValue.conversationId)
     }
 
     @Test

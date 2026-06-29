@@ -1,5 +1,6 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.llm.LLMUsage
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -14,4 +15,5 @@ data class Message(
     val id: String = UUID.randomUUID().toString(),
     val subject: String? = null,
     val conversationId: String? = null,
+    val usage: LLMUsage? = null,
 )

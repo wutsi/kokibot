@@ -9,7 +9,6 @@ import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Bootstrap
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
-import com.wutsi.kokibot.channel.websocket.WebSocketChannel
 import com.wutsi.kokibot.service.memory.Conversation
 import com.wutsi.kokibot.service.memory.ConversationMessage
 import com.wutsi.kokibot.service.memory.ConversationRepository
@@ -65,7 +64,7 @@ class ConversationControllerTest {
         )
         doReturn(conversations)
             .whenever(conversationRepository)
-            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())
+            .getConversations(eq("anonymous"), anyOrNull(), any(), any())
 
         val response = rest.getForEntity(
             "/assistants/my-agent/conversations",
@@ -80,7 +79,7 @@ class ConversationControllerTest {
     fun `list passes limit and offset to repository`() {
         doReturn(emptyList<Conversation>())
             .whenever(conversationRepository)
-            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), eq(5), eq(10))
+            .getConversations(eq("anonymous"), anyOrNull(), eq(5), eq(10))
 
         val response = rest.getForEntity(
             "/assistants/my-agent/conversations?limit=5&offset=10",
@@ -112,9 +111,9 @@ class ConversationControllerTest {
             ConversationMessage("assistant", "Sunny, 22°C.", dateTime = LocalDateTime.of(2026, 6, 12, 10, 0)),
         )
         doReturn(listOf(conversation)).whenever(conversationRepository)
-            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())
+            .getConversations(eq("anonymous"), anyOrNull(), any(), any())
 
-        doReturn(messages).whenever(conversationRepository).getMessages("conv-001", WebSocketChannel.ANONYMOUS_USER, "telegram")
+        doReturn(messages).whenever(conversationRepository).getMessages("conv-001", "anonymous", "telegram")
 
         val response = rest.getForEntity(
             "/assistants/my-agent/conversations/conv-001",
@@ -130,7 +129,7 @@ class ConversationControllerTest {
     @Test
     fun `get returns 404 when conversation not found`() {
         doReturn(emptyList<Conversation>()).whenever(conversationRepository)
-            .getConversations(eq(WebSocketChannel.ANONYMOUS_USER), anyOrNull(), any(), any())
+            .getConversations(eq("anonymous"), anyOrNull(), any(), any())
 
         val response = rest.getForEntity(
             "/assistants/my-agent/conversations/unknown",

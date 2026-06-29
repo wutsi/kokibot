@@ -109,6 +109,7 @@ class InboxPoller : Resource {
                         channelId = inboxMessage.channelId,
                         userId = inboxMessage.userId,
                         text = data.text,
+                        usage = data.usage,
                         role = Role.ASSISTANT,
                     )
                 )
@@ -127,6 +128,7 @@ class InboxPoller : Resource {
                     userId = inboxMessage.userId,
                     subject = inboxMessage.subject?.let { "Re: $it" },
                     text = response.text,
+                    conversationId = response.conversationId,
                     role = Role.ASSISTANT,
                 )
             )

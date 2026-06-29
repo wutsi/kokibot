@@ -5,12 +5,12 @@ import com.icegreen.greenmail.util.GreenMail
 import com.icegreen.greenmail.util.ServerSetupTest
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.inbox.Inbox
 import jakarta.mail.Flags
 import jakarta.mail.Message
 import jakarta.mail.Multipart
@@ -47,10 +47,12 @@ class EmailChannelTest {
         "smtp-port" to ServerSetupTest.SMTP.port,
         "smtp-ssl" to false,
     )
+    private val inbox = mock(Inbox::class.java)
     private val context = Context(
         home = File("target/test-data/email-channel"),
         llm = mock(),
-        assistant = mock()
+        assistant = mock(),
+        inbox = inbox,
     )
 
     @BeforeEach
@@ -184,7 +186,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant, never()).process(any(), any())
+        verify(inbox, never()).submit(any())
     }
 
     @Test
@@ -198,19 +200,12 @@ class EmailChannelTest {
         )
         deliver(message)
 
-        val response = com.wutsi.kokibot.Message(
-            text = "This is your briefing...",
-            subject = message.subject,
-            role = Role.ASSISTANT,
-        )
-        doReturn(response).whenever(context.assistant).process(any(), any())
-
         // WHEN
         channel.fetch()
 
         // THEN
         val prompt = argumentCaptor<com.wutsi.kokibot.Message>()
-        verify(context.assistant).process(prompt.capture(), any())
+        verify(inbox).submit(prompt.capture())
 
         assertEquals(message.messageID, prompt.firstValue.id)
         assertEquals("ray.sponsible@gmail.com", prompt.firstValue.userId)
@@ -219,24 +214,6 @@ class EmailChannelTest {
         assertEquals(message.subject, prompt.firstValue.subject)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals(0, prompt.firstValue.filePaths.size)
-        // assertEquals(true, message.flags.contains(Flags.Flag.SEEN))
-
-        val replies = greenMail.receivedMessages
-        assertEquals(2, replies.size)
-
-        val reply = replies[1]
-        val bodyParts = (reply.content as Multipart)
-        assertEquals(email, reply.from.firstOrNull()?.toString())
-        assertEquals(
-            "ray.sponsible@gmail.com",
-            (reply.getRecipients(Message.RecipientType.TO).firstOrNull() as InternetAddress).address
-        )
-        assertEquals("Re: ${message.subject}", reply.subject)
-        assertEquals(message.messageID, reply.getHeader("In-Reply-To")?.get(0))
-        assertEquals(message.messageID, reply.getHeader("References")?.get(0))
-        assertEquals(true, reply.contentType.startsWith("multipart/mixed;"))
-        assertEquals(1, bodyParts.count)
-        assertEquals(true, bodyParts.getBodyPart(0).content.toString().contains(response.text))
     }
 
     @Test
@@ -255,19 +232,12 @@ class EmailChannelTest {
         )
         deliver(message)
 
-        val response = com.wutsi.kokibot.Message(
-            text = "This is your briefing...",
-            subject = message.subject,
-            role = Role.ASSISTANT,
-        )
-        doReturn(response).whenever(context.assistant).process(any(), any())
-
         // WHEN
         channel.fetch()
 
         // THEN
         val prompt = argumentCaptor<com.wutsi.kokibot.Message>()
-        verify(context.assistant).process(prompt.capture(), any())
+        verify(inbox).submit(prompt.capture())
 
         assertEquals(message.messageID, prompt.firstValue.id)
         assertEquals("ray.sponsible@gmail.com", prompt.firstValue.userId)
@@ -287,23 +257,6 @@ class EmailChannelTest {
         assertEquals(message.subject, prompt.firstValue.subject)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals(2, prompt.firstValue.filePaths.size)
-
-        val replies = greenMail.receivedMessages
-        assertEquals(2, replies.size)
-
-        val reply = replies[1]
-        val bodyParts = (reply.content as Multipart)
-        assertEquals(email, reply.from.firstOrNull()?.toString())
-        assertEquals(
-            "ray.sponsible@gmail.com",
-            (reply.getRecipients(Message.RecipientType.TO).firstOrNull() as InternetAddress).address
-        )
-        assertEquals("Re: ${message.subject}", reply.subject)
-        assertEquals(message.messageID, reply.getHeader("In-Reply-To")?.get(0))
-        assertEquals(message.messageID, reply.getHeader("References")?.get(0))
-        assertEquals(true, reply.contentType.startsWith("multipart/mixed;"))
-        assertEquals(1, bodyParts.count)
-        assertEquals(true, bodyParts.getBodyPart(0).content.toString().contains(response.text))
     }
 
     @Test
@@ -320,18 +273,11 @@ class EmailChannelTest {
         )
         deliver(message)
 
-        val response = com.wutsi.kokibot.Message(
-            text = "This is your briefing...",
-            subject = message.subject,
-            role = Role.ASSISTANT,
-        )
-        doReturn(response).whenever(context.assistant).process(any(), any())
-
         // WHEN
         channel.fetch()
 
         // THEN
-        verify(context.assistant).process(any(), any())
+        verify(inbox).submit(any())
     }
 
     @Test
@@ -352,7 +298,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant, never()).process(any(), any())
+        verify(inbox, never()).submit(any())
     }
 
     @Test
@@ -370,7 +316,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant, never()).process(any(), any())
+        verify(inbox, never()).submit(any())
     }
 
     @Test
@@ -388,7 +334,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant, never()).process(any(), any())
+        verify(inbox, never()).submit(any())
     }
 
     @Test
@@ -406,7 +352,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant, never()).process(any(), any())
+        verify(inbox, never()).submit(any())
     }
 
     @Test
@@ -424,7 +370,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant, never()).process(any(), any())
+        verify(inbox, never()).submit(any())
     }
 
     @Test
@@ -437,7 +383,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant, never()).process(any(), any())
+        verify(inbox, never()).submit(any())
     }
 
     @Test
@@ -451,13 +397,6 @@ class EmailChannelTest {
         )
         deliver(message)
 
-        val response = com.wutsi.kokibot.Message(
-            text = "This is your briefing...",
-            subject = message.subject,
-            role = Role.ASSISTANT,
-        )
-        doReturn(response).whenever(context.assistant).process(any(), any())
-
         val cfg = config + mapOf("fetch-frequency" to "5s")
         channel.init(cfg, context)
 
@@ -467,10 +406,7 @@ class EmailChannelTest {
         channel.fetch()
 
         // THEN
-        verify(context.assistant).process(any(), any())
-
-        val replies = greenMail.receivedMessages
-        assertEquals(2, replies.size)
+        verify(inbox).submit(any())
     }
 
     private fun createTextMessage(

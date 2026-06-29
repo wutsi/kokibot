@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.controller
 
 import com.wutsi.kokibot.MultiBootstrap
-import com.wutsi.kokibot.channel.websocket.WebSocketChannel
 import com.wutsi.kokibot.service.memory.ConversationDetail
 import com.wutsi.kokibot.service.memory.ConversationRepository
 import org.springframework.http.ResponseEntity
@@ -22,7 +21,7 @@ class ConversationController(private val multi: MultiBootstrap) {
         @RequestParam(defaultValue = "30") limit: Int,
         @RequestParam(defaultValue = "0") offset: Int,
     ): ResponseEntity<Any> {
-        val userId = WebSocketChannel.ANONYMOUS_USER
+        val userId = "anonymous"
         val repository = getRepository(name) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(repository.getConversations(userId, channelId, limit, offset))
     }
@@ -32,7 +31,7 @@ class ConversationController(private val multi: MultiBootstrap) {
         @PathVariable name: String,
         @PathVariable id: String,
     ): ResponseEntity<Any> {
-        val userId = WebSocketChannel.ANONYMOUS_USER
+        val userId = "anonymous"
         val repository = getRepository(name) ?: return ResponseEntity.notFound().build()
         val conversation = repository.getConversations(userId, limit = Int.MAX_VALUE).find { it.id == id }
             ?: return ResponseEntity.notFound().build()

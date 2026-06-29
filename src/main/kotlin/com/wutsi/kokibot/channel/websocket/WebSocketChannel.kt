@@ -5,7 +5,6 @@ import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
-import com.wutsi.kokibot.llm.LLMUsage
 import org.slf4j.LoggerFactory
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
@@ -16,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSocketChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebSocketChannel::class.java)
-        const val ANONYMOUS_USER = "anonymous"
     }
 
     private lateinit var context: Context
@@ -66,6 +64,7 @@ class WebSocketChannel : Channel() {
             val response = WebSocketResponse(
                 type = WebSocketResponseType.FINAL,
                 content = message.text,
+                conversationId = message.conversationId,
             )
             session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
             return true
@@ -84,8 +83,9 @@ class WebSocketChannel : Channel() {
 
         try {
             val response = WebSocketResponse(
-                type = WebSocketResponseType.TOOL_STATUS,
+                type = WebSocketResponseType.REASONING_CHUNK,
                 content = message.text,
+                usage = message.usage,
             )
             session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
         } catch (e: Exception) {
@@ -96,83 +96,34 @@ class WebSocketChannel : Channel() {
     internal fun handleMessage(session: WebSocketSession, payload: String) {
         try {
             val request = jsonMapper.readValue(payload, WebSocketRequest::class.java)
-            val userId = ANONYMOUS_USER
-
-            // Register session for responses
-            sessions[userId] = session
-
-            // Create message
-            val message = Message(
-                text = request.query,
-                role = Role.USER,
-                userId = userId,
-                channelId = id(),
-                filePaths = request.filePaths,
-                conversationId = request.conversationId,
+            context.inbox.submit(
+                Message(
+                    text = request.query,
+                    role = Role.USER,
+                    userId = session.id,
+                    channelId = id(),
+                    filePaths = request.filePaths,
+                    conversationId = request.conversationId,
+                )
             )
-
-            // Track the last usage from streaming
-            var lastUsage: LLMUsage? = null
-
-            // Process with streaming callback (always enabled)
-            val response = context.assistant.process(
-                query = message,
-                streamCallback = { data ->
-                    if (data.usage != null) {
-                        lastUsage = data.usage
-                    }
-                    sendReasoningChunk(session, data.text, data.usage)
-                },
-            )
-
-            // Send final response with the last usage received
-            sendFinalResponse(session, response.text, response.conversationId, lastUsage)
         } catch (e: Exception) {
-            LOGGER.error("Error processing WebSocket message", e)
+            LOGGER.error("Error submitting WebSocket message to inbox", e)
             try {
                 sendError(session, e.message ?: "Internal error")
             } catch (ex: Exception) {
-                LOGGER.error("Error sending error '${e.message}' to WebSocket", ex)
+                LOGGER.error("Error sending error response to WebSocket", ex)
             }
         }
     }
 
     internal fun handleConnectionEstablished(session: WebSocketSession) {
         LOGGER.info("WebSocket connection established: ${session.id}")
+        sessions[session.id] = session
     }
 
     internal fun handleConnectionClosed(session: WebSocketSession, status: CloseStatus) {
         LOGGER.info("WebSocket connection closed: ${session.id}, status: $status")
         sessions.values.removeIf { it.id == session.id }
-    }
-
-    private fun sendReasoningChunk(session: WebSocketSession, delta: String, usage: LLMUsage?) {
-        sendMessage(
-            session,
-            WebSocketResponse(
-                type = WebSocketResponseType.REASONING_CHUNK,
-                content = delta,
-                usage = usage,
-            ),
-        )
-    }
-
-    private fun sendFinalResponse(
-        session: WebSocketSession,
-        content: String,
-        conversationId: String?,
-        usage: LLMUsage?
-    ) {
-        sendMessage(
-            session,
-            WebSocketResponse(
-                type = WebSocketResponseType.FINAL,
-                content = content,
-                finishReason = "DONE",
-                usage = usage,
-                conversationId = conversationId,
-            ),
-        )
     }
 
     private fun sendError(session: WebSocketSession, errorMessage: String) {

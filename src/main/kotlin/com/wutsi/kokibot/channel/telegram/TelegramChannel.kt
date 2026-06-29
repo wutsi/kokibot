@@ -18,20 +18,10 @@ import org.telegram.telegrambots.meta.api.methods.ParseMode
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.generics.TelegramClient
 import java.io.File
-import java.util.concurrent.Executors
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 
 class TelegramChannel(
     val factory: TelegramFactory = TelegramFactory(),
@@ -41,18 +31,11 @@ class TelegramChannel(
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TelegramChannel::class.java)
 
-        const val TYPING_DELAY_MILLIS = 2000L
-        const val STREAM_MAX_LENGTH = 1024
         const val MESSAGE_MAX_LENGTH = 3900 // Telegram max is 4096, but we reserve some for HTML tags
-        const val STREAM_INITIAL_DELAY_MILLIS = 500L
-        const val STREAM_MAX_DELAY_MILLIS = 30_000L
-        const val DEFAULT_THREAD_POOL_SIZE = 4
-        const val DEFAULT_QUEUE_CAPACITY = 256
         const val ERROR_UNSUPPORTED_MESSAGE = "Sorry, I can only process text messages and documents for now."
         const val ERROR_UNAUTHORIZED_MESSAGE = "Sorry, you are not authorized to interact with me."
     }
 
-    private var threadPoolSize: Int = DEFAULT_THREAD_POOL_SIZE
     private var botToken: String? = null
     private lateinit var botName: String
     private lateinit var app: TelegramBotsLongPollingApplication
@@ -60,16 +43,6 @@ class TelegramChannel(
     private lateinit var context: Context
     private lateinit var rest: RestTemplate
     private lateinit var senderWhitelist: List<String>
-    private lateinit var workerPool: ThreadPoolExecutor
-    private lateinit var typingScheduler: ScheduledExecutorService
-
-    /**
-     * Shared back-off for streaming "Thinking..." updates.
-     * Telegram rate limits are global per bot, so a 429 in one worker must
-     * slow down all other workers. The value is shrunk back gradually after
-     * each successful update.
-     */
-    private val streamUpdateDelayMillis = AtomicLong(STREAM_INITIAL_DELAY_MILLIS)
 
     override fun name(): String = "telegram"
 
@@ -80,32 +53,20 @@ class TelegramChannel(
         val token = config["token"]?.toString() ?: throw ConfigurationException("token is required")
         this.botToken = token
         this.botName = config["bot-name"]?.toString() ?: "-"
-        this.threadPoolSize = MapUtil.toInt("thread-pool-size", config) ?: DEFAULT_THREAD_POOL_SIZE
-        val queueCapacity = MapUtil.toInt("queue-capacity", config) ?: DEFAULT_QUEUE_CAPACITY
 
         client = factory.createTelegramClient(token)
-        workerPool = newWorkerPool(threadPoolSize, queueCapacity)
-        typingScheduler = Executors.newScheduledThreadPool(
-            1,
-            namedThreadFactory("telegram-typing"),
-        )
         rest = restBuilder.build(30000L, 30000L)
         senderWhitelist = MapUtil.toList("sender-whitelist", config)
             ?.mapNotNull { entry -> entry?.toString() }
             ?: emptyList()
         this.context = context
 
-        // Users
         users.init(context)
 
-        // Log  configuration
         LOGGER.info("Channel: telegram")
         LOGGER.info("  bot-name: $botName")
-        LOGGER.info("  thread-pool-size: $threadPoolSize")
-        LOGGER.info("  queue-capacity: $queueCapacity")
         LOGGER.info("  sender-whitelist: $senderWhitelist")
 
-        // Register the bot after initialization
         app = factory.createTelegramBotsLongPollingApplication()
         app.registerBot(token, this)
     }
@@ -117,19 +78,6 @@ class TelegramChannel(
         } catch (e: Exception) {
             LOGGER.warn("Error while disconnecting from Telegram", e)
         }
-
-        try {
-            workerPool.shutdown()
-            workerPool.awaitTermination(5, TimeUnit.SECONDS)
-        } catch (e: Exception) {
-            LOGGER.warn("Error while shutting down worker pool", e)
-        }
-
-        try {
-            typingScheduler.shutdownNow()
-        } catch (e: Exception) {
-            LOGGER.warn("Error while shutting down typing scheduler", e)
-        }
     }
 
     override fun health(): Health {
@@ -140,6 +88,16 @@ class TelegramChannel(
             LOGGER.warn("error during telegram channel heath", ex)
             return Health(id(), false, ex.message)
         }
+    }
+
+    override fun sendStatus(message: Message) {
+        if (message.userId == null || message.channelId != id()) return
+        val chatId = users.get(message.userId) ?: return
+        val action = SendChatAction.builder()
+            .chatId(chatId)
+            .action(ActionType.TYPING.toString())
+            .build()
+        client.execute(action)
     }
 
     override fun send(message: Message): Boolean {
@@ -155,209 +113,71 @@ class TelegramChannel(
     }
 
     override fun consume(update: Update) {
-        if (update.hasMessage()) {
-            /* Check sender whitelist */
-            val message = update.message
-            val chatId = message.chatId.toString()
-            if (!accept(update)) {
-                send(chatId, Message(text = ERROR_UNAUTHORIZED_MESSAGE))
-                return
-            }
+        if (!update.hasMessage()) return
 
-            /* Consume message asynchronously. If the bounded queue is full,
-             * CallerRunsPolicy will run the task on the long-polling thread,
-             * which naturally throttles incoming updates.
-             */
-            val pool = workerPool
-            pool.submit {
-                try {
-                    consumeAsync(update)
-                } catch (ex: Exception) {
-                    LOGGER.error("Unhandled error while processing Telegram update", ex)
-                }
-            }
+        val chatId = update.message.chatId.toString()
+        if (!accept(update)) {
+            send(chatId, Message(text = ERROR_UNAUTHORIZED_MESSAGE))
+            return
         }
-    }
-
-    private fun consumeAsync(update: Update) {
-        val message = update.message
-        val chatId = message.chatId.toString()
-
-        /* Typing indicator scheduled on the shared scheduler */
-        val scheduler = typingScheduler
-        val job = scheduler.scheduleAtFixedRate(
-            { typing(chatId) },
-            0,
-            TYPING_DELAY_MILLIS,
-            TimeUnit.MILLISECONDS,
-        )
 
         try {
-            // Store user
-            try {
-                storeUser(update)
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to store user info for chat ${message.chatId}. ${ex.message}")
-            }
+            storeUser(update)
+        } catch (ex: Exception) {
+            LOGGER.warn("Failed to store user info for chat $chatId. ${ex.message}")
+        }
 
-            // Consume message
-            consume(chatId, update)
-        } finally {
-            try {
-                job.cancel(true)
-            } catch (e: Exception) {
-                LOGGER.warn("Failed to cancel typing indicator job. ${e.message}")
-            }
+        when {
+            update.message.hasText() -> consumeText(update)
+            update.message.hasDocument() -> consumeDocument(update)
+            update.message.hasPhoto() -> consumePhoto(update)
+            else -> send(chatId, Message(text = ERROR_UNSUPPORTED_MESSAGE, role = Role.SYSTEM))
         }
     }
 
     private fun storeUser(update: Update) {
         val userId = toUserId(update)
-        users.put(userId, update.message.chatId.toString()) // Store
+        users.put(userId, update.message.chatId.toString())
     }
 
-    private fun consume(chatId: String, update: Update) {
-        val message = if (update.message.hasText()) {
-            consumeText(update)
-        } else if (update.message.hasDocument()) {
-            consumeDocument(update)
-        } else if (update.message.hasPhoto()) {
-            consumePhoto(update)
-        } else {
-            Message(
-                text = ERROR_UNSUPPORTED_MESSAGE,
-                role = Role.SYSTEM,
-            )
-        }
-
-        send(chatId, message)
-    }
-
-    private fun consumeText(update: Update): Message {
-        val chatId = update.message.chatId.toString()
+    private fun consumeText(update: Update) {
         val userId = toUserId(update)
-        var streamMessageId: Int? = null
-        val streamBuffer = StringBuilder()
-        var lastUpdateTime = System.currentTimeMillis()
-
-        try {
-            return context.assistant.process(
-                Message(
-                    text = update.message.text,
-                    role = Role.USER,
-                    userId = userId,
-                    channelId = id(),
-                ),
-                streamCallback = { data ->
-                    streamBuffer.append(data.text)
-                    val now = System.currentTimeMillis()
-                    val delay = streamUpdateDelayMillis.get()
-
-                    if (now - lastUpdateTime > delay && streamBuffer.isNotEmpty()) {
-                        val msg = streamBuffer.toString().takeLast(STREAM_MAX_LENGTH)
-                        try {
-                            streamMessageId = sendOrUpdateMessage(
-                                chatId,
-                                "**Thinking...**: $msg",
-                                streamMessageId,
-                            )
-                            lastUpdateTime = now
-                            // Successful update: gently shrink the global back-off
-                            // back towards the initial value (halve, floor at initial).
-                            shrinkStreamDelay()
-                        } catch (ex: Exception) {
-                            LOGGER.warn(
-                                "Failed to send or update streaming message, will retry on next update. ${ex.message}"
-                            )
-                            if (streamMessageId != null) {
-                                deleteMessage(chatId, streamMessageId!!)
-                            }
-                            streamMessageId = null // Invalidate to trigger sending a new message
-                            if (ex.message?.contains("[429] Too Many Requests") == true) {
-                                // Globally back off all workers
-                                growStreamDelay()
-                            }
-                        }
-                    }
-                },
+        context.inbox.submit(
+            Message(
+                text = update.message.text,
+                role = Role.USER,
+                userId = userId,
+                channelId = id(),
             )
-        } finally {
-            streamMessageId?.let { id ->
-                deleteMessage(chatId, id)
-            }
-        }
-    }
-
-    private fun toUserId(update: Update): String {
-        val chat = update.message.chat
-        return chat.userName ?: chat.id.toString()
-    }
-
-    private fun growStreamDelay() {
-        streamUpdateDelayMillis.updateAndGet { current ->
-            (current * 2).coerceAtMost(STREAM_MAX_DELAY_MILLIS)
-        }
-    }
-
-    private fun shrinkStreamDelay() {
-        streamUpdateDelayMillis.updateAndGet { current ->
-            (current / 2).coerceAtLeast(STREAM_INITIAL_DELAY_MILLIS)
-        }
-    }
-
-    private fun newWorkerPool(size: Int, queueCapacity: Int): ThreadPoolExecutor {
-        val pool = ThreadPoolExecutor(
-            size,
-            size,
-            0L,
-            TimeUnit.MILLISECONDS,
-            LinkedBlockingQueue(queueCapacity),
-            namedThreadFactory("telegram-worker"),
-            ThreadPoolExecutor.CallerRunsPolicy(), // back-pressure: long-poll thread runs the task itself
         )
-        pool.allowCoreThreadTimeOut(false)
-        return pool
     }
 
-    private fun namedThreadFactory(prefix: String): ThreadFactory {
-        val counter = AtomicInteger(0)
-        return ThreadFactory { runnable ->
-            val t = Thread(runnable, "$prefix-${counter.incrementAndGet()}")
-            t.isDaemon = true
-            t
-        }
-    }
-
-    private fun consumeDocument(update: Update): Message {
+    private fun consumeDocument(update: Update) {
         val userId = toUserId(update)
         val fileId = update.message.document.fileId
         val filename = update.message.document.fileName
         val caption = update.message.caption?.trim()?.ifEmpty { null }
         val file = download(fileId, filename)
-
-        return context.assistant.process(
+        context.inbox.submit(
             Message(
                 text = caption
                     ?: "File received: $filename. Do not process this document, just return the message `File received`",
                 role = Role.USER,
                 userId = userId,
                 channelId = id(),
-                filePaths = listOf(file.absolutePath)
+                filePaths = listOf(file.absolutePath),
             )
         )
     }
 
-    private fun consumePhoto(update: Update): Message {
-        // Telegram sends multiple resolutions; pick the largest
+    private fun consumePhoto(update: Update) {
         val largest = update.message.photo.maxByOrNull { it.fileSize ?: 0 }
             ?: throw IllegalStateException("No photo found in message")
-
         val userId = toUserId(update)
         val caption = update.message.caption?.trim()?.ifEmpty { null }
         val filename = "photo_${largest.fileId}.jpg"
         val file = download(largest.fileId, filename)
-
-        return context.assistant.process(
+        context.inbox.submit(
             Message(
                 text = caption
                     ?: "Image received: $filename. Do not process this document, just return the message `File received`",
@@ -365,8 +185,13 @@ class TelegramChannel(
                 userId = userId,
                 channelId = id(),
                 filePaths = listOf(file.absolutePath),
-            ),
+            )
         )
+    }
+
+    private fun toUserId(update: Update): String {
+        val chat = update.message.chat
+        return chat.userName ?: chat.id.toString()
     }
 
     private fun accept(update: Update): Boolean {
@@ -379,16 +204,7 @@ class TelegramChannel(
         }
     }
 
-    private fun typing(chatId: String) {
-        val action = SendChatAction.builder()
-            .chatId(chatId)
-            .action(ActionType.TYPING.toString())
-            .build()
-        client.execute(action)
-    }
-
     private fun send(chatId: String, message: Message) {
-        // Send text in parts if it exceeds Telegram's limit
         if (message.text.ifEmpty { null } != null) {
             val parts = MarkdownUtil.split(message.text, MESSAGE_MAX_LENGTH)
             parts.forEachIndexed { index, part ->
@@ -404,7 +220,6 @@ class TelegramChannel(
             }
         }
 
-        // Send files after the message, since Telegram does not support attachments
         message.filePaths.forEach { path ->
             try {
                 LOGGER.info("Sending $path to $chatId")
@@ -422,56 +237,6 @@ class TelegramChannel(
             .document(InputFile(file, file.name))
             .build()
         client.execute(sendDocument)
-    }
-
-    private fun deleteMessage(chatId: String, messageId: Int) {
-        try {
-            val deleteMessage = DeleteMessage.builder()
-                .chatId(chatId)
-                .messageId(messageId)
-                .build()
-            client.execute(deleteMessage)
-        } catch (ex: Exception) {
-            LOGGER.warn("Failed to delete message $messageId in chat $chatId. ${ex.message}")
-        }
-    }
-
-    /**
-     * Sends a new message or updates an existing one (for streaming).
-     * Telegram supports editing messages, so we can update the same message incrementally.
-     *
-     * @return Message ID of the sent/updated message
-     */
-    private fun sendOrUpdateMessage(
-        chatId: String,
-        text: String,
-        messageId: Int?,
-    ): Int? {
-        if (text.trim().isEmpty()) {
-            return messageId
-        }
-
-        val html = MarkdownToTelegramHTML.convert(text)
-
-        if (messageId == null) {
-            val sendMessage = SendMessage.builder()
-                .chatId(chatId)
-                .text(html)
-                .parseMode(ParseMode.HTML)
-                .disableNotification(true)
-                .build()
-            val sent = client.execute(sendMessage)
-            return sent.messageId
-        } else {
-            val editMessage = EditMessageText.builder()
-                .chatId(chatId)
-                .messageId(messageId)
-                .text(html)
-                .parseMode(ParseMode.HTML)
-                .build()
-            client.execute(editMessage)
-            return messageId
-        }
     }
 
     private fun download(fileId: String, filename: String): File {

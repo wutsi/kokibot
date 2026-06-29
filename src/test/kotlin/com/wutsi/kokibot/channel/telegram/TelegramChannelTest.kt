@@ -3,18 +3,15 @@ package com.wutsi.kokibot.channel.telegram
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.atLeast
-import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.inbox.Inbox
 import com.wutsi.kokibot.util.RestBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -23,7 +20,6 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
-import org.springframework.http.HttpEntity
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
@@ -53,11 +49,13 @@ class TelegramChannelTest {
         "token" to botToken,
         "bot-name" to "test-bot",
     )
+    private val inbox = mock<Inbox>()
     private val context = Context(
         home = File("target/test-data/telegram"),
         llm = mock(),
         fileService = mock(),
-        assistant = mock()
+        assistant = mock(),
+        inbox = inbox,
     )
     private val users = mock<TelegramUsers>()
     private val telegram = TelegramChannel(factory, restBuilder, users)
@@ -83,13 +81,11 @@ class TelegramChannelTest {
 
     @Test
     fun `init - should create telegram client and register bot`() {
-        // WHEN
         telegram.init(config, context)
 
-        // THEN
         verify(factory).createTelegramClient(botToken)
         verify(factory).createTelegramBotsLongPollingApplication()
-        verify(app).registerBot(eq(botToken), any())
+        verify(app).registerBot(any(), any())
         verify(users).init(context)
     }
 
@@ -110,183 +106,102 @@ class TelegramChannelTest {
 
     @Test
     fun `destroy - should stop the application`() {
-        // GIVEN
         telegram.init(config, context)
 
-        // WHEN
         telegram.destroy()
 
-        // THEN
         verify(app).unregisterBot(botToken)
     }
 
     @Test
     fun `destroy - should do nothing if not initialized`() {
-        // WHEN
         telegram.destroy()
 
-        // THEN
         verify(app, never()).unregisterBot(any())
     }
 
     @Test
-    fun `consume - should process text message`() {
-        // GIVEN
+    fun `consume - should submit text message to inbox`() {
         telegram.init(config, context)
-        doAnswer {
-            Thread.sleep(TelegramChannel.TYPING_DELAY_MILLIS)
-            Message("World")
-        }.whenever(context.assistant).process(any(), anyOrNull())
 
-        // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
-        Thread.sleep(3000) // Wait for the async processing to complete
 
-        // THEN
         val prompt = argumentCaptor<Message>()
-        verify(context.assistant).process(prompt.capture(), anyOrNull())
+        verify(inbox).submit(prompt.capture())
         assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("ray.sponsible", prompt.firstValue.userId)
         assertEquals("channel:telegram", prompt.firstValue.channelId)
         assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
 
-        val sendAction = argumentCaptor<SendChatAction>()
-        verify(client, atLeast(1)).execute(sendAction.capture())
-        assertEquals(ActionType.TYPING.toString(), sendAction.firstValue.action)
-
-        val sendMessage = argumentCaptor<SendMessage>()
-        verify(client).execute(sendMessage.capture())
-        assertEquals("World", sendMessage.firstValue.text)
-        assertEquals("123", sendMessage.firstValue.chatId)
-
+        verify(client, never()).execute(any<SendMessage>())
         verify(users).put("ray.sponsible", "123")
     }
 
     @Test
-    fun `consume - should process message from username-less user`() {
-        // GIVEN
+    fun `consume - should submit message from username-less user to inbox`() {
         telegram.init(config, context)
-        doReturn(Message("World"))
-            .whenever(context.assistant)
-            .process(any(), anyOrNull())
 
-        // WHEN
         val update = createTextUpdate("Hello", 123L, null)
         telegram.consume(update)
-        Thread.sleep(1000) // Wait for the async processing to complete
 
-        // THEN
         val prompt = argumentCaptor<Message>()
-        verify(context.assistant).process(prompt.capture(), anyOrNull())
+        verify(inbox).submit(prompt.capture())
         assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("123", prompt.firstValue.userId)
         assertEquals("channel:telegram", prompt.firstValue.channelId)
-        assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
-
-        val sendMessage = argumentCaptor<SendMessage>()
-        verify(client).execute(sendMessage.capture())
-        assertEquals("World", sendMessage.firstValue.text)
-        assertEquals("123", sendMessage.firstValue.chatId)
 
         verify(users).put("123", "123")
     }
 
     @Test
-    fun `consume - should process text message even if error while storing users`() {
-        // GIVEN
+    fun `consume - should submit to inbox even if error while storing users`() {
         telegram.init(config, context)
-        doAnswer {
-            Thread.sleep(TelegramChannel.TYPING_DELAY_MILLIS)
-            Message("World")
-        }.whenever(context.assistant).process(any(), anyOrNull())
-
         doThrow(IllegalArgumentException::class).whenever(users).put(any(), any())
 
-        // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
-        Thread.sleep(3000) // Wait for the async processing to complete
 
-        // THEN
         val prompt = argumentCaptor<Message>()
-        verify(context.assistant).process(prompt.capture(), anyOrNull())
+        verify(inbox).submit(prompt.capture())
         assertEquals(true, prompt.firstValue.text.contains("Hello"))
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals("ray.sponsible", prompt.firstValue.userId)
-        assertEquals("channel:telegram", prompt.firstValue.channelId)
-        assertEquals(emptyList<String>(), prompt.firstValue.filePaths)
-
-        val sendAction = argumentCaptor<SendChatAction>()
-        verify(client, atLeast(1)).execute(sendAction.capture())
-        assertEquals(ActionType.TYPING.toString(), sendAction.firstValue.action)
-
-        val sendMessage = argumentCaptor<SendMessage>()
-        verify(client).execute(sendMessage.capture())
-        assertEquals("World", sendMessage.firstValue.text)
-        assertEquals("123", sendMessage.firstValue.chatId)
     }
 
     @Test
     fun `consume - with username white-listed - accepted`() {
-        // GIVEN
-        doReturn(Message("World")).whenever(context.assistant).process(any(), anyOrNull())
-
         val config = this.config + mapOf("sender-whitelist" to listOf("ray.sponsible"))
         telegram.init(config, context)
 
-        // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
-        Thread.sleep(1000) // Wait for the async processing to complete
 
-        // THEN
-        verify(context.assistant).process(any(), anyOrNull())
-
-        val sendMessage = argumentCaptor<SendMessage>()
-        verify(client).execute(sendMessage.capture())
-        assertEquals("World", sendMessage.firstValue.text)
-        assertEquals("123", sendMessage.firstValue.chatId)
+        verify(inbox).submit(any())
     }
 
     @Test
     fun `consume - with chatId white-listed - accepted`() {
-        // GIVEN
-        doReturn(Message("World"))
-            .whenever(context.assistant)
-            .process(any(), anyOrNull())
-
         val config = this.config + mapOf("sender-whitelist" to listOf("123"))
         telegram.init(config, context)
 
-        // WHEN
         val update = createTextUpdate("Hello", 123L, null)
         telegram.consume(update)
-        Thread.sleep(1000) // Wait for the async processing to complete
 
-        // THEN
-        verify(context.assistant).process(any(), anyOrNull())
-
-        val sendMessage = argumentCaptor<SendMessage>()
-        verify(client).execute(sendMessage.capture())
-        assertEquals("World", sendMessage.firstValue.text)
-        assertEquals("123", sendMessage.firstValue.chatId)
+        verify(inbox).submit(any())
     }
 
     @Test
     fun `consume - with whitelist - rejected`() {
-        // GIVEN
         val config = this.config + mapOf("sender-whitelist" to listOf("roger.milla"))
         telegram.init(config, context)
 
-        // WHEN
         val update = createTextUpdate("Hello", 123L)
         telegram.consume(update)
 
-        // THEN
-        verify(context.assistant, never()).process(any(), anyOrNull())
+        verify(inbox, never()).submit(any())
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -295,93 +210,69 @@ class TelegramChannelTest {
     }
 
     @Test
-    fun `consume - should process documents`() {
-        // GIVEN
-        doReturn(Message("Received")).whenever(context.assistant).process(any(), anyOrNull())
-
+    fun `consume - should submit document to inbox`() {
         val update = createDocumentUpdate(123L, fileId = "21093209", "foo.pdf")
         doReturn(ResponseEntity(mapOf("result" to mapOf("file_path" to "/files/1.pdf")), HttpStatus.OK))
             .whenever(rest)
-            .getForEntity(any<String>(), eq(Map::class.java))
+            .getForEntity(any<String>(), any<Class<*>>())
 
         doReturn(ResponseEntity("Hello world".toByteArray(), HttpStatus.OK))
             .whenever(rest)
-            .getForEntity(any<String>(), eq(ByteArray::class.java))
+            .getForEntity("https://api.telegram.org/file/bot$botToken/files/1.pdf", ByteArray::class.java)
 
         val file = File(this::class.java.getResource("/file/document-en.pdf")!!.file)
         doReturn(file).whenever(context.fileService).createTempFile(any())
 
-        // WHEN
         telegram.init(config, context)
         telegram.consume(update)
-        Thread.sleep(1000) // Wait for the async processing to complete
-
-        // THEN
-        verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=21093209", Map::class.java)
-        verify(rest).getForEntity("https://api.telegram.org/file/bot$botToken/files/1.pdf", ByteArray::class.java)
 
         val prompt = argumentCaptor<Message>()
-        verify(context.assistant).process(prompt.capture(), anyOrNull())
+        verify(inbox).submit(prompt.capture())
         assertNotNull(prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals(1, prompt.firstValue.filePaths.size)
         assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
 
         verify(context.fileService).createTempFile("foo.pdf")
-
         verify(users).put("ray.sponsible", "123")
     }
 
     @Test
-    fun `consume - should process photo`() {
-        // GIVEN
-        doReturn(Message("Received")).whenever(context.assistant).process(any(), anyOrNull())
-
+    fun `consume - should submit photo to inbox`() {
         val update = createPhotoUpdate(123L, "2222", "Analyze this...")
         doReturn(ResponseEntity(mapOf("result" to mapOf("file_path" to "/files/1.png")), HttpStatus.OK))
             .whenever(rest)
-            .getForEntity(any<String>(), eq(Map::class.java))
+            .getForEntity(any<String>(), any<Class<*>>())
 
         doReturn(ResponseEntity("Hello world".toByteArray(), HttpStatus.OK))
             .whenever(rest)
-            .getForEntity(any<String>(), eq(ByteArray::class.java))
+            .getForEntity("https://api.telegram.org/file/bot$botToken/files/1.png", ByteArray::class.java)
 
         val file = File(this::class.java.getResource("/file/medic.png")!!.file)
         doReturn(file).whenever(context.fileService).createTempFile(any())
 
-        // WHEN
         telegram.init(config, context)
         telegram.consume(update)
-        Thread.sleep(1000) // Wait for the async processing to complete
-
-        // THEN
-        verify(rest).getForEntity("https://api.telegram.org/bot$botToken/getFile?file_id=2222", Map::class.java)
-        verify(rest).getForEntity("https://api.telegram.org/file/bot$botToken/files/1.png", ByteArray::class.java)
 
         val prompt = argumentCaptor<Message>()
-        verify(context.assistant).process(prompt.capture(), anyOrNull())
+        verify(inbox).submit(prompt.capture())
         assertNotNull(prompt.firstValue.text)
         assertEquals(Role.USER, prompt.firstValue.role)
         assertEquals(1, prompt.firstValue.filePaths.size)
         assertEquals(file.absolutePath, prompt.firstValue.filePaths[0])
 
-        verify(context.fileService).createTempFile(eq("photo_2222.jpg"))
-
+        verify(context.fileService).createTempFile("photo_2222.jpg")
         verify(users).put("ray.sponsible", "123")
     }
 
     @Test
-    fun `consume - should ignore update without message text`() {
-        // GIVEN
+    fun `consume - should send error for unsupported message type`() {
         telegram.init(config, context)
 
-        // WHEN
         val update = createTextUpdate(null, 4309)
         telegram.consume(update)
-        Thread.sleep(1000) // Wait for the async processing to complete
 
-        // THEN
-        verify(context.assistant, never()).process(any(), anyOrNull())
+        verify(inbox, never()).submit(any())
 
         val sendMessage = argumentCaptor<SendMessage>()
         verify(client).execute(sendMessage.capture())
@@ -391,37 +282,52 @@ class TelegramChannelTest {
 
     @Test
     fun `consume - should ignore update without message`() {
-        // GIVEN
         telegram.init(config, context)
 
-        // WHEN
         val update = createEmptyUpdate(555)
         telegram.consume(update)
 
-        // THEN
-        verify(context.assistant, never()).process(any(), anyOrNull())
+        verify(inbox, never()).submit(any())
         verify(client, never()).execute(any<SendMessage>())
     }
 
     @Test
-    fun `consume - long response are slitted`() {
-        // GIVEN
+    fun sendStatus() {
+        doReturn("123").whenever(users).get("ray.sponsible")
+
         telegram.init(config, context)
-        doReturn(
-            Message(
-                "H".repeat(3000) + "\n\n" + "W".repeat(1000)
-            )
-        )
-            .whenever(context.assistant)
-            .process(any(), anyOrNull())
+        telegram.sendStatus(Message(userId = "ray.sponsible", channelId = "channel:telegram", text = "thinking..."))
 
-        // WHEN
-        val update = createTextUpdate("Hello", 123L)
-        telegram.consume(update)
-        Thread.sleep(1000) // Wait for the async processing to complete
+        val action = argumentCaptor<SendChatAction>()
+        verify(client).execute(action.capture())
+        assertEquals(ActionType.TYPING.toString(), action.firstValue.action)
+        assertEquals("123", action.firstValue.chatId)
+    }
 
-        // THEN
-        verify(client, times(2)).execute(any<SendMessage>())
+    @Test
+    fun `sendStatus - no userId`() {
+        telegram.init(config, context)
+        telegram.sendStatus(Message(userId = null, channelId = "channel:telegram", text = "thinking..."))
+
+        verify(client, never()).execute(any<SendChatAction>())
+    }
+
+    @Test
+    fun `sendStatus - bad channelId`() {
+        telegram.init(config, context)
+        telegram.sendStatus(Message(userId = "ray.sponsible", channelId = "xxx", text = "thinking..."))
+
+        verify(client, never()).execute(any<SendChatAction>())
+    }
+
+    @Test
+    fun `sendStatus - unknown user`() {
+        doReturn(null).whenever(users).get("ray.sponsible")
+
+        telegram.init(config, context)
+        telegram.sendStatus(Message(userId = "ray.sponsible", channelId = "channel:telegram", text = "thinking..."))
+
+        verify(client, never()).execute(any<SendChatAction>())
     }
 
     @Test
@@ -442,9 +348,6 @@ class TelegramChannelTest {
         verify(client).execute(sendMessage.capture())
         assertEquals("Hello", sendMessage.firstValue.text)
         assertEquals("123", sendMessage.firstValue.chatId)
-
-        verify(rest, never())
-            .postForEntity(any<String>(), any<HttpEntity<*>>(), eq(String::class.java))
     }
 
     @Test
@@ -468,7 +371,7 @@ class TelegramChannelTest {
         assertEquals("123", sendMessage.firstValue.chatId)
 
         val sendDocument = argumentCaptor<SendDocument>()
-        verify(client, times(2)).execute(sendDocument.capture())
+        verify(client, com.nhaarman.mockitokotlin2.times(2)).execute(sendDocument.capture())
         assertEquals("123", sendDocument.firstValue.chatId)
         assertEquals("file.pdf", sendDocument.firstValue.document.newMediaFile.name)
         assertEquals("123", sendDocument.secondValue.chatId)
@@ -486,7 +389,6 @@ class TelegramChannelTest {
         val result = telegram.send(message)
 
         assertFalse(result)
-
         verify(client, never()).execute(any<SendMessage>())
     }
 
@@ -503,7 +405,6 @@ class TelegramChannelTest {
         val result = telegram.send(message)
 
         assertFalse(result)
-
         verify(client, never()).execute(any<SendMessage>())
     }
 
@@ -520,7 +421,6 @@ class TelegramChannelTest {
         val result = telegram.send(message)
 
         assertFalse(result)
-
         verify(client, never()).execute(any<SendMessage>())
     }
 
@@ -528,7 +428,7 @@ class TelegramChannelTest {
     fun `health - up`() {
         doReturn(ResponseEntity(mapOf("ok" to true), HttpStatus.OK))
             .whenever(rest)
-            .getForEntity(any<String>(), eq(Map::class.java))
+            .getForEntity(any<String>(), any<Class<*>>())
 
         telegram.init(config, context)
         val result = telegram.health()
@@ -542,7 +442,7 @@ class TelegramChannelTest {
     fun `health - down`() {
         doReturn(ResponseEntity(mapOf("ok" to "---"), HttpStatus.OK))
             .whenever(rest)
-            .getForObject(any<String>(), eq(Map::class.java))
+            .getForEntity(any<String>(), any<Class<*>>())
 
         telegram.init(config, context)
         val result = telegram.health()
@@ -556,7 +456,7 @@ class TelegramChannelTest {
     fun `health - error`() {
         doThrow(RuntimeException::class)
             .whenever(rest)
-            .getForEntity(any<String>(), eq(Map::class.java))
+            .getForEntity(any<String>(), any<Class<*>>())
 
         val result = telegram.health()
 

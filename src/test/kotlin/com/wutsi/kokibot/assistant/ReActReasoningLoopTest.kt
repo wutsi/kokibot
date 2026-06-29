@@ -13,6 +13,8 @@ import com.wutsi.kokibot.FinishReason
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.TooManyIterationException
+import com.wutsi.kokibot.channel.Channel
+import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.Command
 import com.wutsi.kokibot.command.CommandMetadata
 import com.wutsi.kokibot.command.CommandNotFoundException
@@ -41,8 +43,10 @@ class ReActReasoningLoopTest {
     private val context = mock<Context>()
     private val promptBuilder = mock<PromptBuilder>()
     private val toolOrchestrator = mock<ToolOrchestrator>()
+    private val channelRegistry = mock<ChannelRegistry>()
     private lateinit var reasoningLoop: ReActReasoningLoop
 
+    private val channel = mock<Channel>()
     private val tool1 = mock<Tool>()
     private val tool2 = mock<Tool>()
 
@@ -52,6 +56,9 @@ class ReActReasoningLoopTest {
         doReturn(toolRegistry).whenever(context).toolRegistry
         doReturn(commandRegistry).whenever(context).commandRegistry
         doReturn(sessionLog).whenever(context).sessionLog
+        doReturn(channelRegistry).whenever(context).channelRegistry
+
+        doReturn(channel).whenever(channelRegistry).get(any())
 
         doReturn(true).whenever(tool1).activate()
         doReturn(true).whenever(tool2).activate()

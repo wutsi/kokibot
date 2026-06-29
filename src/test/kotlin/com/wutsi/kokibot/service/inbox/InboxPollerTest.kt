@@ -33,15 +33,16 @@ class InboxPollerTest {
         .changeDefaultPropertyInclusion { it.withValueInclusion(JsonInclude.Include.NON_NULL) }
         .build()
     private val channelRegistry = mock<ChannelRegistry>()
+    private val inbox = Inbox()
     private val context = Context(
         home = home,
         llm = mock(),
         assistant = mock(),
         channelRegistry = channelRegistry,
         jsonMapper = jsonMapper,
+        inbox = inbox,
     )
-    private val inbox = Inbox()
-    private val poller = InboxPoller(inbox)
+    private val poller = InboxPoller()
 
     @BeforeEach
     fun setup() {

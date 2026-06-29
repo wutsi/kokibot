@@ -9,6 +9,8 @@ import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.service.FileService
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
+import com.wutsi.kokibot.service.inbox.Inbox
+import com.wutsi.kokibot.service.inbox.InboxPoller
 import com.wutsi.kokibot.service.kb.KnowledgeBase
 import com.wutsi.kokibot.service.memory.ChatHistory
 import com.wutsi.kokibot.service.memory.ConversationRepository
@@ -48,6 +50,8 @@ class Context(
     val assistantRegistry: AssistantRegistry = AssistantRegistry(),
     val activatedMcps: MutableList<McpServer> = CopyOnWriteArrayList(),
     val knowledgeBase: KnowledgeBase = KnowledgeBase(),
+    val inbox: Inbox = Inbox(),
+    val inboxPoller: InboxPoller = InboxPoller(),
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Context::class.java)
@@ -72,6 +76,8 @@ class Context(
         dailyLog.destroy()
         sessionLog.destroy()
         conversationRepository.destroy()
+        inboxPoller.destroy()
+        inbox.destroy()
     }
 
     fun init(config: Map<*, *>) {
@@ -88,6 +94,7 @@ class Context(
         initDelegationStack(config)
         initKnowledgeBase(config)
         initMemory(config)
+        initInbox(config)
     }
 
     fun health(): Health {
@@ -195,5 +202,11 @@ class Context(
             MapUtil.toMap("swarm", config) ?: emptyMap<String, Any>(),
             this,
         )
+    }
+
+    private fun initInbox(config: Map<*, *>) {
+        val root = MapUtil.toMap("inbox", config) ?: emptyMap<String, Any>()
+        inbox.init(root, this)
+        inboxPoller.init(root, this)
     }
 }

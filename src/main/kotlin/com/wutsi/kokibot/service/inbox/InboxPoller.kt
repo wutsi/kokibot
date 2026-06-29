@@ -14,17 +14,18 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-class InboxPoller(private val inbox: Inbox) : Resource {
+class InboxPoller : Resource {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(InboxPoller::class.java)
         const val ID = "service:inbox-poller"
-        const val DEFAULT_FREQUENCY = "30s"
+        const val DEFAULT_FREQUENCY = "5s"
         const val DEFAULT_MAX_WIP = 2
     }
 
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val running = AtomicBoolean(false)
     private lateinit var context: Context
+    private lateinit var inbox: Inbox
     private var job: ScheduledFuture<*>? = null
     private var maxWip: Int = DEFAULT_MAX_WIP
 
@@ -32,6 +33,7 @@ class InboxPoller(private val inbox: Inbox) : Resource {
 
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
+        this.inbox = context.inbox
         val frequency = MapUtil.toString("frequency", config) ?: DEFAULT_FREQUENCY
         maxWip = MapUtil.toInt("max-wip", config) ?: DEFAULT_MAX_WIP
         job = launchJob(frequency)

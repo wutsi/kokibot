@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.assistant
 
+import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.FinishReason
 import com.wutsi.kokibot.Message
@@ -154,19 +155,26 @@ class ReActReasoningLoop(
         streamCallback: ((LLMStreamData) -> Unit)?,
         context: Context,
     ): Boolean {
+        // Send reasoning content
         response.choices.forEach { choice ->
-            // Send reasoning content
-            if (streamCallback != null) {
-                streamCallback(
-                    LLMStreamData(
-                        text = choice.content?.let { content ->
-                            take(MarkdownUtil.toText(content), 1024)
-                        } ?: "",
-                        usage = response.usage
-                    )
-                )
+            choice.content?.let { content ->
+                query.channelId?.let { channelId ->
+                    try {
+                        val channel = context.channelRegistry.get(channelId)
+                        channel.sendStatus(
+                            Message(
+                                channelId = channelId,
+                                userId = query.userId,
+                                text = take(MarkdownUtil.toText(content), 1024),
+                                role = Role.ASSISTANT,
+                            )
+                        )
+                    } catch (_: ChannelNotFoundException) {
+                    }
+                }
             }
 
+            // Tool calls
             if (choice.finishReason == LLMFinishReason.TOOL_CALLS && choice.toolCalls.isNotEmpty()) { // Tool execution
                 toolOrchestrator.executeTools(
                     id = id,

@@ -69,7 +69,7 @@ class ReActReasoningLoop(
             } else {
                 try {
                     val response = ask(iteration, query, memory, streamCallback, context)
-                    if (decide(query.id, iteration, response, memory, tools, query, streamCallback, context)) {
+                    if (decide(query.id, iteration, response, memory, tools, query, context)) {
                         return Message(
                             text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                             role = Role.ASSISTANT,
@@ -152,7 +152,6 @@ class ReActReasoningLoop(
         memory: MutableList<String>,
         tools: Map<String, Tool>,
         query: Message,
-        streamCallback: ((LLMStreamData) -> Unit)?,
         context: Context,
     ): Boolean {
         // Send reasoning content

@@ -224,7 +224,7 @@ class ToolOrchestrator(
             channel.sendStatus(
                 Message(
                     text = statusText,
-                    role = Role.SYSTEM,
+                    role = Role.TOOL_USE,
                     userId = userId,
                     channelId = channelId,
                 )

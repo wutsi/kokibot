@@ -121,11 +121,6 @@ class Assistant(val name: String = "") {
         }
     }
 
-    private fun rebuildPromptBuilder() {
-        promptBuilder = PromptBuilder()
-        rebuildReasoningLoop()
-    }
-
     private fun rebuildReasoningLoop() {
         reasoningLoop = ReActReasoningLoop(
             assistantName = name,

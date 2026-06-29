@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSocketChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebSocketChannel::class.java)
+        private val USER_ANONYMOUS = "anonymous"
     }
 
     private lateinit var context: Context
@@ -83,7 +84,7 @@ class WebSocketChannel : Channel() {
 
         try {
             val response = WebSocketResponse(
-                type = WebSocketResponseType.REASONING_CHUNK,
+                type = if (message.role == Role.TOOL_USE) WebSocketResponseType.TOOL_STATUS else WebSocketResponseType.REASONING_CHUNK,
                 content = message.text,
                 usage = message.usage,
             )
@@ -100,7 +101,7 @@ class WebSocketChannel : Channel() {
                 Message(
                     text = request.query,
                     role = Role.USER,
-                    userId = session.id,
+                    userId = USER_ANONYMOUS,
                     channelId = id(),
                     filePaths = request.filePaths,
                     conversationId = request.conversationId,
@@ -118,7 +119,7 @@ class WebSocketChannel : Channel() {
 
     internal fun handleConnectionEstablished(session: WebSocketSession) {
         LOGGER.info("WebSocket connection established: ${session.id}")
-        sessions[session.id] = session
+        sessions[USER_ANONYMOUS] = session
     }
 
     internal fun handleConnectionClosed(session: WebSocketSession, status: CloseStatus) {

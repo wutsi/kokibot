@@ -20,6 +20,7 @@ class Inbox : Resource {
 
     private lateinit var context: Context
     private lateinit var inboxDir: File
+    private var onSubmit: (() -> Unit)? = null
 
     override fun id() = "service:inbox"
 
@@ -30,6 +31,10 @@ class Inbox : Resource {
             File(inboxDir, state).mkdirs()
         }
         LOGGER.info("Inbox initialized at ${inboxDir.absolutePath}")
+    }
+
+    fun onSubmit(callback: () -> Unit) {
+        this.onSubmit = callback
     }
 
     fun submit(message: Message): InboxMessage {
@@ -46,6 +51,7 @@ class Inbox : Resource {
         val file = stateFile(PENDING, inbox)
         file.writeText(context.jsonMapper.writeValueAsString(inbox))
         LOGGER.info("Submitted ${inbox.id} to inbox")
+        onSubmit?.invoke()
         return inbox
     }
 

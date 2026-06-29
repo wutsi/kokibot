@@ -74,6 +74,7 @@ class ReActReasoningLoop(
                             text = response.choices.mapNotNull { choice -> choice.content }.joinToString("\n\n"),
                             role = Role.ASSISTANT,
                             finishReason = FinishReason.DONE,
+                            usage = response.usage,
                         )
                     }
                 } catch (ex: AskQuestionException) {
@@ -166,6 +167,7 @@ class ReActReasoningLoop(
                                 userId = query.userId,
                                 text = take(MarkdownUtil.toText(content), 1024),
                                 role = Role.ASSISTANT,
+                                usage = response.usage,
                             )
                         )
                     } catch (_: ChannelNotFoundException) {

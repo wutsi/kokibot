@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import tools.jackson.databind.cfg.DateTimeFeature
@@ -65,6 +66,16 @@ class InboxTest {
         assertNull(result.error)
 
         assertEquals(1, File(home, "inbox/${Inbox.PENDING}").listFiles()?.size)
+    }
+
+    @Test
+    fun `submit - invokes onSubmit callback`() {
+        var called = false
+        inbox.onSubmit { called = true }
+
+        inbox.submit(message("msg-1"))
+
+        assertTrue(called)
     }
 
     @Test

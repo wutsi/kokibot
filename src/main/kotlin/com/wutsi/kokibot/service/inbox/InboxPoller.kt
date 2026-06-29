@@ -10,7 +10,7 @@ import com.wutsi.kokibot.util.DurationUtil
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -19,15 +19,19 @@ class InboxPoller : Resource {
         private val LOGGER = LoggerFactory.getLogger(InboxPoller::class.java)
         const val ID = "service:inbox-poller"
         const val DEFAULT_FREQUENCY = "5s"
-        const val DEFAULT_MAX_WIP = 2
+        const val DEFAULT_MAX_WIP = 1
     }
 
-    private val scheduler = Executors.newSingleThreadScheduledExecutor()
+    private val executor = Executors.newSingleThreadExecutor()
+    private val semaphore = Semaphore(0)
     private val running = AtomicBoolean(false)
+
+    @Volatile
+    private var active = true
     private lateinit var context: Context
     private lateinit var inbox: Inbox
-    private var job: ScheduledFuture<*>? = null
     private var maxWip: Int = DEFAULT_MAX_WIP
+    private var fallbackMillis: Long = 5 * DurationUtil.ONE_SECOND
 
     override fun id() = ID
 
@@ -36,26 +40,32 @@ class InboxPoller : Resource {
         this.inbox = context.inbox
         val frequency = MapUtil.toString("frequency", config) ?: DEFAULT_FREQUENCY
         maxWip = MapUtil.toInt("max-wip", config) ?: DEFAULT_MAX_WIP
-        job = launchJob(frequency)
+        fallbackMillis = DurationUtil.millis(frequency, 5 * DurationUtil.ONE_SECOND)
         LOGGER.info("InboxPoller")
         LOGGER.info("  frequency=$frequency")
         LOGGER.info("  max-wip=$maxWip")
     }
 
+    fun start() {
+        inbox.onSubmit { semaphore.release() }
+        executor.submit { loop(fallbackMillis) }
+    }
+
     override fun destroy() {
-        job?.cancel(false)
-        scheduler.shutdown()
+        active = false
+        semaphore.release()
+        executor.shutdown()
         try {
-            if (!scheduler.awaitTermination(15, TimeUnit.SECONDS)) {
-                LOGGER.warn("Scheduler didn't terminate gracefully, forcing shutdown")
-                scheduler.shutdownNow()
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    LOGGER.error("Scheduler failed to terminate")
+            if (!executor.awaitTermination(15, TimeUnit.SECONDS)) {
+                LOGGER.warn("Executor didn't terminate gracefully, forcing shutdown")
+                executor.shutdownNow()
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    LOGGER.error("Executor failed to terminate")
                 }
             }
         } catch (_: InterruptedException) {
-            LOGGER.warn("Interrupted while waiting for scheduler shutdown")
-            scheduler.shutdownNow()
+            LOGGER.warn("Interrupted while waiting for executor shutdown")
+            executor.shutdownNow()
             Thread.currentThread().interrupt()
         }
     }
@@ -147,16 +157,16 @@ class InboxPoller : Resource {
         }
     }
 
-    private fun launchJob(frequency: String): ScheduledFuture<*> {
-        val poller = this
-        val task = Runnable {
-            try {
-                poller.tick()
-            } catch (e: Exception) {
-                LOGGER.error("InboxPoller tick failed", e)
+    private fun loop(fallbackMillis: Long) {
+        while (active) {
+            semaphore.tryAcquire(fallbackMillis, TimeUnit.MILLISECONDS)
+            if (active) {
+                try {
+                    tick()
+                } catch (e: Exception) {
+                    LOGGER.error("InboxPoller tick failed", e)
+                }
             }
         }
-        val delay = DurationUtil.millis(frequency, 5 * DurationUtil.ONE_SECOND)
-        return scheduler.scheduleAtFixedRate(task, delay, delay, TimeUnit.MILLISECONDS)
     }
 }

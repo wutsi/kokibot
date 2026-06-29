@@ -53,13 +53,13 @@ class WebSocketChannelTest {
     }
 
     @Test
-    fun `handleConnectionEstablished stores session by session id`() {
+    fun `handleConnectionEstablished stores session by anonymous`() {
         val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
 
         channel.handleConnectionEstablished(session)
 
-        assertEquals(session, channel.getSession("session-123"))
+        assertEquals(session, channel.getSession("anonymous"))
     }
 
     @Test
@@ -77,7 +77,7 @@ class WebSocketChannelTest {
         verify(inbox).submit(captor.capture())
         val submitted = captor.firstValue
         assertEquals("Hello", submitted.text)
-        assertEquals("session-123", submitted.userId)
+        assertEquals("anonymous", submitted.userId)
         assertEquals("channel:websocket", submitted.channelId)
         assertEquals(listOf("/a.txt"), submitted.filePaths)
         assertEquals("conv-42", submitted.conversationId)
@@ -158,7 +158,7 @@ class WebSocketChannelTest {
         val message = Message(
             text = "Hello",
             channelId = "channel:websocket",
-            userId = "session-123",
+            userId = "anonymous",
             conversationId = "conv-xyz",
         )
         assertTrue(channel.send(message))
@@ -189,7 +189,7 @@ class WebSocketChannelTest {
                 Message(
                     text = "Hello",
                     channelId = "channel:websocket",
-                    userId = "session-123",
+                    userId = "anonymous",
                 ),
             ),
         )
@@ -237,7 +237,7 @@ class WebSocketChannelTest {
         val message = Message(
             text = "Thinking...",
             channelId = "channel:websocket",
-            userId = "session-123",
+            userId = "anonymous",
             usage = usage,
             role = Role.ASSISTANT,
         )
@@ -294,9 +294,9 @@ class WebSocketChannelTest {
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
-        assertEquals(session, channel.getSession("session-123"))
+        assertEquals(session, channel.getSession("anonymous"))
         channel.handleConnectionClosed(session, CloseStatus.NORMAL)
 
-        assertNull(channel.getSession("session-123"))
+        assertNull(channel.getSession("anonymous"))
     }
 }

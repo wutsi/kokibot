@@ -1,5 +1,5 @@
 {
-  "name": "google",
+  "name": "gogcli",
   "repo-url": "https://github.com/openclaw/gogcli",
   "icon": "https://avatars.githubusercontent.com/u/1342004?s=200&v=4",
   "description": "Skills for Gmail, Calendar, Drive, Docs, Sheets, Slides, Forms, Meet, Apps Script, Analytics, Search Console, Contacts, Tasks, Classroom, Chat, YouTube, and Workspace admin.",

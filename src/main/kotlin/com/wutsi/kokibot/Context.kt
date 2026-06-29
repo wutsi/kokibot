@@ -208,5 +208,6 @@ class Context(
         val root = MapUtil.toMap("inbox", config) ?: emptyMap<String, Any>()
         inbox.init(root, this)
         inboxPoller.init(root, this)
+        inboxPoller.start()
     }
 }

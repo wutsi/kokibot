@@ -7,7 +7,6 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.service.inbox.Inbox

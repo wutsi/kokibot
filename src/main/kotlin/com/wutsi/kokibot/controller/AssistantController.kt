@@ -24,9 +24,11 @@ class AssistantController(private val multi: MultiBootstrap) {
     ): ResponseEntity<List<Map<String, Any?>>> {
         val items = multi.bootstraps
             .map { bootstrap ->
+                val context = bootstrap.getContext()
                 mapOf(
-                    "name" to bootstrap.getContext().assistant.name,
-                    "description" to bootstrap.getContext().assistant.getDescription(),
+                    "name" to context.assistant.name,
+                    "description" to context.assistant.getDescription(),
+                    "channels" to context.channelRegistry.all().map { it.name() },
                 )
             }
         val result = items
@@ -54,7 +56,14 @@ class AssistantController(private val multi: MultiBootstrap) {
                 "email" to assistant.getEmail(),
                 "language" to assistant.getLanguage(),
                 "workspaceDirectory" to "${context.home.absolutePath}/workspace",
-                "instructions" to assistant.getInstructions()
+                "instructions" to assistant.getInstructions(),
+                "channels" to context.channelRegistry
+                    .all()
+                    .map { channel ->
+                        mapOf(
+                            "name" to channel.name(),
+                        )
+                    },
             )
         )
     }

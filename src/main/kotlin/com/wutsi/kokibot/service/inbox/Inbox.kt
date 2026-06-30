@@ -16,6 +16,7 @@ class Inbox : Resource {
         const val PROCESSING = "processing"
         const val DONE = "done"
         const val FAILED = "failed"
+        const val ORPHANED = "orphaned"
     }
 
     private lateinit var context: Context
@@ -27,9 +28,10 @@ class Inbox : Resource {
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
         inboxDir = File(context.home, "inbox")
-        listOf(PENDING, PROCESSING, DONE, FAILED).forEach { state ->
+        listOf(PENDING, PROCESSING, DONE, FAILED, ORPHANED).forEach { state ->
             File(inboxDir, state).mkdirs()
         }
+        orphanProcessing()
         LOGGER.info("Inbox initialized at ${inboxDir.absolutePath}")
     }
 
@@ -92,6 +94,17 @@ class Inbox : Resource {
         val message = context.jsonMapper.readValue(file.readText(), InboxMessage::class.java)
         move(file, message.copy(error = error, completedAt = LocalDateTime.now()), FAILED)
         LOGGER.info("Failed $id: $error")
+    }
+
+    private fun orphanProcessing() {
+        val files = File(inboxDir, PROCESSING)
+            .listFiles { f -> f.isFile && f.extension == "json" }
+            ?: return
+        files.forEach { file ->
+            val message = context.jsonMapper.readValue(file.readText(), InboxMessage::class.java)
+            move(file, message, ORPHANED)
+            LOGGER.warn("Orphaned ${message.id} from previous run")
+        }
     }
 
     private fun move(from: File, message: InboxMessage, targetState: String) {

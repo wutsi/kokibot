@@ -42,9 +42,23 @@ class InboxTest {
 
     @Test
     fun `init creates inbox directories`() {
-        listOf(Inbox.PENDING, Inbox.PROCESSING, Inbox.DONE, Inbox.FAILED).forEach { state ->
+        listOf(Inbox.PENDING, Inbox.PROCESSING, Inbox.DONE, Inbox.FAILED, Inbox.ORPHANED).forEach { state ->
             assert(File(home, "inbox/$state").isDirectory) { "Expected inbox/$state to exist" }
         }
+    }
+
+    @Test
+    fun `init moves processing messages to orphaned`() {
+        // Simulate a message stuck in processing from a previous run
+        inbox.submit(message("msg-stuck"))
+        inbox.poll()
+        assertEquals(1, processingCount())
+
+        // Re-init simulates a server restart
+        inbox.init(emptyMap<String, Any>(), context)
+
+        assertEquals(0, processingCount())
+        assertEquals(1, orphanedCount())
     }
 
     @Test
@@ -182,6 +196,7 @@ class InboxTest {
     private fun processingCount() = File(home, "inbox/${Inbox.PROCESSING}").listFiles()?.size ?: 0
     private fun doneCount() = File(home, "inbox/${Inbox.DONE}").listFiles()?.size ?: 0
     private fun failedCount() = File(home, "inbox/${Inbox.FAILED}").listFiles()?.size ?: 0
+    private fun orphanedCount() = File(home, "inbox/${Inbox.ORPHANED}").listFiles()?.size ?: 0
 
     private fun readFirst(state: String): InboxMessage {
         val file = File(home, "inbox/$state").listFiles()!!.first()

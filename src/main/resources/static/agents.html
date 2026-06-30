@@ -53,11 +53,11 @@
             }
 
             grid.innerHTML = agents.map(agent => {
-                const name = escapeHtml(agent.name || '');
                 const displayName = escapeHtml(agent.name || '');
                 const description = escapeHtml(agent.description || '');
                 const iconUrl = `/assistants/${encodeURIComponent(agent.name)}/icon.png`;
                 const initials = agentInitials(agent.name || '');
+                const channels = (agent.channels || []).map(channelIcon).join('');
 
                 return `
                     <a class="agent-card" href="/index.html?agent=${encodeURIComponent(agent.name)}">
@@ -68,6 +68,7 @@
                         <div class="agent-card-body">
                             <span class="agent-card-name">${displayName}</span>
                             ${description ? `<span class="agent-card-description">${description}</span>` : ''}
+                            ${channels ? `<div class="agent-card-channels">${channels}</div>` : ''}
                         </div>
                         <svg class="agent-card-chevron" fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
                             <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
@@ -79,6 +80,10 @@
             console.error('Error loading assistants:', error);
             grid.innerHTML = '<p class="agents-empty">Failed to load assistants. Please try again.</p>';
         }
+    }
+
+    function channelIcon(channel) {
+        return `<img src="/assets/channel/${encodeURIComponent(channel)}.png" alt="${escapeHtml(channel)}" class="agent-channel-icon" title="${escapeHtml(channel)}" onerror="this.style.display='none'">`;
     }
 
     function agentInitials(name) {

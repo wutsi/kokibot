@@ -129,6 +129,20 @@
     text-overflow: ellipsis;
 }
 
+.agent-card-channels {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.agent-channel-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    opacity: 0.7;
+}
+
 .agent-card-chevron {
     flex-shrink: 0;
     color: var(--color-text-tertiary);

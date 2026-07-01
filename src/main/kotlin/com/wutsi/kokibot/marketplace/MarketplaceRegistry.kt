@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.marketplace
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Registry
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -8,19 +9,19 @@ import tools.jackson.databind.json.JsonMapper
 import java.io.File
 
 @Service
-class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder()) {
+class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder()) : Registry<Marketplace>() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarketplaceRegistry::class.java)
     }
 
     private lateinit var context: Context
-    private val marketplaces = mutableMapOf<String, Marketplace>()
 
-    fun all(): List<Marketplace> {
-        return marketplaces.values.toList()
-    }
+    override fun id() = "marketplace-registry"
+    override fun keyOf(marketplace: Marketplace) = marketplace.id()
+    override fun notFound(name: String) = MarketplaceNotFoundException("Marketplace not found: $name")
+    override fun destroyItem(marketplace: Marketplace) = marketplace.destroy()
 
-    fun init(context: Context) {
+    override fun init(context: Context) {
         this.context = context
 
         val dir = getMarketplaceDir()
@@ -39,29 +40,16 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
     }
 
     private fun loadConfig(file: File): Map<*, *> {
-        val config = JsonMapper().readValue(file, Map::class.java)
-            .toMutableMap()
-        config.set("name", file.nameWithoutExtension)
+        val config = JsonMapper().readValue(file, Map::class.java).toMutableMap()
+        config["name"] = file.nameWithoutExtension
         return MapUtil.applyEnv(config)
     }
 
     private fun initMarketplace(config: Map<*, *>, context: Context) {
         val marketplace = Marketplace(finder)
         marketplace.init(config, context)
-
         LOGGER.info("Marketplace: ${marketplace.id()}")
         register(marketplace)
-    }
-
-    fun destroy() {
-        marketplaces.values.forEach { marketplace ->
-            try {
-                marketplace.destroy()
-            } catch (e: Exception) {
-                LOGGER.warn("Failed to destroy the marketplace ${marketplace.id()} - ${e.message}")
-            }
-        }
-        marketplaces.clear()
     }
 
     fun apply(property: String, value: Any) {
@@ -71,11 +59,9 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
         val name = property.substring(0, dot)
         val marketplaceProperty = property.substring(dot + 1)
 
-        // Update
-        val marketplace = get("marketplace:" + name.lowercase())
+        val marketplace = get("marketplace:${name.lowercase()}")
         marketplace.apply(marketplaceProperty, value)
 
-        // Update the marketplace JSON file
         val file = File(getMarketplaceDir(), "$name.json")
         file.parentFile.mkdirs()
         val config = JsonMapper().readValue(file, Map::class.java).toMutableMap()
@@ -83,16 +69,5 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
         JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, config)
     }
 
-    fun get(name: String): Marketplace {
-        return marketplaces[name.lowercase()]
-            ?: throw MarketplaceNotFoundException("Marketplace not found: $name")
-    }
-
-    private fun register(marketplace: Marketplace) {
-        marketplaces[marketplace.id().lowercase()] = marketplace
-    }
-
-    private fun getMarketplaceDir(): File {
-        return File(context.home, "config/marketplaces")
-    }
+    private fun getMarketplaceDir(): File = File(context.home, "config/marketplaces")
 }

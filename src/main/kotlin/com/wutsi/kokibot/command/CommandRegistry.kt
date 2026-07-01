@@ -1,36 +1,24 @@
 package com.wutsi.kokibot.command
 
-import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Registry
 import org.slf4j.LoggerFactory
 
-class CommandRegistry {
+class CommandRegistry : Registry<Command>() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(CommandRegistry::class.java)
     }
 
-    private val commands = mutableMapOf<String, Command>()
+    override fun id() = "command-registry"
 
-    fun init(context: Context) {
-    }
-
-    fun destroy() {
-        commands.clear()
-    }
-
-    fun all(): List<Command> {
-        return commands.values.toList()
-    }
-
-    fun register(command: Command) {
+    override fun keyOf(command: Command): String {
         val name = command.metadata().name.lowercase()
-        val xname = if (!name.startsWith("/")) "/$name" else name
-
-        LOGGER.info("Command: $xname")
-        commands[xname] = command
+        return if (name.startsWith("/")) name else "/$name"
     }
 
-    fun get(name: String): Command {
-        return commands[name]
-            ?: throw CommandNotFoundException("Command not found: $name")
+    override fun notFound(name: String) = CommandNotFoundException("Command not found: $name")
+
+    override fun register(command: Command) {
+        LOGGER.info("Command: ${keyOf(command)}")
+        super.register(command)
     }
 }

@@ -49,9 +49,9 @@ class SkillRegistryTest {
 
         assertEquals(2, skills.size)
 
-        assertEquals(meta1, skills[0].metadata)
+        assertEquals(meta2, skills[0].metadata)
 
-        assertEquals(meta2, skills[1].metadata)
+        assertEquals(meta1, skills[1].metadata)
     }
 
     @Test
@@ -90,8 +90,8 @@ class SkillRegistryTest {
 
         assertEquals(3, skills.size)
 
-        assertEquals(meta1, skills[0].metadata)
-        assertEquals(meta2, skills[1].metadata)
+        assertEquals(meta2, skills[0].metadata)
+        assertEquals(meta1, skills[1].metadata)
         assertEquals(meta11, skills[2].metadata)
     }
 
@@ -130,8 +130,8 @@ class SkillRegistryTest {
         val skills = registry.all()
 
         assertEquals(2, skills.size)
-        assertEquals(meta1, skills[0].metadata)
-        assertEquals(meta2, skills[1].metadata)
+        assertEquals(meta2, skills[0].metadata)
+        assertEquals(meta1, skills[1].metadata)
     }
 
     @Test

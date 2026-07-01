@@ -1,42 +1,42 @@
 package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Registry
 import org.slf4j.LoggerFactory
 import java.io.File
 
-class SkillRegistry(private val parser: SkillParser = SkillParser()) {
+class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<Skill>() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(SkillRegistry::class.java)
         private val EMPTY_MAP = emptyMap<String, Any>()
     }
 
-    private val skills = mutableMapOf<String, Skill>()
+    override fun id() = "skill-registry"
+    override fun keyOf(skill: Skill) = skill.metadata.name
+    override fun notFound(name: String) = SkillNotFoundException("Skill not found: $name")
+    override fun destroyItem(skill: Skill) = skill.destroy()
 
-    fun init(context: Context) {
+    override fun init(context: Context) {
         initSkills(context)
         initMarketplacesSkills(context)
     }
 
     private fun initSkills(context: Context) {
         val root = File(context.home, "config/skills")
-        if (root.exists()) {
-            root.listFiles()?.forEach { file ->
-                if (file.isDirectory) {
-                    init(file, context)
-                }
+        if (!root.exists()) return
+
+        root.listFiles()?.forEach { file ->
+            if (file.isDirectory) {
+                initSkill(file, context)
             }
         }
     }
 
-    private fun init(dir: File, context: Context) {
-        val md = File(dir, "SKILL.md")
+    private fun initSkill(dir: File, context: Context) {
         try {
-            val result = parser.parse(md)
-            val meta = result.first
-            val body = result.second
-            LOGGER.info("Skill: ${meta.name}")
-
-            val skill = Skill(metadata = meta, body = body)
+            val result = parser.parse(File(dir, "SKILL.md"))
+            LOGGER.info("Skill: ${result.first.name}")
+            val skill = Skill(metadata = result.first, body = result.second)
             register(skill)
             skill.init(EMPTY_MAP, context)
         } catch (ex: Exception) {
@@ -46,12 +46,11 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) {
 
     private fun initMarketplacesSkills(context: Context) {
         context.marketplaceRegistry.all()
-            .filter { marketplace -> marketplace.isEnabled() }
+            .filter { it.isEnabled() }
             .forEach { marketplace ->
                 try {
                     marketplace.getSkills().forEach { skill ->
                         LOGGER.info("Skill: ${skill.metadata.name}")
-
                         register(skill)
                         skill.init(EMPTY_MAP, context)
                     }
@@ -59,35 +58,5 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) {
                     LOGGER.warn("Unable to initialize the Marketplace ${marketplace.id()}", ex)
                 }
             }
-    }
-
-    fun destroy() {
-        skills.values.forEach {
-            try {
-                it.destroy()
-            } catch (ex: Exception) {
-                LOGGER.warn("Unable to destroy the Skill ${it.metadata.name} - Error:" + ex.message)
-            }
-        }
-        skills.clear()
-    }
-
-    fun all(): List<Skill> {
-        return skills.values.toList()
-    }
-
-    fun register(skill: Skill) {
-        val name = skill.metadata.name.lowercase()
-        skills[name] = skill
-    }
-
-    fun unregister(skill: Skill) {
-        val name = skill.metadata.name.lowercase()
-        skills.remove(name)
-    }
-
-    fun get(name: String): Skill {
-        return skills[name.lowercase()]
-            ?: throw SkillNotFoundException("Skill not found: $name")
     }
 }

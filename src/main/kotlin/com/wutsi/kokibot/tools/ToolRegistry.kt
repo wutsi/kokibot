@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.tools
 
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.Registry
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -8,61 +9,35 @@ import tools.jackson.databind.json.JsonMapper
 import java.io.File
 
 @Service
-class ToolRegistry {
+class ToolRegistry : Registry<Tool>() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(ToolRegistry::class.java)
     }
 
-    private val tools = mutableMapOf<String, Tool>()
+    override fun id() = "tool-registry"
+    override fun keyOf(tool: Tool) = tool.metadata().name
+    override fun notFound(name: String) = ToolNotFoundException("Tool not found: $name")
+    override fun destroyItem(tool: Tool) = tool.destroy()
 
-    fun all(): List<Tool> {
-        return tools.values.toList()
-    }
-
-    fun init(context: Context) {
-        tools.values.forEach { tool ->
+    override fun init(context: Context) {
+        items.values.forEach { tool ->
             LOGGER.info("Tool: ${tool.metadata().name}")
             try {
-                init(tool, context)
+                initTool(tool, context)
             } catch (e: Exception) {
                 LOGGER.warn("Unable to initialize the Tool ${tool.metadata().name} - Error:" + e.message)
             }
         }
     }
 
-    fun destroy() {
-        tools.values.forEach { tool ->
-            try {
-                tool.destroy()
-            } catch (e: Exception) {
-                LOGGER.warn("Unable to destroy the Tool ${tool.metadata().name} - Error:" + e.message)
-            }
-        }
-        tools.clear()
-    }
-
-    fun register(tool: Tool) {
-        tools[tool.metadata().name.lowercase()] = tool
-    }
-
-    fun get(name: String): Tool {
-        return tools[name.lowercase()]
-            ?: throw ToolNotFoundException("Tool not found: $name")
-    }
-
-    private fun init(tool: Tool, context: Context) {
-        val dir = File(getConfigDir(context.home), "tools")
+    private fun initTool(tool: Tool, context: Context) {
+        val dir = File(File(context.home, "config"), "tools")
         val file = File(dir, tool.metadata().name + ".json")
         if (file.exists()) {
-            val config = loadConfig(file)
-            tool.init(config, context)
+            tool.init(loadConfig(file), context)
         } else {
             tool.init(emptyMap<String, Any>(), context)
         }
-    }
-
-    private fun getConfigDir(home: File): File {
-        return File(home, "config")
     }
 
     private fun loadConfig(file: File): Map<*, *> {

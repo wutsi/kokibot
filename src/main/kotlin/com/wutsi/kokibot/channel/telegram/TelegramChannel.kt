@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.channel.telegram
 
-import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Message
@@ -50,7 +49,7 @@ class TelegramChannel(
 
     @Synchronized
     override fun init(config: Map<*, *>, context: Context) {
-        val token = config["token"]?.toString() ?: throw ConfigurationException("token is required")
+        val token = context.credentialService.get("channel.telegram")
         this.botToken = token
         this.botName = config["bot-name"]?.toString() ?: "-"
 

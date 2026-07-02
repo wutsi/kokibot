@@ -11,6 +11,7 @@ import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.credential.CredentialService
 import com.wutsi.kokibot.service.inbox.Inbox
 import com.wutsi.kokibot.util.RestBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -46,9 +47,9 @@ class TelegramChannelTest {
     private val restBuilder = mock<RestBuilder>()
     private val botToken = "13200493:AAH-abc123def456ghi789jkl012mno345pqr"
     private val config = mapOf(
-        "token" to botToken,
         "bot-name" to "test-bot",
     )
+    private val credentialService = mock<CredentialService>()
     private val inbox = mock<Inbox>()
     private val context = Context(
         home = File("target/test-data/telegram"),
@@ -56,12 +57,14 @@ class TelegramChannelTest {
         fileService = mock(),
         assistant = mock(),
         inbox = inbox,
+        credentialService = credentialService,
     )
     private val users = mock<TelegramUsers>()
     private val telegram = TelegramChannel(factory, restBuilder, users)
 
     @BeforeEach
     fun setUp() {
+        doReturn(botToken).whenever(credentialService).get("channel.telegram")
         doReturn(client).whenever(factory).createTelegramClient(any())
         doReturn(app).whenever(factory).createTelegramBotsLongPollingApplication()
         doReturn(rest).whenever(restBuilder).build(anyOrNull(), anyOrNull())
@@ -91,6 +94,7 @@ class TelegramChannelTest {
 
     @Test
     fun `init - should throw exception when token is missing`() {
+        doThrow(ConfigurationException::class).whenever(credentialService).get("channel.telegram")
         assertThrows<ConfigurationException> {
             telegram.init(emptyMap<String, Any>(), context)
         }

@@ -43,7 +43,7 @@ open class Deepseek : LLM {
     /**
      * Initialize the Deepseek client with the given configuration and context.
      * The configuration can contain the following parameters:
-     * - api-key: the API key for Deepseek (required)
+     * - The API key is resolved via `context.credentialService.get("llm.{name()}")`
      * - model: the model to use for generation. Values: deepseek-chat, deepseek-reasoner (required)
      * - thinking: `true` to enable thinking mode, `false` to disable (default: false)
      * - max-tokens: the maximum number of tokens to generate

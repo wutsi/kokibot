@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.llm.deepseek
 
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.ConfigurationException
@@ -65,7 +66,7 @@ class DeepseekTest {
 
     @Test
     fun `init - no api key`() {
-        whenever(credentialService.get("llm.deepseek")).thenThrow(ConfigurationException("llm.deepseek not found"))
+        whenever(credentialService.get("llm.deepseek")).doThrow(ConfigurationException("llm.deepseek not found"))
         val config = mapOf(
             "model" to "deepseek-v4-flash",
         )

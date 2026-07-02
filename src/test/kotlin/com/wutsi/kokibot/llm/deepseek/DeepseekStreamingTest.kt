@@ -2,28 +2,38 @@ package com.wutsi.kokibot.llm.deepseek
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMStreamChunk
+import com.wutsi.kokibot.service.credential.CredentialService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.mock
-import tools.jackson.databind.json.JsonMapper
+import java.io.File
 
 class DeepseekStreamingTest {
+    private val credentialService = mock<CredentialService>()
+    private val context = Context(
+        home = File("/target"),
+        llm = mock(),
+        credentialService = credentialService,
+    )
+
+    @BeforeEach
+    fun setUp() {
+        whenever(credentialService.get("llm.deepseek")).doReturn(System.getenv("DEEPSEEK_API_KEY") ?: "")
+    }
+
     @Test
     fun `deepseek should support streaming when enabled`() {
-        val context = mock<Context>(Context::class.java)
-        doReturn(JsonMapper()).whenever(context).jsonMapper
-
         val deepseek = Deepseek()
         deepseek.init(
             mapOf(
-                "api-key" to "test-key",
                 "model" to "deepseek-chat",
                 "streaming" to true
             ),
@@ -35,13 +45,9 @@ class DeepseekStreamingTest {
 
     @Test
     fun `deepseek should not stream when disabled`() {
-        val context = mock<Context>(Context::class.java)
-        doReturn(JsonMapper()).whenever(context).jsonMapper
-
         val deepseek = Deepseek()
         deepseek.init(
             mapOf(
-                "api-key" to "test-key",
                 "model" to "deepseek-chat",
                 "streaming" to false
             ),
@@ -53,10 +59,7 @@ class DeepseekStreamingTest {
 
     @Test
     fun `deepseek should call client completionStream`() {
-        val context = mock<Context>(Context::class.java)
-        doReturn(JsonMapper()).whenever(context).jsonMapper
-
-        val mockClient = mock<DeepseekClient>(DeepseekClient::class.java)
+        val mockClient = mock<DeepseekClient>()
         val expectedResponse = LLMResponse(
             id = "test",
             choices = listOf(

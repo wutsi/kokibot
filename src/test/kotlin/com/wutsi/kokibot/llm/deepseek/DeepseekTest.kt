@@ -1,28 +1,30 @@
 package com.wutsi.kokibot.llm.deepseek
 
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
+import com.wutsi.kokibot.service.credential.CredentialService
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
 import com.wutsi.kokibot.tools.ToolParameter
 import com.wutsi.kokibot.tools.ToolParameterType
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DeepseekTest {
     private val llm = Deepseek()
+    private val credentialService = mock<CredentialService>()
     private val config = mapOf(
-        "api-key" to System.getenv("DEEPSEEK_API_KEY"),
         "model" to "deepseek-v4-flash",
         "thinking" to false,
         "max-tokens" to 2024,
@@ -35,7 +37,13 @@ class DeepseekTest {
         home = File("/target"),
         llm = mock(),
         config = config,
+        credentialService = credentialService,
     )
+
+    @BeforeEach
+    fun setUp() {
+        whenever(credentialService.get("llm.deepseek")).doReturn(System.getenv("DEEPSEEK_API_KEY") ?: "")
+    }
 
     @Test
     fun id() {
@@ -57,6 +65,7 @@ class DeepseekTest {
 
     @Test
     fun `init - no api key`() {
+        whenever(credentialService.get("llm.deepseek")).thenThrow(ConfigurationException("llm.deepseek not found"))
         val config = mapOf(
             "model" to "deepseek-v4-flash",
         )
@@ -65,16 +74,13 @@ class DeepseekTest {
 
     @Test
     fun `init - no model`() {
-        val config = mapOf(
-            "api-key" to "ds-000001",
-        )
+        val config = mapOf<String, Any>()
         assertThrows<ConfigurationException> { llm.init(config, context) }
     }
 
     @Test
     fun balance() {
         val config = mapOf(
-            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)
@@ -90,7 +96,6 @@ class DeepseekTest {
     @Test
     fun completion() {
         val config = mapOf(
-            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)
@@ -126,7 +131,6 @@ class DeepseekTest {
         doReturn(meta).whenever(tool).metadata()
 
         val config = mapOf(
-            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-v4-flash",
             "tools" to listOf("date_tool_now"),
         )
@@ -192,7 +196,6 @@ class DeepseekTest {
     @Test
     fun `completion with streaming`() {
         val config = mapOf(
-            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-v4-flash",
             "streaming" to true,
         )
@@ -234,7 +237,6 @@ class DeepseekTest {
         doReturn(meta).whenever(tool).metadata()
 
         val config = mapOf(
-            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-v4-flash",
             "streaming" to true,
             "tools" to listOf("date_tool_now"),
@@ -260,7 +262,6 @@ class DeepseekTest {
     @Test
     fun `health - up`() {
         val config = mapOf(
-            "api-key" to System.getenv("DEEPSEEK_API_KEY"),
             "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)
@@ -274,8 +275,8 @@ class DeepseekTest {
 
     @Test
     fun `health - down`() {
+        whenever(credentialService.get("llm.deepseek")).doReturn("xxxxx")
         val config = mapOf(
-            "api-key" to "xxxxx",
             "model" to "deepseek-v4-flash",
         )
         llm.init(config, context)

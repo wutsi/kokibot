@@ -52,7 +52,7 @@ open class Deepseek : LLM {
      * - connect-timeout-millis: the connect timeout in milliseconds (default: 5000)
      */
     override fun init(config: Map<*, *>, context: Context) {
-        val apiKey = config["api-key"] as String? ?: throw ConfigurationException("api-key is required")
+        val apiKey = context.credentialService.get("llm.${name()}")
         val model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
         this.context = context

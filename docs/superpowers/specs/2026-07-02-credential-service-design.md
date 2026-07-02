@@ -30,7 +30,6 @@ Both files use the same flat JSON format: a map of string keys to string values.
   "llm.gemini":             "AIza...",
   "llm.kimi":               "sk-...",
   "channel.telegram":       "${TELEGRAM_TOKEN}",
-  "channel.email.username": "bot@example.com",
   "channel.email.password": "${EMAIL_PASSWORD}",
   "mcp.my-server":          "Bearer abc123"
 }
@@ -42,7 +41,7 @@ Both files use the same flat JSON format: a map of string keys to string values.
 |---|---|
 | `llm.{type}` | LLM API key (`deepseek`, `gemini`, `kimi`) |
 | `channel.{type}` | Channel single-credential token (`telegram`) |
-| `channel.{type}.{field}` | Channel multi-field credentials (`email.username`, `email.password`) |
+| `channel.{type}.{field}` | Channel multi-field credentials (`email.password`) |
 | `mcp.{server-name}` | MCP server bearer token (matches `McpServerConfig.name`) |
 
 ### Resolution Rule
@@ -105,7 +104,7 @@ Every component that previously read a credential from `config` is updated to ca
 | `Gemini.init()` | `credentialService.get("llm.gemini")` |
 | `Kimi.init()` | `credentialService.get("llm.kimi")` |
 | `TelegramChannel.init()` | `credentialService.get("channel.telegram")` |
-| `EmailChannel.init()` | `credentialService.get("channel.email.username")`, `credentialService.get("channel.email.password")` |
+| `EmailChannel.init()` | `credentialService.get("channel.email.password")` |
 | `McpRegistry` (per server) | `credentialService.getOrNull("mcp.${server.name}")` |
 
 The `api-key`, `token`, `password`, and similar fields are removed from `settings.json` and from any per-channel config files.

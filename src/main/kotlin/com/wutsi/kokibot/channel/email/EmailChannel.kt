@@ -68,8 +68,7 @@ class EmailChannel : Channel() {
             ?: throw ConfigurationException("email is required")
         username = config["username"] as? String
             ?: throw ConfigurationException("username is required")
-        password = config["password"] as? String
-            ?: throw ConfigurationException("password is required")
+        password = context.credentialService.get("channel.email.password")
 
         imapHost = config["imap-host"] as? String
             ?: throw ConfigurationException("imap-host is required")

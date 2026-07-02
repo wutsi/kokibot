@@ -5,10 +5,14 @@ import com.icegreen.greenmail.util.GreenMail
 import com.icegreen.greenmail.util.ServerSetupTest
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Role
+import com.wutsi.kokibot.service.credential.CredentialService
 import com.wutsi.kokibot.service.inbox.Inbox
 import jakarta.mail.Flags
 import jakarta.mail.Message
@@ -32,10 +36,10 @@ class EmailChannelTest {
     private val email = "test@example.com"
     private val username = "user"
     private val password = "password"
+    private val credentialService = mock<CredentialService>()
     val config = mapOf(
         "email" to email,
         "username" to username,
-        "password" to password,
 
         "imap-protocol" to "imap",
         "imap-host" to "localhost",
@@ -52,10 +56,13 @@ class EmailChannelTest {
         llm = mock(),
         assistant = mock(),
         inbox = inbox,
+        credentialService = credentialService,
     )
 
     @BeforeEach
     fun setup() {
+        whenever(credentialService.get("channel.email.password")).doReturn(password)
+
         // Starts IMAP, SMTP, and POP3 on random free ports
         greenMail = GreenMail(ServerSetupTest.ALL)
         guser = greenMail.setUser(email, username, password)

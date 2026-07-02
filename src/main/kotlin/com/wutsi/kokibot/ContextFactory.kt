@@ -10,6 +10,7 @@ import com.wutsi.kokibot.command.RenameCommand
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.mcp.McpCommand
+import com.wutsi.kokibot.service.credential.CredentialService
 import com.wutsi.kokibot.service.heartbeat.HeartbeatCommand
 import com.wutsi.kokibot.service.memory.CompactCommand
 import com.wutsi.kokibot.service.memory.DailyLog
@@ -48,7 +49,7 @@ class ContextFactory(
     private val assistantRegistry: AssistantRegistry,
     private val multiBootstrap: MultiBootstrap,
 ) {
-    fun create(home: File, config: Map<*, *>): Context {
+    fun create(home: File, config: Map<*, *>, credentialService: CredentialService): Context {
         // Tools
         discoverTools().forEach { tool -> toolRegistry.register(tool) }
 
@@ -69,6 +70,7 @@ class ContextFactory(
             config = config,
             jsonMapper = jsonMapper,
             assistantRegistry = assistantRegistry,
+            credentialService = credentialService,
         )
     }
 

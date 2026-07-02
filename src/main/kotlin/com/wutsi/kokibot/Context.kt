@@ -8,6 +8,8 @@ import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.mcp.McpRegistry
 import com.wutsi.kokibot.mcp.McpServer
 import com.wutsi.kokibot.service.FileService
+import com.wutsi.kokibot.service.credential.CredentialService
+import com.wutsi.kokibot.service.credential.NoOpCredentialService
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.service.inbox.Inbox
 import com.wutsi.kokibot.service.inbox.InboxPoller
@@ -32,6 +34,7 @@ class Context(
     val llm: LLM,
     val assistant: Assistant = Assistant(),
     val config: Map<*, *> = emptyMap<String, String>(),
+    val credentialService: CredentialService = NoOpCredentialService,
     val toolRegistry: ToolRegistry = ToolRegistry(),
     val mcpRegistry: McpRegistry = McpRegistry(),
     val skillRegistry: SkillRegistry = SkillRegistry(SkillParser()),

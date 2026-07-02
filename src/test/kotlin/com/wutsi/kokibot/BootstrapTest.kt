@@ -30,7 +30,7 @@ class BootstrapTest {
         doReturn(memory).whenever(context).memory
         doReturn(marketplaceRegistry).whenever(context).marketplaceRegistry
         doReturn(Health(id = "-")).whenever(context).health()
-        doReturn(context).whenever(contextFactory).create(any(), any())
+        doReturn(context).whenever(contextFactory).create(any(), any(), any())
     }
 
     @Test

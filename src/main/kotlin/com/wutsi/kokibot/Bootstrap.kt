@@ -1,5 +1,7 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.service.credential.CredentialService
+import com.wutsi.kokibot.service.credential.CredentialServiceImpl
 import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import tools.jackson.databind.json.JsonMapper
@@ -27,11 +29,18 @@ class Bootstrap(
         LOGGER.info("... Initializing Assistant: @${home.name} .............................................")
 
         val config = loadConfig(File(getConfigDir(home), "settings.json"))
-        this.context = contextFactory.create(home, config)
+        val credentialService = loadCredentialService(home)
+        this.context = contextFactory.create(home, config, credentialService)
 
         context.init(config)
 
         LOGGER.info("Initialization completed")
+    }
+
+    private fun loadCredentialService(home: File): CredentialService {
+        val globalFile = File(home.parentFile.parentFile, "config/.credential.json")
+        val localFile = File(getConfigDir(home), ".credential.json")
+        return CredentialServiceImpl(globalFile, localFile)
     }
 
     fun getContext(): Context {

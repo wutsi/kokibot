@@ -9,6 +9,7 @@ import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.command.CommandRegistry
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
+import com.wutsi.kokibot.service.credential.NoOpCredentialService
 import com.wutsi.kokibot.skill.SkillRegistry
 import com.wutsi.kokibot.tools.ToolRegistry
 import org.junit.jupiter.api.BeforeEach
@@ -57,7 +58,7 @@ class ContextFactoryTest {
         )
 
         // WHEN
-        val context = factory.create(home, config)
+        val context = factory.create(home, config, NoOpCredentialService)
 
         // THEN
         verify(llmFactory).create("deepseek")
@@ -70,6 +71,7 @@ class ContextFactoryTest {
         assertEquals(jsonMapper, context.jsonMapper)
         assertEquals(skillRegistry, context.skillRegistry)
         assertEquals(assistantRegistry, context.assistantRegistry)
+        assertEquals(NoOpCredentialService, context.credentialService)
 
         verify(toolRegistry, times(13)).register(any())
     }
@@ -86,7 +88,7 @@ class ContextFactoryTest {
         )
 
         // WHEN
-        val context = factory.create(home, config)
+        val context = factory.create(home, config, NoOpCredentialService)
 
         // THEN
         verify(llmFactory).create("")
@@ -104,7 +106,7 @@ class ContextFactoryTest {
         )
 
         // WHEN
-        val context = factory.create(home, config)
+        val context = factory.create(home, config, NoOpCredentialService)
 
         // THEN
         verify(llmFactory).create("")
@@ -123,7 +125,7 @@ class ContextFactoryTest {
         )
 
         // WHEN
-        val context = factory.create(home, config)
+        val context = factory.create(home, config, NoOpCredentialService)
 
         // THEN
         verify(llmFactory).create("")

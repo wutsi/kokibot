@@ -182,9 +182,9 @@ class HeartbeatControllerTest {
         channelIds: List<String> = emptyList(),
     ): Bootstrap {
         val llm = mock<LLM>()
-        doReturn("deepseek").whenever(llm).name()
-        doReturn("deepseek-v4.0").whenever(llm).model()
-        doReturn(MAX_CONTEXT_WINDOW).whenever(llm).maxContextWindow()
+        doReturn("deepseek").whenever(llm).getName()
+        doReturn("deepseek-v4.0").whenever(llm).getModel()
+        doReturn(MAX_CONTEXT_WINDOW).whenever(llm).getMaxContextWindow()
         doReturn(balance).whenever(llm).balance()
 
         val assistant = mock<Assistant>()

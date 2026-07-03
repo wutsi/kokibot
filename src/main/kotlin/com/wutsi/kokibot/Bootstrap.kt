@@ -66,15 +66,37 @@ class Bootstrap(
             else -> throw ConfigurationException("Unknown setting section: $section")
         }
 
-        // instructions are persisted to ASSISTANT.md by Assistant.apply(); skip settings.json
-        if ((section == "assistant" && property == "instructions") || section == "marketplace") return
-
         // Update the settings.json file
+        if ((section == "assistant" && property != "instructions")) {
+            updateSettings(section, listOf(Pair(property, value)))
+        }
+    }
+
+    fun changeLLM(name: String, model: String) {
+        // Validate
+        val llm = contextFactory.llmFactory.create(name)
+        if (!llm.availableModels().contains(model)) {
+            throw ConfigurationException("Model $model is not available for LLM $name")
+        }
+
+        // Update config
+        updateSettings("llm", listOf(Pair("name", name), Pair("model", model)))
+
+        // Reload
+        destroy()
+        init(context.home)
+    }
+
+    private fun updateSettings(section: String, values: List<Pair<String, Any>>) {
+        val jsonMapper = context.jsonMapper
         val file = File(File(context.home, "config"), "settings.json")
-        val rawConfig = JsonMapper().readValue(file, Map::class.java).toMutableMap()
+        val rawConfig = jsonMapper.readValue(file, Map::class.java).toMutableMap()
         val sectionMap = rawConfig.getOrPut(section) { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
-        sectionMap[property] = value
-        JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
+
+        values.forEach { value ->
+            sectionMap[value.first] = value.second
+        }
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
     }
 
     private fun loadConfig(file: File): Map<*, *> {

@@ -8,23 +8,25 @@ interface LLM : Resource {
     }
 
     override fun id(): String {
-        return "llm:" + name()
+        return "llm:" + getName()
     }
 
     fun supportsStreaming(): Boolean {
         return false
     }
 
-    fun name(): String
+    fun getName(): String
 
-    fun model(): String
+    fun getModel(): String
+
+    fun getReasoningEffort(): String?
 
     /**
      * Returns the maximum context length (in tokens) that this LLM can handle.
      * This is used to determine how much of the conversation history and tool outputs can be included
      * in the prompt when calling the LLM.
      */
-    fun maxContextWindow(): Int
+    fun getMaxContextWindow(): Int
 
     /**
      * Synchronous completion (existing method, unchanged).

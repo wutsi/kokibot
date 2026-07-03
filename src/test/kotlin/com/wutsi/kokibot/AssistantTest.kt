@@ -74,7 +74,7 @@ class AssistantTest {
 
     @BeforeEach
     fun setup() {
-        doReturn(65536).whenever(llm).maxContextWindow()
+        doReturn(65536).whenever(llm).getMaxContextWindow()
         context.conversationRepository.init(emptyMap<Any, Any>(), context)
         assistant.init(emptyMap<Any, Any>(), context)
 

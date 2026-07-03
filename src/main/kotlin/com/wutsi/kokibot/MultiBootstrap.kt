@@ -1,5 +1,6 @@
 package com.wutsi.kokibot
 
+import com.wutsi.kokibot.llm.LLMFactory
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
@@ -15,8 +16,9 @@ import java.nio.file.Files
 @Service
 class MultiBootstrap(
     private val env: Environment,
-    private val jsonMapper: JsonMapper,
-    private val assistantRegistry: AssistantRegistry,
+    val jsonMapper: JsonMapper,
+    val assistantRegistry: AssistantRegistry,
+    val llmFactory: LLMFactory = LLMFactory(),
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MultiBootstrap::class.java)
@@ -87,6 +89,7 @@ class MultiBootstrap(
             jsonMapper = jsonMapper,
             assistantRegistry = assistantRegistry,
             multiBootstrap = this,
+            llmFactory = llmFactory,
         )
         val bootstrap = Bootstrap(contextFactory)
         try {

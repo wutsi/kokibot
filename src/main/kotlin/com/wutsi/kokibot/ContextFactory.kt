@@ -40,14 +40,14 @@ import java.io.File
 
 @Service
 class ContextFactory(
-    private val toolRegistry: ToolRegistry = ToolRegistry(),
-    private val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
-    private val llmFactory: LLMFactory = LLMFactory(),
-    private val commandRegistry: CommandRegistry = CommandRegistry(),
-    private val skillRegistry: SkillRegistry = SkillRegistry(),
-    private val jsonMapper: JsonMapper,
-    private val assistantRegistry: AssistantRegistry,
-    private val multiBootstrap: MultiBootstrap,
+    val toolRegistry: ToolRegistry = ToolRegistry(),
+    val channelRegistry: ChannelRegistry = ChannelRegistry(ChannelFactory()),
+    val llmFactory: LLMFactory = LLMFactory(),
+    val commandRegistry: CommandRegistry = CommandRegistry(),
+    val skillRegistry: SkillRegistry = SkillRegistry(),
+    val jsonMapper: JsonMapper,
+    val assistantRegistry: AssistantRegistry,
+    val multiBootstrap: MultiBootstrap,
 ) {
     fun create(home: File, config: Map<*, *>, credentialService: CredentialService): Context {
         // Tools
@@ -76,9 +76,9 @@ class ContextFactory(
 
     private fun createLLM(config: Map<*, *>): LLM {
         val root = MapUtil.toMap("llm", config)
-        val type = root?.get("type")?.toString() ?: ""
+        val name = root?.get("name")?.toString() ?: ""
 
-        return llmFactory.create(type)
+        return llmFactory.create(name)
     }
 
     private fun discoverTools(): List<Tool> {

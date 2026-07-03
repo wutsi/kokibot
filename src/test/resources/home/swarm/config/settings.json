@@ -4,8 +4,7 @@
     "coordinator": true
   },
   "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
+    "name": "deepseek",
     "model": "deepseek-v4-flash",
     "temperature": 0.7,
     "read-timeout-millis": 30000,

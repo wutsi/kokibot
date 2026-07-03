@@ -137,7 +137,7 @@ class Assistant(val name: String = "") {
         val baseline = (systemInstructions.length + prompt.length) / BYTES_PER_TOKENS
         return ContextWindow(
             baseline = baseline,
-            max = context.llm.maxContextWindow(),
+            max = context.llm.getMaxContextWindow(),
         )
     }
 

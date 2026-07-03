@@ -4,6 +4,8 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.llm.LLM
+import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.service.memory.Memory
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
+import tools.jackson.databind.json.JsonMapper
 import java.io.File
 
 class BootstrapTest {
@@ -22,15 +25,19 @@ class BootstrapTest {
     private val assistant = mock<Assistant>()
     private val memory = mock<Memory>()
     private val marketplaceRegistry = mock<MarketplaceRegistry>()
+    private val llm = mock<LLM>()
+    private val jsonMapper = JsonMapper()
 
     @BeforeEach
     fun setup() {
+        doReturn(jsonMapper).whenever(context).jsonMapper
         doReturn(home).whenever(context).home
         doReturn(assistant).whenever(context).assistant
         doReturn(memory).whenever(context).memory
         doReturn(marketplaceRegistry).whenever(context).marketplaceRegistry
         doReturn(Health(id = "-")).whenever(context).health()
         doReturn(context).whenever(contextFactory).create(any(), any(), any())
+        doReturn(llm).whenever(context).llm
     }
 
     @Test
@@ -58,7 +65,7 @@ class BootstrapTest {
         bootstrap.set("assistant.max-iterations", 5)
 
         verify(assistant).apply("max-iterations", 5)
-        val saved = tools.jackson.databind.json.JsonMapper().readValue(
+        val saved = jsonMapper.readValue(
             File(home, "config/settings.json"),
             Map::class.java,
         )
@@ -73,7 +80,7 @@ class BootstrapTest {
         bootstrap.set("memory.enabled", false)
 
         verify(memory).apply("enabled", false)
-        val saved = tools.jackson.databind.json.JsonMapper().readValue(
+        val saved = jsonMapper.readValue(
             File(home, "config/settings.json"),
             Map::class.java,
         )
@@ -102,6 +109,82 @@ class BootstrapTest {
 
         verify(assistant).apply("instructions", "You are a helpful assistant")
         assertEquals(before, File(home, "config/settings.json").readText())
+    }
+
+    @Test
+    fun changeLLM() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+
+        val newLlm = mock<LLM>()
+        doReturn(listOf("gpt-4", "gpt-3.5")).whenever(newLlm).availableModels()
+        val llmFactory = mock<LLMFactory>()
+        doReturn(newLlm).whenever(llmFactory).create("openai")
+        doReturn(llmFactory).whenever(contextFactory).llmFactory
+
+        bootstrap.changeLLM("openai", "gpt-4")
+
+        verify(llmFactory).create("openai")
+        verify(context).destroy()
+        val saved = jsonMapper.readValue(
+            File(home, "config/settings.json"),
+            Map::class.java,
+        )
+        assertEquals("openai", (saved["llm"] as Map<*, *>)["name"])
+        assertEquals("gpt-4", (saved["llm"] as Map<*, *>)["model"])
+    }
+
+    @Test
+    fun `changeLLM - invalid model throws`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+
+        val newLlm = mock<LLM>()
+        doReturn(listOf("gpt-4", "gpt-3.5")).whenever(newLlm).availableModels()
+        val llmFactory = mock<LLMFactory>()
+        doReturn(newLlm).whenever(llmFactory).create("openai")
+        doReturn(llmFactory).whenever(contextFactory).llmFactory
+
+        assertThrows<ConfigurationException> { bootstrap.changeLLM("openai", "invalid-model") }
+    }
+
+    @Test
+    fun `changeLLM - preserves existing settings`() {
+        val configDir = File(home, "config")
+        configDir.mkdirs()
+        File(configDir, "settings.json").writeText("""{"assistant":{"max-iterations":10},"memory":{"enabled":true}}""")
+        bootstrap.init(getResourceFile("/home/007"))
+
+        val newLlm = mock<LLM>()
+        doReturn(listOf("gpt-4")).whenever(newLlm).availableModels()
+        val llmFactory = mock<LLMFactory>()
+        doReturn(newLlm).whenever(llmFactory).create("openai")
+        doReturn(llmFactory).whenever(contextFactory).llmFactory
+
+        bootstrap.changeLLM("openai", "gpt-4")
+
+        val saved = jsonMapper.readValue(
+            File(home, "config/settings.json"),
+            Map::class.java,
+        )
+        assertEquals(10, (saved["assistant"] as Map<*, *>)["max-iterations"])
+        assertEquals(true, (saved["memory"] as Map<*, *>)["enabled"])
+        assertEquals("openai", (saved["llm"] as Map<*, *>)["name"])
+        assertEquals("gpt-4", (saved["llm"] as Map<*, *>)["model"])
+    }
+
+    @Test
+    fun `changeLLM - empty available models throws`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+
+        val newLlm = mock<LLM>()
+        doReturn(emptyList<String>()).whenever(newLlm).availableModels()
+        val llmFactory = mock<LLMFactory>()
+        doReturn(newLlm).whenever(llmFactory).create("openai")
+        doReturn(llmFactory).whenever(contextFactory).llmFactory
+
+        assertThrows<ConfigurationException> { bootstrap.changeLLM("openai", "gpt-4") }
     }
 
     @Test

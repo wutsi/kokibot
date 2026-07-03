@@ -46,8 +46,8 @@ class NullLLMTest {
     }
 
     @Test
-    fun maxContextWindow() {
-        assertEquals(-1, llm.maxContextWindow())
+    fun getMaxContextWindow() {
+        assertEquals(-1, llm.getMaxContextWindow())
     }
 
     @Test

@@ -11,13 +11,13 @@ import com.wutsi.kokibot.llm.deepseek.DeepseekClient
  * - chat completion: https://platform.kimi.ai/docs/api/chat
  */
 class Kimi : Deepseek() {
-    override fun name(): String {
+    override fun getName(): String {
         return "kimi"
     }
 
     override fun createClient(): DeepseekClient {
         return KimiClient(
-            apiKey = apiKey,
+            apiKey = getApiKey(),
             model = model,
             thinking = thinking,
             maxTokens = maxTokens,
@@ -28,7 +28,7 @@ class Kimi : Deepseek() {
         )
     }
 
-    override fun maxContextWindow(): Int {
+    override fun getMaxContextWindow(): Int {
         return when {
             model.startsWith("kimi-k2.") -> 256 * 1024
             model.startsWith("moonshot-v1-128k") -> 128 * 1024

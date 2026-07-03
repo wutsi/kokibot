@@ -16,11 +16,11 @@ class NullLLM : LLM {
         const val MESSAGE = "This is a null LLM. It does not generate any response."
     }
 
-    override fun model(): String {
+    override fun getModel(): String {
         return "-"
     }
 
-    override fun name(): String {
+    override fun getName(): String {
         return "null"
     }
 
@@ -55,11 +55,15 @@ class NullLLM : LLM {
         return Health(up = false, id = id())
     }
 
-    override fun maxContextWindow(): Int {
+    override fun getMaxContextWindow(): Int {
         return -1
     }
 
     override fun availableModels(): List<String> {
         return emptyList()
+    }
+
+    override fun getReasoningEffort(): String? {
+        return null
     }
 }

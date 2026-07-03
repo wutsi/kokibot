@@ -16,6 +16,9 @@ const Settings = {
     memoryData: null,
     kbData: null,
     kbPollingInterval: null,
+    currentLLMName: null,
+    currentLLMModel: null,
+    _llmModalKeyHandler: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -1206,8 +1209,29 @@ const Settings = {
 
         const llmName = data.name || 'Unknown';
         const model = data.model || 'Unknown';
-        const maxContextLength = this.formatContextLength(data.maxContextWindow || 0);
         const balance = data.availableBalance;
+
+        this.currentLLMName = llmName;
+        this.currentLLMModel = model;
+
+        if (llmName === 'null' || llmName === 'Unknown') {
+            contentElement.innerHTML = `
+                <div class="llm-not-configured">
+                    <svg fill="currentColor" height="48" viewBox="0 0 24 24" width="48">
+                        <path d="M13 8.57c-.79 0-1.43.64-1.43 1.43s.64 1.43 1.43 1.43 1.43-.64 1.43-1.43-.64-1.43-1.43-1.43zM13 3C9.25 3 6.2 5.94 6.02 9.64L4.1 12.2c-.25.33-.01.8.4.8H6v3c0 1.1.9 2 2 2h1v3h7v-4.68c1.79-.93 3-2.82 3-4.87C19 6.55 16.32 3 13 3zm3 11.71l-.71.45V19h-3v-3H8v-4H6.5l1.2-1.6C7.85 8.23 10.17 6 13 6c2.76 0 5 2.24 5 5 0 1.73-.87 3.28-2 4.71z"/>
+                    </svg>
+                    <h3>No Language Model Configured</h3>
+                    <p>Select a provider to enable this assistant</p>
+                    <button class="settings-action-btn settings-action-btn-primary" id="llm-change-btn">
+                        Select Language Model
+                    </button>
+                </div>
+            `;
+            document.getElementById('llm-change-btn')?.addEventListener('click', () => this.openLLMSelector());
+            return;
+        }
+
+        const maxContextLength = this.formatContextLength(data.maxContextWindow || 0);
 
         const balanceHtml = balance ? `
             <div class="llm-detail-item">
@@ -1219,12 +1243,18 @@ const Settings = {
         contentElement.innerHTML = `
             <div class="llm-info">
                 <div class="llm-provider">
-                    <img src="/assets/llm/${llmName}.png" alt="${llmName}" class="llm-provider-icon"
+                    <img src="/assets/llm/${this.escapeHtml(llmName)}.png" alt="${this.escapeHtml(llmName)}" class="llm-provider-icon"
                          onerror="this.style.display='none'">
                     <div class="llm-provider-info">
-                        <h3 class="llm-provider-name">${this.formatLLMName(llmName)}</h3>
-                        <p class="llm-provider-model">${model}</p>
+                        <h3 class="llm-provider-name">${this.escapeHtml(this.formatLLMName(llmName))}</h3>
+                        <p class="llm-provider-model">${this.escapeHtml(model)}</p>
                     </div>
+                    <button class="settings-action-btn settings-action-btn-secondary llm-change-btn" id="llm-change-btn">
+                        <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                        Change
+                    </button>
                 </div>
                 <div class="llm-details">
                     <div class="llm-detail-item">
@@ -1235,6 +1265,8 @@ const Settings = {
                 </div>
             </div>
         `;
+
+        document.getElementById('llm-change-btn')?.addEventListener('click', () => this.openLLMSelector());
     },
 
     formatLLMName(name) {
@@ -2318,6 +2350,134 @@ const Settings = {
             return `${extBadge}<span class="channel-name">${this.escapeHtml(displayName)}</span>`;
         }
         return `<span class="channel-name">${this.escapeHtml(entry.filename)}</span>`;
+    },
+
+    async openLLMSelector() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/llms?assistant=${encodeURIComponent(this.agentName)}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const llms = (data.models || []).filter(Boolean);
+
+            if (llms.length === 0) {
+                Notifications.error('No LLM providers are configured with an API key', { duration: 5000 });
+                return;
+            }
+
+            const providerOptions = llms.map(llm =>
+                `<option value="${this.escapeHtml(llm.name)}"${llm.name === this.currentLLMName ? ' selected' : ''}>${this.escapeHtml(this.formatLLMName(llm.name))}</option>`
+            ).join('');
+
+            const overlay = document.createElement('div');
+            overlay.className = 'llm-modal-overlay';
+            overlay.id = 'llm-modal-overlay';
+            overlay.innerHTML = `
+                <div class="llm-modal" role="dialog" aria-modal="true">
+                    <div class="llm-modal-header">
+                        <h3>Change Language Model</h3>
+                        <button class="llm-modal-close" id="llm-modal-close" title="Close">
+                            <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="llm-modal-body">
+                        <div class="llm-modal-field">
+                            <label for="llm-modal-provider-select">Provider</label>
+                            <select id="llm-modal-provider-select" class="llm-modal-select">${providerOptions}</select>
+                        </div>
+                        <div class="llm-modal-field">
+                            <label for="llm-modal-model-select">Model</label>
+                            <select id="llm-modal-model-select" class="llm-modal-select"></select>
+                        </div>
+                    </div>
+                    <div class="llm-modal-footer">
+                        <button class="settings-action-btn settings-action-btn-secondary" id="llm-modal-cancel">Cancel</button>
+                        <button class="settings-action-btn settings-action-btn-primary" id="llm-modal-save">Save</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            const initialProvider = llms.find(l => l.name === this.currentLLMName) || llms[0];
+            this.updateLLMModalModels(llms, initialProvider.name, this.currentLLMName === initialProvider.name ? this.currentLLMModel : null);
+
+            document.getElementById('llm-modal-provider-select').addEventListener('change', (e) => {
+                this.updateLLMModalModels(llms, e.target.value, null);
+            });
+            document.getElementById('llm-modal-close').addEventListener('click', () => this.closeLLMModal());
+            document.getElementById('llm-modal-cancel').addEventListener('click', () => this.closeLLMModal());
+            document.getElementById('llm-modal-save').addEventListener('click', () => this.saveLLMChange());
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) this.closeLLMModal(); });
+            this._llmModalKeyHandler = (e) => { if (e.key === 'Escape') this.closeLLMModal(); };
+            document.addEventListener('keydown', this._llmModalKeyHandler);
+        } catch (error) {
+            console.error('Error opening LLM selector:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Request timed out.' : 'Failed to load LLM providers. Please try again.');
+        }
+    },
+
+    updateLLMModalModels(llms, providerName, selectedModel) {
+        const llm = llms.find(l => l.name === providerName);
+        const modelSelect = document.getElementById('llm-modal-model-select');
+        if (!llm || !modelSelect) return;
+
+        const models = llm.models || [];
+        const effectiveModel = selectedModel && models.includes(selectedModel) ? selectedModel : models[0];
+        modelSelect.innerHTML = models.map(m =>
+            `<option value="${this.escapeHtml(m)}"${m === effectiveModel ? ' selected' : ''}>${this.escapeHtml(m)}</option>`
+        ).join('');
+    },
+
+    closeLLMModal() {
+        const overlay = document.getElementById('llm-modal-overlay');
+        if (overlay) overlay.remove();
+        if (this._llmModalKeyHandler) {
+            document.removeEventListener('keydown', this._llmModalKeyHandler);
+            this._llmModalKeyHandler = null;
+        }
+    },
+
+    async saveLLMChange() {
+        const llm = document.getElementById('llm-modal-provider-select')?.value;
+        const model = document.getElementById('llm-modal-model-select')?.value;
+        if (!llm || !model) return;
+
+        const saveBtn = document.getElementById('llm-modal-save');
+        if (saveBtn) saveBtn.disabled = true;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const response = await fetch(`/assistants/${this.agentName}/llm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ llm, model }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+
+            this.closeLLMModal();
+            Notifications.success('Language model updated', { duration: 3000 });
+            this.onTabActivated('llm', true);
+        } catch (error) {
+            console.error('Error saving LLM change:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+        } finally {
+            if (saveBtn) saveBtn.disabled = false;
+        }
     },
 
     escapeHtml(text) {

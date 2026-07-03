@@ -1,7 +1,6 @@
 package com.wutsi.kokibot.llm.deepseek
 
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.ConfigurationException
@@ -55,22 +54,14 @@ class DeepseekTest {
     fun init() {
         llm.init(config, context)
 
-        assertEquals(System.getenv("DEEPSEEK_API_KEY"), llm.apiKey)
         assertEquals("deepseek-v4-flash", llm.model)
         assertEquals(false, llm.thinking)
         assertEquals(2024, llm.maxTokens)
         assertEquals(.7, llm.temperature)
         assertEquals(30000, llm.readTimeoutMillis)
         assertEquals(10000, llm.connectTimeoutMillis)
-    }
 
-    @Test
-    fun `init - no api key`() {
-        whenever(credentialService.get("llm.deepseek")).doThrow(ConfigurationException("llm.deepseek not found"))
-        val config = mapOf(
-            "model" to "deepseek-v4-flash",
-        )
-        assertThrows<ConfigurationException> { llm.init(config, context) }
+        doReturn(System.getenv("DEEPSEEK_API_KEY")).whenever(credentialService).get("llm.deepseek")
     }
 
     @Test
@@ -290,8 +281,8 @@ class DeepseekTest {
     }
 
     @Test
-    fun maxContextWindow() {
-        assertEquals(1024 * 1024, llm.maxContextWindow())
+    fun getMaxContextWindow() {
+        assertEquals(1024 * 1024, llm.getMaxContextWindow())
     }
 
     @Test

@@ -11,13 +11,13 @@ import com.wutsi.kokibot.llm.deepseek.DeepseekClient
  * - chat completion: https://platform.kimi.ai/docs/api/chat
  */
 class Gemini : Deepseek() {
-    override fun name(): String {
+    override fun getName(): String {
         return "gemini"
     }
 
     override fun createClient(): DeepseekClient {
         return GeminiClient(
-            apiKey = apiKey,
+            apiKey = getApiKey(),
             model = model,
             thinking = thinking,
             maxTokens = maxTokens,

@@ -28,7 +28,6 @@ open class Deepseek : LLM {
 
     protected lateinit var context: Context
     internal lateinit var model: String
-    internal lateinit var apiKey: String
     internal var streamingEnabled: Boolean = false
     internal var thinking: Boolean = false
     internal var reasoningEffort: String? = null
@@ -37,12 +36,16 @@ open class Deepseek : LLM {
     internal var temperature: Double? = null
     internal var maxTokens: Int? = null
 
-    override fun name(): String {
+    override fun getName(): String {
         return "deepseek"
     }
 
-    override fun model(): String {
+    override fun getModel(): String {
         return model
+    }
+
+    override fun getReasoningEffort(): String? {
+        return reasoningEffort
     }
 
     /**
@@ -57,7 +60,6 @@ open class Deepseek : LLM {
      * - connect-timeout-millis: the connect timeout in milliseconds (default: 5000)
      */
     override fun init(config: Map<*, *>, context: Context) {
-        apiKey = context.credentialService.get("llm.${name()}")
         model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
         this.context = context
@@ -116,7 +118,7 @@ open class Deepseek : LLM {
 
     protected open fun createClient(): DeepseekClient {
         return DeepseekClient(
-            apiKey = apiKey,
+            apiKey = getApiKey(),
             model = model,
             jsonMapper = context.jsonMapper,
             thinking = thinking,
@@ -128,5 +130,9 @@ open class Deepseek : LLM {
         )
     }
 
-    override fun maxContextWindow() = 1024 * 1024
+    protected fun getApiKey(): String {
+        return context.credentialService.get("llm.${getName()}")
+    }
+
+    override fun getMaxContextWindow() = 1024 * 1024
 }

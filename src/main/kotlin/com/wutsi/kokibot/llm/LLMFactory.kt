@@ -6,12 +6,17 @@ import com.wutsi.kokibot.llm.kimi.Kimi
 import com.wutsi.kokibot.llm.none.NullLLM
 
 class LLMFactory {
-    fun create(type: String): LLM {
-        return when (type) {
-            "deepseek" -> Deepseek()
-            "gemini" -> Gemini()
-            "kimi" -> Kimi()
-            else -> NullLLM()
-        }
+    private val llms = mapOf(
+        "deepseek" to Deepseek(),
+        "gemini" to Gemini(),
+        "kimi" to Kimi(),
+    )
+
+    fun names(): List<String> {
+        return llms.keys.toList()
+    }
+
+    fun create(name: String): LLM {
+        return llms[name] ?: NullLLM()
     }
 }

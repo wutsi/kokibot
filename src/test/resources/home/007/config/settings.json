@@ -3,7 +3,7 @@
     "max-iterations": 10
   },
   "llm": {
-    "type": "deepseek",
+    "name": "deepseek",
     "api-key": "${DEEPSEEK_API_KEY}",
     "model": "deepseek-chat",
     "temperature": 0.7,

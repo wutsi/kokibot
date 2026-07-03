@@ -7,13 +7,8 @@
     "detect-cycles": true
   },
   "heartbeat": {
+    "enabled": false,
     "frequency": "1h"
-  },
-  "llm": {
-    "type": "${KOKIBOT_LLM_TYPE}",
-    "api-key": "${KOKIBOT_LLM_API_KEY}",
-    "model": "${KOKIBOT_LLM_MODEL}",
-    "streaming": true
   },
   "memory": {
     "window": "5d",

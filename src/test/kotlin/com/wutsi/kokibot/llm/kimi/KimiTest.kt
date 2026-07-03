@@ -112,7 +112,7 @@ class KimiTest {
     }
 
     @Test
-    fun maxContextWindow() {
+    fun getMaxContextWindow() {
         val models = listOf(
             "kimi-k2.7-code",
             "kimi-k2.7-code-highspeed",
@@ -140,7 +140,7 @@ class KimiTest {
 
         models.forEach { model ->
             llm.init(mapOf("model" to model), context)
-            assertEquals(expected[models.indexOf(model)], llm.maxContextWindow(), model)
+            assertEquals(expected[models.indexOf(model)], llm.getMaxContextWindow(), model)
         }
     }
 }

@@ -3,8 +3,7 @@
     "max-iterations": 10
   },
   "llm": {
-    "type": "deepseek",
-    "api-key": "${DEEPSEEK_API_KEY}",
+    "name": "deepseek",
     "model": "deepseek-v4-pro"
   },
   "heartbeat": {

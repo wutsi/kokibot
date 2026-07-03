@@ -88,6 +88,21 @@ class BootstrapTest {
     }
 
     @Test
+    fun `set - llm property`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+
+        bootstrap.set("llm.temperature", 0.7)
+
+        verify(llm).apply("temperature", 0.7)
+        val saved = jsonMapper.readValue(
+            File(home, "config/settings.json"),
+            Map::class.java,
+        )
+        assertEquals(0.7, (saved["llm"] as Map<*, *>)["temperature"])
+    }
+
+    @Test
     fun `set - marketplace property`() {
         setupSettingsFile()
         bootstrap.init(getResourceFile("/home/007"))
@@ -192,7 +207,7 @@ class BootstrapTest {
         setupSettingsFile()
         bootstrap.init(getResourceFile("/home/007"))
 
-        assertThrows<ConfigurationException> { bootstrap.set("llm.model", "x") }
+        assertThrows<ConfigurationException> { bootstrap.set("foo.model", "x") }
     }
 
     @Test

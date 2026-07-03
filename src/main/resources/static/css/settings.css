@@ -646,37 +646,6 @@
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
 }
 
-.llm-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    padding: 24px;
-    background-color: var(--color-bg-tertiary);
-    border-radius: 8px;
-    border: 1px solid var(--color-border-light);
-}
-
-.llm-detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.llm-detail-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0;
-}
-
-.llm-detail-value {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0;
-}
 
 .llm-error {
     display: flex;
@@ -709,6 +678,103 @@
 .llm-change-btn {
     margin-left: auto;
     flex-shrink: 0;
+}
+
+.llm-settings {
+    background-color: var(--color-bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--color-border-light);
+    overflow: hidden;
+}
+
+.llm-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-border-light);
+    gap: 16px;
+}
+
+.llm-setting-row-last {
+    border-bottom: none;
+}
+
+.llm-setting-row.llm-temperature-row {
+    align-items: flex-start;
+}
+
+.llm-setting-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.llm-setting-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.llm-setting-hint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.llm-setting-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    flex-shrink: 0;
+}
+
+.llm-settings-select {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    font-family: var(--color-font-family, inherit);
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.llm-settings-select:focus {
+    border-color: var(--color-accent);
+}
+
+.llm-temperature-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+
+.llm-temperature-slider {
+    width: 140px;
+    cursor: pointer;
+    accent-color: var(--color-accent);
+}
+
+.llm-temperature-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    min-width: 28px;
+    text-align: right;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+    .llm-settings {
+        background-color: #2d2d2d;
+    }
 }
 
 .llm-not-configured {
@@ -832,8 +898,7 @@
 
 /* Dark mode adjustments for LLM */
 @media (prefers-color-scheme: dark) {
-    .llm-provider,
-    .llm-details {
+    .llm-provider {
         background-color: #2d2d2d;
     }
 

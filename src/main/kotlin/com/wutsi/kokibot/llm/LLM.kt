@@ -21,6 +21,8 @@ interface LLM : Resource {
 
     fun getReasoningEffort(): String?
 
+    fun getTemperature(): Double?
+
     /**
      * Returns the maximum context length (in tokens) that this LLM can handle.
      * This is used to determine how much of the conversation history and tool outputs can be included
@@ -50,4 +52,8 @@ interface LLM : Resource {
     fun balance(): LLMBalance?
 
     fun availableModels(): List<String>
+
+    fun apply(name: String, value: Any) {
+        // NOTING
+    }
 }

@@ -41,7 +41,7 @@ class LLMController(private val multi: MultiBootstrap) {
         )
     }
 
-    @GetMapping("/assistants/{name}/llm/settings")
+    @PostMapping("/assistants/{name}/llm/settings")
     fun set(
         @PathVariable name: String,
         @RequestBody body: Map<String, Any>,
@@ -74,6 +74,7 @@ class LLMController(private val multi: MultiBootstrap) {
             mapOf(
                 "name" to llm.getName(),
                 "model" to llm.getModel(),
+                "temperature" to llm.getTemperature(),
                 "reasoningEffort" to llm.getReasoningEffort(),
                 "maxContextWindow" to llm.getMaxContextWindow(),
                 "availableBalance" to balance?.let {

@@ -48,6 +48,10 @@ open class Deepseek : LLM {
         return reasoningEffort
     }
 
+    override fun getTemperature(): Double? {
+        return temperature
+    }
+
     /**
      * Initialize the Deepseek client with the given configuration and context.
      * The configuration can contain the following parameters:
@@ -135,4 +139,12 @@ open class Deepseek : LLM {
     }
 
     override fun getMaxContextWindow() = 1024 * 1024
+
+    override fun apply(name: String, value: Any) {
+        when (name) {
+            "reasoning-effort" -> reasoningEffort = value.toString()
+            "temperature" -> temperature = value.toString().toDoubleOrNull()
+            else -> throw ConfigurationException("Unknown setting: $name")
+        }
+    }
 }

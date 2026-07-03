@@ -66,4 +66,8 @@ class NullLLM : LLM {
     override fun getReasoningEffort(): String? {
         return null
     }
+
+    override fun getTemperature(): Double? {
+        return null
+    }
 }

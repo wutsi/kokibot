@@ -63,13 +63,14 @@ class Bootstrap(
             "heartbeat" -> context.heartbeat.apply(property, value)
             "knowledge-base" -> context.knowledgeBase.apply(property, value)
             "marketplace" -> context.marketplaceRegistry.apply(property, value)
+            "llm" -> context.llm.apply(property, value)
             else -> throw ConfigurationException("Unknown setting section: $section")
         }
 
+        if ((section == "assistant" && property == "instructions") || section == "marketplace") return
+
         // Update the settings.json file
-        if ((section == "assistant" && property != "instructions")) {
-            updateSettings(section, listOf(Pair(property, value)))
-        }
+        updateSettings(section, listOf(Pair(property, value)))
     }
 
     fun changeLLM(name: String, model: String) {

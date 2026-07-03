@@ -297,4 +297,29 @@ class DeepseekTest {
             llm.availableModels()
         )
     }
+
+    @Test
+    fun `apply - reasoning-effort`() {
+        llm.init(config, context)
+
+        llm.apply("reasoning-effort", "high")
+
+        assertEquals("high", llm.reasoningEffort)
+    }
+
+    @Test
+    fun `apply - temperature`() {
+        llm.init(config, context)
+
+        llm.apply("temperature", "0.5")
+
+        assertEquals(0.5, llm.temperature)
+    }
+
+    @Test
+    fun `apply - unknown setting`() {
+        llm.init(config, context)
+
+        assertThrows<ConfigurationException> { llm.apply("unknown-setting", "value") }
+    }
 }

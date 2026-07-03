@@ -1232,11 +1232,17 @@ const Settings = {
         }
 
         const maxContextLength = this.formatContextLength(data.maxContextWindow || 0);
+        const reasoningEffort = data.reasoningEffort || '';
+        const temperature = data.temperature != null ? data.temperature : '';
+        const tempValue = temperature !== '' ? parseFloat(temperature) : 0.7;
+        const temperatureHint = this.getTemperatureHint(tempValue);
 
-        const balanceHtml = balance ? `
-            <div class="llm-detail-item">
-                <p class="llm-detail-label">Available Balance</p>
-                <p class="llm-detail-value">${this.escapeHtml(balance.text)}</p>
+        const balanceRow = balance ? `
+            <div class="llm-setting-row llm-setting-row-last">
+                <div class="llm-setting-label">
+                    <span class="llm-setting-name">Available Balance</span>
+                </div>
+                <span class="llm-setting-value">${this.escapeHtml(String(balance.text))}</span>
             </div>
         ` : '';
 
@@ -1256,17 +1262,61 @@ const Settings = {
                         Change
                     </button>
                 </div>
-                <div class="llm-details">
-                    <div class="llm-detail-item">
-                        <p class="llm-detail-label">Max Context Window</p>
-                        <p class="llm-detail-value">${maxContextLength}</p>
+                <div class="llm-settings">
+                    <div class="llm-setting-row">
+                        <div class="llm-setting-label">
+                            <span class="llm-setting-name">Reasoning Effort</span>
+                            <span class="llm-setting-hint">Depth of chain-of-thought reasoning</span>
+                        </div>
+                        <select id="llm-reasoning-effort-select" class="llm-settings-select">
+                            <option value=""${reasoningEffort === '' ? ' selected' : ''}>Not set</option>
+                            <option value="min"${reasoningEffort === 'min' ? ' selected' : ''}>Minimal</option>
+                            <option value="max"${reasoningEffort === 'max' ? ' selected' : ''}>Maximum</option>
+                        </select>
                     </div>
-                    ${balanceHtml}
+                    <div class="llm-setting-row llm-temperature-row">
+                        <div class="llm-setting-label">
+                            <span class="llm-setting-name">Temperature</span>
+                            <span class="llm-setting-hint" id="llm-temperature-hint">${this.escapeHtml(temperatureHint)}</span>
+                        </div>
+                        <div class="llm-temperature-control">
+                            <input type="range" id="llm-temperature-input" class="llm-temperature-slider"
+                                   min="0" max="2" step="0.1" value="${tempValue}">
+                            <span class="llm-temperature-value" id="llm-temperature-value">${tempValue.toFixed(1)}</span>
+                        </div>
+                    </div>
+                    <div class="llm-setting-row${balance ? '' : ' llm-setting-row-last'}">
+                        <div class="llm-setting-label">
+                            <span class="llm-setting-name">Max Context Window</span>
+                        </div>
+                        <span class="llm-setting-value">${maxContextLength}</span>
+                    </div>
+                    ${balanceRow}
                 </div>
             </div>
         `;
 
         document.getElementById('llm-change-btn')?.addEventListener('click', () => this.openLLMSelector());
+
+        document.getElementById('llm-reasoning-effort-select')?.addEventListener('change', (e) => {
+            const value = e.target.value;
+            if (value) this.saveLLMSetting('reasoning-effort', value, 'Reasoning effort saved');
+        });
+
+        const tempInput = document.getElementById('llm-temperature-input');
+        if (tempInput) {
+            tempInput.addEventListener('input', () => {
+                const v = parseFloat(tempInput.value);
+                const valueDisplay = document.getElementById('llm-temperature-value');
+                if (valueDisplay) valueDisplay.textContent = v.toFixed(1);
+                const hint = document.getElementById('llm-temperature-hint');
+                if (hint) hint.textContent = this.getTemperatureHint(v);
+            });
+            tempInput.addEventListener('change', () => {
+                const v = Math.round(parseFloat(tempInput.value) * 10) / 10;
+                this.saveLLMSetting('temperature', v, 'Temperature saved');
+            });
+        }
     },
 
     formatLLMName(name) {
@@ -2350,6 +2400,35 @@ const Settings = {
             return `${extBadge}<span class="channel-name">${this.escapeHtml(displayName)}</span>`;
         }
         return `<span class="channel-name">${this.escapeHtml(entry.filename)}</span>`;
+    },
+
+    getTemperatureHint(value) {
+        if (value <= 0.4) return 'Low (0.0 – 0.4): Highly focused, deterministic, and precise. Best for factual Q&A, coding, and extracting information from documents.';
+        if (value <= 1.0) return 'Moderate (0.5 – 1.0): Balances coherence and variety. Ideal for customer support chatbots, general writing, and conversational flow. (A value of 0.7 is the most common default).';
+        return 'High (1.1 – 2.0): Highly random and experimental. Best suited for creative tasks, storytelling, or brainstorming.';
+    },
+
+    async saveLLMSetting(key, value, successMsg) {
+        if (!this.agentName) return;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/llm/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+            Notifications.success(successMsg, { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving LLM setting:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+        }
     },
 
     async openLLMSelector() {

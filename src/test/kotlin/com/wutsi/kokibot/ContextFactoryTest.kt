@@ -52,7 +52,7 @@ class ContextFactoryTest {
         val home = File("target")
         val config = mapOf(
             "llm" to mapOf(
-                "type" to "deepseek",
+                "name" to "deepseek",
                 "foo" to "bar"
             )
         )

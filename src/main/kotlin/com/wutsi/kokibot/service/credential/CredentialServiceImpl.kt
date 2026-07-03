@@ -22,7 +22,7 @@ class CredentialServiceImpl(
         localCredentials[key] ?: globalCredentials[key]
 
     override fun get(key: String): String =
-        getOrNull(key) ?: throw ConfigurationException("Credential '$key' not found in .credential.json")
+        getOrNull(key) ?: throw ConfigurationException("Credential '$key' not found in credential.json")
 
     override fun set(key: String, value: String, scope: CredentialScope) {
         val map = if (scope == CredentialScope.LOCAL) localCredentials else globalCredentials

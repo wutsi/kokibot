@@ -38,8 +38,8 @@ class Bootstrap(
     }
 
     private fun loadCredentialService(home: File): CredentialService {
-        val globalFile = File(home.parentFile.parentFile, "config/.credential.json")
-        val localFile = File(getConfigDir(home), ".credential.json")
+        val globalFile = File(home.parentFile.parentFile, "config/credential.json")
+        val localFile = File(getConfigDir(home), "credential.json")
         return CredentialServiceImpl(globalFile, localFile)
     }
 

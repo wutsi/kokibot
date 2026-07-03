@@ -4,7 +4,7 @@ import com.wutsi.kokibot.ConfigurationException
 
 object NoOpCredentialService : CredentialService {
     override fun get(key: String): String =
-        throw ConfigurationException("Credential '$key' not found in .credential.json")
+        throw ConfigurationException("Credential '$key' not found in credential.json")
 
     override fun getOrNull(key: String): String? = null
 

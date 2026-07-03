@@ -26,7 +26,7 @@ class DeepseekStreamingTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(credentialService.get("llm.deepseek")).doReturn(System.getenv("DEEPSEEK_API_KEY") ?: "")
+        whenever(credentialService.get("llm.deepseek")).doReturn(System.getenv("KOKIBOT_DEEPSEEK_API_KEY") ?: "")
     }
 
     @Test

@@ -30,7 +30,7 @@ class KimiTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(credentialService.get("llm.kimi")).doReturn(System.getenv("KIMI_API_KEY") ?: "")
+        whenever(credentialService.get("llm.kimi")).doReturn(System.getenv("KOKIBOT_KIMI_API_KEY") ?: "")
     }
 
     @Test

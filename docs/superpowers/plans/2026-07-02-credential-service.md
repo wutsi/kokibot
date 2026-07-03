@@ -1,10 +1,15 @@
 # CredentialService Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:
+> executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Centralize all API keys and tokens in `.credential.json` files, removing them from `settings.json`, by introducing a `CredentialService` accessible via `Context`.
+**Goal:** Centralize all API keys and tokens in `.credential.json` files, removing them from `settings.json`, by
+introducing a `CredentialService` accessible via `Context`.
 
-**Architecture:** `CredentialServiceImpl` loads a global `~/kokibot/config/.credential.json` and an agent-local `~/kokibot/agents/{agent}/config/.credential.json` at boot; local values override global. `Bootstrap.init()` creates the service before `context.init()` so all LLM/channel/MCP `init()` calls can read credentials via `context.credentialService`.
+**Architecture:** `CredentialServiceImpl` loads a global `~/kokibot/config/.credential.json` and an agent-local
+`~/kokibot/agents/{agent}/config/.credential.json` at boot; local values override global. `Bootstrap.init()` creates the
+service before `context.init()` so all LLM/channel/MCP `init()` calls can read credentials via
+`context.credentialService`.
 
 **Tech Stack:** Kotlin 2.3, JUnit 5, Mockito Kotlin (`com.nhaarman.mockitokotlin2`), Jackson `JsonMapper`.
 
@@ -21,22 +26,29 @@
 ## File Map
 
 **Create:**
+
 - `src/main/kotlin/com/wutsi/kokibot/service/credential/CredentialService.kt` — interface + `CredentialScope` enum
 - `src/main/kotlin/com/wutsi/kokibot/service/credential/CredentialServiceImpl.kt` — file-backed implementation
 - `src/main/kotlin/com/wutsi/kokibot/service/credential/NoOpCredentialService.kt` — null-object default for Context
 - `src/test/kotlin/com/wutsi/kokibot/service/credential/CredentialServiceImplTest.kt`
 
 **Modify:**
-- `src/main/kotlin/com/wutsi/kokibot/Context.kt` — add `credentialService: CredentialService = NoOpCredentialService` field
+
+- `src/main/kotlin/com/wutsi/kokibot/Context.kt` — add `credentialService: CredentialService = NoOpCredentialService`
+  field
 - `src/main/kotlin/com/wutsi/kokibot/Bootstrap.kt` — create `CredentialServiceImpl` before `context.init()`
 - `src/main/kotlin/com/wutsi/kokibot/ContextFactory.kt` — accept `credentialService` parameter, pass to `Context`
-- `src/main/kotlin/com/wutsi/kokibot/llm/deepseek/Deepseek.kt` — use `context.credentialService.get("llm.${name()}")` (covers Gemini + Kimi via inheritance)
-- `src/main/kotlin/com/wutsi/kokibot/channel/telegram/TelegramChannel.kt` — use `context.credentialService.get("channel.telegram")`
-- `src/main/kotlin/com/wutsi/kokibot/channel/email/EmailChannel.kt` — use `context.credentialService.get("channel.email.password")`
+- `src/main/kotlin/com/wutsi/kokibot/llm/deepseek/Deepseek.kt` — use `context.credentialService.get("llm.${name()}")` (
+  covers Gemini + Kimi via inheritance)
+- `src/main/kotlin/com/wutsi/kokibot/channel/telegram/TelegramChannel.kt` — use
+  `context.credentialService.get("channel.telegram")`
+- `src/main/kotlin/com/wutsi/kokibot/channel/email/EmailChannel.kt` — use
+  `context.credentialService.get("channel.email.password")`
 - `src/main/kotlin/com/wutsi/kokibot/mcp/McpServer.kt` — use `context.credentialService.getOrNull("mcp.${name}")`
 - `src/test/kotlin/com/wutsi/kokibot/llm/deepseek/DeepseekTest.kt` — inject mock `CredentialService` into `Context`
 - `src/test/kotlin/com/wutsi/kokibot/channel/telegram/TelegramChannelTest.kt` — inject mock `CredentialService`
-- `src/test/kotlin/com/wutsi/kokibot/channel/email/EmailChannelTest.kt` — inject mock `CredentialService`, remove `password` from config
+- `src/test/kotlin/com/wutsi/kokibot/channel/email/EmailChannelTest.kt` — inject mock `CredentialService`, remove
+  `password` from config
 - `src/test/kotlin/com/wutsi/kokibot/mcp/McpServerTest.kt` — pass real `Context` with mock `CredentialService`
 
 ---
@@ -44,13 +56,17 @@
 ## Task 1: CredentialService — Interface, Implementation, Tests
 
 **Files:**
+
 - Create: `src/main/kotlin/com/wutsi/kokibot/service/credential/CredentialService.kt`
 - Create: `src/main/kotlin/com/wutsi/kokibot/service/credential/CredentialServiceImpl.kt`
 - Create: `src/main/kotlin/com/wutsi/kokibot/service/credential/NoOpCredentialService.kt`
 - Test: `src/test/kotlin/com/wutsi/kokibot/service/credential/CredentialServiceImplTest.kt`
 
 **Interfaces:**
-- Produces: `CredentialService.get(key: String): String`, `CredentialService.getOrNull(key: String): String?`, `CredentialService.set(key: String, value: String, scope: CredentialScope)`, `NoOpCredentialService` object, `CredentialServiceImpl(globalFile: File, localFile: File)`
+
+- Produces: `CredentialService.get(key: String): String`, `CredentialService.getOrNull(key: String): String?`,
+  `CredentialService.set(key: String, value: String, scope: CredentialScope)`, `NoOpCredentialService` object,
+  `CredentialServiceImpl(globalFile: File, localFile: File)`
 
 ---
 
@@ -214,7 +230,7 @@ class CredentialServiceImpl(
         localCredentials[key] ?: globalCredentials[key]
 
     override fun get(key: String): String =
-        getOrNull(key) ?: throw ConfigurationException("Credential '$key' not found in .credential.json")
+        getOrNull(key) ?: throw ConfigurationException("Credential '$key' not found in .credentials.json")
 
     override fun set(key: String, value: String, scope: CredentialScope) {
         val map = if (scope == CredentialScope.LOCAL) localCredentials else globalCredentials
@@ -252,7 +268,7 @@ import com.wutsi.kokibot.ConfigurationException
 
 object NoOpCredentialService : CredentialService {
     override fun get(key: String): String =
-        throw ConfigurationException("Credential '$key' not found in .credential.json")
+        throw ConfigurationException("Credential '$key' not found in .credentials.json")
 
     override fun getOrNull(key: String): String? = null
 
@@ -281,12 +297,14 @@ git commit -m "feat: add CredentialService with local/global file-backed storage
 ## Task 2: Wire CredentialService into Context and Bootstrap
 
 **Files:**
+
 - Modify: `src/main/kotlin/com/wutsi/kokibot/Context.kt`
 - Modify: `src/main/kotlin/com/wutsi/kokibot/ContextFactory.kt`
 - Modify: `src/main/kotlin/com/wutsi/kokibot/Bootstrap.kt`
 - Modify: `src/test/kotlin/com/wutsi/kokibot/ContextFactoryTest.kt`
 
 **Interfaces:**
+
 - Consumes: `CredentialService`, `CredentialServiceImpl(globalFile, localFile)`, `NoOpCredentialService` from Task 1
 - Produces: `Context.credentialService: CredentialService` (accessible to all resources during `init()`)
 
@@ -358,8 +376,8 @@ fun init(home: File) {
 }
 
 private fun loadCredentialService(home: File): CredentialService {
-    val globalFile = File(home.parentFile.parentFile, "config/.credential.json")
-    val localFile = File(getConfigDir(home), ".credential.json")
+    val globalFile = File(home.parentFile.parentFile, "config/.credentials.json")
+    val localFile = File(getConfigDir(home), ".credentials.json")
     return CredentialServiceImpl(globalFile, localFile)
 }
 ```
@@ -373,22 +391,27 @@ import com.wutsi.kokibot.service.credential.CredentialServiceImpl
 
 - [ ] **Step 4: Update `ContextFactoryTest` to pass `NoOpCredentialService`**
 
-In `src/test/kotlin/com/wutsi/kokibot/ContextFactoryTest.kt`, add the import and update all four `factory.create(home, config)` call sites:
+In `src/test/kotlin/com/wutsi/kokibot/ContextFactoryTest.kt`, add the import and update all four
+`factory.create(home, config)` call sites:
 
 ```kotlin
 import com.wutsi.kokibot.service.credential.NoOpCredentialService
 ```
 
 Replace every occurrence of:
+
 ```kotlin
 val context = factory.create(home, config)
 ```
+
 With:
+
 ```kotlin
 val context = factory.create(home, config, NoOpCredentialService)
 ```
 
 Also add `credentialService` to the assertion in the `create` test:
+
 ```kotlin
 assertEquals(NoOpCredentialService, context.credentialService)
 ```
@@ -416,13 +439,17 @@ git commit -m "feat: wire CredentialService into Context and Bootstrap"
 ## Task 3: Update Deepseek (covers Gemini + Kimi via inheritance)
 
 **Files:**
+
 - Modify: `src/main/kotlin/com/wutsi/kokibot/llm/deepseek/Deepseek.kt`
 - Modify: `src/test/kotlin/com/wutsi/kokibot/llm/deepseek/DeepseekTest.kt`
 
 **Interfaces:**
+
 - Consumes: `Context.credentialService: CredentialService` from Task 2
 
-**Why one change covers all three LLMs:** `Gemini` and `Kimi` extend `Deepseek` without overriding `init()`, and they override `name()` to return `"gemini"` / `"kimi"`. Using `context.credentialService.get("llm.${name()}")` automatically uses the right key for each subclass.
+**Why one change covers all three LLMs:** `Gemini` and `Kimi` extend `Deepseek` without overriding `init()`, and they
+override `name()` to return `"gemini"` / `"kimi"`. Using `context.credentialService.get("llm.${name()}")` automatically
+uses the right key for each subclass.
 
 ---
 
@@ -464,7 +491,10 @@ class DeepseekTest {
 }
 ```
 
-Also remove the inline `"api-key" to ...` entries from any config maps inside individual test methods (e.g. `completion`, `balance`, `health - up`, `health - down`, `completion with streaming`). Replace them with a `whenever(credentialService.get("llm.deepseek")).doReturn("ds-xxx")` in the test body where a specific key value is needed.
+Also remove the inline `"api-key" to ...` entries from any config maps inside individual test methods (e.g.
+`completion`, `balance`, `health - up`, `health - down`, `completion with streaming`). Replace them with a
+`whenever(credentialService.get("llm.deepseek")).doReturn("ds-xxx")` in the test body where a specific key value is
+needed.
 
 For `health - down`, which tests a bad API key:
 
@@ -486,7 +516,8 @@ fun `health - down`() {
 mvn test -Dtest=DeepseekTest
 ```
 
-Expected: `BUILD SUCCESS` (compiles), but `init` tests fail because `Deepseek.init()` still reads `config["api-key"]` which is now missing.
+Expected: `BUILD SUCCESS` (compiles), but `init` tests fail because `Deepseek.init()` still reads `config["api-key"]`
+which is now missing.
 
 - [ ] **Step 3: Update `Deepseek.init()` to use `credentialService`**
 
@@ -534,10 +565,12 @@ git commit -m "feat: Deepseek/Gemini/Kimi read api-key from CredentialService"
 ## Task 4: Update TelegramChannel
 
 **Files:**
+
 - Modify: `src/main/kotlin/com/wutsi/kokibot/channel/telegram/TelegramChannel.kt`
 - Modify: `src/test/kotlin/com/wutsi/kokibot/channel/telegram/TelegramChannelTest.kt`
 
 **Interfaces:**
+
 - Consumes: `Context.credentialService: CredentialService` from Task 2
 
 ---
@@ -557,7 +590,8 @@ class TelegramChannelTest {
     private val rest = mock<RestTemplate>()
     private val restBuilder = mock<RestBuilder>()
     private val botToken = "13200493:AAH-abc123def456ghi789jkl012mno345pqr"
-    private val config = mapOf(          // token removed
+    private val config = mapOf(
+        // token removed
         "bot-name" to "test-bot",
     )
     private val credentialService = mock<CredentialService>()
@@ -622,10 +656,12 @@ git commit -m "feat: TelegramChannel reads token from CredentialService"
 ## Task 5: Update EmailChannel
 
 **Files:**
+
 - Modify: `src/main/kotlin/com/wutsi/kokibot/channel/email/EmailChannel.kt`
 - Modify: `src/test/kotlin/com/wutsi/kokibot/channel/email/EmailChannelTest.kt`
 
 **Interfaces:**
+
 - Consumes: `Context.credentialService: CredentialService` from Task 2
 
 **Note:** Only `password` moves to `CredentialService`. `username` stays in `config`.
@@ -651,7 +687,8 @@ class EmailChannelTest {
     private val username = "user"
     private val password = "password"
     private val credentialService = mock<CredentialService>()
-    val config = mapOf(          // password removed
+    val config = mapOf(
+        // password removed
         "email" to email,
         "username" to username,
 
@@ -731,17 +768,20 @@ git commit -m "feat: EmailChannel reads password from CredentialService"
 ## Task 6: Update McpServer
 
 **Files:**
+
 - Modify: `src/main/kotlin/com/wutsi/kokibot/mcp/McpServer.kt`
 - Modify: `src/test/kotlin/com/wutsi/kokibot/mcp/McpServerTest.kt`
 
 **Interfaces:**
+
 - Consumes: `Context.credentialService: CredentialService` from Task 2
 
 ---
 
 - [ ] **Step 1: Update `McpServerTest` to use a real `Context` with mock `CredentialService`**
 
-In `src/test/kotlin/com/wutsi/kokibot/mcp/McpServerTest.kt`, replace the anonymous `mock()` context with a real `Context`:
+In `src/test/kotlin/com/wutsi/kokibot/mcp/McpServerTest.kt`, replace the anonymous `mock()` context with a real
+`Context`:
 
 ```kotlin
 import com.wutsi.kokibot.Context
@@ -758,7 +798,8 @@ class McpServerTest {
         credentialService = credentialService,
     )
 
-    private val configMap = mapOf(   // token removed
+    private val configMap = mapOf(
+        // token removed
         "name" to "weather-mcp",
         "description" to "Weather data",
         "url" to "https://weather.example.com/mcp",

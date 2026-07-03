@@ -32,11 +32,11 @@ jobs:
 
             -   name: Build
                 env:
-                    DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY}}
-                    KIMI_API_KEY: ${{secrets.KIMI_API_KEY}}
-                    GEMINI_API_KEY: ${{secrets.GEMINI_API_KEY}}
-                    TELEGRAM_TOKEN: ${{secrets.TELEGRAM_TOKEN}}
-                    TELEGRAM_CHATBOT: ${{secrets.TELEGRAM_CHATBOT}}
+                    KOKIBOT_DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY}}
+                    KOKIBOT_KIMI_API_KEY: ${{secrets.KIMI_API_KEY}}
+                    KOKIBOT_GEMINI_API_KEY: ${{secrets.GEMINI_API_KEY}}
+                    KOKIBOT_TELEGRAM_TOKEN: ${{secrets.TELEGRAM_TOKEN}}
+                    KOKIBOT_TELEGRAM_CHATBOT: ${{secrets.TELEGRAM_CHATBOT}}
                 run: |
                     mvn install
 
@@ -84,7 +84,8 @@ jobs:
                     mkdir -p kokibot_temp
                     mkdir -p kokibot_temp/kokibot
                     cp target/*.jar kokibot_temp/kokibot/
-                    cp -R install/home/* kokibot_temp/kokibot/
+                    cp -R install/home kokibot_temp/kokibot/
+                    cp -R install/config kokibot_temp/kokibot/
                     cd kokibot_temp
                     zip -r ../target/kokibot.zip .
                     cd ..

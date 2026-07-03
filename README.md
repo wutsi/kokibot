@@ -40,15 +40,21 @@ and multi-channel communication.
 - Java 17 or higher
 - Python 3.x (optional, for tools that require Python)
 
-### Step 1: Set Environment Variables
+### Step 1: Setup the Environment Variable
 
-Setup the following environment variables:
+Setup environment variables for your LLM provider.
 
 ```bash
-export KOKIBOT_LLM_TYPE="your-llm-api-key"        // Type of LLM: deepseek, kimi, gemini
-export KOKIBOT_LLM_API_KEY="your-llm-api-key"     // LLM API Key
-export KOKIBOT_LLM_MODEL="your-llm-model"         // LLM Model
+export KOKIBOT_DEEPSEEK_API_KEY="..."
+export KOKIBOT_KIMI_API_KEY="..."
+export KOKIBOT_GEMINI_API_KEY="..."
 ```
+
+You don't have to set all of them, just the one you want to use.
+For example
+
+- if you want to use Deepseek, you only need to set `KOKIBOT_DEEPSEEK_API_KEY`.
+- if you want to use Deepseek and Kimi, you need to set both `KOKIBOT_DEEPSEEK_API_KEY` and `KOKIBOT_KIMI_API_KEY`.
 
 ### Step 2: Install Kokibot (macOS & Linux)
 
@@ -83,12 +89,15 @@ Refer to the [Configuration Guide](docs/config/CONFIGURATION.md) for configuring
 
 ```
 .kokibot/
+   config/
+     credentials.json                       # API keys and credentials for LLM providers, channels, and marketplaces
    agents/
      {agent-name}/                          # Directory for each agent
        ASSISTANT.md                         # Assistant instructions
        HEARTBEAT.md                         # Heartbeat task instructions (runs on a schedule)
        config/
          settings.json                      # Core settings: assistant, llm, memory, heartbeat, swarm
+         credentials.json                   # Agent-specific credentials (overrides global credentials)
          channels/                          # One JSON file per communication channel
            {channel-name}.json              # e.g. telegram.json, email.json, websocket.json
          marketplaces/                      # One JSON file per skill marketplace

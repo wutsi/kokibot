@@ -29,7 +29,7 @@ class GeminiTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(credentialService.get("llm.gemini")).doReturn(System.getenv("GEMINI_API_KEY") ?: "")
+        whenever(credentialService.get("llm.gemini")).doReturn(System.getenv("KOKIBOT_GEMINI_API_KEY") ?: "")
     }
 
     @Test

@@ -31,10 +31,10 @@ jobs:
 
             -   name: Build
                 env:
-                    DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY}}
-                    GEMINI_API_KEY: ${{secrets.GEMINI_API_KEY}}
-                    KIMI_API_KEY: ${{secrets.KIMI_API_KEY}}
-                    TELEGRAM_TOKEN: ${{secrets.TELEGRAM_TOKEN}}
+                    KOKIBOT_DEEPSEEK_API_KEY: ${{secrets.DEEPSEEK_API_KEY}}
+                    KOKIBOT_GEMINI_API_KEY: ${{secrets.GEMINI_API_KEY}}
+                    KOKIBOT_KIMI_API_KEY: ${{secrets.KIMI_API_KEY}}
+                    KOKIBOT_TELEGRAM_TOKEN: ${{secrets.TELEGRAM_TOKEN}}
                 run: |
                     mvn validate
                     mvn package

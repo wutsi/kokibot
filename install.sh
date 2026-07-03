@@ -57,10 +57,14 @@ install_files() {
     # Install files
     if [ ! -d "$HOME_DIR/agents" ]; then
         mkdir -p "$HOME_DIR/agents/koki"
-        cp -R kokibot/* "$HOME_DIR/agents/koki" 2>/dev/null || true
+        cp -R kokibot/home/* "$HOME_DIR/agents/koki" 2>/dev/null || true
 
         rm "$HOME_DIR/agents/koki/uninstall.sh" 2>/dev/null || true
         rm "$HOME_DIR/agents/koki/kokibot.jar" 2>/dev/null || true
+    fi
+    if [ ! -d "$HOME_DIR/config" ]; then
+        mkdir -p "$HOME_DIR/config"
+        cp -R kokibot/config/* "$HOME_DIR/config" 2>/dev/null || true
     fi
 
     # Binaries

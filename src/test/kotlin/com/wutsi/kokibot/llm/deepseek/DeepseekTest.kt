@@ -42,7 +42,7 @@ class DeepseekTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(credentialService.get("llm.deepseek")).doReturn(System.getenv("DEEPSEEK_API_KEY") ?: "")
+        whenever(credentialService.get("llm.deepseek")).doReturn(System.getenv("KOKIBOT_DEEPSEEK_API_KEY") ?: "")
     }
 
     @Test
@@ -61,7 +61,7 @@ class DeepseekTest {
         assertEquals(30000, llm.readTimeoutMillis)
         assertEquals(10000, llm.connectTimeoutMillis)
 
-        doReturn(System.getenv("DEEPSEEK_API_KEY")).whenever(credentialService).get("llm.deepseek")
+        doReturn(System.getenv("KOKIBOT_DEEPSEEK_API_KEY")).whenever(credentialService).get("llm.deepseek")
     }
 
     @Test

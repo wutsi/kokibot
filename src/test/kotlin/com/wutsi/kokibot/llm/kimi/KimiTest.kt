@@ -1,26 +1,37 @@
 package com.wutsi.kokibot.llm.kimi
 
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
+import com.wutsi.kokibot.service.credential.CredentialService
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
-import org.mockito.Mockito.mock
+import org.mockito.Mockito
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class KimiTest {
     private val llm = Kimi()
+    private val credentialService = mock<CredentialService>()
     private val config = mapOf(
-        "api-key" to System.getenv("KIMI_API_KEY"),
         "model" to "kimi-k2.6",
     )
     private val context = Context(
         home = File("/target"),
-        llm = mock(),
+        llm = Mockito.mock(),
         config = mapOf("xx" to "yy"),
+        credentialService = credentialService,
     )
+
+    @BeforeEach
+    fun setUp() {
+        whenever(credentialService.get("llm.kimi")).doReturn(System.getenv("KIMI_API_KEY") ?: "")
+    }
 
     @Test
     fun contextLength() {

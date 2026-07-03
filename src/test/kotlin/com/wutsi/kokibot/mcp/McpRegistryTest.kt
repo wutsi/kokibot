@@ -57,7 +57,7 @@ class McpRegistryTest {
     }
 
     @Test
-    fun `init - applies env var substitution`() {
+    fun `init - token in config is ignored`() {
         File(home, "config/mcps/env-test.json").writeText(
             """{"name":"env-mcp","description":"Test","url":"https://env.example.com","token":"${'$'}{MCP_REGISTRY_TEST_TOKEN}"}"""
         )
@@ -65,8 +65,8 @@ class McpRegistryTest {
         registry.init(emptyMap<String, Any>(), context)
 
         val server = registry.get("env-mcp")
-        // Token stays as placeholder when env var not set
-        assertEquals("\${MCP_REGISTRY_TEST_TOKEN}", server.config.token)
+        // Token comes from CredentialService, not from config JSON
+        assertEquals(null, server.config.token)
     }
 
     @Test

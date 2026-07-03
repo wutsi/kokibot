@@ -27,17 +27,22 @@ open class Deepseek : LLM {
     }
 
     protected lateinit var context: Context
-    internal lateinit var client: DeepseekClient
+    internal lateinit var model: String
+    internal lateinit var apiKey: String
     internal var streamingEnabled: Boolean = false
     internal var thinking: Boolean = false
     internal var reasoningEffort: String? = null
+    internal var readTimeoutMillis: Long = READ_TIMEOUT_MILLIS
+    internal var connectTimeoutMillis: Long? = CONNECT_TIMEOUT_MILLIS
+    internal var temperature: Double? = null
+    internal var maxTokens: Int? = null
 
     override fun name(): String {
         return "deepseek"
     }
 
     override fun model(): String {
-        return client.model
+        return model
     }
 
     /**
@@ -52,14 +57,17 @@ open class Deepseek : LLM {
      * - connect-timeout-millis: the connect timeout in milliseconds (default: 5000)
      */
     override fun init(config: Map<*, *>, context: Context) {
-        val apiKey = context.credentialService.get("llm.${name()}")
-        val model = config["model"] as String? ?: throw ConfigurationException("model is required")
+        apiKey = context.credentialService.get("llm.${name()}")
+        model = config["model"] as String? ?: throw ConfigurationException("model is required")
 
         this.context = context
         this.streamingEnabled = MapUtil.toBoolean("streaming", config) ?: false
         this.thinking = MapUtil.toBoolean("thinking", config) ?: false
         this.reasoningEffort = MapUtil.toString("reasoning-effort", config)
-        this.client = createClient(apiKey, model, config)
+        this.maxTokens = MapUtil.toInt("max-tokens", config)
+        this.temperature = MapUtil.toDouble("temperature", config)
+        this.readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS
+        this.connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS
 
         LOGGER.info("LLM: " + config["type"])
         LOGGER.info(" model: $model")
@@ -72,7 +80,7 @@ open class Deepseek : LLM {
 
     override fun health(): Health {
         return try {
-            client.completion(LLMRequest(prompt = "Hello"), emptyList())
+            createClient().completion(LLMRequest(prompt = "Hello"), emptyList())
             Health(id = id())
         } catch (ex: Exception) {
             Health(id = id(), up = false, details = ex.message ?: "unknown error")
@@ -80,7 +88,7 @@ open class Deepseek : LLM {
     }
 
     override fun completion(request: LLMRequest, tools: List<Tool>): LLMResponse {
-        return client.completion(request, tools)
+        return createClient().completion(request, tools)
     }
 
     override fun supportsStreaming(): Boolean {
@@ -92,24 +100,31 @@ open class Deepseek : LLM {
         tools: List<Tool>,
         onChunk: (LLMStreamChunk) -> Unit,
     ): LLMResponse {
-        return client.completionStream(request, tools, onChunk)
+        return createClient().completionStream(request, tools, onChunk)
     }
 
     override fun balance(): LLMBalance? {
-        return client.balance()
+        return createClient().balance()
     }
 
-    protected open fun createClient(apiKey: String, model: String, config: Map<*, *>): DeepseekClient {
+    override fun availableModels(): List<String> {
+        return listOf(
+            "deepseek-v4-flash",
+            "deepseek-v4-pro",
+        )
+    }
+
+    protected open fun createClient(): DeepseekClient {
         return DeepseekClient(
             apiKey = apiKey,
             model = model,
             jsonMapper = context.jsonMapper,
             thinking = thinking,
             reasoningEffort = reasoningEffort,
-            maxTokens = MapUtil.toInt("max-tokens", config),
-            temperature = MapUtil.toDouble("temperature", config),
-            readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS,
-            connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS,
+            maxTokens = maxTokens,
+            temperature = temperature,
+            readTimeoutMillis = readTimeoutMillis,
+            connectTimeoutMillis = connectTimeoutMillis,
         )
     }
 

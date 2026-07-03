@@ -34,11 +34,6 @@ class KimiTest {
     }
 
     @Test
-    fun contextLength() {
-        assertEquals(256 * 1024, llm.maxContextWindow())
-    }
-
-    @Test
     fun id() {
         assertEquals("llm:kimi", llm.id())
     }
@@ -93,5 +88,59 @@ class KimiTest {
         assertNotNull(response)
         assertTrue(response.total >= 0.0)
         assertEquals("USD", response.currency)
+    }
+
+    @Test
+    fun availableModels() {
+        llm.init(config, context)
+
+        assertEquals(
+            listOf(
+                "kimi-k2.7-code",
+                "kimi-k2.7-code-highspeed",
+                "kimi-k2.6",
+                "kimi-k2.5",
+                "moonshot-v1-128k",
+                "moonshot-v1-32k",
+                "moonshot-v1-8k",
+                "moonshot-v1-128k-vision-preview",
+                "moonshot-v1-32k-vision-preview",
+                "moonshot-v1-8k-vision-preview"
+            ),
+            llm.availableModels()
+        )
+    }
+
+    @Test
+    fun maxContextWindow() {
+        val models = listOf(
+            "kimi-k2.7-code",
+            "kimi-k2.7-code-highspeed",
+            "kimi-k2.6",
+            "kimi-k2.5",
+            "moonshot-v1-128k",
+            "moonshot-v1-32k",
+            "moonshot-v1-8k",
+            "moonshot-v1-128k-vision-preview",
+            "moonshot-v1-32k-vision-preview",
+            "moonshot-v1-8k-vision-preview"
+        )
+        val expected = listOf(
+            256 * 1024,
+            256 * 1024,
+            256 * 1024,
+            256 * 1024,
+            128 * 1024,
+            32 * 1024,
+            8 * 1024,
+            128 * 1024,
+            32 * 1024,
+            8 * 1024
+        )
+
+        models.forEach { model ->
+            llm.init(mapOf("model" to model), context)
+            assertEquals(expected[models.indexOf(model)], llm.maxContextWindow(), model)
+        }
     }
 }

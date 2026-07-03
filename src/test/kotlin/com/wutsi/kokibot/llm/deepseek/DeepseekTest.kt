@@ -55,13 +55,13 @@ class DeepseekTest {
     fun init() {
         llm.init(config, context)
 
-        assertEquals(System.getenv("DEEPSEEK_API_KEY"), llm.client.apiKey)
-        assertEquals("deepseek-v4-flash", llm.client.model)
-        assertEquals(false, llm.client.thinking)
-        assertEquals(2024, llm.client.maxTokens)
-        assertEquals(.7, llm.client.temperature)
-        assertEquals(30000, llm.client.readTimeoutMillis)
-        assertEquals(10000, llm.client.connectTimeoutMillis)
+        assertEquals(System.getenv("DEEPSEEK_API_KEY"), llm.apiKey)
+        assertEquals("deepseek-v4-flash", llm.model)
+        assertEquals(false, llm.thinking)
+        assertEquals(2024, llm.maxTokens)
+        assertEquals(.7, llm.temperature)
+        assertEquals(30000, llm.readTimeoutMillis)
+        assertEquals(10000, llm.connectTimeoutMillis)
     }
 
     @Test
@@ -292,5 +292,18 @@ class DeepseekTest {
     @Test
     fun maxContextWindow() {
         assertEquals(1024 * 1024, llm.maxContextWindow())
+    }
+
+    @Test
+    fun availableModels() {
+        llm.init(config, context)
+
+        assertEquals(
+            listOf(
+                "deepseek-v4-flash",
+                "deepseek-v4-pro",
+            ),
+            llm.availableModels()
+        )
     }
 }

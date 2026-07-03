@@ -49,4 +49,9 @@ class NullLLMTest {
     fun maxContextWindow() {
         assertEquals(-1, llm.maxContextWindow())
     }
+
+    @Test
+    fun availableModels() {
+        assertEquals(0, llm.availableModels().size)
+    }
 }

@@ -72,8 +72,11 @@ class DeepseekStreamingTest {
 
         val deepseek = object : Deepseek() {
             init {
-                this.client = mockClient
                 this.streamingEnabled = true
+            }
+
+            override fun createClient(): DeepseekClient {
+                return mockClient
             }
         }
 

@@ -58,4 +58,8 @@ class NullLLM : LLM {
     override fun maxContextWindow(): Int {
         return -1
     }
+
+    override fun availableModels(): List<String> {
+        return emptyList()
+    }
 }

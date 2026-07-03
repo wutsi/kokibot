@@ -39,6 +39,8 @@ class GeminiClient(
 
     override fun supportsMimeType(mimeType: String): Boolean {
         return mimeType.startsWith("image/") ||
+            mimeType.startsWith("video/") ||
+            mimeType.startsWith("audio/") ||
             mimeType.startsWith("application/pdf")
     }
 }

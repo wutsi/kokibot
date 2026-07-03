@@ -46,4 +46,6 @@ interface LLM : Resource {
     ): LLMResponse
 
     fun balance(): LLMBalance?
+
+    fun availableModels(): List<String>
 }

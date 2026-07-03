@@ -32,7 +32,7 @@ class McpServer(
             name = name,
             description = config["description"]?.toString() ?: "",
             url = url,
-            token = config["token"]?.toString(),
+            token = context.credentialService.getOrNull("mcp.$name"),
             icon = config["icon"]?.toString() ?: "",
         )
     }

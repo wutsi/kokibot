@@ -6,19 +6,27 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.service.credential.CredentialService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class McpServerTest {
     private val transport = mock<McpHttpTransport>()
+    private val credentialService = mock<CredentialService>()
+    private val context = Context(
+        home = File("target/test-data/mcp"),
+        llm = mock(),
+        credentialService = credentialService,
+    )
 
     private val configMap = mapOf(
         "name" to "weather-mcp",
         "description" to "Weather data",
         "url" to "https://weather.example.com/mcp",
-        "token" to "tok-123",
     )
 
     private val initResponse = McpHttpResponse(
@@ -37,7 +45,8 @@ class McpServerTest {
 
     @BeforeEach
     fun setUp() {
-        server.init(configMap, mock())
+        whenever(credentialService.getOrNull("mcp.weather-mcp")).doReturn("tok-123")
+        server.init(configMap, context)
         doReturn(initResponse).doReturn(listToolsResponse).whenever(transport).post(any(), any(), any())
     }
 

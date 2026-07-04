@@ -470,8 +470,16 @@
     min-height: 400px;
 }
 
-.heartbeat-settings {
-    margin-bottom: 24px;
+.heartbeat-info,
+.kb-info {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.heartbeat-settings,
+.memory-settings {
+    padding: 0 16px;
 }
 
 .heartbeat-frequency-select {
@@ -496,8 +504,7 @@
 }
 
 .heartbeat-instructions-section {
-    border-top: 1px solid var(--color-border-light);
-    padding-top: 20px;
+    padding: 16px 20px;
 }
 
 .heartbeat-instructions-header {
@@ -610,14 +617,11 @@
     gap: 24px;
 }
 
-.llm-provider {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 24px;
+.setting-section {
     background-color: var(--color-bg-tertiary);
     border-radius: 8px;
     border: 1px solid var(--color-border-light);
+    overflow: hidden;
 }
 
 .llm-provider-icon {
@@ -680,12 +684,6 @@
     flex-shrink: 0;
 }
 
-.llm-settings {
-    background-color: var(--color-bg-tertiary);
-    border-radius: 8px;
-    border: 1px solid var(--color-border-light);
-    overflow: hidden;
-}
 
 .llm-setting-row {
     display: flex;
@@ -771,11 +769,6 @@
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-    .llm-settings {
-        background-color: #2d2d2d;
-    }
-}
 
 .llm-not-configured {
     display: flex;
@@ -898,7 +891,7 @@
 
 /* Dark mode adjustments for LLM */
 @media (prefers-color-scheme: dark) {
-    .llm-provider {
+    .setting-section {
         background-color: #2d2d2d;
     }
 
@@ -939,7 +932,7 @@
     border: 1px solid var(--color-border-light);
 }
 
-.general-section-title {
+.setting-section-title {
     font-size: 14px;
     font-weight: 600;
     color: var(--color-text-secondary);
@@ -981,7 +974,7 @@
     margin-bottom: 16px;
 }
 
-.general-instructions-header .general-section-title {
+.general-instructions-header .setting-section-title {
     margin-bottom: 0;
 }
 
@@ -1228,7 +1221,7 @@
     min-width: 0;
 }
 
-.identity-setting-name {
+.setting-name {
     font-size: 14px;
     font-weight: 500;
     color: var(--color-text-primary);
@@ -1294,11 +1287,6 @@
     min-width: 0;
 }
 
-.memory-setting-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text-primary);
-}
 
 .memory-setting-hint {
     font-size: 12px;

@@ -288,10 +288,10 @@ const Settings = {
                     </div>
                 </div>
                 <div class="general-section">
-                    <h3 class="general-section-title">Identity</h3>
+                    <h3 class="setting-section-title">Identity</h3>
                     <div class="identity-setting-row">
                         <div class="identity-setting-label-group">
-                            <span class="identity-setting-name">Full Name</span>
+                            <span class="setting-name">Full Name</span>
                             <span class="identity-setting-hint">Display name for this assistant</span>
                         </div>
                         <input type="text" id="identity-full-name-input" class="identity-text-input"
@@ -299,7 +299,7 @@ const Settings = {
                     </div>
                     <div class="identity-setting-row">
                         <div class="identity-setting-label-group">
-                            <span class="identity-setting-name">Email</span>
+                            <span class="setting-name">Email</span>
                             <span class="identity-setting-hint">Email address of this assistant</span>
                         </div>
                         <input type="email" id="identity-email-input" class="identity-text-input"
@@ -307,7 +307,7 @@ const Settings = {
                     </div>
                     <div class="identity-setting-row identity-setting-row-last">
                         <div class="identity-setting-label-group">
-                            <span class="identity-setting-name">Language</span>
+                            <span class="setting-name">Language</span>
                             <span class="identity-setting-hint">Preferred language for responses</span>
                         </div>
                         <select id="identity-language-input" class="identity-language-select">
@@ -317,7 +317,7 @@ const Settings = {
                 </div>
                 <div class="general-section">
                     <div class="general-instructions-header">
-                        <h3 class="general-section-title">Instructions</h3>
+                        <h3 class="setting-section-title">Instructions</h3>
                         <div class="general-instructions-actions">
                             <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-edit-btn">
                                 <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
@@ -417,39 +417,43 @@ const Settings = {
         const memoryFieldsClass = memoryEnabled ? '' : ' memory-fields-disabled';
 
         contentElement.innerHTML = `
-            <div class="memory-setting-row">
-                <div class="memory-setting-label-group">
-                    <span class="memory-setting-name">Enable Memory</span>
-                    <span class="memory-setting-hint">Store long-term and short-term memories</span>
-                </div>
-                <label class="memory-toggle" title="Toggle memory">
-                    <input type="checkbox" id="memory-enabled-toggle" ${memoryEnabled ? 'checked' : ''}>
-                    <span class="memory-toggle-slider"></span>
-                </label>
-            </div>
-            <div id="memory-numeric-fields" class="${memoryFieldsClass}">
+            <div class="setting-section">
+            <div class="memory-settings">
                 <div class="memory-setting-row">
                     <div class="memory-setting-label-group">
-                        <span class="memory-setting-name">Max Length</span>
-                        <span class="memory-setting-hint">Maximum memory file size (min. 1 KB)</span>
+                        <span class="setting-name">Enable Memory</span>
+                        <span class="memory-setting-hint">Store long-term and short-term memories</span>
                     </div>
-                    <div class="memory-number-control">
-                        <input type="number" id="memory-max-length-input" class="memory-number-input"
-                               min="1" value="${memoryMaxLengthKb}" ${memoryEnabled ? '' : 'disabled'}>
-                        <span class="memory-number-unit">KB</span>
+                    <label class="memory-toggle" title="Toggle memory">
+                        <input type="checkbox" id="memory-enabled-toggle" ${memoryEnabled ? 'checked' : ''}>
+                        <span class="memory-toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="memory-numeric-fields" class="${memoryFieldsClass}">
+                    <div class="memory-setting-row">
+                        <div class="memory-setting-label-group">
+                            <span class="setting-name">Max Length</span>
+                            <span class="memory-setting-hint">Maximum memory file size (min. 1 KB)</span>
+                        </div>
+                        <div class="memory-number-control">
+                            <input type="number" id="memory-max-length-input" class="memory-number-input"
+                                   min="1" value="${memoryMaxLengthKb}" ${memoryEnabled ? '' : 'disabled'}>
+                            <span class="memory-number-unit">KB</span>
+                        </div>
+                    </div>
+                    <div class="memory-setting-row memory-setting-row-last">
+                        <div class="memory-setting-label-group">
+                            <span class="setting-name">Window</span>
+                            <span class="memory-setting-hint">Days of history to remember</span>
+                        </div>
+                        <div class="memory-number-control">
+                            <input type="number" id="memory-window-input" class="memory-number-input"
+                                   min="1" value="${memoryWindow}" ${memoryEnabled ? '' : 'disabled'}>
+                            <span class="memory-number-unit">days</span>
+                        </div>
                     </div>
                 </div>
-                <div class="memory-setting-row memory-setting-row-last">
-                    <div class="memory-setting-label-group">
-                        <span class="memory-setting-name">Window</span>
-                        <span class="memory-setting-hint">Days of history to remember</span>
-                    </div>
-                    <div class="memory-number-control">
-                        <input type="number" id="memory-window-input" class="memory-number-input"
-                               min="1" value="${memoryWindow}" ${memoryEnabled ? '' : 'disabled'}>
-                        <span class="memory-number-unit">days</span>
-                    </div>
-                </div>
+            </div>
             </div>
         `;
 
@@ -957,31 +961,35 @@ const Settings = {
         ).join('');
 
         contentElement.innerHTML = `
-            <div class="heartbeat-settings">
-                <div class="memory-setting-row">
-                    <div class="memory-setting-label-group">
-                        <span class="memory-setting-name">Enable Heartbeat</span>
-                        <span class="memory-setting-hint">Run periodic tasks automatically</span>
+            <div class="heartbeat-info">
+            <div class="setting-section">
+                <div class="heartbeat-settings">
+                    <div class="memory-setting-row">
+                        <div class="memory-setting-label-group">
+                            <span class="setting-name">Enable Heartbeat</span>
+                            <span class="memory-setting-hint">Run periodic tasks automatically</span>
+                        </div>
+                        <label class="memory-toggle" title="Toggle heartbeat">
+                            <input type="checkbox" id="heartbeat-enabled-toggle"${enabled ? ' checked' : ''}>
+                            <span class="memory-toggle-slider"></span>
+                        </label>
                     </div>
-                    <label class="memory-toggle" title="Toggle heartbeat">
-                        <input type="checkbox" id="heartbeat-enabled-toggle"${enabled ? ' checked' : ''}>
-                        <span class="memory-toggle-slider"></span>
-                    </label>
-                </div>
-                <div id="heartbeat-schedule-fields" class="memory-setting-row memory-setting-row-last${disabledClass}">
-                    <div class="memory-setting-label-group">
-                        <span class="memory-setting-name">Frequency</span>
-                        <span class="memory-setting-hint">How often to run the heartbeat</span>
+                    <div id="heartbeat-schedule-fields" class="memory-setting-row memory-setting-row-last${disabledClass}">
+                        <div class="memory-setting-label-group">
+                            <span class="setting-name">Frequency</span>
+                            <span class="memory-setting-hint">How often to run the heartbeat</span>
+                        </div>
+                        <select id="heartbeat-frequency-select" class="heartbeat-frequency-select"${enabled ? '' : ' disabled'}>
+                            ${frequencyOptions}
+                        </select>
                     </div>
-                    <select id="heartbeat-frequency-select" class="heartbeat-frequency-select"${enabled ? '' : ' disabled'}>
-                        ${frequencyOptions}
-                    </select>
                 </div>
             </div>
-            <div class="heartbeat-instructions-section">
+            <div class="setting-section">
+                <div class="heartbeat-instructions-section">
                 <div class="settings-section-header heartbeat-instructions-header">
                     <div>
-                        <h3 class="general-section-title">Instructions</h3>
+                        <h3 class="setting-section-title">Instructions</h3>
                         <span class="memory-setting-hint">Periodic prompt sent to the assistant on each heartbeat tick</span>
                     </div>
                     <div class="settings-section-actions">
@@ -1017,6 +1025,8 @@ const Settings = {
                            </div>`
                     }
                 </div>
+                </div>
+            </div>
             </div>
         `;
 
@@ -1248,7 +1258,7 @@ const Settings = {
 
         contentElement.innerHTML = `
             <div class="llm-info">
-                <div class="llm-provider">
+                <div class="setting-section">
                     <img src="/assets/llm/${this.escapeHtml(llmName)}.png" alt="${this.escapeHtml(llmName)}" class="llm-provider-icon"
                          onerror="this.style.display='none'">
                     <div class="llm-provider-info">
@@ -1262,7 +1272,7 @@ const Settings = {
                         Change
                     </button>
                 </div>
-                <div class="llm-settings">
+                <div class="setting-section">
                     <div class="llm-setting-row">
                         <div class="llm-setting-label">
                             <span class="llm-setting-name">Reasoning Effort</span>
@@ -1918,61 +1928,67 @@ const Settings = {
         const webSearch = this.kbData.webSearch !== false;
 
         contentElement.innerHTML = `
-            <div class="heartbeat-settings">
-                <div class="memory-setting-row">
-                    <div class="memory-setting-label-group">
-                        <span class="memory-setting-name">Enable Knowledge Base</span>
-                        <span class="memory-setting-hint">Use the knowledge base to answer queries</span>
-                    </div>
-                    <label class="memory-toggle" title="Toggle knowledge base">
-                        <input type="checkbox" id="kb-enabled-toggle"${enabled ? ' checked' : ''}>
-                        <span class="memory-toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="memory-setting-row${enabled ? '' : ' memory-fields-disabled'}" id="kb-exclusive-row">
-                    <div class="memory-setting-label-group">
-                        <span class="memory-setting-name">Exclusive Mode</span>
-                        <span class="memory-setting-hint">Search only the knowledge base, not the LLM training data</span>
-                    </div>
-                    <label class="memory-toggle" title="Toggle exclusive mode">
-                        <input type="checkbox" id="kb-exclusive-toggle"${exclusive ? ' checked' : ''}${enabled ? '' : ' disabled'}>
-                        <span class="memory-toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="memory-setting-row memory-setting-row-last${enabled ? '' : ' memory-fields-disabled'}" id="kb-web-search-row">
-                    <div class="memory-setting-label-group">
-                        <span class="memory-setting-name">Web Search</span>
-                        <span class="memory-setting-hint">Allow web search to supplement knowledge base answers</span>
-                    </div>
-                    <label class="memory-toggle" title="Toggle web search">
-                        <input type="checkbox" id="kb-web-search-toggle"${webSearch ? ' checked' : ''}${enabled ? '' : ' disabled'}>
-                        <span class="memory-toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-            <div class="heartbeat-instructions-section${enabled ? '' : ' memory-fields-disabled'}" id="kb-files-section">
-                <div class="settings-section-header heartbeat-instructions-header">
-                    <div>
-                        <h3 class="general-section-title" id="kb-files-title">Files</h3>
-                        <span class="memory-setting-hint">Documents ingested into the knowledge base</span>
-                    </div>
-                    <div class="settings-section-actions">
-                        <button class="settings-action-btn settings-action-btn-secondary" id="kb-link-btn"${enabled ? '' : ' disabled'}>
-                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                                <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                            </svg>
-                            Link URL
-                        </button>
-                        <button class="settings-action-btn settings-action-btn-primary" id="kb-upload-btn"${enabled ? '' : ' disabled'}>
-                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                                <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
-                            </svg>
-                            Upload
-                        </button>
-                        <input type="file" id="kb-file-input" style="display:none;">
+            <div class="kb-info">
+                <div class="setting-section">
+                    <div class="heartbeat-settings">
+                        <div class="memory-setting-row">
+                            <div class="memory-setting-label-group">
+                                <span class="setting-name">Enable Knowledge Base</span>
+                                <span class="memory-setting-hint">Use the knowledge base to answer queries</span>
+                            </div>
+                            <label class="memory-toggle" title="Toggle knowledge base">
+                                <input type="checkbox" id="kb-enabled-toggle"${enabled ? ' checked' : ''}>
+                                <span class="memory-toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="memory-setting-row${enabled ? '' : ' memory-fields-disabled'}" id="kb-exclusive-row">
+                            <div class="memory-setting-label-group">
+                                <span class="setting-name">Exclusive Mode</span>
+                                <span class="memory-setting-hint">Search only the knowledge base, not the LLM training data</span>
+                            </div>
+                            <label class="memory-toggle" title="Toggle exclusive mode">
+                                <input type="checkbox" id="kb-exclusive-toggle"${exclusive ? ' checked' : ''}${enabled ? '' : ' disabled'}>
+                                <span class="memory-toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="memory-setting-row memory-setting-row-last${enabled ? '' : ' memory-fields-disabled'}" id="kb-web-search-row">
+                            <div class="memory-setting-label-group">
+                                <span class="setting-name">Web Search</span>
+                                <span class="memory-setting-hint">Allow web search to supplement knowledge base answers</span>
+                            </div>
+                            <label class="memory-toggle" title="Toggle web search">
+                                <input type="checkbox" id="kb-web-search-toggle"${webSearch ? ' checked' : ''}${enabled ? '' : ' disabled'}>
+                                <span class="memory-toggle-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
-                <div id="kb-files-list"></div>
+                <div class="setting-section${enabled ? '' : ' memory-fields-disabled'}" id="kb-files-section">
+                    <div class="heartbeat-instructions-section">
+                        <div class="settings-section-header heartbeat-instructions-header">
+                            <div>
+                                <h3 class="setting-section-title" id="kb-files-title">Files</h3>
+                                <span class="memory-setting-hint">Documents ingested into the knowledge base</span>
+                            </div>
+                            <div class="settings-section-actions">
+                                <button class="settings-action-btn settings-action-btn-secondary" id="kb-link-btn"${enabled ? '' : ' disabled'}>
+                                    <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                                    </svg>
+                                    Link URL
+                                </button>
+                                <button class="settings-action-btn settings-action-btn-primary" id="kb-upload-btn"${enabled ? '' : ' disabled'}>
+                                    <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                        <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                                    </svg>
+                                    Upload
+                                </button>
+                                <input type="file" id="kb-file-input" style="display:none;">
+                            </div>
+                        </div>
+                        <div id="kb-files-list"></div>
+                    </div>
+                </div>
             </div>
         `;
 

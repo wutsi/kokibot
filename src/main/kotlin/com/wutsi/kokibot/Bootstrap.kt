@@ -67,7 +67,13 @@ class Bootstrap(
             else -> throw ConfigurationException("Unknown setting section: $section")
         }
 
-        if ((section == "assistant" && property == "instructions") || section == "marketplace") return
+        if (
+            (section == "assistant" && property == "instructions") ||
+            (section == "heartbeat" && property == "instructions") ||
+            section == "marketplace"
+        ) {
+            return
+        }
 
         // Update the settings.json file
         updateSettings(section, listOf(Pair(property, value)))

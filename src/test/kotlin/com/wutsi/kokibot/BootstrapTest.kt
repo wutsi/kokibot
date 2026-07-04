@@ -7,6 +7,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
+import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.service.memory.Memory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -23,6 +24,7 @@ class BootstrapTest {
     private val home = File("target/test-data/bootstrap")
     private val context = mock<Context>()
     private val assistant = mock<Assistant>()
+    private val heartbeat = mock<Heartbeat>()
     private val memory = mock<Memory>()
     private val marketplaceRegistry = mock<MarketplaceRegistry>()
     private val llm = mock<LLM>()
@@ -38,6 +40,7 @@ class BootstrapTest {
         doReturn(Health(id = "-")).whenever(context).health()
         doReturn(context).whenever(contextFactory).create(any(), any(), any())
         doReturn(llm).whenever(context).llm
+        doReturn(heartbeat).whenever(context).heartbeat
     }
 
     @Test
@@ -117,12 +120,24 @@ class BootstrapTest {
     @Test
     fun `set - assistant instructions skips settings json write`() {
         setupSettingsFile()
-        bootstrap.init(getResourceFile("/home/007"))
+        bootstrap.init(home)
         val before = File(home, "config/settings.json").readText()
 
         bootstrap.set("assistant.instructions", "You are a helpful assistant")
 
         verify(assistant).apply("instructions", "You are a helpful assistant")
+        assertEquals(before, File(home, "config/settings.json").readText())
+    }
+
+    @Test
+    fun `set - heartbeat instructions skips settings json write`() {
+        setupSettingsFile()
+        bootstrap.init(home)
+        val before = File(home, "config/settings.json").readText()
+
+        bootstrap.set("heartbeat.instructions", "You are a helpful assistant")
+
+        verify(heartbeat).apply("instructions", "You are a helpful assistant")
         assertEquals(before, File(home, "config/settings.json").readText())
     }
 

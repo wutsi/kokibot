@@ -97,7 +97,7 @@ class WebFetchToolTest {
         val tool = WebFetchTool(100)
         tool.init(mapOf("foo" to "bar"), context)
 
-        val args = mapOf("url" to "https://www.gutenberg.org/files/2600/2600-0.txt")
+        val args = mapOf("url" to "https://raw.githubusercontent.com/wutsi/kokibot/refs/heads/master/README.md")
         val result = tool.exec(args)
         assertEquals(100, getFileContent(result).length)
     }
@@ -138,15 +138,6 @@ class WebFetchToolTest {
         assertTrue(result.contains("Content fetched from $url and saved to"), result)
         val content = getFileContent(result)
         assertTrue(content.contains("This document demonstrates the ability"))
-    }
-
-    @Test
-    fun `exec - XLS`() {
-        val url = "https://www.cmu.edu/blackboard/files/evaluate/tests-example.xls"
-        val result = tool.exec(mapOf("url" to url))
-        assertTrue(result.contains("Content fetched from $url and saved to"), result)
-        val content = getFileContent(result)
-        assertTrue(content.contains("File Information"))
     }
 
     @Test

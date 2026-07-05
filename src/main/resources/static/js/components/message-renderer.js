@@ -130,7 +130,7 @@ class MessageRenderer {
 
         const textDiv = document.createElement('div');
         textDiv.className = 'message-text';
-        textDiv.innerHTML = this.formatter.escapeAndPreserveNewlines(text);
+        textDiv.innerHTML = this.markdownRenderer.renderUserText(text);
 
         const timestamp = document.createElement('div');
         timestamp.className = 'message-timestamp';

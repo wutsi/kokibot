@@ -1981,7 +1981,7 @@ const Settings = {
                             <input type="file" id="kb-file-input" style="display:none;">
                         </div>
                     </div>
-                    <div id="kb-files-list" class="setting-section-row"></div>
+                    <div id="kb-files-list"></div>
                 </div>
             </div>
         `;
@@ -2091,7 +2091,7 @@ const Settings = {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
-            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/entries?limit=20`, {
+            const response = await fetch(`/assistants/${this.agentName}/knowledge-base/entries`, {
                 signal: controller.signal,
             });
             clearTimeout(timeoutId);
@@ -2114,7 +2114,7 @@ const Settings = {
         const listEl = document.getElementById('kb-files-list');
         if (!listEl) return;
 
-        const MAX_FILES = 20;
+        const MAX_FILES = 200;
         this.kbEntries = entries || [];
         const count = this.kbEntries.length;
         const atMax = count >= MAX_FILES;
@@ -2196,6 +2196,7 @@ const Settings = {
                 ? `<a href="${this.escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer" class="channel-source" style="word-break:break-all;color:var(--color-accent-blue,#2196f3);">${this.escapeHtml(entry.url)}</a>`
                 : '';
 
+            const details = entry.scope || entry.summary;
             return `
                 <div class="channel-item" style="flex-direction:column;align-items:flex-start;gap:4px;position:relative;">
                     ${actionButtons}
@@ -2205,7 +2206,7 @@ const Settings = {
                     </span>
                     ${urlRow}
                     ${errorRow}
-                    ${isReady && entry.scope ? `<span class="channel-source">${this.escapeHtml(entry.scope)}</span>` : ''}
+                    ${isReady && details ? `<span class="channel-source">${this.escapeHtml(details)}</span>` : ''}
                     ${isReady && keywordsHtml ? `<div class="marketplace-skills" style="margin-top:4px;">${keywordsHtml}</div>` : ''}
                 </div>
             `;
@@ -2225,8 +2226,8 @@ const Settings = {
     },
 
     async uploadKBFile(file) {
-        if ((this.kbEntries || []).length >= 20) {
-            Notifications.error('Maximum of 20 files reached. Delete a file before uploading.', { duration: 5000 });
+        if ((this.kbEntries || []).length >= 200) {
+            Notifications.error('Maximum of 200 files reached. Delete a file before uploading.', { duration: 5000 });
             return;
         }
         const btn = document.getElementById('kb-upload-btn');

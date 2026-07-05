@@ -37,7 +37,7 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
     fun entries(
         @PathVariable name: String,
         @RequestParam(required = false) status: String? = null,
-        @RequestParam(required = false) limit: Int = 10,
+        @RequestParam(required = false) limit: Int = 200,
     ): ResponseEntity<List<Map<String, Any?>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         val context = bootstrap.getContext()
@@ -60,6 +60,7 @@ class KnowledgeBaseController(private val multi: MultiBootstrap) {
                         entry.name
                     },
                     "scope" to entry.scope,
+                    "summary" to entry.summary,
                     "keywords" to entry.keywords,
                     "url" to if (entry.type == KBEntryType.FILE && entry.source != null) {
                         fileService.urlPath(File(context.home, entry.source).absolutePath)

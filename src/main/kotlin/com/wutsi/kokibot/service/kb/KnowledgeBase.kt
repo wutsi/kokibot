@@ -30,7 +30,7 @@ class KnowledgeBase : Resource {
     private var exclusive: Boolean = true
 
     @Volatile
-    private var webSearch: Boolean = true
+    private var webSearch: Boolean = false
 
     companion object {
         const val ID = "service:knowledge-base"

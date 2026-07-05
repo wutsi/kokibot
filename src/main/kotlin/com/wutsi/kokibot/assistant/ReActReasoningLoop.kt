@@ -17,7 +17,7 @@ import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.user.AskQuestionException
 import com.wutsi.kokibot.util.MarkdownUtil
 import com.wutsi.kokibot.util.StringUtil
-import com.wutsi.kokibot.util.StringUtil.take
+import com.wutsi.kokibot.util.StringUtil.takeLast
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -99,7 +99,7 @@ class ReActReasoningLoop(
         streamCallback: ((LLMStreamData) -> Unit)?,
         context: Context
     ): LLMResponse {
-        LOGGER.info("$iteration $assistantName LLM " + StringUtil.take(query.text, 200))
+        LOGGER.info("$iteration $assistantName LLM " + StringUtil.takeLast(query.text, 200))
 
         // Call LLM
         val request = LLMRequest(
@@ -139,7 +139,7 @@ class ReActReasoningLoop(
         // Update memory with reasoning content
         response.choices.forEach { choice ->
             if (!choice.content.isNullOrEmpty()) {
-                LOGGER.info(StringUtil.take(choice.content, 200))
+                LOGGER.info(StringUtil.takeLast(choice.content, 200))
                 memory.add(choice.content)
             }
         }
@@ -165,7 +165,7 @@ class ReActReasoningLoop(
                             Message(
                                 channelId = channelId,
                                 userId = query.userId,
-                                text = take(MarkdownUtil.toText(content), 1024),
+                                text = takeLast(MarkdownUtil.toText(content), 1024),
                                 role = Role.ASSISTANT,
                                 usage = response.usage,
                             )
@@ -190,7 +190,7 @@ class ReActReasoningLoop(
             } else if (choice.finishReason == LLMFinishReason.LENGTH) { // Content cutoff
                 LOGGER.warn(
                     "!!! LLM response cut off due to length limits. Iteration: $iteration, Response: ${
-                        take(
+                        takeLast(
                             choice.content ?: "",
                             500
                         )

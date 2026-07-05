@@ -66,6 +66,7 @@ class KnowledgeBaseTest {
         kb.init(emptyMap<String, Any>(), context)
         assertFalse(kb.isEnabled())
         assertTrue(kb.isExclusive())
+        assertFalse(kb.isWebSearch())
     }
 
     @Test

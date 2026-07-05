@@ -23,14 +23,6 @@ class PromptBuilder(
 
     fun buildPrompt(query: Message, iterationMemory: List<String>, context: Context): String {
         val sb = StringBuilder()
-        val text = buildText(query, context)
-        sb.append("Query: $text\n")
-
-        sb.append("\n---\n")
-        sb.append("# Current Date and Time\n")
-        val now = ZonedDateTime.now(clock)
-        sb.append("The current date and time is: ${now.format(DATE_TIME_FORMATTER)} (${now.toOffsetDateTime()})\n")
-
         val conversationMessages = loadConversationMessages(query, context)
         if (conversationMessages.isNotEmpty()) {
             sb.append("\n---\n")
@@ -39,6 +31,20 @@ class PromptBuilder(
                 sb.append("<${msg.role}>\n(${msg.dateTime}):\n${msg.text}\n</${msg.role}>\n")
             }
         }
+        sb.append("<user>\n${query.text}\n</user>\n")
+
+        query.channelId?.let { channelId ->
+            loadChannelInstructions(channelId)?.let { channelInstructions ->
+                sb.append("\n---\n")
+                sb.append("# Formatting Instructions\n")
+                sb.append("<instructions>\n$channelInstructions\n</instructions>\n")
+            }
+        }
+
+        sb.append("\n---\n")
+        sb.append("# Current Date and Time\n")
+        val now = ZonedDateTime.now(clock)
+        sb.append("The current date and time is: ${now.format(DATE_TIME_FORMATTER)} (${now.toOffsetDateTime()})\n")
 
         if (context.memory.isEnabled()) {
             val longTermMemory = context.memory.get()
@@ -82,17 +88,6 @@ class PromptBuilder(
             securityInstructions(),
         )
         return applyVariables(entries.joinToString("\n\n---\n\n"), query, context)
-    }
-
-    internal fun buildText(query: Message, context: Context): String {
-        query.channelId ?: return query.text
-
-        val channelId = query.channelId.removePrefix("channel:")
-
-        val input = javaClass.getResourceAsStream("/instructions/channel/$channelId.md") ?: return query.text
-        return query.text +
-            "\n\n" +
-            IOUtils.toString(input, "utf-8")
     }
 
     internal fun loadInstructions(context: Context): String? {
@@ -149,11 +144,10 @@ class PromptBuilder(
     private fun identityInstructions(context: Context): String? {
         val assistant = context.assistant
         val lines = listOfNotNull(
-            "- **Handle:** ${assistant.name}",
-            assistant.getFullName()?.let { "- **Full Name:** $it" },
-            assistant.getEmail()?.let { "- **Email:** $it" },
+            "- **Assistant Handle:** ${assistant.name}",
+            assistant.getFullName().ifEmpty { null }?.let { "- **User Full Name:** $it" },
+            assistant.getEmail().ifEmpty { null }?.let { "- **User Email:** $it" },
         )
-        if (lines.size <= 1) return null
         return "# Assistant Identity\n\n${lines.joinToString("\n")}"
     }
 
@@ -196,7 +190,7 @@ class PromptBuilder(
         val content = entries.joinToString("\n\n") { entry ->
             listOfNotNull(
                 "### ${entry.name}",
-                "**Scope:** ${entry.scope}",
+                entry.scope?.ifEmpty { null }?.let { "**Scope:** ${entry.scope}" },
                 entry.keywords.ifEmpty { null }?.let { "**Keywords:** ${entry.keywords.joinToString(", ")}" },
                 entry.summary?.let { path -> "**Summary File:** {{HOME}}/$path" },
                 entry.raw?.let { path -> "**Raw File:** {{HOME}}/$path" },
@@ -228,6 +222,11 @@ class PromptBuilder(
         return "# Knowledge Base Instructions\n\n" +
             "## Knowledge Base Content\n\nHere are the knowledge base entries available:\n\n$content\n" +
             "## Knowledge Base Usage Instructions\n\n$usage"
+    }
+
+    private fun loadChannelInstructions(channelId: String): String? {
+        val input = javaClass.getResourceAsStream("/instructions/channel/$channelId.md") ?: return null
+        return IOUtils.toString(input, "utf-8")
     }
 
     private fun applyVariables(text: String, query: Message, context: Context): String {

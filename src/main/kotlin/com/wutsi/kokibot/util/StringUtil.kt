@@ -9,4 +9,13 @@ object StringUtil {
             xtext
         }
     }
+
+    fun takeLast(text: String, n: Int = 200): String {
+        val xtext = text.replace("\n", " ").take(n).trim().takeLast(n)
+        return if (text.length > n) {
+            "...$xtext"
+        } else {
+            xtext
+        }
+    }
 }

@@ -19,6 +19,8 @@ const Settings = {
     currentLLMName: null,
     currentLLMModel: null,
     _llmModalKeyHandler: null,
+    currentSkillName: null,
+    currentSkillInstructions: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -321,6 +323,12 @@ const Settings = {
                     <div class="setting-section-row">
                         <h3 class="setting-section-title">Instructions</h3>
                         <div class="general-instructions-actions">
+                            <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-copy-btn" title="Copy instructions to clipboard">
+                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                    <path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1.1.9 2 2 2h11c1 0 2-.9 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/>
+                                </svg>
+                                Copy
+                            </button>
                             <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-edit-btn">
                                 <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
                                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -346,6 +354,9 @@ const Settings = {
             </div>
         `;
 
+        document.getElementById('general-instructions-copy-btn')?.addEventListener('click', () => {
+            this.copyInstructionsToClipboard();
+        });
         document.getElementById('general-instructions-edit-btn')?.addEventListener('click', () => {
             this.enterGeneralInstructionsEditMode();
         });
@@ -698,6 +709,27 @@ const Settings = {
         document.getElementById('general-instructions-cancel-btn').style.display = 'none';
     },
 
+    copyInstructionsToClipboard() {
+        const textarea = document.getElementById('general-instructions-editor-textarea');
+        const text = textarea ? textarea.value : (this.generalInstructionsContent || '');
+
+        if (!text.trim()) {
+            Notifications.warning('No instructions to copy', { duration: 2000 });
+            return;
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('general-instructions-copy-btn');
+            if (btn) {
+                const original = btn.innerHTML;
+                btn.innerHTML = `<svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Copied!`;
+                setTimeout(() => { btn.innerHTML = original; }, 2000);
+            }
+        }).catch(() => {
+            Notifications.error('Failed to copy to clipboard');
+        });
+    },
+
     enterNameEditMode() {
         const row = document.getElementById('general-name-row');
         if (!row) return;
@@ -990,6 +1022,12 @@ const Settings = {
                         <span class="setting-section-hint">Periodic prompt sent to the assistant on each heartbeat tick</span>
                     </div>
                     <div class="settings-section-actions">
+                        <button class="settings-action-btn settings-action-btn-secondary" id="heartbeat-copy-btn" title="Copy instructions to clipboard">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1.1.9 2 2 2h11c1 0 2-.9 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                            Copy
+                        </button>
                         <button class="settings-action-btn settings-action-btn-secondary" id="heartbeat-edit-btn"${enabled ? '' : ' disabled'}>
                             <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
@@ -1047,6 +1085,7 @@ const Settings = {
             this.saveHeartbeatSetting('frequency', e.target.value, 'Frequency saved');
         });
 
+        document.getElementById('heartbeat-copy-btn')?.addEventListener('click', () => this.copyHeartbeatInstructionsToClipboard());
         document.getElementById('heartbeat-edit-btn')?.addEventListener('click', () => this.enterHeartbeatEditMode());
         document.getElementById('heartbeat-save-btn')?.addEventListener('click', () => this.saveHeartbeat());
         document.getElementById('heartbeat-cancel-btn')?.addEventListener('click', () => this.exitHeartbeatEditMode());
@@ -1130,6 +1169,27 @@ const Settings = {
         document.getElementById('heartbeat-edit-btn').style.display = 'flex';
         document.getElementById('heartbeat-save-btn').style.display = 'none';
         document.getElementById('heartbeat-cancel-btn').style.display = 'none';
+    },
+
+    copyHeartbeatInstructionsToClipboard() {
+        const textarea = document.getElementById('heartbeat-editor-textarea');
+        const text = textarea ? textarea.value : (this.heartbeatOriginalContent || '');
+
+        if (!text.trim()) {
+            Notifications.warning('No instructions to copy', { duration: 2000 });
+            return;
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('heartbeat-copy-btn');
+            if (btn) {
+                const original = btn.innerHTML;
+                btn.innerHTML = `<svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Copied!`;
+                setTimeout(() => { btn.innerHTML = original; }, 2000);
+            }
+        }).catch(() => {
+            Notifications.error('Failed to copy to clipboard');
+        });
     },
 
     async saveHeartbeatSetting(key, value, successMsg) {
@@ -1463,26 +1523,243 @@ const Settings = {
         `;
 
         try {
-            const response = await fetch(`/assistants/${this.agentName}/skills/skill.md?skill=${encodeURIComponent(skill.name)}`);
-            const content = response.ok ? (await response.json()).content || '' : '';
+            const response = await fetch(`/assistants/${this.agentName}/skills/${encodeURIComponent(skill.name)}`);
+            const data = response.ok ? await response.json() : {};
 
-            const instructionsHtml = content.trim()
-                ? `<div class="skill-detail-instructions">
-                       <h3 class="skill-detail-instructions-title">Instructions</h3>
-                       <div class="skill-detail-content markdown-body">${new MarkdownRenderer().render(content)}</div>
+            this.currentSkillName = data.name || skill.name;
+            this.currentSkillInstructions = data.instructions || '';
+            const fromMarketplace = !!data.marketplace;
+
+            const keywords = data.keywords || [];
+            const requiredBinaries = data.requiredBinaries || [];
+            const requiredEnv = data.requiredEnv || [];
+            const requiredOS = data.requiredOS || [];
+
+            const keywordsHtml = keywords.length
+                ? `<div class="skill-detail-meta-row">
+                       <span class="skill-detail-meta-label">Keywords</span>
+                       <span class="skill-detail-meta-value">${keywords.map(k => `<span class="skill-detail-tag">${this.escapeHtml(k)}</span>`).join('')}</span>
                    </div>`
                 : '';
 
+            const buildRequirementRow = (label, items) => items.length
+                ? `<div class="skill-detail-meta-row">
+                       <span class="skill-detail-meta-label">${label}</span>
+                       <span class="skill-detail-meta-value">${items.map(i => `<span class="skill-detail-tag">${this.escapeHtml(i)}</span>`).join('')}</span>
+                   </div>`
+                : '';
+
+            const metaHtml = (keywordsHtml || requiredBinaries.length || requiredEnv.length || requiredOS.length)
+                ? `<div class="skill-detail-meta">
+                       ${keywordsHtml}
+                       ${buildRequirementRow('Requires', requiredBinaries)}
+                       ${buildRequirementRow('Env vars', requiredEnv)}
+                       ${buildRequirementRow('OS', requiredOS)}
+                   </div>`
+                : '';
+
+            const instructionsBodyHtml = this.currentSkillInstructions.trim()
+                ? `<div class="skill-detail-content markdown-body" id="skill-instructions-body">${new MarkdownRenderer().render(this.currentSkillInstructions)}</div>`
+                : `<p class="skill-detail-instructions-empty" id="skill-instructions-body">No instructions configured</p>`;
+
+            const editBtnHtml = fromMarketplace
+                ? ''
+                : `<button class="settings-action-btn settings-action-btn-secondary" id="skill-edit-btn">
+                       <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                           <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                       </svg>
+                       Edit
+                   </button>
+                   <button class="settings-action-btn settings-action-btn-primary" id="skill-save-btn" style="display:none;">
+                       <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                           <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                       </svg>
+                       Save
+                   </button>
+                   <button class="settings-action-btn settings-action-btn-secondary" id="skill-cancel-btn" style="display:none;">
+                       <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                           <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                       </svg>
+                       Cancel
+                   </button>`;
+
             panel.innerHTML = `
                 <div class="skill-detail">
-                    <h2 class="skill-detail-name">${this.escapeHtml(skill.name)}</h2>
-                    ${skill.description ? `<p class="skill-detail-description">${this.escapeHtml(skill.description)}</p>` : ''}
-                    ${instructionsHtml}
+                    <h2 class="skill-detail-name">${this.escapeHtml(this.currentSkillName)}</h2>
+                    ${data.description ? `<p class="skill-detail-description">${this.escapeHtml(data.description)}</p>` : ''}
+                    ${fromMarketplace ? `<div class="skill-detail-marketplace" id="skill-marketplace-badge" data-marketplace="${this.escapeHtml(data.marketplace)}">
+                        <div class="skill-detail-marketplace-inner">
+                            <span class="skill-detail-marketplace-loading">Loading marketplace info...</span>
+                        </div>
+                    </div>` : ''}
+                    ${metaHtml}
+                    <div class="skill-detail-instructions">
+                        <div class="skill-detail-instructions-header">
+                            <h3 class="skill-detail-instructions-title">Instructions</h3>
+                            <div class="settings-section-actions">
+                                <button class="settings-action-btn settings-action-btn-secondary" id="skill-copy-btn" title="Copy instructions to clipboard">
+                                    <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                        <path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1.1.9 2 2 2h11c1 0 2-.9 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/>
+                                    </svg>
+                                    Copy
+                                </button>
+                                ${editBtnHtml}
+                            </div>
+                        </div>
+                        ${instructionsBodyHtml}
+                    </div>
                 </div>
             `;
+
+            panel.querySelector('#skill-copy-btn')?.addEventListener('click', (e) => {
+                this.copySkillInstructionsToClipboard(e.currentTarget);
+            });
+            panel.querySelector('#skill-edit-btn')?.addEventListener('click', () => {
+                this.enterSkillEditMode();
+            });
+            panel.querySelector('#skill-save-btn')?.addEventListener('click', () => {
+                this.saveSkillInstructions();
+            });
+            panel.querySelector('#skill-cancel-btn')?.addEventListener('click', () => {
+                this.exitSkillEditMode();
+            });
+
+            if (fromMarketplace) {
+                this.loadMarketplaceBadge(data.marketplace);
+            }
         } catch (error) {
             panel.innerHTML = `<div class="skill-detail-placeholder">Failed to load skill content</div>`;
         }
+    },
+
+    async loadMarketplaceBadge(marketplaceName) {
+        const badge = document.getElementById('skill-marketplace-badge');
+        if (!badge) return;
+
+        try {
+            const response = await fetch(`/assistants/${this.agentName}/marketplaces/${encodeURIComponent(marketplaceName)}`);
+            if (!response.ok) throw new Error();
+            const mp = await response.json();
+
+            const iconHtml = mp.icon
+                ? `<img src="${this.escapeHtml(mp.icon)}" alt="${this.escapeHtml(mp.name)}" class="skill-marketplace-icon" onerror="this.style.display='none'">`
+                : `<svg class="skill-marketplace-icon-default" fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>`;
+
+            badge.querySelector('.skill-detail-marketplace-inner').innerHTML = `
+                ${iconHtml}
+                <span class="skill-marketplace-name">${this.escapeHtml(mp.name)}</span>
+                <span class="skill-marketplace-readonly" title="Read-only — managed by marketplace">Read-only</span>
+            `;
+        } catch (_) {
+            badge.querySelector('.skill-detail-marketplace-inner').innerHTML = `
+                <svg class="skill-marketplace-icon-default" fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
+                <span class="skill-marketplace-name">${this.escapeHtml(marketplaceName)}</span>
+                <span class="skill-marketplace-readonly" title="Read-only — managed by marketplace">Read-only</span>
+            `;
+        }
+    },
+
+    copySkillInstructionsToClipboard(btn) {
+        const textarea = document.getElementById('skill-instructions-editor');
+        const text = textarea ? textarea.value : (this.currentSkillInstructions || '');
+
+        if (!text.trim()) {
+            Notifications.warning('No instructions to copy', { duration: 2000 });
+            return;
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            if (btn) {
+                const original = btn.innerHTML;
+                btn.innerHTML = `<svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Copied!`;
+                setTimeout(() => { btn.innerHTML = original; }, 2000);
+            }
+        }).catch(() => {
+            Notifications.error('Failed to copy to clipboard');
+        });
+    },
+
+    enterSkillEditMode() {
+        const body = document.getElementById('skill-instructions-body');
+        if (!body) return;
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'instructions-editor';
+        textarea.id = 'skill-instructions-editor';
+        textarea.value = this.currentSkillInstructions || '';
+        body.replaceWith(textarea);
+        textarea.focus();
+
+        document.getElementById('skill-edit-btn').style.display = 'none';
+        document.getElementById('skill-save-btn').style.display = 'flex';
+        document.getElementById('skill-cancel-btn').style.display = 'flex';
+    },
+
+    async saveSkillInstructions() {
+        if (!this.agentName || !this.currentSkillName) {
+            Notifications.error('No skill selected');
+            return;
+        }
+
+        const textarea = document.getElementById('skill-instructions-editor');
+        if (!textarea) return;
+
+        const content = textarea.value;
+        const saveBtn = document.getElementById('skill-save-btn');
+        const cancelBtn = document.getElementById('skill-cancel-btn');
+        if (saveBtn) saveBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch(`/assistants/${this.agentName}/skills/${encodeURIComponent(this.currentSkillName)}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: 'instructions', value: content }),
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+
+            this.currentSkillInstructions = content;
+            this.exitSkillEditMode();
+            Notifications.success('Instructions saved', { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving skill instructions:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+        } finally {
+            if (saveBtn) saveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+        }
+    },
+
+    exitSkillEditMode() {
+        const textarea = document.getElementById('skill-instructions-editor');
+        if (!textarea) return;
+
+        const hasContent = this.currentSkillInstructions?.trim();
+        const el = document.createElement(hasContent ? 'div' : 'p');
+        el.id = 'skill-instructions-body';
+
+        if (hasContent) {
+            el.className = 'skill-detail-content markdown-body';
+            el.innerHTML = new MarkdownRenderer().render(this.currentSkillInstructions);
+        } else {
+            el.className = 'skill-detail-instructions-empty';
+            el.textContent = 'No instructions configured';
+        }
+
+        textarea.replaceWith(el);
+
+        document.getElementById('skill-edit-btn').style.display = 'flex';
+        document.getElementById('skill-save-btn').style.display = 'none';
+        document.getElementById('skill-cancel-btn').style.display = 'none';
     },
 
     showSkillsEmpty() {

@@ -57,8 +57,14 @@ class MarketplaceTest {
 
         assertEquals("marketplace:obsidian", marketplace.id())
         assertEquals(files.size, skills.size)
-        assertNotNull(skills.find { skill -> skill.metadata.name == "obsidian/cmr" })
-        assertNotNull(skills.find { skill -> skill.metadata.name == "obsidian/land-title-verifier" })
+
+        val result = marketplace.getSkills().sortedBy { skill -> skill.metadata.name }
+
+        assertEquals("obsidian_cmr", result[0].metadata.name)
+        assertEquals("obsidian", result[0].marketplace)
+
+        assertEquals("obsidian_land-title-verifier", result[1].metadata.name)
+        assertEquals("obsidian", result[1].marketplace)
     }
 
     @Test
@@ -92,7 +98,7 @@ class MarketplaceTest {
         assertEquals("https://github.com/kepano/obsidian-skills", marketplace.getRepoUrl())
         assertEquals("marketplace:obsidian", marketplace.id())
         assertEquals(1, skills.size)
-        assertNotNull(skills.find { skill -> skill.metadata.name == "obsidian/land-title-verifier" })
+        assertNotNull(skills.find { skill -> skill.metadata.name == "obsidian_land-title-verifier" })
     }
 
     @Test

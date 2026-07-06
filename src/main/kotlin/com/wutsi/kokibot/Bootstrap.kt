@@ -62,14 +62,16 @@ class Bootstrap(
             "memory" -> context.memory.apply(property, value)
             "heartbeat" -> context.heartbeat.apply(property, value)
             "knowledge-base" -> context.knowledgeBase.apply(property, value)
-            "marketplace" -> context.marketplaceRegistry.apply(property, value)
             "llm" -> context.llm.apply(property, value)
+            "marketplace" -> context.marketplaceRegistry.apply(property, value)
+            "skill" -> context.skillRegistry.apply(property, value)
             else -> throw ConfigurationException("Unknown setting section: $section")
         }
 
         if (
             (section == "assistant" && property == "instructions") ||
             (section == "heartbeat" && property == "instructions") ||
+            section == "skill" ||
             section == "marketplace"
         ) {
             return

@@ -97,10 +97,9 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
             try {
                 val pair = parser.parse(md)
                 val basename = pair.first.name
-                val meta = pair.first.copy(name = "$name/$basename")
-                val body = pair.second
+                val meta = pair.first.copy(name = "${name}_$basename")
                 if (acceptSkill(basename)) {
-                    Skill(meta, body)
+                    Skill(meta, name)
                 } else {
                     null
                 }

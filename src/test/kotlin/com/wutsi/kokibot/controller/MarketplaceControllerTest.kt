@@ -12,6 +12,7 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.MultiBootstrap
 import com.wutsi.kokibot.llm.LLM
 import com.wutsi.kokibot.marketplace.Marketplace
+import com.wutsi.kokibot.marketplace.MarketplaceNotFoundException
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.skill.Skill
 import com.wutsi.kokibot.skill.SkillMetadata
@@ -98,6 +99,45 @@ class MarketplaceControllerTest {
     }
 
     @Test
+    fun get() {
+        val marketplace = createMarketplace("acme", "https://github.com/acme/skills", emptyList())
+        doReturn("Acme Skills").whenever(marketplace).getDescription()
+        doReturn("https://acme.com/icon.png").whenever(marketplace).getIcon()
+        val marketplaceRegistry = mock<MarketplaceRegistry>()
+        doReturn(marketplace).whenever(marketplaceRegistry).get("marketplace:acme")
+        doReturn(listOf(createBootstrapWithRegistry("007", marketplaceRegistry))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/marketplaces/acme", Map::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        val body = response.body!!
+        assertEquals("acme", body["name"])
+        assertEquals("https://github.com/acme/skills", body["repoUrl"])
+        assertEquals("Acme Skills", body["description"])
+        assertEquals("https://acme.com/icon.png", body["icon"])
+    }
+
+    @Test
+    fun `get - marketplace not found`() {
+        val marketplaceRegistry = mock<MarketplaceRegistry>()
+        doThrow(MarketplaceNotFoundException("Marketplace not found: xxx")).whenever(marketplaceRegistry).get("marketplace:xxx")
+        doReturn(listOf(createBootstrapWithRegistry("007", marketplaceRegistry))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/marketplaces/xxx", Map::class.java)
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
+    fun `get - assistant not found`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/xxx/marketplaces/acme", Map::class.java)
+
+        assertEquals(404, response.statusCode.value())
+    }
+
+    @Test
     fun `set marketplace setting`() {
         val bootstrap = createBootstrap("007")
         doReturn(listOf(bootstrap)).whenever(multi).bootstraps
@@ -144,7 +184,7 @@ class MarketplaceControllerTest {
 
     private fun createSkill(name: String): Skill {
         val metadata = SkillMetadata(name = name, home = File("."))
-        return Skill(metadata, "")
+        return Skill(metadata)
     }
 
     private fun createMarketplace(name: String, repoUrl: String, skills: List<Skill>): Marketplace {
@@ -161,6 +201,21 @@ class MarketplaceControllerTest {
 
         val marketplaceRegistry = mock<MarketplaceRegistry>()
         doReturn(marketplaces).whenever(marketplaceRegistry).all()
+
+        val context = Context(
+            assistant = assistant,
+            home = File("target/marketplace-controller/$name"),
+            llm = mock<LLM>(),
+            marketplaceRegistry = marketplaceRegistry,
+        )
+        val bootstrap = mock<Bootstrap>()
+        doReturn(context).whenever(bootstrap).getContext()
+        return bootstrap
+    }
+
+    private fun createBootstrapWithRegistry(name: String, marketplaceRegistry: MarketplaceRegistry): Bootstrap {
+        val assistant = mock<Assistant>()
+        doReturn(name).whenever(assistant).name
 
         val context = Context(
             assistant = assistant,

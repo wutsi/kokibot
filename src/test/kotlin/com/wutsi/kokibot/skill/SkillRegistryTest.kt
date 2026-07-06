@@ -285,6 +285,34 @@ class SkillRegistryTest {
         assertEquals(0, registry.all().size)
     }
 
+    @Test
+    fun apply() {
+        // GIVEN
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "skill:my-skill", home = File("target"))).whenever(skill1).metadata
+        registry.register(skill1)
+
+        // WHEN
+        registry.apply("my-skill.instructions", "new content")
+
+        // THEN
+        verify(skill1).apply("instructions", "new content")
+    }
+
+    @Test
+    fun `apply - missing dot throws`() {
+        assertThrows<IllegalArgumentException> {
+            registry.apply("no-dot", "value")
+        }
+    }
+
+    @Test
+    fun `apply - skill not found throws`() {
+        assertThrows<SkillNotFoundException> {
+            registry.apply("unknown-skill.instructions", "value")
+        }
+    }
+
     private fun getResourceFile(path: String): File {
         val resource = BootstrapTest::class.java.getResource(path)
             ?: throw IllegalArgumentException("Resource not found: $path")

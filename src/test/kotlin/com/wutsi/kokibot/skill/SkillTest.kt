@@ -1,9 +1,11 @@
 package com.wutsi.kokibot.skill
 
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.Context
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import java.io.File
 import kotlin.test.assertEquals
@@ -26,7 +28,6 @@ class SkillTest {
             requiredSetup = listOf("ls -la"),
             home = File("target"),
         ),
-        body = "",
     )
 
     @Test
@@ -53,7 +54,6 @@ class SkillTest {
                 requiredOS = emptyList(),
                 requiredBinaries = emptyList()
             ),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val health = xskill.health()
@@ -68,7 +68,6 @@ class SkillTest {
     fun `health - missing env`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredEnv = listOf("__MISSING_ENV__")),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val health = xskill.health()
@@ -81,7 +80,6 @@ class SkillTest {
     fun `health - missing bin`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredBinaries = listOf("__javax__")),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val health = xskill.health()
@@ -94,7 +92,6 @@ class SkillTest {
     fun `health - os mismatch`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredOS = listOf("__D@1w1n")),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val health = xskill.health()
@@ -121,7 +118,6 @@ class SkillTest {
                 requiredSetup = emptyList(),
                 requiredBinaries = emptyList()
             ),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val result = xskill.activate()
@@ -133,7 +129,6 @@ class SkillTest {
     fun `activate - no dependencies`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredEnv = emptyList()),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val result = xskill.activate()
@@ -145,7 +140,6 @@ class SkillTest {
     fun `activate - missing env`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredEnv = listOf("__MISSING_ENV__")),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val result = xskill.activate()
@@ -157,7 +151,6 @@ class SkillTest {
     fun `activate - missing OS`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredOS = listOf("__linux__")),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val result = xskill.activate()
@@ -169,11 +162,59 @@ class SkillTest {
     fun `activate - failed setup`() {
         val xskill = Skill(
             metadata = skill.metadata.copy(requiredSetup = listOf("__ls__")),
-            body = "",
         )
         xskill.init(emptyMap<String, Any>(), context)
         val result = xskill.activate()
 
         assertFalse(result)
+    }
+
+    @Test
+    fun instructions() {
+        val skill = Skill(
+            metadata = SkillMetadata(
+                name = "land-title-verifier",
+                categories = listOf("real estate"),
+                keywords = listOf("land title", "land ownership", "property title"),
+                requiredBinaries = listOf("java"),
+                requiredEnv = listOf("PATH"),
+                requiredOS = listOf(System.getProperty("os.name")),
+                requiredSetup = listOf("ls -la"),
+                home = File(this::class.java.getResource("/home/007/config/skills/land-title-verifier")!!.file),
+            )
+        )
+        val body = skill.instructions
+        assertTrue(body.contains("# Land Title Verifier"))
+    }
+
+    @Test
+    fun `apply - instructions`() {
+        val home = File("target/test-data/skill-apply")
+        home.mkdirs()
+        val xskill = Skill(
+            metadata = skill.metadata.copy(home = home),
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+
+        xskill.apply("instructions", "New instructions content")
+
+        val file = File(home, "SKILL.md")
+        assertEquals("New instructions content", file.readText())
+        file.delete()
+    }
+
+    @Test
+    fun `apply - unknown key throws`() {
+        skill.init(emptyMap<String, Any>(), context)
+
+        assertThrows<ConfigurationException> { skill.apply("unknown-key", "value") }
+    }
+
+    @Test
+    fun `apply - from marketplace`() {
+        val sk = Skill(metadata = skill.metadata, "foo")
+        sk.init(emptyMap<String, Any>(), context)
+
+        assertThrows<ConfigurationException> { sk.apply("instructions", "value") }
     }
 }

@@ -9,6 +9,7 @@ import com.wutsi.kokibot.llm.LLMFactory
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import com.wutsi.kokibot.service.heartbeat.Heartbeat
 import com.wutsi.kokibot.service.memory.Memory
+import com.wutsi.kokibot.skill.SkillRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ class BootstrapTest {
     private val heartbeat = mock<Heartbeat>()
     private val memory = mock<Memory>()
     private val marketplaceRegistry = mock<MarketplaceRegistry>()
+    private val skillRegistry = mock<SkillRegistry>()
     private val llm = mock<LLM>()
     private val jsonMapper = JsonMapper()
 
@@ -41,6 +43,7 @@ class BootstrapTest {
         doReturn(context).whenever(contextFactory).create(any(), any(), any())
         doReturn(llm).whenever(context).llm
         doReturn(heartbeat).whenever(context).heartbeat
+        doReturn(skillRegistry).whenever(context).skillRegistry
     }
 
     @Test
@@ -114,6 +117,18 @@ class BootstrapTest {
         bootstrap.set("marketplace.foo.enabled", false)
 
         verify(marketplaceRegistry).apply("foo.enabled", false)
+        assertEquals(before, File(home, "config/settings.json").readText())
+    }
+
+    @Test
+    fun `set - skill property`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+        val before = File(home, "config/settings.json").readText()
+
+        bootstrap.set("skill.foo.enabled", false)
+
+        verify(skillRegistry).apply("foo.enabled", false)
         assertEquals(before, File(home, "config/settings.json").readText())
     }
 

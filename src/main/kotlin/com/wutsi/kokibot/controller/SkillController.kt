@@ -1,12 +1,14 @@
 package com.wutsi.kokibot.controller
 
+import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.MultiBootstrap
 import com.wutsi.kokibot.skill.SkillNotFoundException
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RequestMapping("/assistants")
@@ -30,16 +32,46 @@ class SkillController(private val multi: MultiBootstrap) {
         )
     }
 
-    @GetMapping("/{name}/skills/skill.md")
-    fun content(
+    @GetMapping("/{name}/skills/{skill}")
+    fun get(
         @PathVariable name: String,
-        @RequestParam skill: String,
-    ): ResponseEntity<Map<String, Any>> {
+        @PathVariable skill: String,
+    ): ResponseEntity<Map<String, Any?>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
         return try {
-            val skill = bootstrap.getContext().skillRegistry.get(skill)
-            ResponseEntity.ok(mapOf("content" to skill.body))
-        } catch (e: SkillNotFoundException) {
+            val sk = bootstrap.getContext().skillRegistry.get(skill)
+            ResponseEntity.ok(
+                mapOf(
+                    "name" to sk.metadata.name,
+                    "description" to sk.metadata.description,
+                    "keywords" to sk.metadata.keywords,
+                    "instructions" to sk.instructions,
+                    "requiredBinaries" to sk.metadata.requiredBinaries,
+                    "requiredEnv" to sk.metadata.requiredEnv,
+                    "requiredOS" to sk.metadata.requiredOS,
+                    "marketplace" to sk.marketplace
+                )
+            )
+        } catch (_: SkillNotFoundException) {
+            ResponseEntity.notFound().build()
+        }
+    }
+
+    @PostMapping("/{name}/skills/{skill}/settings")
+    fun settings(
+        @PathVariable name: String,
+        @PathVariable skill: String,
+        @RequestBody body: Map<String, Any>,
+    ): ResponseEntity<Map<String, Any>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        val key = body["key"] as? String ?: return ResponseEntity.badRequest().build()
+        val value = body["value"] ?: return ResponseEntity.badRequest().build()
+        return try {
+            bootstrap.set("skill.$skill.$key", value)
+            ResponseEntity.ok(mapOf("success" to true))
+        } catch (e: ConfigurationException) {
+            ResponseEntity.badRequest().body(mapOf("error" to (e.message ?: "Invalid setting")))
+        } catch (_: SkillNotFoundException) {
             ResponseEntity.notFound().build()
         }
     }

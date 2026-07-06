@@ -55,8 +55,7 @@ class SkillCommandTest {
                 requiredBinaries = listOf("bin1", "bin2"),
                 requiredEnv = listOf("env1", "env2"),
                 home = File("target")
-            ),
-            body = "",
+            )
         )
         doReturn(skill).whenever(skillRegistry).get("skill1")
 

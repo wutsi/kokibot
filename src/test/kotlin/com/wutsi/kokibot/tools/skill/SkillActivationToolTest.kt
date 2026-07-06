@@ -45,12 +45,12 @@ class SkillActivationToolTest {
     @BeforeEach
     fun setUp() {
         doReturn(meta1).whenever(skill1).metadata
-        doReturn(body1).whenever(skill1).body
+        doReturn(body1).whenever(skill1).instructions
         doReturn(skill1).whenever(skillRegistry).get("skill1")
         skill1.init(mapOf("" to "xx"), context)
 
         doReturn(meta2).whenever(skill2).metadata
-        doReturn(body2).whenever(skill2).body
+        doReturn(body2).whenever(skill2).instructions
         doReturn(skill2).whenever(skillRegistry).get("skill2")
         skill2.init(mapOf("" to "xx"), context)
     }
@@ -74,10 +74,10 @@ class SkillActivationToolTest {
         val result = tool.exec(mapOf("skills" to "skill1"))
 
         assertTrue(result.contains("skill1"))
-        assertTrue(result.contains(skill1.body))
+        assertTrue(result.contains(skill1.instructions))
 
         assertFalse(result.contains("skill2"))
-        assertFalse(result.contains(skill2.body))
+        assertFalse(result.contains(skill2.instructions))
     }
 
     @Test
@@ -89,10 +89,10 @@ class SkillActivationToolTest {
         val result = tool.exec(mapOf("skills" to "skill1, skill2"))
 
         assertTrue(result.contains("skill1"))
-        assertTrue(result.contains(skill1.body))
+        assertTrue(result.contains(skill1.instructions))
 
         assertTrue(result.contains("skill2"))
-        assertTrue(result.contains(skill2.body))
+        assertTrue(result.contains(skill2.instructions))
     }
 
     @Test
@@ -102,7 +102,7 @@ class SkillActivationToolTest {
         tool.init(mapOf("" to "xx"), context)
         val result = tool.exec(mapOf("skills" to "skill1"))
 
-        assertFalse(result.contains(skill1.body))
+        assertFalse(result.contains(skill1.instructions))
     }
 
     @Test

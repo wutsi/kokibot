@@ -52,20 +52,20 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
         register(marketplace)
     }
 
-    fun apply(property: String, value: Any) {
-        val dot = property.indexOf('.')
+    fun apply(key: String, value: Any) {
+        val dot = key.indexOf('.')
         if (dot < 0) throw IllegalArgumentException("Marketplace property must use the format <marketplace>.<property> (e.g. my-marketplace.enabled)")
 
-        val name = property.substring(0, dot)
-        val marketplaceProperty = property.substring(dot + 1)
+        val name = key.substring(0, dot)
+        val property = key.substring(dot + 1)
 
         val marketplace = get("marketplace:${name.lowercase()}")
-        marketplace.apply(marketplaceProperty, value)
+        marketplace.apply(property, value)
 
         val file = File(getMarketplaceDir(), "$name.json")
         file.parentFile.mkdirs()
         val config = JsonMapper().readValue(file, Map::class.java).toMutableMap()
-        config[marketplaceProperty] = value
+        config[property] = value
         JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, config)
     }
 

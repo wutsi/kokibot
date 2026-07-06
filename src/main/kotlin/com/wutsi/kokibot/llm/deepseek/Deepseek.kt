@@ -135,7 +135,9 @@ open class Deepseek : LLM {
     }
 
     protected fun getApiKey(): String {
-        return context.credentialService.get("llm.${getName()}")
+        val key = "llm.${getName()}"
+        val apiKey = context.credentialService.get(key)
+        return apiKey
     }
 
     override fun getMaxContextWindow() = 1024 * 1024

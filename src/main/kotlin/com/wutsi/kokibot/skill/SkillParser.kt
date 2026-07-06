@@ -48,4 +48,8 @@ class SkillParser {
             body.trim(),
         )
     }
+
+    fun extractBody(file: File): String {
+        return parse(file).second
+    }
 }

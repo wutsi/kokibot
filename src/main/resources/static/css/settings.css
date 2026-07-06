@@ -1305,8 +1305,89 @@ h3.setting-section-title {
 .skill-detail-description {
     font-size: 14px;
     color: var(--color-text-secondary);
-    margin: 0 0 24px 0;
+    margin: 0 0 16px 0;
     line-height: 1.5;
+}
+
+.skill-detail-marketplace {
+    margin-bottom: 16px;
+}
+
+.skill-detail-marketplace-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--color-border-light);
+    background-color: var(--color-bg-secondary);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.skill-marketplace-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: contain;
+}
+
+.skill-marketplace-icon-default {
+    opacity: 0.6;
+}
+
+.skill-marketplace-name {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.skill-marketplace-readonly {
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    border-left: 1px solid var(--color-border-light);
+    padding-left: 6px;
+}
+
+.skill-detail-marketplace-loading {
+    font-size: 13px;
+    color: var(--color-text-tertiary);
+    font-style: italic;
+}
+
+.skill-detail-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.skill-detail-meta-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.skill-detail-meta-label {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    min-width: 80px;
+    padding-top: 2px;
+}
+
+.skill-detail-meta-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.skill-detail-tag {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-light);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    color: var(--color-text-primary);
 }
 
 .skill-detail-instructions {
@@ -1315,13 +1396,27 @@ h3.setting-section-title {
     margin-top: 4px;
 }
 
+.skill-detail-instructions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
 .skill-detail-instructions-title {
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     color: var(--color-text-secondary);
-    margin: 0 0 16px 0;
+    margin: 0;
+}
+
+.skill-detail-instructions-empty {
+    font-size: 14px;
+    color: var(--color-text-tertiary);
+    font-style: italic;
+    margin: 8px 0 0 0;
 }
 
 .skill-detail-content {

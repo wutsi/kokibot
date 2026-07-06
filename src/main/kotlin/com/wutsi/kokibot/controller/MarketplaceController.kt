@@ -2,6 +2,7 @@ package com.wutsi.kokibot.controller
 
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.MultiBootstrap
+import com.wutsi.kokibot.marketplace.MarketplaceNotFoundException
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -32,6 +33,27 @@ class MarketplaceController(private val multi: MultiBootstrap) {
                 }
                 .sortedBy { it["name"].toString() }
         )
+    }
+
+    @GetMapping("/{name}/marketplaces/{marketplace}")
+    fun get(
+        @PathVariable name: String,
+        @PathVariable marketplace: String,
+    ): ResponseEntity<Map<String, Any?>> {
+        val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
+        return try {
+            val mp = bootstrap.getContext().marketplaceRegistry.get("marketplace:$marketplace")
+            ResponseEntity.ok(
+                mapOf(
+                    "name" to mp.getName(),
+                    "description" to mp.getDescription(),
+                    "icon" to mp.getIcon(),
+                    "repoUrl" to mp.getRepoUrl(),
+                )
+            )
+        } catch (_: MarketplaceNotFoundException) {
+            ResponseEntity.notFound().build()
+        }
     }
 
     @PostMapping("/{name}/marketplaces/{marketplace}/settings")

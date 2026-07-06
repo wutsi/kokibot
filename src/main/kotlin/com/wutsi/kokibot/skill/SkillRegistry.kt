@@ -36,12 +36,23 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
         try {
             val result = parser.parse(File(dir, "SKILL.md"))
             LOGGER.info("Skill: ${result.first.name}")
-            val skill = Skill(metadata = result.first, body = result.second)
+            val skill = Skill(result.first)
             register(skill)
             skill.init(EMPTY_MAP, context)
         } catch (ex: Exception) {
             LOGGER.warn("Unable to initialize the Skill ${dir.name} - Error:" + ex.message)
         }
+    }
+
+    fun apply(key: String, value: Any) {
+        val dot = key.indexOf('.')
+        if (dot < 0) throw IllegalArgumentException("Skill property must use the format <skill>.<property> (e.g. my-skill.enabled)")
+
+        val name = key.substring(0, dot)
+        val property = key.substring(dot + 1)
+
+        val skill = get(name)
+        skill.apply(property, value)
     }
 
     private fun initMarketplacesSkills(context: Context) {

@@ -61,7 +61,7 @@ class SkillActivationTool : Tool {
             val sb = StringBuilder()
             sb.append("Skill `$name` has been activated. Here are the skill detailed instructions\n")
             sb.append("<skill-instructions>\n")
-            sb.append(skill.body)
+            sb.append(skill.instructions)
             sb.append("\n</skill-instructions>")
             return sb.toString()
         } catch (ex: Exception) {

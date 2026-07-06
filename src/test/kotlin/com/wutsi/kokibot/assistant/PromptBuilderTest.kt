@@ -41,10 +41,10 @@ class PromptBuilderTest {
     private val skillRegistry = mock<SkillRegistry>()
     private val mcpRegistry = mock<McpRegistry>()
     private val conversationRepository = mock<ConversationRepository>()
-    private val assistant = mock<Assistant>()
-    private val context = mock<Context>()
+    private val assistant = Assistant("test-assistant")
     private val kb = mock<KnowledgeBase>()
     private val activatedMcps: MutableList<McpServer> = CopyOnWriteArrayList()
+    private val context = createContext()
 
     // Fixed clock for deterministic date/time assertions: 2026-06-09T14:30:15Z
     private val fixedClock: Clock = Clock.fixed(
@@ -55,33 +55,32 @@ class PromptBuilderTest {
 
     @BeforeEach
     fun setup() {
+        assistant.init(
+            mapOf(
+                "full-name" to "Ray Sponsible",
+                "email" to "Ray.Sponsible@gmail.com",
+                "language" to "fr"
+            ), context
+        )
+
         doReturn(false).whenever(kb).isEnabled()
         doReturn(false).whenever(kb).isWebSearch()
         doReturn(emptyList<KBEntry>()).whenever(kb).entries()
-        doReturn(kb).whenever(context).knowledgeBase
 
-        doReturn(true).whenever(memory).isEnabled()
-        doReturn(memory).whenever(context).memory
-
-        doReturn(home).whenever(context).home
-        doReturn(dailyLog).whenever(context).dailyLog
-        doReturn(skillRegistry).whenever(context).skillRegistry
-        doReturn(conversationRepository).whenever(context).conversationRepository
-        doReturn(assistant).whenever(context).assistant
-        doReturn("test-assistant").whenever(assistant).name
-
-        doReturn(mcpRegistry).whenever(context).mcpRegistry
-        doReturn(activatedMcps).whenever(context).activatedMcps
         doReturn(true).whenever(memory).isEnabled()
         doReturn(null).whenever(memory).get()
+
         doReturn(null).whenever(dailyLog).get()
+
         doReturn(emptyList<Skill>()).whenever(skillRegistry).all()
-        doReturn(emptyList<McpServer>()).whenever(mcpRegistry).all()
+
         doReturn(emptyList<ConversationMessage>()).whenever(conversationRepository).getMessages(
             com.nhaarman.mockitokotlin2.any(),
             com.nhaarman.mockitokotlin2.any(),
             com.nhaarman.mockitokotlin2.any()
         )
+
+        doReturn(emptyList<McpServer>()).whenever(mcpRegistry).all()
 
         builder = PromptBuilder(clock = fixedClock)
     }
@@ -93,7 +92,7 @@ class PromptBuilderTest {
 
         val prompt = builder.buildPrompt(query, iterationMemory, context)
 
-        assertTrue(prompt.contains("Query: What is the weather?"))
+        assertTrue(prompt.contains("What is the weather?"))
     }
 
     @Test
@@ -176,7 +175,7 @@ class PromptBuilderTest {
 
         val prompt = builder.buildPrompt(query, iterationMemory, context)
 
-        assertTrue(prompt.contains("Query: Test query"))
+        assertTrue(prompt.contains("Test query"))
         assertTrue(prompt.contains("Long-term fact"))
         assertTrue(prompt.contains("Short-term info"))
         assertTrue(prompt.contains("Iteration step"))
@@ -317,8 +316,7 @@ class PromptBuilderTest {
         val assistantFile = File(tempHome, "ASSISTANT.md")
         assistantFile.writeText("You are {{ASSISTANT_NAME}}")
 
-        doReturn(tempHome).whenever(context).home
-
+        val context = createContext(tempHome)
         val query = Message(userId = "user1", channelId = "channel1")
         val customBuilder = PromptBuilder()
 
@@ -335,7 +333,7 @@ class PromptBuilderTest {
     @Test
     fun `should handle missing ASSISTANT md file gracefully`() {
         val emptyHome = File("/tmp/nonexistent")
-        doReturn(emptyHome).whenever(context).home
+        val context = createContext(emptyHome)
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, context)
@@ -346,21 +344,22 @@ class PromptBuilderTest {
 
     @Test
     fun `should append telegram channel instructions to prompt text`() {
-        val query = Message(text = "Hello", channelId = "channel:telegram")
+        val query = Message(text = "Hello", channelId = "telegram")
 
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("Hello"))
-        assertTrue(prompt.contains("200 words"))
+        assertTrue(prompt.contains("# Telegram  Formatting Instructions"))
     }
 
     @Test
     fun `should append websocket channel instructions to prompt text`() {
-        val query = Message(text = "Hello", channelId = "channel:websocket")
+        val query = Message(text = "Hello", channelId = "websocket")
 
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("Hello"))
+        assertTrue(prompt.contains("# Web Formatting Instructions"))
     }
 
     @Test
@@ -434,7 +433,6 @@ class PromptBuilderTest {
         summary: String? = "kb/summary/guide.summary.md",
         raw: String? = "kb/raw/guide.md",
         source: String = "docs/guide.pdf",
-        contentType: String = "application/pdf",
         status: KBEntryStatus = KBEntryStatus.READY,
     ) = KBEntry(
         name = name,
@@ -583,53 +581,28 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should include identity section when fullName is set`() {
-        doReturn("Koki Bot").whenever(assistant).getFullName()
-        doReturn(null).whenever(assistant).getEmail()
-
+    fun `should include identity section`() {
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("# Assistant Identity"))
         assertTrue(instructions.contains("test-assistant"))
-        assertTrue(instructions.contains("Koki Bot"))
+        assertTrue(instructions.contains("Ray Sponsible"))
+        assertTrue(instructions.contains("Ray.Sponsible@gmail.com"))
     }
 
-    @Test
-    fun `should include identity section when email is set`() {
-        doReturn(null).whenever(assistant).getFullName()
-        doReturn("bot@example.com").whenever(assistant).getEmail()
-
-        val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, context)
-
-        assertTrue(instructions.contains("# Assistant Identity"))
-        assertTrue(instructions.contains("test-assistant"))
-        assertTrue(instructions.contains("bot@example.com"))
-    }
-
-    @Test
-    fun `should include full identity when all fields are set`() {
-        doReturn("Koki Bot").whenever(assistant).getFullName()
-        doReturn("bot@example.com").whenever(assistant).getEmail()
-
-        val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, context)
-
-        assertTrue(instructions.contains("# Assistant Identity"))
-        assertTrue(instructions.contains("test-assistant"))
-        assertTrue(instructions.contains("Koki Bot"))
-        assertTrue(instructions.contains("bot@example.com"))
-    }
-
-    @Test
-    fun `should omit identity section when only handle is available`() {
-        doReturn(null).whenever(assistant).getFullName()
-        doReturn(null).whenever(assistant).getEmail()
-
-        val query = Message(userId = "user1", channelId = "channel1")
-        val instructions = builder.buildSystemInstructions(query, context)
-
-        assertFalse(instructions.contains("# Assistant Identity"))
+    private fun createContext(home: File = this.home): Context {
+        return Context(
+            assistant = assistant,
+            home = home,
+            llm = mock(),
+            knowledgeBase = kb,
+            memory = memory,
+            dailyLog = dailyLog,
+            mcpRegistry = mcpRegistry,
+            skillRegistry = skillRegistry,
+            conversationRepository = conversationRepository,
+            activatedMcps = activatedMcps,
+        )
     }
 }

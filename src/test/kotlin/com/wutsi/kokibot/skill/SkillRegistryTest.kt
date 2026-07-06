@@ -289,7 +289,7 @@ class SkillRegistryTest {
     fun apply() {
         // GIVEN
         val skill1 = mock<Skill>()
-        doReturn(SkillMetadata(name = "skill:my-skill", home = File("target"))).whenever(skill1).metadata
+        doReturn(SkillMetadata(name = "my-skill", home = File("target"))).whenever(skill1).metadata
         registry.register(skill1)
 
         // WHEN

@@ -1,4 +1,4 @@
-# Hyperlink Generation Protocol
+# Web Formatting Instructions
 
 Whenever you reference a file in the agent workspace, you MUST format it as a clickable Markdown hyperlink using
 relative paths.

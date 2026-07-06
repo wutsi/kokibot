@@ -191,6 +191,9 @@ class SkillTest {
     fun `apply - instructions`() {
         val home = File("target/test-data/skill-apply")
         home.mkdirs()
+        val skillFile = File(home, "SKILL.md")
+        skillFile.writeText("---\nname: test-skill\ndescription: Test\n---\n\nOld instructions")
+
         val xskill = Skill(
             metadata = skill.metadata.copy(home = home),
         )
@@ -198,9 +201,33 @@ class SkillTest {
 
         xskill.apply("instructions", "New instructions content")
 
-        val file = File(home, "SKILL.md")
-        assertEquals("New instructions content", file.readText())
-        file.delete()
+        val content = skillFile.readText()
+        assertTrue(content.contains("name: test-skill"), "Frontmatter should be preserved")
+        assertTrue(content.contains("New instructions content"), "New instructions should be present")
+        assertTrue(content.indexOf("---") < content.indexOf("New instructions content"), "Frontmatter should come before instructions")
+        skillFile.delete()
+    }
+
+    @Test
+    fun `apply - description`() {
+        val home = File("target/test-data/skill-apply-description")
+        home.mkdirs()
+        val skillFile = File(home, "SKILL.md")
+        skillFile.writeText("---\nname: test-skill\ndescription: Old description\n---\n\nSome instructions")
+
+        val xskill = Skill(
+            metadata = skill.metadata.copy(home = home, description = "Old description"),
+        )
+        xskill.init(emptyMap<String, Any>(), context)
+
+        xskill.apply("description", "New description")
+
+        val content = skillFile.readText()
+        assertTrue(content.contains("description: New description"), "Description should be updated in file")
+        assertFalse(content.contains("Old description"), "Old description should be gone")
+        assertTrue(content.contains("Some instructions"), "Instructions should be preserved")
+        assertEquals("New description", xskill.metadata.description)
+        skillFile.delete()
     }
 
     @Test

@@ -6,10 +6,11 @@ import com.wutsi.kokibot.Health
 import com.wutsi.kokibot.Resource
 import com.wutsi.kokibot.util.ShellUtil
 import org.slf4j.LoggerFactory
+import org.yaml.snakeyaml.Yaml
 import java.io.File
 
 class Skill(
-    val metadata: SkillMetadata,
+    var metadata: SkillMetadata,
     val marketplace: String? = null,
 ) : Resource {
     companion object {
@@ -109,12 +110,31 @@ class Skill(
 
         when (key) {
             "instructions" -> saveInstructions(value.toString())
+            "description" -> saveDescription(value.toString())
 
             else -> throw ConfigurationException("Unknown assistant setting: $key")
         }
     }
 
+    fun saveDescription(description: String) {
+        val file = File(metadata.home, "SKILL.md")
+        val existing = if (file.exists()) file.readText() else ""
+        val parts = existing.split("---")
+        val frontmatter = if (parts.size >= 3) parts[1] else ""
+        val body = if (parts.size >= 3) parts.subList(2, parts.size).joinToString("---") else ""
+
+        val yaml = Yaml()
+        val map = yaml.load<MutableMap<String, Any>>(frontmatter) ?: mutableMapOf()
+        map["description"] = description
+        file.writeText("---\n${yaml.dump(map)}---$body")
+        metadata = metadata.copy(description = description)
+    }
+
     fun saveInstructions(instruction: String) {
-        File(metadata.home, "SKILL.md").writeText(instruction)
+        val file = File(metadata.home, "SKILL.md")
+        val existing = if (file.exists()) file.readText() else ""
+        val parts = existing.split("---")
+        val frontmatter = if (parts.size >= 3) parts[1] else ""
+        file.writeText("---$frontmatter---\n\n$instruction")
     }
 }

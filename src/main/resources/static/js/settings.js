@@ -21,6 +21,7 @@ const Settings = {
     _llmModalKeyHandler: null,
     currentSkillName: null,
     currentSkillInstructions: null,
+    currentSkillDescription: null,
 
     init(agentName) {
         this.agentName = agentName;
@@ -1528,6 +1529,7 @@ const Settings = {
 
             this.currentSkillName = data.name || skill.name;
             this.currentSkillInstructions = data.instructions || '';
+            this.currentSkillDescription = data.description || '';
             const fromMarketplace = !!data.marketplace;
 
             const keywords = data.keywords || [];
@@ -1586,7 +1588,15 @@ const Settings = {
             panel.innerHTML = `
                 <div class="skill-detail">
                     <h2 class="skill-detail-name">${this.escapeHtml(this.currentSkillName)}</h2>
-                    ${data.description ? `<p class="skill-detail-description">${this.escapeHtml(data.description)}</p>` : ''}
+                    ${fromMarketplace
+                        ? (data.description ? `<p class="skill-detail-description">${this.escapeHtml(data.description)}</p>` : '')
+                        : `<div class="general-description-row" id="skill-description-row">
+                               <p class="skill-detail-description" id="skill-description-text">${data.description ? this.escapeHtml(data.description) : '<span class="general-description-placeholder">No description</span>'}</p>
+                               <button class="general-description-edit-btn" id="skill-description-edit-btn" title="Edit description">
+                                   <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                               </button>
+                           </div>`
+                    }
                     ${fromMarketplace ? `<div class="skill-detail-marketplace" id="skill-marketplace-badge" data-marketplace="${this.escapeHtml(data.marketplace)}">
                         <div class="skill-detail-marketplace-inner">
                             <span class="skill-detail-marketplace-loading">Loading marketplace info...</span>
@@ -1613,6 +1623,9 @@ const Settings = {
 
             panel.querySelector('#skill-copy-btn')?.addEventListener('click', (e) => {
                 this.copySkillInstructionsToClipboard(e.currentTarget);
+            });
+            panel.querySelector('#skill-description-edit-btn')?.addEventListener('click', () => {
+                this.enterSkillDescriptionEditMode();
             });
             panel.querySelector('#skill-edit-btn')?.addEventListener('click', () => {
                 this.enterSkillEditMode();
@@ -1760,6 +1773,74 @@ const Settings = {
         document.getElementById('skill-edit-btn').style.display = 'flex';
         document.getElementById('skill-save-btn').style.display = 'none';
         document.getElementById('skill-cancel-btn').style.display = 'none';
+    },
+
+    enterSkillDescriptionEditMode() {
+        const row = document.getElementById('skill-description-row');
+        if (!row) return;
+        row.innerHTML = `
+            <input type="text" class="general-description-input" id="skill-description-input"
+                   value="${this.escapeHtml(this.currentSkillDescription || '')}" placeholder="Enter description...">
+            <button class="settings-action-btn settings-action-btn-primary" id="skill-description-save-btn">Save</button>
+            <button class="settings-action-btn settings-action-btn-secondary" id="skill-description-cancel-btn">Cancel</button>
+        `;
+        const input = document.getElementById('skill-description-input');
+        input?.focus();
+        input?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.saveSkillDescription();
+            if (e.key === 'Escape') this.exitSkillDescriptionEditMode();
+        });
+        document.getElementById('skill-description-save-btn')?.addEventListener('click', () => this.saveSkillDescription());
+        document.getElementById('skill-description-cancel-btn')?.addEventListener('click', () => this.exitSkillDescriptionEditMode());
+    },
+
+    async saveSkillDescription() {
+        if (!this.agentName || !this.currentSkillName) return;
+        const input = document.getElementById('skill-description-input');
+        if (!input) return;
+        const value = input.value.trim();
+
+        const saveBtn = document.getElementById('skill-description-save-btn');
+        const cancelBtn = document.getElementById('skill-description-cancel-btn');
+        if (saveBtn) saveBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/skills/${encodeURIComponent(this.currentSkillName)}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: 'description', value }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+            this.currentSkillDescription = value;
+            this.exitSkillDescriptionEditMode();
+            Notifications.success('Description saved', { duration: 3000 });
+        } catch (error) {
+            console.error('Error saving skill description:', error);
+            if (saveBtn) saveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save description.');
+        }
+    },
+
+    exitSkillDescriptionEditMode() {
+        const row = document.getElementById('skill-description-row');
+        if (!row) return;
+        const text = this.currentSkillDescription;
+        row.innerHTML = `
+            <p class="skill-detail-description" id="skill-description-text">${text ? this.escapeHtml(text) : '<span class="general-description-placeholder">No description</span>'}</p>
+            <button class="general-description-edit-btn" id="skill-description-edit-btn" title="Edit description">
+                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            </button>
+        `;
+        document.getElementById('skill-description-edit-btn')?.addEventListener('click', () => this.enterSkillDescriptionEditMode());
     },
 
     showSkillsEmpty() {

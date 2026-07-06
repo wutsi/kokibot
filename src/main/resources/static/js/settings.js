@@ -1559,7 +1559,7 @@ const Settings = {
                 : '';
 
             const instructionsBodyHtml = this.currentSkillInstructions.trim()
-                ? `<div class="skill-detail-content markdown-body" id="skill-instructions-body">${new MarkdownRenderer().render(this.currentSkillInstructions)}</div>`
+                ? `<div class="instructions-text markdown-body" id="skill-instructions-body">${new MarkdownRenderer().render(this.currentSkillInstructions)}</div>`
                 : `<p class="skill-detail-instructions-empty" id="skill-instructions-body">No instructions configured</p>`;
 
             const editBtnHtml = fromMarketplace
@@ -1595,7 +1595,7 @@ const Settings = {
                     ${metaHtml}
                     <div class="skill-detail-instructions">
                         <div class="skill-detail-instructions-header">
-                            <h3 class="skill-detail-instructions-title">Instructions</h3>
+                            <h3 class="setting-section-title">Instructions</h3>
                             <div class="settings-section-actions">
                                 <button class="settings-action-btn settings-action-btn-secondary" id="skill-copy-btn" title="Copy instructions to clipboard">
                                     <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
@@ -1647,13 +1647,13 @@ const Settings = {
 
             badge.querySelector('.skill-detail-marketplace-inner').innerHTML = `
                 ${iconHtml}
-                <span class="skill-marketplace-name">${this.escapeHtml(mp.name)}</span>
+                <span class="setting-section-name">${this.escapeHtml(mp.name)}</span>
                 <span class="skill-marketplace-readonly" title="Read-only — managed by marketplace">Read-only</span>
             `;
         } catch (_) {
             badge.querySelector('.skill-detail-marketplace-inner').innerHTML = `
                 <svg class="skill-marketplace-icon-default" fill="currentColor" height="16" viewBox="0 0 24 24" width="16"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
-                <span class="skill-marketplace-name">${this.escapeHtml(marketplaceName)}</span>
+                <span class="setting-section-name">${this.escapeHtml(marketplaceName)}</span>
                 <span class="skill-marketplace-readonly" title="Read-only — managed by marketplace">Read-only</span>
             `;
         }
@@ -1748,7 +1748,7 @@ const Settings = {
         el.id = 'skill-instructions-body';
 
         if (hasContent) {
-            el.className = 'skill-detail-content markdown-body';
+            el.className = 'instructions-text markdown-body';
             el.innerHTML = new MarkdownRenderer().render(this.currentSkillInstructions);
         } else {
             el.className = 'skill-detail-instructions-empty';

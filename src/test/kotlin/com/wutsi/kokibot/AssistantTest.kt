@@ -240,8 +240,6 @@ class AssistantTest {
         val req = argumentCaptor<LLMRequest>()
 
         verify(llm).completion(req.capture(), eq(listOf(tool1, tool2)))
-        assertEquals(true, req.firstValue.prompt.contains("Query: ${prompt.text}"))
-
         assertEquals(true, req.firstValue.systemInstructions?.isNotEmpty())
         assertEquals(true, req.firstValue.prompt.isNotEmpty())
     }

@@ -107,8 +107,12 @@ const Settings = {
     },
 
     navigateToChat() {
-        const agentParam = this.agentName ? `?agent=${this.agentName}` : '';
-        window.location.href = `/${agentParam}`;
+        const params = new URLSearchParams();
+        if (this.agentName) params.set('agent', this.agentName);
+        const convId = this.agentName ? localStorage.getItem(`kokibot_conv_${this.agentName}`) : null;
+        if (convId) params.set('conv', convId);
+        const query = params.toString();
+        window.location.href = query ? `/?${query}` : '/';
     },
 
     switchTab(tabName) {

@@ -28,6 +28,7 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 
 class PromptBuilderTest {
@@ -96,16 +97,20 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should include current date and time in prompt`() {
-        val query = Message(text = "Test query")
+    fun `should include tracking information`() {
+        val query = Message(text = "Test query", conversationId = UUID.randomUUID().toString())
 
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
-        assertTrue(prompt.contains("# Current Date and Time"))
+        assertTrue(prompt.contains("# Tracking Information"))
+        assertTrue(prompt.contains("Current Date and Time"))
         // Fixed clock is 2026-06-09T14:30:15Z (UTC)
         assertTrue(prompt.contains("Tuesday, June 9, 2026"))
         assertTrue(prompt.contains("14:30:15"))
         assertTrue(prompt.contains("2026-06-09T14:30:15Z"))
+
+        assertTrue(prompt.contains(query.id))
+        assertTrue(prompt.contains(query.conversationId!!))
     }
 
     @Test

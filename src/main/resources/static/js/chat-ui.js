@@ -24,7 +24,8 @@ const ChatUI = {
     init(agentName) {
         this.agentName = agentName || 'Koki';
         this.conversationId = null;
-        this.historyLoaded = false;
+        const params = new URLSearchParams(window.location.search);
+        this.historyLoaded = !params.get('conv');
         this.setupElements();
         this.initializeComponents();
         this.setupConnectionHandlers();

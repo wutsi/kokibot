@@ -23,6 +23,15 @@ class PromptBuilder(
 
     fun buildPrompt(query: Message, iterationMemory: List<String>, context: Context): String {
         val sb = StringBuilder()
+
+        // Add Tracking information
+        val now = ZonedDateTime.now(clock)
+        sb.append("# Tracking Information\n")
+        sb.append("Current Date and Time: ${now.format(DATE_TIME_FORMATTER)} (${now.toOffsetDateTime()})\n")
+        sb.append("Session ID: ${query.id}\n")
+        query.conversationId?.let { sb.append("Conversation ID: ${query.conversationId}\n") }
+
+        // Conversation History
         val conversationMessages = loadConversationMessages(query, context)
         if (conversationMessages.isNotEmpty()) {
             sb.append("\n---\n")
@@ -40,11 +49,6 @@ class PromptBuilder(
                 sb.append("<instructions>\n$channelInstructions\n</instructions>\n")
             }
         }
-
-        sb.append("\n---\n")
-        sb.append("# Current Date and Time\n")
-        val now = ZonedDateTime.now(clock)
-        sb.append("The current date and time is: ${now.format(DATE_TIME_FORMATTER)} (${now.toOffsetDateTime()})\n")
 
         if (context.memory.isEnabled()) {
             val longTermMemory = context.memory.get()

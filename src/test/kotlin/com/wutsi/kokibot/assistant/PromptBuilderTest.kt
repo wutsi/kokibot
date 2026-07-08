@@ -187,18 +187,6 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun `should include coordinator instructions`() {
-        val query = Message(userId = "user1", channelId = "channel1")
-
-        val instructions = builder.buildSystemInstructions(
-            query = query,
-            context = context
-        )
-
-        assertTrue(instructions.contains("# Coordinator"))
-    }
-
-    @Test
     fun `should include daily log instructions`() {
         val query = Message(userId = "user1", channelId = "channel1")
 

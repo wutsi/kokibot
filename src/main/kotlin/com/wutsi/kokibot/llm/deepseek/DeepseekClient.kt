@@ -43,6 +43,7 @@ open class DeepseekClient(
     val retryPolicy: RetryPolicy = RetryPolicy.default(),
     val restBuilder: RestBuilder = RestBuilder(),
     val jsonMapper: JsonMapper = JsonMapper(),
+    val responseFormat: String? = null,
 ) {
     companion object {
         private val EMPTY_MAP = emptyMap<String, Any>()
@@ -336,6 +337,11 @@ open class DeepseekClient(
             },
             "reasoning_effort" to if (thinking == true) reasoningEffort else null,
             "max_tokens" to maxTokens,
+            "response_format" to responseFormat?.let {
+                mapOf(
+                    "type" to if (it.contains("json", true)) "json_object" else "text",
+                )
+            },
             "temperature" to temperature,
             "messages" to listOfNotNull(
                 request.systemInstructions?.let { systemInstructions ->

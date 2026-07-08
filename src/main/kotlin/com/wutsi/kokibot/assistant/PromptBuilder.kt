@@ -28,6 +28,7 @@ class PromptBuilder(
         val now = ZonedDateTime.now(clock)
         sb.append("# Tracking Information\n")
         sb.append("Current Date and Time: ${now.format(DATE_TIME_FORMATTER)} (${now.toOffsetDateTime()})\n")
+        sb.append("Home Directory: ${context.home}\n")
         sb.append("Session ID: ${query.id}\n")
         query.conversationId?.let { sb.append("Conversation ID: ${query.conversationId}\n") }
 
@@ -84,7 +85,7 @@ class PromptBuilder(
         val entries = listOfNotNull(
             loadInstructions(context),
             identityInstructions(context),
-            coordinatorInstructions(),
+//            coordinatorInstructions(),
             dailyLogInstructions(context),
             knowledgeBaseInstructions(context),
             skillsInstructions(context),

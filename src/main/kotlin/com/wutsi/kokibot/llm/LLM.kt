@@ -23,6 +23,8 @@ interface LLM : Resource {
 
     fun getTemperature(): Double?
 
+    fun getResponseFormat(): String? = null
+
     /**
      * Returns the maximum context length (in tokens) that this LLM can handle.
      * This is used to determine how much of the conversation history and tool outputs can be included

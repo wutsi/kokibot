@@ -35,6 +35,7 @@ open class Deepseek : LLM {
     internal var connectTimeoutMillis: Long? = CONNECT_TIMEOUT_MILLIS
     internal var temperature: Double? = null
     internal var maxTokens: Int? = null
+    internal var responseFormat: String? = null
 
     override fun getName(): String {
         return "deepseek"
@@ -50,6 +51,10 @@ open class Deepseek : LLM {
 
     override fun getTemperature(): Double? {
         return temperature
+    }
+
+    override fun getResponseFormat(): String? {
+        return responseFormat
     }
 
     /**
@@ -74,13 +79,20 @@ open class Deepseek : LLM {
         this.temperature = MapUtil.toDouble("temperature", config)
         this.readTimeoutMillis = MapUtil.toLong("read-timeout-millis", config) ?: READ_TIMEOUT_MILLIS
         this.connectTimeoutMillis = MapUtil.toLong("connect-timeout-millis", config) ?: CONNECT_TIMEOUT_MILLIS
+        this.responseFormat = config["response-format"] as String?
 
         LOGGER.info("LLM: " + config["type"])
         LOGGER.info(" model: $model")
         LOGGER.info(" streaming: ${this.streamingEnabled}")
         LOGGER.info(" thinking: ${this.thinking}")
+        if (responseFormat != null) {
+            LOGGER.info(" response-format: ${this.responseFormat}")
+        }
         if (this.reasoningEffort != null) {
-            LOGGER.info(" reasoning_effort: ${this.reasoningEffort}")
+            LOGGER.info(" reasoning-effort: ${this.reasoningEffort}")
+        }
+        if (this.temperature != null) {
+            LOGGER.info(" temperature: ${this.temperature}")
         }
     }
 
@@ -131,6 +143,7 @@ open class Deepseek : LLM {
             temperature = temperature,
             readTimeoutMillis = readTimeoutMillis,
             connectTimeoutMillis = connectTimeoutMillis,
+            responseFormat = responseFormat,
         )
     }
 
@@ -146,6 +159,7 @@ open class Deepseek : LLM {
         when (name) {
             "reasoning-effort" -> reasoningEffort = value.toString()
             "temperature" -> temperature = value.toString().toDoubleOrNull()
+            "response-format" -> responseFormat = value.toString()
             else -> throw ConfigurationException("Unknown setting: $name")
         }
     }

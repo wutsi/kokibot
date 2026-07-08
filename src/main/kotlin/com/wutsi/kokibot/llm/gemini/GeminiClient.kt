@@ -18,6 +18,7 @@ class GeminiClient(
     connectTimeoutMillis: Long? = null,
     restBuilder: RestBuilder = RestBuilder(),
     jsonMapper: JsonMapper = JsonMapper(),
+    responseFormat: String? = null,
 ) : DeepseekClient(
     apiKey = apiKey,
     model = model,
@@ -28,6 +29,7 @@ class GeminiClient(
     connectTimeoutMillis = connectTimeoutMillis,
     restBuilder = restBuilder,
     jsonMapper = jsonMapper,
+    responseFormat = responseFormat,
 ) {
     override fun getBaseUrl(): String {
         return "https://generativelanguage.googleapis.com/v1beta/openai"

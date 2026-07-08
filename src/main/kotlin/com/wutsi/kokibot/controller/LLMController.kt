@@ -70,21 +70,23 @@ class LLMController(private val multi: MultiBootstrap) {
             LOGGER.warn("Unable to get balance for LLM ${llm.getName()}", ex)
             null
         }
+        val response = mapOf(
+            "name" to llm.getName(),
+            "model" to llm.getModel(),
+            "temperature" to llm.getTemperature(),
+            "reasoningEffort" to llm.getReasoningEffort(),
+            "responseFormat" to llm.getResponseFormat(),
+            "maxContextWindow" to llm.getMaxContextWindow(),
+            "availableBalance" to balance?.let {
+                mapOf(
+                    "amount" to balance.total,
+                    "currency" to balance.currency,
+                    "text" to formatMoney(balance.total, balance.currency)
+                )
+            }
+        )
         return ResponseEntity.ok(
-            mapOf(
-                "name" to llm.getName(),
-                "model" to llm.getModel(),
-                "temperature" to llm.getTemperature(),
-                "reasoningEffort" to llm.getReasoningEffort(),
-                "maxContextWindow" to llm.getMaxContextWindow(),
-                "availableBalance" to balance?.let {
-                    mapOf(
-                        "amount" to balance.total,
-                        "currency" to balance.currency,
-                        "text" to formatMoney(balance.total, balance.currency)
-                    )
-                }
-            )
+            response
         )
     }
 

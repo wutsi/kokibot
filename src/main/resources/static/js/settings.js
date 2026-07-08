@@ -1307,6 +1307,7 @@ const Settings = {
         const temperature = data.temperature != null ? data.temperature : '';
         const tempValue = temperature !== '' ? parseFloat(temperature) : 0.7;
         const temperatureHint = this.getTemperatureHint(tempValue);
+        const responseFormat = data.responseFormat || '';
 
         const balanceRow = balance ? `
             <div class="setting-section-row setting-section-row-last">
@@ -1358,6 +1359,17 @@ const Settings = {
                             <span class="llm-temperature-value" id="llm-temperature-value">${tempValue.toFixed(1)}</span>
                         </div>
                     </div>
+                    <div class="setting-section-row">
+                        <div class="setting-section-label">
+                            <span class="setting-section-name">Response Format</span>
+                            <span class="setting-section-hint">Output format returned by the model</span>
+                        </div>
+                        <select id="llm-response-format-select" class="llm-settings-select">
+                            <option value=""${responseFormat === '' ? ' selected' : ''}>Default</option>
+                            <option value="text"${responseFormat === 'text' ? ' selected' : ''}>Text</option>
+                            <option value="json"${responseFormat === 'json' ? ' selected' : ''}>JSON</option>
+                        </select>
+                    </div>
                     <div class="setting-section-row${balance ? '' : ' setting-section-row-last'}">
                         <div class="setting-section-label">
                             <span class="setting-section-name">Max Context Window</span>
@@ -1374,6 +1386,11 @@ const Settings = {
         document.getElementById('llm-reasoning-effort-select')?.addEventListener('change', (e) => {
             const value = e.target.value;
             if (value) this.saveLLMSetting('reasoning-effort', value, 'Reasoning effort saved');
+        });
+
+        document.getElementById('llm-response-format-select')?.addEventListener('change', (e) => {
+            const value = e.target.value;
+            this.saveLLMSetting('response-format', value, 'Response format saved');
         });
 
         const tempInput = document.getElementById('llm-temperature-input');

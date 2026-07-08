@@ -25,6 +25,7 @@ class Kimi : Deepseek() {
             readTimeoutMillis = readTimeoutMillis,
             connectTimeoutMillis = connectTimeoutMillis,
             jsonMapper = context.jsonMapper,
+            responseFormat = responseFormat,
         )
     }
 

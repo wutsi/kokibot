@@ -22,6 +22,7 @@ class KimiClient(
     connectTimeoutMillis: Long? = null,
     restBuilder: RestBuilder = RestBuilder(),
     jsonMapper: JsonMapper = JsonMapper(),
+    responseFormat: String? = null,
 ) : DeepseekClient(
     apiKey = apiKey,
     model = model,
@@ -32,6 +33,7 @@ class KimiClient(
     connectTimeoutMillis = connectTimeoutMillis,
     restBuilder = restBuilder,
     jsonMapper = jsonMapper,
+    responseFormat = responseFormat,
 ) {
     override fun getBaseUrl(): String {
         return "https://api.moonshot.ai/v1"

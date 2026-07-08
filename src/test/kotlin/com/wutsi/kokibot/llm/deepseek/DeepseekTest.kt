@@ -32,6 +32,7 @@ class DeepseekTest {
         "read-timeout-millis" to 30000,
         "connect-timeout-millis" to 10000,
         "tools" to listOf("date_tool_now", "web_tool_search", "web_tool_fetch"),
+        "response-format" to "json",
     )
     private val context = Context(
         home = File("/target"),
@@ -60,6 +61,7 @@ class DeepseekTest {
         assertEquals(.7, llm.temperature)
         assertEquals(30000, llm.readTimeoutMillis)
         assertEquals(10000, llm.connectTimeoutMillis)
+        assertEquals("json", llm.responseFormat)
 
         doReturn(System.getenv("KOKIBOT_DEEPSEEK_API_KEY")).whenever(credentialService).get("llm.deepseek")
     }
@@ -106,6 +108,35 @@ class DeepseekTest {
     }
 
     @Test
+    fun `completion with json output`() {
+        val config = mapOf(
+            "model" to "deepseek-v4-flash",
+            "response-format" to "json"
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(
+                prompt = """
+                What is the capital of France?
+                Return in JSON format with the following fields:
+                - country
+                - capital
+            """.trimIndent()
+            ),
+            emptyList(),
+        )
+        // println(response)
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(true, choices[0].content?.contains("\"country\": \"France\""))
+        assertEquals(true, choices[0].content?.contains("\"capital\": \"Paris\""))
+        assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    @Test
     fun `completion with tool call`() {
         val meta = ToolMetadata(
             name = "date_tool_now",
@@ -143,6 +174,9 @@ class DeepseekTest {
 
     @Test
     fun `completion with PDF file`() {
+        val config = mapOf(
+            "model" to "deepseek-v4-flash",
+        )
         llm.init(config, context)
 
         val response = llm.completion(
@@ -314,6 +348,15 @@ class DeepseekTest {
         llm.apply("temperature", "0.5")
 
         assertEquals(0.5, llm.temperature)
+    }
+
+    @Test
+    fun `apply - response_format`() {
+        llm.init(config, context)
+
+        llm.apply("response-format", "json")
+
+        assertEquals("json", llm.responseFormat)
     }
 
     @Test

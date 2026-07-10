@@ -449,7 +449,7 @@ const Settings = {
                 <div id="memory-numeric-fields" class="${memoryFieldsClass}">
                     <div class="setting-section-row">
                         <div class="setting-section-label">
-                            <span class="setting-section">Max Length</span>
+                            <span class="setting-section-name">Max Length</span>
                             <span class="setting-section-hint">Maximum memory file size (min. 1 KB)</span>
                         </div>
                         <div class="setting-section-number-control">

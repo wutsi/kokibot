@@ -20,6 +20,7 @@ const Sidebar = {
         const agentName = getAgentNameFromURL();
         this._loadCurrentAgent(agentName);
         this._loadAgentsList(agentName);
+        this._loadLLMInfo(agentName);
         ConversationHistory.init(agentName);
     },
 
@@ -75,6 +76,28 @@ const Sidebar = {
                 const data = await res.json();
                 if (data.name) nameEl.textContent = this._formatName(data.name);
             }
+        } catch (_) {}
+    },
+
+    async _loadLLMInfo(agentName) {
+        const statusEl = document.getElementById('llm-status');
+        const iconEl = document.getElementById('llm-status-icon');
+        const modelEl = document.getElementById('llm-status-model');
+        if (!statusEl || !iconEl || !modelEl) return;
+
+        try {
+            const res = await fetch(`/assistants/${agentName}/llm`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const name = data.name;
+            const model = data.model;
+            if (!name || name === 'null') return;
+
+            iconEl.src = `/assets/llm/${name}.png`;
+            iconEl.alt = name;
+            iconEl.onerror = () => { iconEl.style.display = 'none'; };
+            modelEl.textContent = model || name;
+            statusEl.style.display = '';
         } catch (_) {}
     },
 

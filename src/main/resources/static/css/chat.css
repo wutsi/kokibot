@@ -135,6 +135,27 @@ ol, li {
     color: var(--color-text-tertiary);
 }
 
+.llm-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+}
+
+.llm-status-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.llm-status-model {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .context-window-bar-track {
     width: 80px;
     height: 4px;

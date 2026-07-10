@@ -59,17 +59,7 @@
                 <div class="agents-list" id="agents-list"></div>
             </div>
 
-            <!-- Section 3: Knowledge Base (hidden until KB is enabled and has files) -->
-            <div class="sidebar-section sidebar-section--kb kb-panel--hidden" id="kb-panel">
-                <hr class="sidebar-divider">
-                <div class="sidebar-section-label kb-panel-header">
-                    <span>Knowledge Base <span class="kb-panel-count" id="kb-panel-count"></span></span>
-                    <a class="kb-panel-view-all" href="#" id="kb-panel-view-all">View all</a>
-                </div>
-                <div class="kb-panel-files" id="kb-panel-files"></div>
-            </div>
-
-            <!-- Section 4: Chat History -->
+            <!-- Section 3: Chat History -->
             <div class="sidebar-section sidebar-section--history">
                 <hr class="sidebar-divider">
                 <div class="conv-history-list" id="conversation-history"></div>
@@ -88,6 +78,10 @@
                             <div class="context-window-bar-fill" id="context-window-bar"></div>
                         </div>
                         <span id="context-window-text">—</span>
+                    </div>
+                    <div class="llm-status" id="llm-status" style="display:none">
+                        <img alt="" class="llm-status-icon" id="llm-status-icon">
+                        <span class="llm-status-model" id="llm-status-model"></span>
                     </div>
                 </div>
             </div>
@@ -176,7 +170,6 @@
 <script src="https://unpkg.com/docx-preview@0.3.2/dist/docx-preview.min.js"></script>
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/components/file-viewer.js"></script>
-<script src="js/components/kb-panel.js"></script>
 <!-- Main orchestrator -->
 <script src="js/chat-ui.js"></script>
 <script>
@@ -188,7 +181,6 @@
         FileUpload.init(agentName);
         ContextWindowDisplay.init(agentName);
         FileViewer.init();
-        KBPanel.init(agentName);
         ConversationHistory.init(agentName);
     });
 </script>

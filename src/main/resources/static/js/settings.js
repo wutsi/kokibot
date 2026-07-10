@@ -301,7 +301,7 @@ const Settings = {
                     <div class="setting-section-row">
                         <div class="setting-section-label">
                             <span class="setting-section-name">Full Name</span>
-                            <span class="setting-section-hint">Display name for this assistant</span>
+                            <span class="setting-section-hint">Your Display Name</span>
                         </div>
                         <input type="text" id="identity-full-name-input" class="setting-section-text-input"
                                value="${this.escapeHtml(firstName)}" placeholder="Not set">
@@ -309,7 +309,7 @@ const Settings = {
                     <div class="setting-section-row">
                         <div class="setting-section-label">
                             <span class="setting-section-name">Email</span>
-                            <span class="setting-section-hint">Email address of this assistant</span>
+                            <span class="setting-section-hint">Your Email</span>
                         </div>
                         <input type="email" id="identity-email-input" class="setting-section-text-input"
                                value="${this.escapeHtml(email)}" placeholder="Not set">
@@ -1312,9 +1312,9 @@ const Settings = {
         const balanceRow = balance ? `
             <div class="setting-section-row setting-section-row-last">
                 <div class="llm-setting-label">
-                    <span class="llm-setting-name">Available Balance</span>
+                    <span class="setting-section-name">Available Balance</span>
                 </div>
-                <span class="llm-setting-value">${this.escapeHtml(String(balance.text))}</span>
+                <span class="setting-section-value">${this.escapeHtml(String(balance.text))}</span>
             </div>
         ` : '';
 
@@ -1624,8 +1624,8 @@ const Settings = {
                         </div>
                     </div>` : ''}
                     ${metaHtml}
-                    <div class="skill-detail-instructions">
-                        <div class="skill-detail-instructions-header">
+                    <div class="setting-section">
+                        <div class="setting-section-row">
                             <h3 class="setting-section-title">Instructions</h3>
                             <div class="settings-section-actions">
                                 <button class="settings-action-btn settings-action-btn-secondary" id="skill-copy-btn" title="Copy instructions to clipboard">
@@ -2308,7 +2308,7 @@ const Settings = {
             <div class="kb-info">
                 <div class="setting-section">
                     <div class="setting-section-row">
-                        <div class="setting-section">
+                        <div class="setting-section-label">
                             <span class="setting-section-name">Enable Knowledge Base</span>
                             <span class="setting-section-hint">Use the knowledge base to answer queries</span>
                         </div>

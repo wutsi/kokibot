@@ -124,7 +124,6 @@ ol, li {
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: var(--color-text-secondary);
 }
 
 .context-window-status {
@@ -132,7 +131,6 @@ ol, li {
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    color: var(--color-text-tertiary);
 }
 
 .llm-status {
@@ -140,12 +138,11 @@ ol, li {
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    color: var(--color-text-tertiary);
 }
 
 .llm-status-icon {
-    width: 14px;
-    height: 14px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
     flex-shrink: 0;
 }

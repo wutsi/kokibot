@@ -76,6 +76,6 @@ class FileWriteTool : AbstractFileTool() {
             file.parentFile?.mkdirs()
         }
         file.writeText(content)
-        return "SUCCESS. File saved."
+        return "SUCCESS. $path saved."
     }
 }

@@ -1,17 +1,37 @@
-# Web Formatting Instructions
+# File Referencing & Preview Formatting Rules
 
-Whenever you reference a file in the agent workspace, you MUST format it as a clickable Markdown hyperlink using
-relative paths.
+Whenever you reference any file located within the agent workspace (`{{HOME}}`), you MUST format it according to its
+file type to ensure it renders correctly in the preview interface. Follow these strict formatting rules based on the
+file extension:
 
-- **For Images**: `{{HOME}}/workspace/path/to/filename.png` is converted to
-  `<div class="file">![filename](/files/{{ASSISTANT_NAME}}/workspace/path/to/filename.ext)</div>`
-- **For Documents**: `{{HOME}}/workspace/path/to/filename.ext` is converted to
-  `<div class="file">[filename.ext](/files/{{ASSISTANT_NAME}}/workspace/path/to/filename.ext)</div>`
-- **For Other File Types**: `{{HOME}}/workspace/path/to/filename.ext` is converted to `/workspace/path/to/filename.ext`.
+## 1. Image Files
 
-File Type supported for hyperlink generation include:
+**Supported Extensions:** .png, .jpg, .jpeg, .gif, .webp, .svg
 
-- Images: .png, .jpg, .jpeg, .gif, webp, .svg
-- Documents: .docx, .html, .htm, .md, .pdf, .pptx, .xlsx
-- Code: .js, .css, .py, .java, .cpp, .c, .rb, .go, .ts, .rs, .swift, .kt, .php, .sh, .bat, .ps1, .lua, .sql, .json,
-  .xml, .yml, .yaml
+* **Formatting Rule:** Wrap an embedded Markdown image inside a `img`.
+* **Template:** `<img src="/files/{{ASSISTANT_NAME}}/workspace/path/to/filename.ext" />`
+
+Example:
+Convert `{{HOME}}/workspace/images/logo.png` to `<img src="/files/{{ASSISTANT_NAME}}/workspace/images/logo.png" />`
+
+## 2. Document Files
+
+**Supported Extensions:** .docx, .html, .htm, .md, .pdf, .pptx, .xlsx
+
+* **Formatting Rule:** Wrap a standard Markdown link inside a `div` element with `class="file"`.
+* **Template:** `<div class="file">[filename.ext](/files/{{ASSISTANT_NAME}}/workspace/path/to/filename.ext)</div>`
+
+## 3. Code & Other Files
+
+**Supported Extensions:** .js, .css, .py, .java, .cpp, .c, .rb, .go, .ts, .rs, .swift, .kt, .php, .sh, .bat, .ps1, .lua,
+.sql, .json, .xml, .yml, .yaml, and any others not listed above.
+
+* **Formatting Rule:** Provide the plain relative path starting from `/workspace`. Do NOT wrap it in HTML tags or
+  Markdown links.
+* **Template:** `/workspace/path/to/filename.ext`
+
+## Important Enforcement Instructions
+
+* Do NOT use absolute paths containing `{{HOME}}` in the final output. Convert all instances of `{{HOME}}` to the
+  corresponding formats shown above.
+* Ensure all HTML tags are closed correctly.

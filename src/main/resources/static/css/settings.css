@@ -483,6 +483,8 @@ h3.setting-section-title {
 }
 
 .instructions-editor {
+    width: -webkit-fill-available;
+    width: -moz-available;
     width: stretch;
     min-height: 400px;
     padding: 16px;

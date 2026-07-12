@@ -85,7 +85,6 @@ class PromptBuilder(
         val entries = listOfNotNull(
             loadInstructions(context),
             identityInstructions(context),
-//            coordinatorInstructions(),
             dailyLogInstructions(context),
             knowledgeBaseInstructions(context),
             skillsInstructions(context),
@@ -163,13 +162,6 @@ class PromptBuilder(
         )
     }
 
-    private fun coordinatorInstructions(): String {
-        return IOUtils.toString(
-            javaClass.getResource("/instructions/COORDINATOR.md"),
-            "utf-8"
-        )
-    }
-
     private fun dailyLogInstructions(context: Context): String? {
         return if (context.memory.isEnabled()) {
             IOUtils.toString(
@@ -230,7 +222,8 @@ class PromptBuilder(
     }
 
     private fun loadChannelInstructions(channelId: String): String? {
-        val input = javaClass.getResourceAsStream("/instructions/channel/$channelId.md") ?: return null
+        val xchannelId = channelId.removePrefix("channel:")
+        val input = javaClass.getResourceAsStream("/instructions/channel/$xchannelId.md") ?: return null
         return IOUtils.toString(input, "utf-8")
     }
 

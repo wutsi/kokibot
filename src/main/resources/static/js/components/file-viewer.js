@@ -26,6 +26,7 @@ const FileViewer = (() => {
         document.getElementById('chat-container').addEventListener('click', (e) => {
             const link = e.target.closest('a');
             if (!link) return;
+            if (link.classList.contains('img-download-btn')) return;
 
             let pathname;
             try { pathname = new URL(link.href).pathname; } catch (err) {

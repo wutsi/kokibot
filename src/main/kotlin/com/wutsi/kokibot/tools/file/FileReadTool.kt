@@ -87,8 +87,8 @@ class FileReadTool(private val maxLength: Int = URLUtil.MAX_FILE_SIZE) : Abstrac
             } catch (ex: Throwable) {
                 return "FAILURE. " + (ex.message ?: "Failed to convert $path to markdown")
             }
-        }
-
-        return "<file-content>\n" + content.take(maxLength) + "\n</file-content>"
+        }.take(maxLength)
+        val contentLength = content.length / 1024
+        return "Here is the content of $path (${contentLength}Kb):\n<file-content>\n" + content + "\n</file-content>"
     }
 }

@@ -11,7 +11,7 @@
 
     <groupId>com.wutsi</groupId>
     <artifactId>kokibot</artifactId>
-    <version>0.0.65</version>
+    <version>0.0.66</version>
     <name>kokibot</name>
     <description>kokibot</description>
     <url/>
@@ -37,7 +37,7 @@
         <kotlinx-coroutines-core.version>1.11.0</kotlinx-coroutines-core.version>
         <ktlint.version>1.8.0</ktlint.version>
         <okhttp.version>5.4.0</okhttp.version>
-        <pdfbox.vesion>3.0.7</pdfbox.vesion>
+        <pdfbox.vesion>3.0.8</pdfbox.vesion>
         <poi.version>5.5.1</poi.version>
         <snakeyaml.version>2.6</snakeyaml.version>
         <telegram.version>10.0.0</telegram.version>

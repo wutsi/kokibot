@@ -54,6 +54,8 @@ class AssistantController(private val multi: MultiBootstrap) {
                 "description" to assistant.getDescription(),
                 "firstName" to assistant.getFullName(),
                 "email" to assistant.getEmail(),
+                "telegram" to assistant.getTelegram(),
+                "whatsapp" to assistant.getWhatsapp(),
                 "language" to assistant.getLanguage(),
                 "workspaceDirectory" to "${context.home.absolutePath}/workspace",
                 "instructions" to assistant.getInstructions(),

@@ -251,6 +251,8 @@ const Settings = {
         const firstName = agentData.firstName || '';
         const email = agentData.email || '';
         const language = agentData.language || '';
+        const telegram = agentData.telegram || '';
+        const whatsapp = agentData.whatsapp || '';
         const iconUrl = `/assistants/${this.escapeHtml(this.agentName)}/icon.png`;
 
         this.generalInstructionsContent = instructions;
@@ -322,6 +324,24 @@ const Settings = {
                         <select id="identity-language-input" class="setting-section-select">
                             ${this.buildLanguageOptions(language)}
                         </select>
+                    </div>
+                    <div class="setting-section-row">
+                        <div class="setting-section-label">
+                            <span class="setting-section-name">Telegram</span>
+                            <span class="setting-section-hint">Your Telegram username</span>
+                        </div>
+                        <input type="text" id="identity-telegram-input" class="setting-section-text-input"
+                               value="${this.escapeHtml(telegram)}" placeholder="@username">
+                    </div>
+                    <div class="setting-section-row">
+                        <div class="setting-section-label">
+                            <span class="setting-section-name">WhatsApp</span>
+                            <span class="setting-section-hint">Your WhatsApp phone number</span>
+                        </div>
+                        <div id="identity-whatsapp-wrapper">
+                            <input type="tel" id="identity-whatsapp-input" class="setting-section-text-input"
+                                   value="${this.escapeHtml(whatsapp)}" placeholder="+1 555 000 0000">
+                        </div>
                     </div>
                 </div>
                 <div class="setting-section">
@@ -531,6 +551,33 @@ const Settings = {
             languageSelect.addEventListener('change', () => {
                 this.saveAssistantSetting('assistant.language', languageSelect.value, 'Language saved');
             });
+        }
+
+        const telegramInput = document.getElementById('identity-telegram-input');
+        if (telegramInput) {
+            const save = () => this.saveAssistantSetting('assistant.telegram', telegramInput.value.trim(), 'Telegram saved');
+            telegramInput.addEventListener('blur', save);
+            telegramInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') telegramInput.blur(); });
+        }
+
+        const whatsappInput = document.getElementById('identity-whatsapp-input');
+        if (whatsappInput) {
+            const iti = window.intlTelInput && window.intlTelInput(whatsappInput, {
+                initialCountry: 'auto',
+                geoIpLookup: (cb) => cb('us'),
+                utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23/build/js/utils.js',
+                separateDialCode: true,
+            });
+            const save = () => {
+                const value = iti ? iti.getNumber() : whatsappInput.value.trim();
+                if (value && iti && !iti.isValidNumber()) {
+                    Notifications.error('Please enter a valid phone number.');
+                    return;
+                }
+                this.saveAssistantSetting('assistant.whatsapp', value, 'WhatsApp saved');
+            };
+            whatsappInput.addEventListener('blur', save);
+            whatsappInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') whatsappInput.blur(); });
         }
     },
 

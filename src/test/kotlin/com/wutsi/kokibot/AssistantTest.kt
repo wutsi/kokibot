@@ -168,6 +168,18 @@ class AssistantTest {
     }
 
     @Test
+    fun `apply telegram`() {
+        assistant.apply("telegram", "bot")
+        assertEquals("bot", assistant.getTelegram())
+    }
+
+    @Test
+    fun `apply whatsapp`() {
+        assistant.apply("whatsapp", "+250788888888")
+        assertEquals("+250788888888", assistant.getWhatsapp())
+    }
+
+    @Test
     fun `apply max-iterations updates field and rebuilds loop`() {
         val originalLoop = assistant.reasoningLoop
         assistant.apply("max-iterations", 20)

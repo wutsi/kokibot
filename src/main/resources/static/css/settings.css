@@ -296,6 +296,26 @@ h3.setting-section-title {
     border-color: var(--color-accent-blue);
 }
 
+#identity-whatsapp-wrapper .iti {
+    width: 220px;
+    flex-shrink: 0;
+}
+
+#identity-whatsapp-wrapper .iti__tel-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: 6px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    outline: none;
+}
+
+#identity-whatsapp-wrapper .iti__tel-input:focus {
+    border-color: var(--color-accent-blue);
+}
+
 /* Sidebar Active State for Settings */
 .sidebar-nav-item.active {
     background-color: var(--color-bg-tertiary);

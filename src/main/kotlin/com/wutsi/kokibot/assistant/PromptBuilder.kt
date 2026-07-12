@@ -149,8 +149,10 @@ class PromptBuilder(
         val assistant = context.assistant
         val lines = listOfNotNull(
             "- **Assistant Handle:** ${assistant.name}",
-            assistant.getFullName().ifEmpty { null }?.let { "- **User Full Name:** $it" },
-            assistant.getEmail().ifEmpty { null }?.let { "- **User Email:** $it" },
+            assistant.getFullName()?.ifEmpty { null }?.let { "- **User Full Name:** $it" },
+            assistant.getEmail()?.ifEmpty { null }?.let { "- **User Email:** $it" },
+            assistant.getTelegram()?.ifEmpty { null }?.let { "- **Telegram Username:** $it" },
+            assistant.getWhatsapp()?.ifEmpty { null }?.let { "- **Whatsapp Number:** $it" },
         )
         return "# Assistant Identity\n\n${lines.joinToString("\n")}"
     }

@@ -60,6 +60,8 @@ class PromptBuilderTest {
             mapOf(
                 "full-name" to "Ray Sponsible",
                 "email" to "Ray.Sponsible@gmail.com",
+                "telegram" to "ray.sponsible",
+                "whatsapp" to "+250788123456",
                 "language" to "fr"
             ), context
         )
@@ -352,7 +354,7 @@ class PromptBuilderTest {
         val prompt = builder.buildPrompt(query, emptyList(), context)
 
         assertTrue(prompt.contains("Hello"))
-        assertTrue(prompt.contains("# Web Formatting Instructions"))
+        assertTrue(prompt.contains("# File Referencing & Preview Formatting Rules"))
     }
 
     @Test
@@ -582,6 +584,8 @@ class PromptBuilderTest {
         assertTrue(instructions.contains("test-assistant"))
         assertTrue(instructions.contains("Ray Sponsible"))
         assertTrue(instructions.contains("Ray.Sponsible@gmail.com"))
+        assertTrue(instructions.contains("ray.sponsible"))
+        assertTrue(instructions.contains("+250788123456"))
     }
 
     private fun createContext(home: File = this.home): Context {

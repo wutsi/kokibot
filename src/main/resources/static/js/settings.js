@@ -295,14 +295,6 @@ const Settings = {
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="setting-section">
-                    <div class="setting-section-row">
-                        <div class="setting-section-label">
-                            <span class="setting-section-name">Enabled</span>
-                            <span class="setting-section-hint">When disabled, the assistant will reject all requests</span>
-                        </div>
                         <label class="setting-section-toggle" title="Toggle assistant">
                             <input type="checkbox" id="general-enabled-toggle" ${enabled ? 'checked' : ''}>
                             <span class="setting-section-toggle-slider"></span>

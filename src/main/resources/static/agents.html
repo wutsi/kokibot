@@ -18,6 +18,13 @@
         </a>
         <h1 class="agents-title">Assistants</h1>
         <span class="agents-header-count" id="agents-header-count"></span>
+        <label class="agents-show-disabled-toggle" title="Show disabled assistants">
+            <span>Show disabled</span>
+            <span class="agents-toggle">
+                <input checked id="show-disabled-toggle" type="checkbox">
+                <span class="agents-toggle-slider"></span>
+            </span>
+        </label>
     </header>
 
     <main class="agents-main">
@@ -35,17 +42,21 @@
 <script src="js/utils.js"></script>
 <script src="js/components/notification-manager.js"></script>
 <script>
-    async function loadAgents() {
+    async function loadAgents(showDisabled) {
         const grid = document.getElementById('agents-grid');
         const countEl = document.getElementById('agents-header-count');
 
         try {
-            const res = await fetch('/assistants?limit=100');
+            const url = showDisabled ? '/assistants?limit=100' : '/assistants?limit=100&enabled=true';
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to load assistants');
 
-            const agents = await res.json();
+            const agents = (await res.json()).sort((a, b) => {
+                if (a.enabled === b.enabled) return 0;
+                return a.enabled === false ? 1 : -1;
+            });
             const total = res.headers.get('X-Total-Count') ?? agents.length;
-            if (countEl) countEl.textContent = `(${total})`;
+            if (countEl) countEl.textContent = `(${agents.length})`;
 
             if (agents.length === 0) {
                 grid.innerHTML = '<p class="agents-empty">No assistants found.</p>';
@@ -58,15 +69,19 @@
                 const iconUrl = `/assistants/${encodeURIComponent(agent.name)}/icon.png`;
                 const initials = agentInitials(agent.name || '');
                 const channels = (agent.channels || []).map(channelIcon).join('');
+                const disabled = agent.enabled === false;
 
                 return `
-                    <a class="agent-card" href="/index.html?agent=${encodeURIComponent(agent.name)}">
+                    <a class="agent-card${disabled ? ' agent-card--disabled' : ''}" href="/index.html?agent=${encodeURIComponent(agent.name)}">
                         <div class="agent-card-avatar agent-avatar">
                             <img src="${iconUrl}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
                             <span style="display:none">${escapeHtml(initials)}</span>
                         </div>
                         <div class="agent-card-body">
-                            <span class="agent-card-name">${displayName}</span>
+                            <div class="agent-card-name-row">
+                                <span class="agent-card-name">${displayName}</span>
+                                ${disabled ? '<span class="agent-card-disabled-badge">Disabled</span>' : ''}
+                            </div>
                             ${description ? `<span class="agent-card-description">${description}</span>` : ''}
                             ${channels ? `<div class="agent-card-channels">${channels}</div>` : ''}
                         </div>
@@ -92,7 +107,11 @@
         return name.substring(0, 2).toUpperCase();
     }
 
-    document.addEventListener('DOMContentLoaded', loadAgents);
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggle = document.getElementById('show-disabled-toggle');
+        loadAgents(true);
+        toggle?.addEventListener('change', () => loadAgents(toggle.checked));
+    });
 </script>
 </body>
 </html>

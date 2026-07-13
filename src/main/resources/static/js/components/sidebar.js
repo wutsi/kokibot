@@ -106,13 +106,27 @@ const Sidebar = {
         if (!listEl) return;
 
         try {
-            const res = await fetch(`/assistants?limit=3&exclude=${encodeURIComponent(agentName)}`);
+            const res = await fetch(`/assistants?limit=3&exclude=${encodeURIComponent(agentName)}&enabled=true`);
             if (!res.ok) return;
             const agents = await res.json();
 
+            const section = listEl.closest('.sidebar-section--agents');
+            const divider = document.getElementById('agents-section-divider');
+            if (agents.length === 0) {
+                if (section) section.style.display = 'none';
+                if (divider) divider.style.display = 'none';
+                return;
+            }
+            if (section) section.style.display = '';
+            if (divider) divider.style.display = '';
+
             const totalCount = res.headers.get('X-Total-Count');
-            const countEl = document.getElementById('agents-count');
-            if (countEl && totalCount !== null) countEl.textContent = `(${Math.max(0, parseInt(totalCount, 10))})`;
+            const otherCount = totalCount !== null ? Math.max(0, parseInt(totalCount, 10)) : agents.length;
+            const totalWithCurrent = otherCount;
+
+            const viewAllBtn = document.getElementById('view-all-agents-btn');
+            const viewAllLabel = document.getElementById('view-all-agents-label');
+            viewAllLabel.textContent = `All Assistants (${totalWithCurrent})`;
 
             let html = '';
             for (const agent of agents) {

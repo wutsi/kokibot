@@ -29,6 +29,7 @@ class Assistant(val name: String = "") {
     private lateinit var context: Context
     private var maxIterations: Int = DEFAULT_ITERATIONS
     private var maxDurationMinutes: Long = DEFAULT_MAX_DURATION_MINUTES
+    private var enabled: Boolean = true
     private var description: String? = null
     private var fullName: String? = null
     private var language: String? = null
@@ -46,6 +47,7 @@ class Assistant(val name: String = "") {
 
     fun init(config: Map<*, *>, context: Context) {
         maxIterations = MapUtil.toInt("max-iterations", config) ?: DEFAULT_ITERATIONS
+        enabled = MapUtil.toBoolean("enabled", config) ?: true
         description = MapUtil.toString("description", config)
         fullName = MapUtil.toString("full-name", config)
         language = MapUtil.toString("language", config) ?: DEFAULT_LANGUAGE
@@ -94,6 +96,7 @@ class Assistant(val name: String = "") {
 
     fun getMaxDurationMinutes(): Long = maxDurationMinutes
     fun getMaxIterations(): Int = maxIterations
+    fun isEnabled(): Boolean = enabled
     fun getDescription(): String? = description
     fun getFullName(): String? = fullName
     fun getLanguage(): String? = language
@@ -108,6 +111,8 @@ class Assistant(val name: String = "") {
                     ?: throw ConfigurationException("Invalid value for max-iterations: $value")
                 rebuildReasoningLoop()
             }
+
+            "enabled" -> enabled = value.toString().toBoolean()
 
             "max-duration" -> {
                 maxDurationMinutes = DurationUtil.minutes(value.toString(), DEFAULT_MAX_DURATION_MINUTES)
@@ -163,6 +168,10 @@ class Assistant(val name: String = "") {
         query: Message,
         streamCallback: ((LLMStreamData) -> Unit)? = null,
     ): Message {
+        if (!enabled) {
+            return Message("Assistant $name is disabled.", Role.ASSISTANT, FinishReason.FAILURE)
+        }
+
         // Restore session if exists
         val now = System.currentTimeMillis()
         val sessionId = context.sessionLog.resume(query.userId, query.channelId)

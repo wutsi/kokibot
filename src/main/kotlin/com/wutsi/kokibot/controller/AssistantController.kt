@@ -21,18 +21,21 @@ class AssistantController(private val multi: MultiBootstrap) {
     fun list(
         @RequestParam(required = false) exclude: String? = null,
         @RequestParam(required = false) limit: Int = 10,
+        @RequestParam(required = false) enabled: Boolean? = null,
     ): ResponseEntity<List<Map<String, Any?>>> {
         val items = multi.bootstraps
             .map { bootstrap ->
                 val context = bootstrap.getContext()
                 mapOf(
                     "name" to context.assistant.name,
+                    "enabled" to context.assistant.isEnabled(),
                     "description" to context.assistant.getDescription(),
                     "channels" to context.channelRegistry.all().map { it.name() },
                 )
             }
         val result = items
             .filter { item -> item["name"] != exclude }
+            .filter { item -> enabled == null || item["enabled"] == enabled }
             .take(limit)
 
         return ResponseEntity
@@ -51,6 +54,7 @@ class AssistantController(private val multi: MultiBootstrap) {
         return ResponseEntity.ok(
             mapOf(
                 "name" to assistant.name,
+                "enabled" to assistant.isEnabled(),
                 "description" to assistant.getDescription(),
                 "firstName" to assistant.getFullName(),
                 "email" to assistant.getEmail(),

@@ -30,8 +30,21 @@ const ChatUI = {
         this.initializeComponents();
         this.setupConnectionHandlers();
         this.setupInputHandlers();
+        this.checkAgentEnabled();
 
         this.connectionManager.connect();
+    },
+
+    async checkAgentEnabled() {
+        try {
+            const res = await fetch(`/assistants/${this.agentName}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.enabled === false) {
+                const inputContainer = document.querySelector('.input-container');
+                if (inputContainer) inputContainer.style.display = 'none';
+            }
+        } catch (_) {}
     },
 
     async loadConversationHistory() {

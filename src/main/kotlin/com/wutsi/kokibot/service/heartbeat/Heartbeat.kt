@@ -57,6 +57,10 @@ class Heartbeat() : Resource {
             LOGGER.info("Heartbeat is disabled. Skipping tick.")
             return
         }
+        if (!context.assistant.isEnabled()) {
+            LOGGER.info("Assistant is disabled. Skipping heartbeat tick.")
+            return
+        }
         if (!running.compareAndSet(false, true)) {
             LOGGER.info("Heartbeat is already running. Skipping tick.")
             return

@@ -246,6 +246,7 @@ const Settings = {
         if (!contentElement) return;
 
         const name = agentData.name || '';
+        const enabled = agentData.enabled !== false;
         const description = agentData.description || '';
         const instructions = agentData.instructions || '';
         const firstName = agentData.firstName || '';
@@ -294,6 +295,18 @@ const Settings = {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div class="setting-section">
+                    <div class="setting-section-row">
+                        <div class="setting-section-label">
+                            <span class="setting-section-name">Enabled</span>
+                            <span class="setting-section-hint">When disabled, the assistant will reject all requests</span>
+                        </div>
+                        <label class="setting-section-toggle" title="Toggle assistant">
+                            <input type="checkbox" id="general-enabled-toggle" ${enabled ? 'checked' : ''}>
+                            <span class="setting-section-toggle-slider"></span>
+                        </label>
                     </div>
                 </div>
                 <div class="setting-section">
@@ -378,6 +391,11 @@ const Settings = {
                 </div>
             </div>
         `;
+
+        document.getElementById('general-enabled-toggle')?.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            this.saveAssistantSetting('assistant.enabled', checked, checked ? 'Assistant enabled' : 'Assistant disabled');
+        });
 
         document.getElementById('general-instructions-copy-btn')?.addEventListener('click', () => {
             this.copyInstructionsToClipboard();

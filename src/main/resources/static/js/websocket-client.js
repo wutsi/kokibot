@@ -10,6 +10,7 @@ class WebSocketClient {
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 1000; // Start with 1 second
         this.messageQueue = [];
+        this._watchdogInterval = null;
         this.handlers = {
             onOpen: null,
             onClose: null,
@@ -48,8 +49,8 @@ class WebSocketClient {
                 this.handlers.onOpen(event);
             }
 
-            // Send queued messages
             this.flushMessageQueue();
+            this._startWatchdog();
         };
 
         this.ws.onmessage = (event) => {
@@ -68,12 +69,12 @@ class WebSocketClient {
 
         this.ws.onclose = (event) => {
             console.log('WebSocket closed:', event.code, event.reason);
+            this._stopWatchdog();
 
             if (this.handlers.onClose) {
                 this.handlers.onClose(event);
             }
 
-            // Attempt reconnection
             this.attemptReconnect();
         };
     }
@@ -186,8 +187,28 @@ class WebSocketClient {
     }
 
     disconnect() {
+        this._stopWatchdog();
         if (this.ws) {
             this.ws.close();
+        }
+    }
+
+    _startWatchdog() {
+        this._stopWatchdog();
+        // If onclose never fires (proxy silently drops connection), detect and reconnect
+        this._watchdogInterval = setInterval(() => {
+            if (this.ws && this.ws.readyState === WebSocket.CLOSED) {
+                console.warn('WebSocket found closed by watchdog, reconnecting');
+                this._stopWatchdog();
+                this.attemptReconnect();
+            }
+        }, 30000);
+    }
+
+    _stopWatchdog() {
+        if (this._watchdogInterval) {
+            clearInterval(this._watchdogInterval);
+            this._watchdogInterval = null;
         }
     }
 

@@ -7,20 +7,26 @@ import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
 import org.slf4j.LoggerFactory
 import org.springframework.web.socket.CloseStatus
+import org.springframework.web.socket.PingMessage
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import tools.jackson.databind.json.JsonMapper
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 class WebSocketChannel : Channel() {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(WebSocketChannel::class.java)
         private val USER_ANONYMOUS = "anonymous"
+        internal const val PING_INTERVAL_SECONDS = 25L
     }
 
     private lateinit var context: Context
     private val sessions = ConcurrentHashMap<String, WebSocketSession>() // userId -> session
     private val jsonMapper = JsonMapper()
+    private var pingScheduler: ScheduledExecutorService? = null
 
     override fun name(): String = "websocket"
 
@@ -29,10 +35,14 @@ class WebSocketChannel : Channel() {
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
         WebSocketChannelRegistry.registerChannel(context.assistant.name, this)
+        pingScheduler = Executors.newSingleThreadScheduledExecutor().also { scheduler ->
+            scheduler.scheduleAtFixedRate({ pingOpenSessions() }, PING_INTERVAL_SECONDS, PING_INTERVAL_SECONDS, TimeUnit.SECONDS)
+        }
         LOGGER.info("Channel: websocket (agent=${context.assistant.name})")
     }
 
     override fun destroy() {
+        pingScheduler?.shutdownNow()
         LOGGER.info("Closing ${sessions.size} WebSocket connections")
         sessions.values.forEach { session ->
             try {
@@ -146,4 +156,16 @@ class WebSocketChannel : Channel() {
     }
 
     internal fun getSession(userId: String): WebSocketSession? = sessions[userId]
+
+    internal fun pingOpenSessions() {
+        sessions.values.forEach { session ->
+            try {
+                if (session.isOpen) {
+                    session.sendMessage(PingMessage())
+                }
+            } catch (e: Exception) {
+                LOGGER.debug("Failed to ping WebSocket session ${session.id}: ${e.message}")
+            }
+        }
+    }
 }

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
 import org.springframework.web.socket.CloseStatus
+import org.springframework.web.socket.PingMessage
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import tools.jackson.databind.json.JsonMapper
@@ -286,6 +287,30 @@ class WebSocketChannelTest {
             ),
         )
         // No sendMessage should be called since user is unknown
+    }
+
+    @Test
+    fun `pingOpenSessions sends PingMessage to open session`() {
+        val channel = WebSocketChannel()
+        channel.init(emptyMap<String, Any>(), context)
+        channel.handleConnectionEstablished(session)
+
+        channel.pingOpenSessions()
+
+        verify(session).sendMessage(any<PingMessage>())
+    }
+
+    @Test
+    fun `pingOpenSessions skips closed session`() {
+        whenever(session.isOpen).doReturn(false)
+
+        val channel = WebSocketChannel()
+        channel.init(emptyMap<String, Any>(), context)
+        channel.handleConnectionEstablished(session)
+
+        channel.pingOpenSessions()
+
+        verify(session, com.nhaarman.mockitokotlin2.never()).sendMessage(any<PingMessage>())
     }
 
     @Test

@@ -13,6 +13,7 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLMUsage
 import com.wutsi.kokibot.service.inbox.Inbox
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,6 +35,7 @@ class WebSocketChannelTest {
     private val session = mock<WebSocketSession>()
     private val jsonMapper = JsonMapper()
     private val home = File("target/test-data/websocket-channel")
+    private val channel = WebSocketChannel()
 
     @BeforeEach
     fun setup() {
@@ -45,9 +47,13 @@ class WebSocketChannelTest {
         whenever(session.isOpen).doReturn(true)
     }
 
+    @AfterEach
+    fun cleanup() {
+        channel.destroy()
+    }
+
     @Test
     fun source() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
 
         Assertions.assertEquals("test-agent", channel.source())
@@ -55,7 +61,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `handleConnectionEstablished stores session by anonymous`() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
 
         channel.handleConnectionEstablished(session)
@@ -65,7 +70,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `handleMessage submits message to inbox`() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
@@ -89,7 +93,6 @@ class WebSocketChannelTest {
     fun `handleMessage sends error when inbox fails`() {
         doThrow(RuntimeException("inbox full")).whenever(inbox).submit(any())
 
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
@@ -109,7 +112,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `health check returns active connections`() {
-        val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
 
         val health = channel.health()
@@ -121,7 +123,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `send returns false for wrong channel`() {
-        val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
 
         assertFalse(
@@ -136,7 +137,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `send returns false for unknown user`() {
-        val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
 
         assertFalse(
@@ -152,7 +152,6 @@ class WebSocketChannelTest {
 
     @Test
     fun send() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
@@ -179,7 +178,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `send returns false if session throws on send`() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
@@ -198,7 +196,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `send returns false if channel is not the same`() {
-        val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
 
         assertFalse(
@@ -214,7 +211,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `send returns false if channel has never received message from user`() {
-        val channel = WebSocketChannel()
         channel.init(mapOf("path" to "/ws/test"), context)
 
         assertFalse(
@@ -230,7 +226,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `sendStatus sends REASONING_CHUNK with usage`() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
@@ -259,7 +254,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `sendStatus does nothing for wrong channel`() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
 
         channel.sendStatus(
@@ -275,7 +269,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `sendStatus does nothing for unknown user`() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
 
         channel.sendStatus(
@@ -291,7 +284,6 @@ class WebSocketChannelTest {
 
     @Test
     fun `pingOpenSessions sends PingMessage to open session`() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
@@ -304,7 +296,6 @@ class WebSocketChannelTest {
     fun `pingOpenSessions skips closed session`() {
         whenever(session.isOpen).doReturn(false)
 
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 
@@ -315,7 +306,6 @@ class WebSocketChannelTest {
 
     @Test
     fun handleConnectionClosed() {
-        val channel = WebSocketChannel()
         channel.init(emptyMap<String, Any>(), context)
         channel.handleConnectionEstablished(session)
 

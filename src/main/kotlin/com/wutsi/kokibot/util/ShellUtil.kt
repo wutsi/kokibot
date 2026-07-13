@@ -2,6 +2,7 @@ package com.wutsi.kokibot.util
 
 import java.io.File
 import java.io.InputStream
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 
@@ -46,30 +47,35 @@ object ShellUtil {
         // If the process writes more than the OS pipe buffer (~64 KB on Linux,
         // ~8 KB on macOS) without a reader, it blocks — and waitFor() never
         // returns, making the command appear to hang indefinitely.
-        val stdoutFuture = drainAsync(process.inputStream)
-        val stderrFuture = drainAsync(process.errorStream)
+        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        try {
+            val stdoutFuture = drainAsync(process.inputStream, executor)
+            val stderrFuture = drainAsync(process.errorStream, executor)
 
-        val timeout = min(MAX_TIMEOUT, if (timeoutSeconds < 0) DEFAULT_TIMEOUT else timeoutSeconds)
-        val finished = process.waitFor(timeout, TimeUnit.SECONDS)
-        if (!finished) {
-            process.destroyForcibly()
+            val timeout = min(MAX_TIMEOUT, if (timeoutSeconds < 0) DEFAULT_TIMEOUT else timeoutSeconds)
+            val finished = process.waitFor(timeout, TimeUnit.SECONDS)
+            if (!finished) {
+                process.destroyForcibly()
+                return ExecResult(
+                    status = -1,
+                    output = stdoutFuture.get(),
+                    error = "TIMEOUT. " + (stderrFuture.get() ?: ""),
+                )
+            }
+
+            val exitValue = process.exitValue()
             return ExecResult(
-                status = -1,
+                status = exitValue,
                 output = stdoutFuture.get(),
-                error = "TIMEOUT. " + (stderrFuture.get() ?: ""),
+                error = stderrFuture.get(),
             )
+        } finally {
+            executor.shutdown()
         }
-
-        val exitValue = process.exitValue()
-        return ExecResult(
-            status = exitValue,
-            output = stdoutFuture.get(),
-            error = stderrFuture.get(),
-        )
     }
 
-    private fun drainAsync(stream: InputStream): java.util.concurrent.Future<String?> {
-        return java.util.concurrent.Executors.newSingleThreadExecutor().submit(
+    private fun drainAsync(stream: InputStream, executor: ExecutorService): java.util.concurrent.Future<String?> {
+        return executor.submit(
             java.util.concurrent.Callable {
                 try {
                     stream.bufferedReader().readText().ifEmpty { null }

@@ -9,6 +9,8 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.marketplace.Marketplace
 import com.wutsi.kokibot.marketplace.MarketplaceRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
@@ -300,6 +302,29 @@ class SkillRegistryTest {
     }
 
     @Test
+    fun `apply - enabled=false disables skill`() {
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "my-skill", home = File("target"))).whenever(skill1).metadata
+        registry.register(skill1)
+
+        registry.apply("my-skill.enabled", "false")
+
+        assertFalse(registry.isEnabled(skill1))
+    }
+
+    @Test
+    fun `apply - enabled=true re-enables skill`() {
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "my-skill", home = File("target"))).whenever(skill1).metadata
+        registry.register(skill1)
+
+        registry.apply("my-skill.enabled", "false")
+        registry.apply("my-skill.enabled", "true")
+
+        assertTrue(registry.isEnabled(skill1))
+    }
+
+    @Test
     fun `apply - missing dot throws`() {
         assertThrows<IllegalArgumentException> {
             registry.apply("no-dot", "value")
@@ -311,6 +336,38 @@ class SkillRegistryTest {
         assertThrows<SkillNotFoundException> {
             registry.apply("unknown-skill.instructions", "value")
         }
+    }
+
+    @Test
+    fun `isEnabled - true by default`() {
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "my-skill", home = File("target"))).whenever(skill1).metadata
+        registry.register(skill1)
+
+        assertTrue(registry.isEnabled(skill1))
+    }
+
+    @Test
+    fun `init - loads disabled skills from config`() {
+        // GIVEN
+        doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
+            .whenever(parser).parse(any())
+
+        val context = Context(
+            home = getResourceFile("/home/007"),
+            llm = mock(),
+            config = mapOf("skills" to mapOf("disabled" to listOf(meta1.name))),
+        )
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skill1 = registry.get(meta1.name)
+        val skill2 = registry.get(meta2.name)
+        assertFalse(registry.isEnabled(skill1))
+        assertTrue(registry.isEnabled(skill2))
     }
 
     private fun getResourceFile(path: String): File {

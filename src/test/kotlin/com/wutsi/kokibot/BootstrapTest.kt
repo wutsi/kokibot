@@ -121,14 +121,27 @@ class BootstrapTest {
     }
 
     @Test
-    fun `set - skill property`() {
+    fun `set - skill enabled persists disabled list`() {
         setupSettingsFile()
         bootstrap.init(getResourceFile("/home/007"))
-        val before = File(home, "config/settings.json").readText()
+        doReturn(setOf("foo")).whenever(skillRegistry).disabledSkills()
 
         bootstrap.set("skill.foo.enabled", false)
 
         verify(skillRegistry).apply("foo.enabled", false)
+        val saved = jsonMapper.readValue(File(home, "config/settings.json"), Map::class.java)
+        assertEquals(listOf("foo"), (saved["skills"] as Map<*, *>)["disabled"])
+    }
+
+    @Test
+    fun `set - skill instructions does not update settings json`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+        val before = File(home, "config/settings.json").readText()
+
+        bootstrap.set("skill.foo.instructions", "new instructions")
+
+        verify(skillRegistry).apply("foo.instructions", "new instructions")
         assertEquals(before, File(home, "config/settings.json").readText())
     }
 

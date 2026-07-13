@@ -21,11 +21,11 @@ class SkillController(private val multi: MultiBootstrap) {
         val context = bootstrap.getContext()
         return ResponseEntity.ok(
             context.skillRegistry.all()
-                .filter { skill -> skill.activate() }
                 .map { skill ->
                     mapOf(
                         "name" to skill.metadata.name,
                         "description" to skill.metadata.description,
+                        "enabled" to skill.enabled,
                     )
                 }
                 .sortedBy { skill -> skill["name"] as String }
@@ -49,7 +49,8 @@ class SkillController(private val multi: MultiBootstrap) {
                     "requiredBinaries" to sk.metadata.requiredBinaries,
                     "requiredEnv" to sk.metadata.requiredEnv,
                     "requiredOS" to sk.metadata.requiredOS,
-                    "marketplace" to sk.marketplace
+                    "marketplace" to sk.marketplace,
+                    "enabled" to sk.enabled,
                 )
             )
         } catch (_: SkillNotFoundException) {

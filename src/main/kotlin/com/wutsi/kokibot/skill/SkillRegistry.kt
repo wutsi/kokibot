@@ -2,6 +2,7 @@ package com.wutsi.kokibot.skill
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Registry
+import com.wutsi.kokibot.util.MapUtil
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -11,15 +12,25 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
         private val EMPTY_MAP = emptyMap<String, Any>()
     }
 
+    private val disabledSkills = mutableSetOf<String>()
+
+    fun disabledSkills(): Set<String> = disabledSkills.toSet()
+
     override fun id() = "skill-registry"
     override fun keyOf(skill: Skill) = skill.metadata.name
     override fun notFound(name: String) = SkillNotFoundException("Skill not found: $name")
     override fun destroyItem(skill: Skill) = skill.destroy()
 
     override fun init(context: Context) {
+        @Suppress("UNCHECKED_CAST")
+        val disabled = MapUtil.toMap("skills", context.config)?.get("disabled") as? List<String>
+        disabled?.forEach { disabledSkills.add(it) }
+
         initSkills(context)
         initMarketplacesSkills(context)
     }
+
+    fun isEnabled(skill: Skill): Boolean = skill.metadata.name !in disabledSkills
 
     private fun initSkills(context: Context) {
         val root = File(context.home, "config/skills")
@@ -51,8 +62,10 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
         val name = key.substring(0, dot)
         val property = key.substring(dot + 1)
 
-        val skill = get(name)
-        skill.apply(property, value)
+        when (property) {
+            "enabled" -> if (value.toString().toBoolean()) disabledSkills.remove(name) else disabledSkills.add(name)
+            else -> get(name).apply(property, value)
+        }
     }
 
     private fun initMarketplacesSkills(context: Context) {

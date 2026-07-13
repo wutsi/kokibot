@@ -71,9 +71,15 @@ class Bootstrap(
         if (
             (section == "assistant" && property == "instructions") ||
             (section == "heartbeat" && property == "instructions") ||
-            section == "skill" ||
             section == "marketplace"
         ) {
+            return
+        }
+
+        if (section == "skill") {
+            if (property.endsWith(".enabled")) {
+                updateSkillsDisabledList()
+            }
             return
         }
 
@@ -105,6 +111,17 @@ class Bootstrap(
         values.forEach { value ->
             sectionMap[value.first] = value.second
         }
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
+    }
+
+    private fun updateSkillsDisabledList() {
+        val jsonMapper = context.jsonMapper
+        val file = File(File(context.home, "config"), "settings.json")
+        val rawConfig = jsonMapper.readValue(file, Map::class.java).toMutableMap()
+
+        @Suppress("UNCHECKED_CAST")
+        val skillsSection = rawConfig.getOrPut("skills") { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
+        skillsSection["disabled"] = context.skillRegistry.disabledSkills().toList()
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
     }
 

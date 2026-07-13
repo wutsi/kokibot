@@ -1551,8 +1551,9 @@ const Settings = {
         if (!contentElement) return;
 
         const listHtml = skills.map((skill, i) => `
-            <button class="skill-list-item${i === 0 ? ' active' : ''}" data-skill="${this.escapeHtml(skill.name)}">
+            <button class="skill-list-item${i === 0 ? ' active' : ''}${skill.enabled === false ? ' skill-list-item-disabled' : ''}" data-skill="${this.escapeHtml(skill.name)}">
                 ${this.escapeHtml(skill.name)}
+                ${skill.enabled === false ? '<span class="skill-list-item-badge-disabled">off</span>' : ''}
             </button>
         `).join('');
 
@@ -1598,6 +1599,7 @@ const Settings = {
             this.currentSkillName = data.name || skill.name;
             this.currentSkillInstructions = data.instructions || '';
             this.currentSkillDescription = data.description || '';
+            this.currentSkillEnabled = data.enabled !== false;
             const fromMarketplace = !!data.marketplace;
 
             const keywords = data.keywords || [];
@@ -1655,7 +1657,13 @@ const Settings = {
 
             panel.innerHTML = `
                 <div class="skill-detail">
-                    <h2 class="skill-detail-name">${this.escapeHtml(this.currentSkillName)}</h2>
+                    <div class="skill-detail-header">
+                        <h2 class="skill-detail-name">${this.escapeHtml(this.currentSkillName)}</h2>
+                        <label class="setting-section-toggle skill-detail-toggle" title="Enable or disable this skill">
+                            <input type="checkbox" id="skill-enabled-toggle"${this.currentSkillEnabled ? ' checked' : ''}>
+                            <span class="setting-section-toggle-slider"></span>
+                        </label>
+                    </div>
                     ${fromMarketplace
                         ? (data.description ? `<p class="skill-detail-description">${this.escapeHtml(data.description)}</p>` : '')
                         : `<div class="general-description-row" id="skill-description-row">
@@ -1689,6 +1697,9 @@ const Settings = {
                 </div>
             `;
 
+            panel.querySelector('#skill-enabled-toggle')?.addEventListener('change', (e) => {
+                this.saveSkillEnabled(e.target.checked);
+            });
             panel.querySelector('#skill-copy-btn')?.addEventListener('click', (e) => {
                 this.copySkillInstructionsToClipboard(e.currentTarget);
             });
@@ -1841,6 +1852,47 @@ const Settings = {
         document.getElementById('skill-edit-btn').style.display = 'flex';
         document.getElementById('skill-save-btn').style.display = 'none';
         document.getElementById('skill-cancel-btn').style.display = 'none';
+    },
+
+    async saveSkillEnabled(enabled) {
+        if (!this.agentName || !this.currentSkillName) return;
+        this.currentSkillEnabled = enabled;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/skills/${encodeURIComponent(this.currentSkillName)}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: 'enabled', value: enabled }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+            Notifications.success(enabled ? 'Skill enabled' : 'Skill disabled', { duration: 3000 });
+
+            // Update the badge in the list
+            const listItem = document.querySelector(`.skill-list-item[data-skill="${CSS.escape(this.currentSkillName)}"]`);
+            if (listItem) {
+                listItem.classList.toggle('skill-list-item-disabled', !enabled);
+                const badge = listItem.querySelector('.skill-list-item-badge-disabled');
+                if (enabled) {
+                    badge?.remove();
+                } else if (!badge) {
+                    listItem.insertAdjacentHTML('beforeend', '<span class="skill-list-item-badge-disabled">off</span>');
+                }
+            }
+        } catch (error) {
+            console.error('Error saving skill enabled state:', error);
+            // Revert the toggle
+            const toggle = document.getElementById('skill-enabled-toggle');
+            if (toggle) toggle.checked = !enabled;
+            this.currentSkillEnabled = !enabled;
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+        }
     },
 
     enterSkillDescriptionEditMode() {

@@ -1299,6 +1299,41 @@ h3.setting-section-title {
     font-weight: 500;
 }
 
+.skill-list-item-disabled {
+    color: var(--color-text-tertiary);
+    opacity: 0.6;
+}
+
+.skill-list-item-badge-disabled {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    border-radius: 4px;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-tertiary);
+    border: 1px solid var(--color-border-light);
+    vertical-align: middle;
+    text-transform: uppercase;
+}
+
+.skill-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.skill-detail-header .skill-detail-name {
+    margin-bottom: 0;
+}
+
+.skill-detail-toggle {
+    flex-shrink: 0;
+}
+
 .skill-detail-panel {
     flex: 1;
     overflow-y: auto;

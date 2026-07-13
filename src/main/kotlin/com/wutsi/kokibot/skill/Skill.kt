@@ -20,6 +20,9 @@ class Skill(
     private val parser = SkillParser()
     private lateinit var context: Context
 
+    val enabled: Boolean
+        get() = context.skillRegistry.isEnabled(this)
+
     val instructions: String
         get() {
             return parser.extractBody(File(metadata.home, "SKILL.md"))
@@ -81,6 +84,8 @@ class Skill(
 
     fun activate(): Boolean {
         LOGGER.info("Activating Skill: ${metadata.name}")
+
+        if (!enabled) return false
 
         /* Make sure the skill is healthy */
         if (!health().up) {

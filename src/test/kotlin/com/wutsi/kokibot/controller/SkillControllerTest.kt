@@ -56,17 +56,20 @@ class SkillControllerTest {
     }
 
     @Test
-    fun `skills filters out inactive skills`() {
-        val activeSkill = createSkill("crm", "CRM operations")
-        val inactiveSkill = createSkill("broken", "Broken skill", requiredBinaries = listOf("nonexistent-binary-xyz"))
-        doReturn(listOf(createBootstrap("007", skills = listOf(activeSkill, inactiveSkill)))).whenever(multi).bootstraps
+    fun `skills includes enabled field`() {
+        val skills = listOf(
+            createSkill("crm", "CRM operations"),
+            createSkill("weather", "Weather forecasting"),
+        )
+        doReturn(listOf(createBootstrap("007", skills = skills))).whenever(multi).bootstraps
 
         val response = rest.getForEntity("/assistants/007/skills", List::class.java)
 
         assertEquals(200, response.statusCode.value())
         val body = response.body!!
-        assertEquals(1, body.size)
-        assertEquals("crm", (body[0] as Map<*, *>)["name"])
+        assertEquals(2, body.size)
+        assertEquals(true, (body[0] as Map<*, *>)["enabled"])
+        assertEquals(true, (body[1] as Map<*, *>)["enabled"])
     }
 
     @Test
@@ -266,6 +269,7 @@ class SkillControllerTest {
 
         val skillRegistry = mock<SkillRegistry>()
         doReturn(skills).whenever(skillRegistry).all()
+        doReturn(true).whenever(skillRegistry).isEnabled(any())
 
         val context = Context(
             assistant = assistant,
@@ -273,6 +277,8 @@ class SkillControllerTest {
             llm = mock<LLM>(),
             skillRegistry = skillRegistry,
         )
+        skills.forEach { skill -> skill.init(emptyMap<String, Any>(), context) }
+
         val bootstrap = mock<Bootstrap>()
         doReturn(context).whenever(bootstrap).getContext()
         return bootstrap

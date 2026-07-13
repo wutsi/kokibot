@@ -43,11 +43,10 @@ object ShellUtil {
         }
         val process = builder.start()
 
-        // Drain stdout and stderr concurrently to prevent pipe-buffer deadlock.
-        // If the process writes more than the OS pipe buffer (~64 KB on Linux,
-        // ~8 KB on macOS) without a reader, it blocks — and waitFor() never
-        // returns, making the command appear to hang indefinitely.
-        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+        // Two threads — one per stream — to prevent pipe-buffer deadlock.
+        // A single-thread executor would queue the second drain task behind the
+        // first, recreating the deadlock if the first stream stalls.
+        val executor = java.util.concurrent.Executors.newFixedThreadPool(2)
         try {
             val stdoutFuture = drainAsync(process.inputStream, executor)
             val stderrFuture = drainAsync(process.errorStream, executor)
@@ -58,16 +57,15 @@ object ShellUtil {
                 process.destroyForcibly()
                 return ExecResult(
                     status = -1,
-                    output = stdoutFuture.get(),
-                    error = "TIMEOUT. " + (stderrFuture.get() ?: ""),
+                    output = stdoutFuture.get(5, TimeUnit.SECONDS),
+                    error = "TIMEOUT. " + (stderrFuture.get(5, TimeUnit.SECONDS) ?: ""),
                 )
             }
 
-            val exitValue = process.exitValue()
             return ExecResult(
-                status = exitValue,
-                output = stdoutFuture.get(),
-                error = stderrFuture.get(),
+                status = process.exitValue(),
+                output = stdoutFuture.get(5, TimeUnit.SECONDS),
+                error = stderrFuture.get(5, TimeUnit.SECONDS),
             )
         } finally {
             executor.shutdown()

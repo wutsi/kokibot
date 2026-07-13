@@ -3,7 +3,9 @@ package com.wutsi.kokibot.tools.python
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMToolCall
 import com.wutsi.kokibot.tools.ToolParameterType
+import com.wutsi.kokibot.util.ShellUtil
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,6 +20,8 @@ class PythonToolTest {
         home = File("/tmp"),
         llm = mock(),
     )
+
+    private val python3Available = ShellUtil.exists("python3")
 
     private fun createFile(name: String, code: String): File {
         val file = File.createTempFile(name, ".py")
@@ -47,6 +51,7 @@ class PythonToolTest {
 
     @Test
     fun `exec - print`() {
+        assumeTrue(python3Available, "python3 not available")
         val file = createFile("print", "print('Hello, World!')")
         val result = tool.exec(mapOf("path" to file.absolutePath))
 
@@ -55,6 +60,7 @@ class PythonToolTest {
 
     @Test
     fun `exec - math`() {
+        assumeTrue(python3Available, "python3 not available")
         val file = createFile(
             "math",
             """
@@ -73,6 +79,7 @@ class PythonToolTest {
 
     @Test
     fun `exec - compute error`() {
+        assumeTrue(python3Available, "python3 not available")
         val file = createFile("compute_error", "print(1 / 0)")
         val result = tool.exec(mapOf("path" to file.absolutePath))
 
@@ -81,6 +88,7 @@ class PythonToolTest {
 
     @Test
     fun `exec - syntax error`() {
+        assumeTrue(python3Available, "python3 not available")
         val file = createFile(
             "syntax_error",
             """
@@ -107,6 +115,7 @@ class PythonToolTest {
 
     @Test
     fun `exec - timeout`() {
+        assumeTrue(python3Available, "python3 not available")
         val file = createFile(
             "timeout",
             """
@@ -115,11 +124,8 @@ class PythonToolTest {
                     """.trimIndent(),
         )
 
-        val result = PythonTool(1L).exec(
-            mapOf("path" to file.absolutePath)
-        )
+        val result = PythonTool(1L).exec(mapOf("path" to file.absolutePath))
 
-        Thread.sleep(2000) // Wait for the timeout to occur
         assertEquals(true, result.contains("TIMEOUT"))
     }
 

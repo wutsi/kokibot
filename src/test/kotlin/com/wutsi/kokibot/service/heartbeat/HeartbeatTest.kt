@@ -13,6 +13,7 @@ import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
@@ -28,8 +29,14 @@ class HeartbeatTest {
         assistant = mock(),
     )
 
+    @BeforeEach
+    fun setUp() {
+        doReturn(true).whenever(context.assistant).isEnabled()
+    }
+
     @AfterEach
     fun tearDown() {
+        context.destroy()
         heartbeat.destroy()
     }
 
@@ -75,9 +82,17 @@ class HeartbeatTest {
 
     @Test
     fun `tick - disabled`() {
-        doReturn(Message("Done")).whenever(context.assistant).process(any(), anyOrNull())
-
         heartbeat.init(mapOf("frequency" to "30m", "enabled" to false), context)
+        heartbeat.tick()
+
+        verify(context.assistant, never()).process(any(), anyOrNull())
+    }
+
+    @Test
+    fun `tick - assistant disabled`() {
+        doReturn(false).whenever(context.assistant).isEnabled()
+
+        heartbeat.init(mapOf("frequency" to "30m", "enabled" to true), context)
         heartbeat.tick()
 
         verify(context.assistant, never()).process(any(), anyOrNull())

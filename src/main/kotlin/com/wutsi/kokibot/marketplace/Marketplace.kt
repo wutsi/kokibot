@@ -93,21 +93,22 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
     private fun loadSkills(): List<Skill> {
         val parser = SkillParser()
         val baseDirectory = getBaseDir()
-        val skills = skillFinder.find(repoUrl, baseDirectory).mapNotNull { md ->
-            try {
-                val pair = parser.parse(md)
-                val basename = pair.first.name
-                val meta = pair.first.copy(name = "${name}_$basename")
-                if (acceptSkill(basename)) {
-                    Skill(meta, name)
-                } else {
+        val skills = skillFinder.find(repoUrl, baseDirectory)
+            .mapNotNull { md ->
+                try {
+                    val pair = parser.parse(md)
+                    val basename = pair.first.name
+                    val meta = pair.first.copy(name = "${name}_$basename")
+                    if (acceptSkill(basename)) {
+                        Skill(meta, name)
+                    } else {
+                        null
+                    }
+                } catch (ex: Exception) {
+                    LOGGER.warn("Failed to parse skill $md in marketplace $name", ex)
                     null
                 }
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to parse skill $md in marketplace $name", ex)
-                null
             }
-        }
 
         return skills
     }

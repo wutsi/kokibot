@@ -230,6 +230,7 @@ class PromptBuilderTest {
     @Test
     fun `should include skills in system instructions`() {
         val skill1 = mock<Skill>()
+        doReturn(true).whenever(skill1).enabled
         doReturn(Health(up = true, id = "skill1")).whenever(skill1).health()
         doReturn(
             SkillMetadata(
@@ -240,6 +241,7 @@ class PromptBuilderTest {
         ).whenever(skill1).metadata
 
         val skill2 = mock<Skill>()
+        doReturn(true).whenever(skill2).enabled
         doReturn(Health(up = true, id = "skill2")).whenever(skill2).health()
         doReturn(
             SkillMetadata(
@@ -264,6 +266,7 @@ class PromptBuilderTest {
     @Test
     fun `should exclude skills that are down`() {
         val skill1 = mock<Skill>()
+        doReturn(true).whenever(skill1).enabled
         doReturn(Health(up = true, id = "skill1")).whenever(skill1).health()
         doReturn(
             SkillMetadata(
@@ -274,7 +277,42 @@ class PromptBuilderTest {
         ).whenever(skill1).metadata
 
         val skill2 = mock<Skill>()
+        doReturn(true).whenever(skill2).enabled
         doReturn(Health(up = false, id = "skill2")).whenever(skill2).health()
+        doReturn(
+            SkillMetadata(
+                name = "broken",
+                description = "Broken skill",
+                home = File("/tmp/skills/broken")
+            )
+        ).whenever(skill2).metadata
+
+        doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, context)
+
+        assertTrue(instructions.contains("weather"))
+        assertFalse(instructions.contains("broken"))
+    }
+
+
+    @Test
+    fun `should exclude skills that are disabled`() {
+        val skill1 = mock<Skill>()
+        doReturn(true).whenever(skill1).enabled
+        doReturn(Health(up = true, id = "skill1")).whenever(skill1).health()
+        doReturn(
+            SkillMetadata(
+                name = "weather",
+                description = "Get weather info",
+                home = File("/tmp/skills/weather")
+            )
+        ).whenever(skill1).metadata
+
+        val skill2 = mock<Skill>()
+        doReturn(false).whenever(skill2).enabled
+        doReturn(Health(up = true, id = "skill2")).whenever(skill2).health()
         doReturn(
             SkillMetadata(
                 name = "broken",

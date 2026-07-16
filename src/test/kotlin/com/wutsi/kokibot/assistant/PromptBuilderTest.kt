@@ -296,7 +296,6 @@ class PromptBuilderTest {
         assertFalse(instructions.contains("broken"))
     }
 
-
     @Test
     fun `should exclude skills that are disabled`() {
         val skill1 = mock<Skill>()

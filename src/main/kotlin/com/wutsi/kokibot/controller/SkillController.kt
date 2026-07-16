@@ -44,6 +44,7 @@ class SkillController(private val multi: MultiBootstrap) {
                 mapOf(
                     "name" to sk.metadata.name,
                     "description" to sk.metadata.description,
+                    "categories" to sk.metadata.categories,
                     "keywords" to sk.metadata.keywords,
                     "instructions" to sk.instructions,
                     "requiredBinaries" to sk.metadata.requiredBinaries,

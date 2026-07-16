@@ -1613,14 +1613,15 @@ const Settings = {
             const fromMarketplace = !!data.marketplace;
 
             const keywords = data.keywords || [];
+            const categories = data.categories || [];
             const requiredBinaries = data.requiredBinaries || [];
             const requiredEnv = data.requiredEnv || [];
             const requiredOS = data.requiredOS || [];
 
-            const keywordsHtml = keywords.length
+            const buildTagRow = (label, items) => items.length
                 ? `<div class="skill-detail-meta-row">
-                       <span class="skill-detail-meta-label">Keywords</span>
-                       <span class="skill-detail-meta-value">${keywords.map(k => `<span class="skill-detail-tag">${this.escapeHtml(k)}</span>`).join('')}</span>
+                       <span class="skill-detail-meta-label">${label}</span>
+                       <span class="skill-detail-meta-value">${items.map(i => `<span class="skill-detail-tag">${this.escapeHtml(i)}</span>`).join('')}</span>
                    </div>`
                 : '';
 
@@ -1631,9 +1632,10 @@ const Settings = {
                    </div>`
                 : '';
 
-            const metaHtml = (keywordsHtml || requiredBinaries.length || requiredEnv.length || requiredOS.length)
+            const metaHtml = (categories.length || keywords.length || requiredBinaries.length || requiredEnv.length || requiredOS.length)
                 ? `<div class="skill-detail-meta">
-                       ${keywordsHtml}
+                       ${buildTagRow('Categories', categories)}
+                       ${buildTagRow('Keywords', keywords)}
                        ${buildRequirementRow('Requires', requiredBinaries)}
                        ${buildRequirementRow('Env vars', requiredEnv)}
                        ${buildRequirementRow('OS', requiredOS)}

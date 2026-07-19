@@ -59,10 +59,12 @@ class MarketplaceControllerTest {
         assertEquals("https://github.com/acme/skills", mp["repoUrl"])
 
         @Suppress("UNCHECKED_CAST")
-        val skillNames = mp["skills"] as List<*>
-        assertEquals(2, skillNames.size)
-        assertEquals("crm", skillNames[0])
-        assertEquals("weather", skillNames[1])
+        val returnedSkills = mp["skills"] as List<*>
+        assertEquals(2, returnedSkills.size)
+        assertEquals("crm", (returnedSkills[0] as Map<*, *>)["name"])
+        assertEquals(true, (returnedSkills[0] as Map<*, *>)["enabled"])
+        assertEquals("weather", (returnedSkills[1] as Map<*, *>)["name"])
+        assertEquals(true, (returnedSkills[1] as Map<*, *>)["enabled"])
     }
 
     @Test

@@ -134,7 +134,7 @@ class BootstrapTest {
     }
 
     @Test
-    fun `set - skill enabled persists disabled list`() {
+    fun `set - skill disabled persists disabled list`() {
         setupSettingsFile()
         bootstrap.init(getResourceFile("/home/007"))
         doReturn(setOf("foo")).whenever(skillRegistry).disabledSkills()

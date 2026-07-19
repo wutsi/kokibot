@@ -23,12 +23,18 @@ class MarketplaceController(private val multi: MultiBootstrap) {
             context.marketplaceRegistry.all()
                 .map { marketplace ->
                     mapOf(
-                        "enabled" to context.marketplaceRegistry.isEnabled(marketplace),
+                        "enabled" to marketplace.isEnabled(),
                         "name" to marketplace.getName(),
                         "repoUrl" to marketplace.getRepoUrl(),
                         "description" to marketplace.getDescription(),
                         "icon" to marketplace.getIcon(),
-                        "skills" to marketplace.getSkills().map { skill -> skill.metadata.name }
+                        "skills" to marketplace.getSkills().map { skill ->
+                            mapOf(
+                                "name" to skill.metadata.name,
+                                "description" to skill.metadata.description,
+                                "enabled" to context.skillRegistry.isEnabled(skill),
+                            )
+                        }
                     )
                 }
                 .sortedBy { it["name"].toString() }

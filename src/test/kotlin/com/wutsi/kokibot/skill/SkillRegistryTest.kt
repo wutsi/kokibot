@@ -401,7 +401,7 @@ class SkillRegistryTest {
         val context = Context(
             home = getResourceFile("/home/007"),
             llm = mock(),
-            config = mapOf("skills" to mapOf("disabled" to listOf(meta1.name))),
+            config = mapOf("skills" to mapOf("disabled" to listOf(meta2.name))),
         )
 
         // WHEN
@@ -410,8 +410,8 @@ class SkillRegistryTest {
         // THEN
         val skill1 = registry.get(meta1.name)
         val skill2 = registry.get(meta2.name)
-        assertFalse(registry.isEnabled(skill1))
-        assertTrue(registry.isEnabled(skill2))
+        assertTrue(registry.isEnabled(skill1))
+        assertFalse(registry.isEnabled(skill2))
     }
 
     private fun getResourceFile(path: String): File {

@@ -148,8 +148,6 @@ class MarketplaceRegistryTest {
 
     @Test
     fun `apply - enable removes from disabled set and registers skills`() {
-        val finder = mock<GitSkillFinder>()
-        doReturn(emptyList<File>()).whenever(finder).find(any(), any())
         registry.init(context)
         registry.apply("obsidian.enabled", false)
 
@@ -161,8 +159,6 @@ class MarketplaceRegistryTest {
 
     @Test
     fun `apply - disable adds to disabled set and unregisters skills`() {
-        val finder = mock<GitSkillFinder>()
-        doReturn(emptyList<File>()).whenever(finder).find(any(), any())
         registry.init(context)
 
         registry.apply("obsidian.enabled", false)

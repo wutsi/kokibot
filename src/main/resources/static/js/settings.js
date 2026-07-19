@@ -22,6 +22,8 @@ const Settings = {
     currentSkillName: null,
     currentSkillInstructions: null,
     currentSkillDescription: null,
+    currentMarketplaceName: null,
+    currentMarketplaceEnabled: false,
 
     init(agentName) {
         this.agentName = agentName;
@@ -2268,53 +2270,157 @@ const Settings = {
         const contentElement = document.getElementById('marketplaces-content');
         if (!contentElement) return;
 
-        const html = marketplaces.map((mp, i) => {
-            const iconHtml = mp.icon
-                ? `<img src="${this.escapeHtml(mp.icon)}" alt="${this.escapeHtml(mp.name)}" class="channel-icon" onerror="this.style.display='none'">`
-                : `<div class="marketplace-icon-placeholder"><svg fill="currentColor" height="24" viewBox="0 0 24 24" width="24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg></div>`;
-            const skillsHtml = mp.skills && mp.skills.length > 0
-                ? mp.skills.map(s => `<span class="marketplace-skill-tag">${this.escapeHtml(s)}</span>`).join('')
-                : '<span class="marketplace-no-skills">No skills</span>';
+        const listHtml = marketplaces.map((mp, i) => `
+            <button class="skill-list-item${i === 0 ? ' active' : ''}${mp.enabled === false ? ' skill-list-item-disabled' : ''}" data-marketplace="${this.escapeHtml(mp.name)}">
+                ${this.escapeHtml(mp.name)}
+                ${mp.enabled === false ? '<span class="skill-list-item-badge-disabled">off</span>' : ''}
+            </button>
+        `).join('');
 
-            return `
-                <div class="marketplace-item">
-                    ${iconHtml}
-                    <div class="marketplace-info">
-                        <div class="marketplace-info-header">
-                            <span class="marketplace-name">${this.escapeHtml(mp.name)}</span>
-                            <span class="marketplace-skill-count">${mp.skills ? mp.skills.length : 0} skill${mp.skills && mp.skills.length === 1 ? '' : 's'}</span>
-                        </div>
-                        ${mp.description ? `<span class="marketplace-description">${this.escapeHtml(mp.description)}</span>` : ''}
-                        <span class="marketplace-url">${this.escapeHtml(mp.repoUrl)}</span>
-                        <div class="marketplace-skills">${skillsHtml}</div>
+        contentElement.innerHTML = `
+            <div class="skills-layout">
+                <div class="skills-list-panel">${listHtml}</div>
+                <div class="skill-detail-panel" id="marketplace-detail-panel">
+                    <div class="skill-detail-placeholder">Select a marketplace to view details</div>
+                </div>
+            </div>
+        `;
+
+        contentElement.querySelectorAll('.skill-list-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                contentElement.querySelectorAll('.skill-list-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const mp = marketplaces.find(m => m.name === btn.dataset.marketplace);
+                if (mp) this.renderMarketplaceDetail(mp);
+            });
+        });
+
+        if (marketplaces.length > 0) {
+            this.renderMarketplaceDetail(marketplaces[0]);
+        }
+    },
+
+    renderMarketplaceDetail(mp) {
+        const panel = document.getElementById('marketplace-detail-panel');
+        if (!panel) return;
+
+        this.currentMarketplaceName = mp.name;
+        this.currentMarketplaceEnabled = mp.enabled !== false;
+
+        const iconHtml = mp.icon
+            ? `<img src="${this.escapeHtml(mp.icon)}" alt="${this.escapeHtml(mp.name)}" class="marketplace-detail-icon" onerror="this.style.display='none'">`
+            : '';
+
+        const prefix = mp.name + '_';
+        const displayName = (s) => s.name.startsWith(prefix) ? s.name.slice(prefix.length) : s.name;
+
+        const sortedSkills = mp.skills ? [...mp.skills].sort((a, b) => {
+            if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
+            return displayName(a).localeCompare(displayName(b));
+        }) : [];
+
+        const skillsHtml = sortedSkills.length > 0
+            ? sortedSkills.map(s => `
+                <div class="marketplace-detail-skill-item${s.enabled === false ? ' marketplace-detail-skill-disabled' : ''}" data-skill="${this.escapeHtml(s.name)}">
+                    <div class="marketplace-detail-skill-body">
+                        <span class="marketplace-detail-skill-name">${this.escapeHtml(displayName(s))}</span>
+                        ${s.description ? `<span class="marketplace-detail-skill-desc">${this.escapeHtml(s.description)}</span>` : ''}
                     </div>
-                    <label class="setting-section-toggle" title="Enable or disable this marketplace">
-                        <input type="checkbox" id="marketplace-toggle-${i}"
-                               data-marketplace="${this.escapeHtml(mp.name)}"
-                               ${mp.enabled ? 'checked' : ''}>
+                    <label class="setting-section-toggle" title="Enable or disable this skill">
+                        <input type="checkbox" class="marketplace-skill-toggle" data-skill="${this.escapeHtml(s.name)}"${s.enabled !== false ? ' checked' : ''}>
                         <span class="setting-section-toggle-slider"></span>
                     </label>
                 </div>
-            `;
-        }).join('');
+            `).join('')
+            : '<p class="skill-detail-description">No skills available</p>';
 
-        contentElement.innerHTML = `<div class="marketplaces-list">${html}</div>`;
+        panel.innerHTML = `
+            <div class="skill-detail">
+                <div class="skill-detail-header">
+                    <div class="marketplace-detail-title">
+                        ${iconHtml}
+                        <h2 class="skill-detail-name">${this.escapeHtml(mp.name)}</h2>
+                    </div>
+                    <label class="setting-section-toggle skill-detail-toggle" title="Enable or disable this marketplace">
+                        <input type="checkbox" id="marketplace-enabled-toggle"${this.currentMarketplaceEnabled ? ' checked' : ''}>
+                        <span class="setting-section-toggle-slider"></span>
+                    </label>
+                </div>
+                ${mp.description ? `<p class="skill-detail-description">${this.escapeHtml(mp.description)}</p>` : ''}
+                <div class="marketplace-detail-url">${this.escapeHtml(mp.repoUrl)}</div>
+                <div class="marketplace-detail-skills">
+                    <h3 class="setting-section-title">Skills</h3>
+                    ${skillsHtml}
+                </div>
+            </div>
+        `;
 
-        contentElement.querySelectorAll('input[data-marketplace]').forEach(toggle => {
+        panel.querySelector('#marketplace-enabled-toggle')?.addEventListener('change', async (e) => {
+            const enabled = e.target.checked;
+            const name = this.currentMarketplaceName;
+            const ok = await this.saveMarketplaceSetting(
+                name, 'enabled', enabled,
+                enabled ? `${name} enabled` : `${name} disabled`
+            );
+            if (ok) {
+                this.currentMarketplaceEnabled = enabled;
+                this.loadSkills();
+                const listItem = document.querySelector(`.skill-list-item[data-marketplace="${CSS.escape(name)}"]`);
+                if (listItem) {
+                    listItem.classList.toggle('skill-list-item-disabled', !enabled);
+                    const badge = listItem.querySelector('.skill-list-item-badge-disabled');
+                    if (enabled) {
+                        badge?.remove();
+                    } else if (!badge) {
+                        listItem.insertAdjacentHTML('beforeend', '<span class="skill-list-item-badge-disabled">off</span>');
+                    }
+                }
+            } else {
+                e.target.checked = !enabled;
+            }
+        });
+
+        panel.querySelectorAll('.marketplace-skill-toggle').forEach(toggle => {
             toggle.addEventListener('change', async (e) => {
-                const marketplaceName = toggle.dataset.marketplace;
+                const skillName = toggle.dataset.skill;
                 const enabled = e.target.checked;
-                const ok = await this.saveMarketplaceSetting(
-                    marketplaceName, 'enabled', enabled,
-                    enabled ? `${marketplaceName} enabled` : `${marketplaceName} disabled`
+                const ok = await this.saveSkillSetting(
+                    skillName, 'enabled', enabled,
+                    enabled ? 'Skill enabled' : 'Skill disabled'
                 );
                 if (ok) {
-                    this.loadSkills();
+                    const item = panel.querySelector(`.marketplace-detail-skill-item[data-skill="${CSS.escape(skillName)}"]`);
+                    item?.classList.toggle('marketplace-detail-skill-disabled', !enabled);
                 } else {
-                    toggle.checked = !enabled;
+                    e.target.checked = !enabled;
                 }
             });
         });
+    },
+
+    async saveSkillSetting(skillName, key, value, successMsg) {
+        if (!this.agentName) return false;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}/skills/${encodeURIComponent(skillName)}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value }),
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || `Failed to save (${response.status})`);
+            }
+            Notifications.success(successMsg, { duration: 3000 });
+            return true;
+        } catch (error) {
+            console.error('Error saving skill setting:', error);
+            Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');
+            return false;
+        }
     },
 
     async saveMarketplaceSetting(marketplace, key, value, successMsg) {

@@ -17,7 +17,7 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
     private var icon: String? = null
     private var description: String? = null
     private lateinit var context: Context
-    private lateinit var skillWhitelist: List<String>
+
     private var skills: MutableList<Skill> = mutableListOf()
 
     override fun id(): String {
@@ -33,9 +33,6 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
 
         this.icon = config["icon"]?.toString()
         this.description = config["description"]?.toString()
-
-        this.skillWhitelist = (config["skill-whitelist"] as? List<*>)?.mapNotNull { it?.toString()?.lowercase() }
-            ?: emptyList()
 
         this.context = context
     }
@@ -54,6 +51,10 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
 
     fun getDescription(): String? {
         return description
+    }
+
+    fun isEnabled(): Boolean {
+        return context.marketplaceRegistry.isEnabled(this)
     }
 
     fun getSkills(): List<Skill> {
@@ -78,11 +79,7 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
                     val pair = parser.parse(md)
                     val basename = pair.first.name
                     val meta = pair.first.copy(name = "${name}_$basename")
-                    if (acceptSkill(basename)) {
-                        Skill(meta, name)
-                    } else {
-                        null
-                    }
+                    Skill(meta, name)
                 } catch (ex: Exception) {
                     LOGGER.warn("Failed to parse skill $md in marketplace $name", ex)
                     null
@@ -90,10 +87,6 @@ class Marketplace(private val skillFinder: GitSkillFinder = GitSkillFinder()) : 
             }
 
         return skills
-    }
-
-    private fun acceptSkill(name: String): Boolean {
-        return skillWhitelist.isEmpty() || skillWhitelist.contains(name.lowercase())
     }
 
     private fun getBaseDir(): File {

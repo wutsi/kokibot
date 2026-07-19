@@ -119,21 +119,25 @@ class PromptBuilder(
         return context.conversationRepository.getMessages(conversationId, userId, channelId)
     }
 
-    private fun skillsInstructions(context: Context): String? {
+    private fun skillsInstructions(context: Context): String {
         val skills = context.skillRegistry
             .all()
             .filter { skill -> skill.health().up }
             .filter { skill -> skill.enabled }
             .joinToString("\n") { skill ->
                 listOfNotNull(
-                    "## Skill: ${skill.metadata.name}\n\n" +
+                    "### Skill: ${skill.metadata.name}\n\n" +
                         "**Home Directory:** ${skill.metadata.home}\n\n" +
                         "**Description:** ${skill.metadata.description}"
                 ).joinToString("\n\n")
             }
             .ifEmpty { null }
 
-        return skills?.let { "# Available skills\n\nHere are the skills available:\n\n$skills" }
+        return "# Skills\n\n" +
+            "**Global Skill Root Directory:** ${context.home.parentFile.parentFile}/config/skills\n" +
+            "**Local Skill Root Directory:** ${context.home}/config/skills\n\n" +
+            "## Available Skills\n\n" +
+            (skills ?: "**No skills are currently enabled.**")
     }
 
     private fun mcpInstructions(context: Context): String? {

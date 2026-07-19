@@ -256,10 +256,13 @@ class PromptBuilderTest {
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, context)
 
-        assertTrue(instructions.contains("# Available skills"))
-        assertTrue(instructions.contains("## Skill: weather"))
+        assertTrue(instructions.contains("# Skills"))
+        assertTrue(instructions.contains("**Global Skill Root Directory:** ${home.parentFile.parentFile}/config/skills\n"))
+        assertTrue(instructions.contains("**Local Skill Root Directory:** $home/config/skills\n"))
+        assertTrue(instructions.contains("## Available Skills"))
+        assertTrue(instructions.contains("### Skill: weather"))
         assertTrue(instructions.contains("Get weather info"))
-        assertTrue(instructions.contains("## Skill: news"))
+        assertTrue(instructions.contains("### Skill: news"))
         assertTrue(instructions.contains("Get news articles"))
     }
 

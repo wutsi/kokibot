@@ -109,14 +109,27 @@ class BootstrapTest {
     }
 
     @Test
-    fun `set - marketplace property`() {
+    fun `set - marketplace enabled persists disabled list`() {
         setupSettingsFile()
         bootstrap.init(getResourceFile("/home/007"))
-        val before = File(home, "config/settings.json").readText()
+        doReturn(setOf("foo")).whenever(marketplaceRegistry).disabledMarketplaces()
 
         bootstrap.set("marketplace.foo.enabled", false)
 
         verify(marketplaceRegistry).apply("foo.enabled", false)
+        val saved = jsonMapper.readValue(File(home, "config/settings.json"), Map::class.java)
+        assertEquals(listOf("foo"), (saved["marketplaces"] as Map<*, *>)["disabled"])
+    }
+
+    @Test
+    fun `set - marketplace non-enabled property does not update settings json`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+        val before = File(home, "config/settings.json").readText()
+
+        bootstrap.set("marketplace.foo.description", "new description")
+
+        verify(marketplaceRegistry).apply("foo.description", "new description")
         assertEquals(before, File(home, "config/settings.json").readText())
     }
 

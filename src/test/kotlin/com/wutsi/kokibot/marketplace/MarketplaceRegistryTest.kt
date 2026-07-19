@@ -1,17 +1,24 @@
 package com.wutsi.kokibot.marketplace
 
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.skill.SkillRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
-import tools.jackson.databind.json.JsonMapper
 import java.io.File
 
 class MarketplaceRegistryTest {
     private val home = File("target/test-data/marketplace-registry")
-    private val context = Context(home = home, llm = mock())
+    private val skillRegistry = mock<SkillRegistry>()
+    private val context = Context(home = home, llm = mock(), skillRegistry = skillRegistry)
     private val registry = MarketplaceRegistry()
 
     @BeforeEach
@@ -72,6 +79,48 @@ class MarketplaceRegistryTest {
     }
 
     @Test
+    fun `init - loads global marketplaces`() {
+        val globalDir = File(home.parentFile.parentFile, "config/marketplaces")
+        globalDir.mkdirs()
+        File(globalDir, "global-mp.json").writeText(
+            """{ "name": "global-mp", "repo-url": "https://github.com/global/skills" }"""
+        )
+
+        try {
+            registry.init(context)
+
+            val marketplaces = registry.all()
+            assertEquals(4, marketplaces.size)
+            assertEquals("marketplace:anthropics", marketplaces[0].id())
+            assertEquals("marketplace:global-mp", marketplaces[1].id())
+            assertEquals("marketplace:obsidian", marketplaces[2].id())
+            assertEquals("marketplace:x1x", marketplaces[3].id())
+        } finally {
+            globalDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `init - agent marketplace overrides global marketplace with same name`() {
+        val globalDir = File(home.parentFile.parentFile, "config/marketplaces")
+        globalDir.mkdirs()
+        File(globalDir, "obsidian.json").writeText(
+            """{ "name": "obsidian", "repo-url": "https://github.com/global/obsidian-skills" }"""
+        )
+
+        try {
+            registry.init(context)
+
+            val marketplaces = registry.all()
+            assertEquals(3, marketplaces.size)
+            val obsidian = registry.get("marketplace:obsidian")
+            assertEquals("https://github.com/kepano/obsidian-skills", obsidian.getRepoUrl())
+        } finally {
+            globalDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun destroy() {
         registry.init(context)
         registry.destroy()
@@ -99,15 +148,43 @@ class MarketplaceRegistryTest {
     }
 
     @Test
-    fun `apply - valid property`() {
+    fun `apply - enable removes from disabled set and registers skills`() {
+        val finder = mock<GitSkillFinder>()
+        doReturn(emptyList<File>()).whenever(finder).find(any(), any())
         registry.init(context)
+        registry.apply("obsidian.enabled", false)
+
         registry.apply("obsidian.enabled", true)
 
         val marketplace = registry.get("marketplace:obsidian")
-        assertEquals(true, marketplace.isEnabled())
+        assertTrue(registry.isEnabled(marketplace))
+    }
 
-        val file = File(home, "config/marketplaces/obsidian.json")
-        val content = JsonMapper().readValue(file.readText(), Map::class.java)
-        assertEquals(true, content["enabled"])
+    @Test
+    fun `apply - disable adds to disabled set and unregisters skills`() {
+        val finder = mock<GitSkillFinder>()
+        doReturn(emptyList<File>()).whenever(finder).find(any(), any())
+        registry.init(context)
+
+        registry.apply("obsidian.enabled", false)
+
+        val marketplace = registry.get("marketplace:obsidian")
+        assertFalse(registry.isEnabled(marketplace))
+    }
+
+    @Test
+    fun `init - loads disabled marketplaces from config`() {
+        val contextWithDisabled = Context(
+            home = home,
+            llm = mock(),
+            skillRegistry = skillRegistry,
+            config = mapOf("marketplaces" to mapOf("disabled" to listOf("obsidian"))),
+        )
+
+        registry.init(contextWithDisabled)
+
+        val obsidian = registry.get("marketplace:obsidian")
+        assertFalse(registry.isEnabled(obsidian))
+        assertTrue(registry.isEnabled(registry.get("marketplace:anthropics")))
     }
 }

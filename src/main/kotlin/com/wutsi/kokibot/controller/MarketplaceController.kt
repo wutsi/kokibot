@@ -23,7 +23,7 @@ class MarketplaceController(private val multi: MultiBootstrap) {
             context.marketplaceRegistry.all()
                 .map { marketplace ->
                     mapOf(
-                        "enabled" to marketplace.isEnabled(),
+                        "enabled" to context.marketplaceRegistry.isEnabled(marketplace),
                         "name" to marketplace.getName(),
                         "repoUrl" to marketplace.getRepoUrl(),
                         "description" to marketplace.getDescription(),

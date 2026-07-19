@@ -33,10 +33,17 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
     fun isEnabled(skill: Skill): Boolean = skill.metadata.name !in disabledSkills
 
     private fun initSkills(context: Context) {
-        val root = File(context.home, "config/skills")
-        if (!root.exists()) return
+        // Global skills: {kokibot-home}/config/skills/ (loaded first so agent skills can override)
+        initSkills(context, File(context.home.parentFile.parentFile, "config/skills"))
 
-        root.listFiles()?.forEach { file ->
+        // Agent-local skills: {agent-home}/config/skills/
+        initSkills(context, File(context.home, "config/skills"))
+    }
+
+    private fun initSkills(context: Context, dir: File) {
+        if (!dir.exists()) return
+
+        dir.listFiles()?.forEach { file ->
             if (file.isDirectory) {
                 initSkill(file, context)
             }
@@ -70,7 +77,7 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
 
     private fun initMarketplacesSkills(context: Context) {
         context.marketplaceRegistry.all()
-            .filter { it.isEnabled() }
+            .filter { context.marketplaceRegistry.isEnabled(it) }
             .forEach { marketplace ->
                 try {
                     marketplace.getSkills().forEach { skill ->

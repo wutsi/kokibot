@@ -15,6 +15,11 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
     }
 
     private lateinit var context: Context
+    private val disabledMarketplaces = mutableSetOf<String>()
+
+    fun disabledMarketplaces(): Set<String> = disabledMarketplaces.toSet()
+
+    fun isEnabled(marketplace: Marketplace): Boolean = marketplace.getName() !in disabledMarketplaces
 
     override fun id() = "marketplace-registry"
     override fun keyOf(marketplace: Marketplace) = marketplace.id()
@@ -24,7 +29,18 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
     override fun init(context: Context) {
         this.context = context
 
-        val dir = getMarketplaceDir()
+        @Suppress("UNCHECKED_CAST")
+        val disabled = MapUtil.toMap("marketplaces", context.config)?.get("disabled") as? List<String>
+        disabled?.forEach { disabledMarketplaces.add(it) }
+
+        // Global marketplaces: {kokibot-home}/config/marketplaces/ (loaded first so agent can override)
+        initMarketplace(context, File(context.home.parentFile.parentFile, "config/marketplaces"))
+
+        // Agent-local marketplaces: {agent-home}/config/marketplaces/
+        initMarketplace(context, getMarketplaceDir())
+    }
+
+    private fun initMarketplace(context: Context, dir: File) {
         if (!dir.exists()) return
 
         dir.listFiles { file -> file.isFile && file.extension == "json" }
@@ -60,13 +76,18 @@ class MarketplaceRegistry(private val finder: GitSkillFinder = GitSkillFinder())
         val property = key.substring(dot + 1)
 
         val marketplace = get("marketplace:${name.lowercase()}")
-        marketplace.apply(property, value)
-
-        val file = File(getMarketplaceDir(), "$name.json")
-        file.parentFile.mkdirs()
-        val config = JsonMapper().readValue(file, Map::class.java).toMutableMap()
-        config[property] = value
-        JsonMapper().writerWithDefaultPrettyPrinter().writeValue(file, config)
+        when (property) {
+            "enabled" -> {
+                val enabled = value.toString().toBoolean()
+                if (enabled) {
+                    disabledMarketplaces.remove(name.lowercase())
+                    marketplace.getSkills().forEach { skill -> context.skillRegistry.register(skill) }
+                } else {
+                    disabledMarketplaces.add(name.lowercase())
+                    marketplace.getSkills().forEach { skill -> context.skillRegistry.unregister(skill) }
+                }
+            }
+        }
     }
 
     private fun getMarketplaceDir(): File = File(context.home, "config/marketplaces")

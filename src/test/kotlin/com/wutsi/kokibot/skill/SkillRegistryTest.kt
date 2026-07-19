@@ -71,12 +71,13 @@ class SkillRegistryTest {
         doReturn(meta11).whenever(skill11).metadata
 
         val marketplace = mock(Marketplace::class.java)
-        doReturn(true).whenever(marketplace).isEnabled()
         doReturn("obsidian").whenever(marketplace).id()
+        doReturn("obsidian").whenever(marketplace).getName()
         doReturn(listOf(skill11)).whenever(marketplace).getSkills()
 
         val marketplaceRegistry = mock<MarketplaceRegistry>()
         doReturn(listOf(marketplace)).whenever(marketplaceRegistry).all()
+        doReturn(true).whenever(marketplaceRegistry).isEnabled(marketplace)
 
         val context = Context(
             home = getResourceFile("/home/007"),
@@ -112,12 +113,13 @@ class SkillRegistryTest {
         doReturn(meta11).whenever(skill11).metadata
 
         val marketplace = mock(Marketplace::class.java)
-        doReturn(false).whenever(marketplace).isEnabled()
         doReturn("obsidian").whenever(marketplace).id()
+        doReturn("obsidian").whenever(marketplace).getName()
         doReturn(listOf(skill11)).whenever(marketplace).getSkills()
 
         val marketplaceRegistry = mock<MarketplaceRegistry>()
         doReturn(listOf(marketplace)).whenever(marketplaceRegistry).all()
+        doReturn(false).whenever(marketplaceRegistry).isEnabled(marketplace)
 
         val context = Context(
             home = getResourceFile("/home/007"),
@@ -158,6 +160,48 @@ class SkillRegistryTest {
         assertEquals(1, skills.size)
 
         assertEquals(meta1, skills[0].metadata)
+    }
+
+    @Test
+    fun `init - loads global skills`() {
+        // GIVEN
+        val globalMeta = SkillMetadata(name = "weather-global", description = "Global weather skill", home = File("target"))
+        doReturn(Pair(globalMeta, ""))
+            .doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
+            .whenever(parser).parse(any())
+
+        // agent home is inside agents/ so parentFile.parentFile is multi-agent root with config/skills/
+        val home = getResourceFile("/home/multi-agent/agents/007")
+        val context = Context(home = home, llm = mock())
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skills = registry.all()
+        assertTrue(skills.any { it.metadata.name == globalMeta.name }, "global skill should be loaded")
+    }
+
+    @Test
+    fun `init - agent skill overrides global skill with same name`() {
+        // GIVEN
+        val globalMeta = SkillMetadata(name = "shared-skill", description = "Global version", home = File("target/global"))
+        val agentMeta = SkillMetadata(name = "shared-skill", description = "Agent-local version", home = File("target/agent"))
+        doReturn(Pair(globalMeta, ""))
+            .doReturn(Pair(agentMeta, ""))
+            .whenever(parser).parse(any())
+
+        // agent home: global-skills-override/agents/007 → global at global-skills-override/config/skills/
+        val home = getResourceFile("/home/global-skills-override/agents/007")
+        val context = Context(home = home, llm = mock())
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skill = registry.get("shared-skill")
+        assertEquals(agentMeta, skill.metadata, "agent-local skill should override global skill")
     }
 
     @Test

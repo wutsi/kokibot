@@ -392,6 +392,77 @@ class SkillRegistryTest {
     }
 
     @Test
+    fun `isActive - true by default for local skill`() {
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "my-skill", home = File("target"))).whenever(skill1).metadata
+        doReturn(null).whenever(skill1).marketplace
+        registry.register(skill1)
+
+        assertTrue(registry.isActive(skill1))
+    }
+
+    @Test
+    fun `isActive - false by default for marketplace skill`() {
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "mp_my-skill", home = File("target"))).whenever(skill1).metadata
+        doReturn("mp").whenever(skill1).marketplace
+        registry.register(skill1)
+
+        assertFalse(registry.isActive(skill1))
+    }
+
+    @Test
+    fun `apply - active=true activates marketplace skill`() {
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "mp_my-skill", home = File("target"))).whenever(skill1).metadata
+        doReturn("mp").whenever(skill1).marketplace
+        registry.register(skill1)
+
+        registry.apply("mp_my-skill.active", "true")
+
+        assertTrue(registry.isActive(skill1))
+    }
+
+    @Test
+    fun `apply - active=false deactivates marketplace skill`() {
+        val skill1 = mock<Skill>()
+        doReturn(SkillMetadata(name = "mp_my-skill", home = File("target"))).whenever(skill1).metadata
+        doReturn("mp").whenever(skill1).marketplace
+        registry.register(skill1)
+
+        registry.apply("mp_my-skill.active", "true")
+        registry.apply("mp_my-skill.active", "false")
+
+        assertFalse(registry.isActive(skill1))
+    }
+
+    @Test
+    fun `init - loads active skills from config`() {
+        // GIVEN
+        doReturn(Pair(meta1, ""))
+            .doReturn(Pair(meta2, ""))
+            .whenever(parser).parse(any())
+
+        val context = Context(
+            home = getResourceFile("/home/007"),
+            llm = mock(),
+            config = mapOf("skills" to mapOf("active" to listOf(meta1.name))),
+        )
+
+        // WHEN
+        registry.init(context)
+
+        // THEN
+        val skill1 = registry.get(meta1.name)
+        val skill2 = registry.get(meta2.name)
+        assertTrue(registry.activatedSkills().contains(meta1.name))
+        assertFalse(registry.activatedSkills().contains(meta2.name))
+        // local skills are always active regardless of activatedSkills
+        assertTrue(registry.isActive(skill1))
+        assertTrue(registry.isActive(skill2))
+    }
+
+    @Test
     fun `init - loads disabled skills from config`() {
         // GIVEN
         doReturn(Pair(meta1, ""))

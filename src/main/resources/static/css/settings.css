@@ -1,5 +1,20 @@
 /* ===== Settings Page Styles ===== */
 
+a {
+    color: var(--color-accent-blue, #2196f3);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+@media (prefers-color-scheme: dark) {
+    a {
+        color: #64b5f6;
+    }
+}
+
 /* Settings Container */
 .settings-container {
     flex: 1;
@@ -1745,6 +1760,23 @@ h3.setting-section-title {
     font-size: 13px;
     color: var(--color-text-secondary);
     line-height: 1.4;
+}
+
+.marketplace-detail-skill-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.skill-category-tag {
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-light);
+    white-space: nowrap;
 }
 
 /* ===== Channels Tab ===== */

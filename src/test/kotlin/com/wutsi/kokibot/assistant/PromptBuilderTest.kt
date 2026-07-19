@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.assistant
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -230,7 +231,7 @@ class PromptBuilderTest {
     @Test
     fun `should include skills in system instructions`() {
         val skill1 = mock<Skill>()
-        doReturn(true).whenever(skill1).enabled
+        doReturn(true).whenever(skill1).isEnabled()
         doReturn(Health(up = true, id = "skill1")).whenever(skill1).health()
         doReturn(
             SkillMetadata(
@@ -241,7 +242,7 @@ class PromptBuilderTest {
         ).whenever(skill1).metadata
 
         val skill2 = mock<Skill>()
-        doReturn(true).whenever(skill2).enabled
+        doReturn(true).whenever(skill2).isEnabled()
         doReturn(Health(up = true, id = "skill2")).whenever(skill2).health()
         doReturn(
             SkillMetadata(
@@ -252,6 +253,8 @@ class PromptBuilderTest {
         ).whenever(skill2).metadata
 
         doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
+        doReturn(true).whenever(skill1).isActive()
+        doReturn(true).whenever(skill2).isActive()
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, context)
@@ -269,7 +272,7 @@ class PromptBuilderTest {
     @Test
     fun `should exclude skills that are down`() {
         val skill1 = mock<Skill>()
-        doReturn(true).whenever(skill1).enabled
+        doReturn(true).whenever(skill1).isEnabled()
         doReturn(Health(up = true, id = "skill1")).whenever(skill1).health()
         doReturn(
             SkillMetadata(
@@ -280,7 +283,7 @@ class PromptBuilderTest {
         ).whenever(skill1).metadata
 
         val skill2 = mock<Skill>()
-        doReturn(true).whenever(skill2).enabled
+        doReturn(true).whenever(skill2).isEnabled()
         doReturn(Health(up = false, id = "skill2")).whenever(skill2).health()
         doReturn(
             SkillMetadata(
@@ -291,6 +294,7 @@ class PromptBuilderTest {
         ).whenever(skill2).metadata
 
         doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
+        doReturn(true).whenever(skill1).isActive()
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, context)
@@ -302,7 +306,7 @@ class PromptBuilderTest {
     @Test
     fun `should exclude skills that are disabled`() {
         val skill1 = mock<Skill>()
-        doReturn(true).whenever(skill1).enabled
+        doReturn(true).whenever(skill1).isEnabled()
         doReturn(Health(up = true, id = "skill1")).whenever(skill1).health()
         doReturn(
             SkillMetadata(
@@ -313,7 +317,7 @@ class PromptBuilderTest {
         ).whenever(skill1).metadata
 
         val skill2 = mock<Skill>()
-        doReturn(false).whenever(skill2).enabled
+        doReturn(false).whenever(skill2).isEnabled()
         doReturn(Health(up = true, id = "skill2")).whenever(skill2).health()
         doReturn(
             SkillMetadata(
@@ -324,12 +328,31 @@ class PromptBuilderTest {
         ).whenever(skill2).metadata
 
         doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
+        doReturn(true).whenever(skill1).isActive()
 
         val query = Message(userId = "user1", channelId = "channel1")
         val instructions = builder.buildSystemInstructions(query, context)
 
         assertTrue(instructions.contains("weather"))
         assertFalse(instructions.contains("broken"))
+    }
+
+    @Test
+    fun `should exclude marketplace skill that is not active`() {
+        val skill1 = mock<Skill>()
+        doReturn(true).whenever(skill1).isEnabled()
+        doReturn(Health(up = true, id = "skill1")).whenever(skill1).health()
+        doReturn(
+            SkillMetadata(name = "mp_weather", description = "Get weather info", home = File("/tmp/skills/weather"))
+        ).whenever(skill1).metadata
+
+        doReturn(listOf(skill1)).whenever(skillRegistry).all()
+        doReturn(false).whenever(skill1).isActive()
+
+        val query = Message(userId = "user1", channelId = "channel1")
+        val instructions = builder.buildSystemInstructions(query, context)
+
+        assertFalse(instructions.contains("mp_weather"))
     }
 
     @Test

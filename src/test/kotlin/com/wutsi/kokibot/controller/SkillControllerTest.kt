@@ -73,6 +73,42 @@ class SkillControllerTest {
     }
 
     @Test
+    fun `skills - filter active=true returns only active skills`() {
+        val skill1 = mockSkill("crm", "CRM operations", active = true)
+        val skill2 = mockSkill("weather", "Weather forecasting", active = false)
+        val skillRegistry = mock<SkillRegistry>()
+        doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
+        doReturn(true).whenever(skillRegistry).isActive(skill1)
+        doReturn(false).whenever(skillRegistry).isActive(skill2)
+        doReturn(listOf(createBootstrapWithRegistry("007", skillRegistry))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/skills?active=true", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        val body = response.body!!
+        assertEquals(1, body.size)
+        assertEquals("crm", (body[0] as Map<*, *>)["name"])
+    }
+
+    @Test
+    fun `skills - filter active=false returns only inactive skills`() {
+        val skill1 = mockSkill("crm", "CRM operations", active = true)
+        val skill2 = mockSkill("weather", "Weather forecasting", active = false)
+        val skillRegistry = mock<SkillRegistry>()
+        doReturn(listOf(skill1, skill2)).whenever(skillRegistry).all()
+        doReturn(true).whenever(skillRegistry).isActive(skill1)
+        doReturn(false).whenever(skillRegistry).isActive(skill2)
+        doReturn(listOf(createBootstrapWithRegistry("007", skillRegistry))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/skills?active=false", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        val body = response.body!!
+        assertEquals(1, body.size)
+        assertEquals("weather", (body[0] as Map<*, *>)["name"])
+    }
+
+    @Test
     fun `skills returns empty list when no skills`() {
         doReturn(listOf(createBootstrap("007", skills = emptyList()))).whenever(multi).bootstraps
 
@@ -261,6 +297,15 @@ class SkillControllerTest {
             requiredBinaries = requiredBinaries,
         )
         return Skill(metadata)
+    }
+
+    private fun mockSkill(name: String, description: String = "", active: Boolean = true): Skill {
+        val skill = mock<Skill>()
+        doReturn(SkillMetadata(name = name, description = description, home = File("."))).whenever(skill).metadata
+        doReturn(true).whenever(skill).isEnabled()
+        doReturn(active).whenever(skill).isActive()
+        doReturn(null).whenever(skill).marketplace
+        return skill
     }
 
     private fun createBootstrap(name: String, skills: List<Skill> = emptyList()): Bootstrap {

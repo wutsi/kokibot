@@ -13,8 +13,10 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
     }
 
     private val disabledSkills = mutableSetOf<String>()
+    private val activatedSkills = mutableSetOf<String>()
 
     fun disabledSkills(): Set<String> = disabledSkills.toSet()
+    fun activatedSkills(): Set<String> = activatedSkills.toSet()
 
     override fun id() = "skill-registry"
     override fun keyOf(skill: Skill) = skill.metadata.name
@@ -23,14 +25,18 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
 
     override fun init(context: Context) {
         @Suppress("UNCHECKED_CAST")
-        val disabled = MapUtil.toMap("skills", context.config)?.get("disabled") as? List<String>
-        disabled?.forEach { disabledSkills.add(it) }
+        val skillsConfig = MapUtil.toMap("skills", context.config)
+        (skillsConfig?.get("disabled") as? List<String>)?.forEach { disabledSkills.add(it) }
+        (skillsConfig?.get("active") as? List<String>)?.forEach { activatedSkills.add(it) }
 
         initSkills(context)
         initMarketplacesSkills(context)
     }
 
     fun isEnabled(skill: Skill): Boolean = skill.metadata.name !in disabledSkills
+
+    /** True if this skill's instructions should be injected into the LLM context. Local skills are always active; marketplace skills require explicit activation. */
+    fun isActive(skill: Skill): Boolean = skill.marketplace == null || skill.metadata.name in activatedSkills
 
     private fun initSkills(context: Context) {
         // Global skills: {kokibot-home}/config/skills/ (loaded first so agent skills can override)
@@ -71,6 +77,7 @@ class SkillRegistry(private val parser: SkillParser = SkillParser()) : Registry<
 
         when (property) {
             "enabled" -> if (value.toString().toBoolean()) disabledSkills.remove(name) else disabledSkills.add(name)
+            "active" -> if (value.toString().toBoolean()) activatedSkills.add(name) else activatedSkills.remove(name)
             else -> get(name).apply(property, value)
         }
     }

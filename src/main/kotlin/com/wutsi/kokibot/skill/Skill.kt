@@ -20,8 +20,17 @@ class Skill(
     private val parser = SkillParser()
     private lateinit var context: Context
 
-    val enabled: Boolean
-        get() = context.skillRegistry.isEnabled(this)
+    fun isEnabled(): Boolean {
+        return context.skillRegistry.isEnabled(this)
+    }
+
+    fun isActive(): Boolean {
+        return context.skillRegistry.isActive(this)
+    }
+
+    fun getDisplayName(): String {
+        return marketplace?.let { mk -> metadata.name.removePrefix("${mk}_") } ?: metadata.name
+    }
 
     val instructions: String
         get() {
@@ -85,7 +94,7 @@ class Skill(
     fun activate(): Boolean {
         LOGGER.info("Activating Skill: ${metadata.name}")
 
-        if (!enabled) return false
+        if (!isEnabled() || !isActive()) return false
 
         /* Make sure the skill is healthy */
         if (!health().up) {

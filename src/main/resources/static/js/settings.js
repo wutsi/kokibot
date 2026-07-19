@@ -1524,7 +1524,7 @@ const Settings = {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            const response = await fetch(`/assistants/${this.agentName}/skills`, {
+            const response = await fetch(`/assistants/${this.agentName}/skills?active=true`, {
                 signal: controller.signal
             });
 
@@ -1564,7 +1564,7 @@ const Settings = {
 
         const listHtml = skills.map((skill, i) => `
             <button class="skill-list-item${i === 0 ? ' active' : ''}${skill.enabled === false ? ' skill-list-item-disabled' : ''}" data-skill="${this.escapeHtml(skill.name)}">
-                ${this.escapeHtml(skill.name)}
+                ${this.escapeHtml(skill.displayName || skill.name)}
                 ${skill.enabled === false ? '<span class="skill-list-item-badge-disabled">off</span>' : ''}
             </button>
         `).join('');
@@ -1609,6 +1609,7 @@ const Settings = {
             const data = response.ok ? await response.json() : {};
 
             this.currentSkillName = data.name || skill.name;
+            this.currentSkillDisplayName = data.displayName || this.currentSkillName;
             this.currentSkillInstructions = data.instructions || '';
             this.currentSkillDescription = data.description || '';
             this.currentSkillEnabled = data.enabled !== false;
@@ -1672,7 +1673,7 @@ const Settings = {
             panel.innerHTML = `
                 <div class="skill-detail">
                     <div class="skill-detail-header">
-                        <h2 class="skill-detail-name">${this.escapeHtml(this.currentSkillName)}</h2>
+                        <h2 class="skill-detail-name">${this.escapeHtml(this.currentSkillDisplayName || this.currentSkillName)}</h2>
                         <label class="setting-section-toggle skill-detail-toggle" title="Enable or disable this skill">
                             <input type="checkbox" id="skill-enabled-toggle"${this.currentSkillEnabled ? ' checked' : ''}>
                             <span class="setting-section-toggle-slider"></span>
@@ -2311,23 +2312,21 @@ const Settings = {
             ? `<img src="${this.escapeHtml(mp.icon)}" alt="${this.escapeHtml(mp.name)}" class="marketplace-detail-icon" onerror="this.style.display='none'">`
             : '';
 
-        const prefix = mp.name + '_';
-        const displayName = (s) => s.name.startsWith(prefix) ? s.name.slice(prefix.length) : s.name;
-
         const sortedSkills = mp.skills ? [...mp.skills].sort((a, b) => {
-            if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
-            return displayName(a).localeCompare(displayName(b));
+            if (a.active !== b.active) return a.active ? -1 : 1;
+            return (a.displayName || a.name).localeCompare(b.displayName || b.name);
         }) : [];
 
         const skillsHtml = sortedSkills.length > 0
             ? sortedSkills.map(s => `
-                <div class="marketplace-detail-skill-item${s.enabled === false ? ' marketplace-detail-skill-disabled' : ''}" data-skill="${this.escapeHtml(s.name)}">
+                <div class="marketplace-detail-skill-item${s.active === false ? ' marketplace-detail-skill-disabled' : ''}" data-skill="${this.escapeHtml(s.name)}">
                     <div class="marketplace-detail-skill-body">
-                        <span class="marketplace-detail-skill-name">${this.escapeHtml(displayName(s))}</span>
+                        <span class="marketplace-detail-skill-name">${this.escapeHtml(s.displayName || s.name)}</span>
                         ${s.description ? `<span class="marketplace-detail-skill-desc">${this.escapeHtml(s.description)}</span>` : ''}
+                        ${s.categories && s.categories.length ? `<div class="marketplace-detail-skill-categories">${s.categories.map(c => `<span class="skill-category-tag">${this.escapeHtml(c)}</span>`).join('')}</div>` : ''}
                     </div>
-                    <label class="setting-section-toggle" title="Enable or disable this skill">
-                        <input type="checkbox" class="marketplace-skill-toggle" data-skill="${this.escapeHtml(s.name)}"${s.enabled !== false ? ' checked' : ''}>
+                    <label class="setting-section-toggle" title="Activate or deactivate this skill">
+                        <input type="checkbox" class="marketplace-skill-toggle" data-skill="${this.escapeHtml(s.name)}"${s.active ? ' checked' : ''}>
                         <span class="setting-section-toggle-slider"></span>
                     </label>
                 </div>
@@ -2347,7 +2346,7 @@ const Settings = {
                     </label>
                 </div>
                 ${mp.description ? `<p class="skill-detail-description">${this.escapeHtml(mp.description)}</p>` : ''}
-                <div class="marketplace-detail-url">${this.escapeHtml(mp.repoUrl)}</div>
+                <div class="marketplace-detail-url"><a href="${this.escapeHtml(mp.repoUrl)}" target="_blank" rel="noopener noreferrer">${this.escapeHtml(mp.repoUrl)}</a></div>
                 <div class="marketplace-detail-skills">
                     <h3 class="setting-section-title">Skills</h3>
                     ${skillsHtml}
@@ -2385,12 +2384,14 @@ const Settings = {
                 const skillName = toggle.dataset.skill;
                 const enabled = e.target.checked;
                 const ok = await this.saveSkillSetting(
-                    skillName, 'enabled', enabled,
-                    enabled ? 'Skill enabled' : 'Skill disabled'
+                    skillName, 'active', enabled,
+                    enabled ? 'Skill activated' : 'Skill deactivated'
                 );
                 if (ok) {
                     const item = panel.querySelector(`.marketplace-detail-skill-item[data-skill="${CSS.escape(skillName)}"]`);
                     item?.classList.toggle('marketplace-detail-skill-disabled', !enabled);
+                    const s = mp.skills?.find(sk => sk.name === skillName);
+                    if (s) s.active = enabled;
                 } else {
                     e.target.checked = !enabled;
                 }

@@ -63,8 +63,29 @@ class MarketplaceControllerTest {
         assertEquals(2, returnedSkills.size)
         assertEquals("crm", (returnedSkills[0] as Map<*, *>)["name"])
         assertEquals(true, (returnedSkills[0] as Map<*, *>)["enabled"])
+        assertEquals(true, (returnedSkills[0] as Map<*, *>)["active"])
         assertEquals("weather", (returnedSkills[1] as Map<*, *>)["name"])
         assertEquals(true, (returnedSkills[1] as Map<*, *>)["enabled"])
+        assertEquals(true, (returnedSkills[1] as Map<*, *>)["active"])
+    }
+
+    @Test
+    fun `marketplaces - marketplace skill is inactive by default`() {
+        val skills = listOf(createSkill("acme_crm", marketplace = "acme"))
+        val marketplaces = listOf(
+            createMarketplace("acme", "https://github.com/acme/skills", skills),
+        )
+        doReturn(listOf(createBootstrap("007", marketplaces = marketplaces))).whenever(multi).bootstraps
+
+        val response = rest.getForEntity("/assistants/007/marketplaces", List::class.java)
+
+        assertEquals(200, response.statusCode.value())
+        val mp = (response.body!!)[0] as Map<*, *>
+
+        @Suppress("UNCHECKED_CAST")
+        val returnedSkills = mp["skills"] as List<*>
+        assertEquals("acme_crm", (returnedSkills[0] as Map<*, *>)["name"])
+        assertEquals(false, (returnedSkills[0] as Map<*, *>)["active"])
     }
 
     @Test
@@ -184,9 +205,9 @@ class MarketplaceControllerTest {
         assertEquals("Unknown marketplace setting: invalid", (response.body as Map<*, *>)["error"])
     }
 
-    private fun createSkill(name: String): Skill {
+    private fun createSkill(name: String, marketplace: String? = null): Skill {
         val metadata = SkillMetadata(name = name, home = File("."))
-        return Skill(metadata)
+        return Skill(metadata, marketplace)
     }
 
     private fun createMarketplace(name: String, repoUrl: String, skills: List<Skill>): Marketplace {

@@ -9,23 +9,31 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RequestMapping("/assistants")
 @RestController
 class SkillController(private val multi: MultiBootstrap) {
     @GetMapping("/{name}/skills")
-    fun skills(@PathVariable name: String): ResponseEntity<List<Map<String, Any>>> {
+    fun skills(
+        @PathVariable name: String,
+        @RequestParam(required = false) active: Boolean? = null,
+    ): ResponseEntity<List<Map<String, Any?>>> {
         val bootstrap = getBootstrap(name) ?: return ResponseEntity.notFound().build()
 
         val context = bootstrap.getContext()
         return ResponseEntity.ok(
             context.skillRegistry.all()
+                .filter { skill -> active == null || context.skillRegistry.isActive(skill) == active }
                 .map { skill ->
                     mapOf(
                         "name" to skill.metadata.name,
                         "description" to skill.metadata.description,
-                        "enabled" to skill.enabled,
+                        "marketplace" to skill.marketplace,
+                        "enabled" to skill.isEnabled(),
+                        "active" to skill.isActive(),
+                        "displayName" to skill.getDisplayName()
                     )
                 }
                 .sortedBy { skill -> skill["name"] as String }
@@ -51,7 +59,9 @@ class SkillController(private val multi: MultiBootstrap) {
                     "requiredEnv" to sk.metadata.requiredEnv,
                     "requiredOS" to sk.metadata.requiredOS,
                     "marketplace" to sk.marketplace,
-                    "enabled" to sk.enabled,
+                    "enabled" to sk.isEnabled(),
+                    "active" to sk.isActive(),
+                    "displayName" to sk.getDisplayName()
                 )
             )
         } catch (_: SkillNotFoundException) {

@@ -85,6 +85,8 @@ class Bootstrap(
         if (section == "skill") {
             if (property.endsWith(".enabled")) {
                 updateSkillsDisabledList()
+            } else if (property.endsWith(".active")) {
+                updateSkillsActiveList()
             }
             return
         }
@@ -139,6 +141,17 @@ class Bootstrap(
         @Suppress("UNCHECKED_CAST")
         val skillsSection = rawConfig.getOrPut("skills") { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
         skillsSection["disabled"] = context.skillRegistry.disabledSkills().toList()
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
+    }
+
+    private fun updateSkillsActiveList() {
+        val jsonMapper = context.jsonMapper
+        val file = File(File(context.home, "config"), "settings.json")
+        val rawConfig = jsonMapper.readValue(file, Map::class.java).toMutableMap()
+
+        @Suppress("UNCHECKED_CAST")
+        val skillsSection = rawConfig.getOrPut("skills") { mutableMapOf<String, Any>() } as MutableMap<Any?, Any?>
+        skillsSection["active"] = context.skillRegistry.activatedSkills().toList()
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(file, rawConfig)
     }
 

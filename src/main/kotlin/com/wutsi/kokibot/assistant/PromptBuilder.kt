@@ -123,7 +123,8 @@ class PromptBuilder(
         val skills = context.skillRegistry
             .all()
             .filter { skill -> skill.health().up }
-            .filter { skill -> skill.enabled }
+            .filter { skill -> skill.isEnabled() }
+            .filter { skill -> skill.isActive() }
             .joinToString("\n") { skill ->
                 listOfNotNull(
                     "### Skill: ${skill.metadata.name}\n\n" +

@@ -33,6 +33,9 @@ class MarketplaceController(private val multi: MultiBootstrap) {
                                 "name" to skill.metadata.name,
                                 "description" to skill.metadata.description,
                                 "enabled" to context.skillRegistry.isEnabled(skill),
+                                "active" to context.skillRegistry.isActive(skill),
+                                "displayName" to skill.getDisplayName(),
+                                "categories" to skill.metadata.categories,
                             )
                         }
                     )

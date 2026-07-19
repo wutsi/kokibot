@@ -1,0 +1,9 @@
+{
+  "name": "playwright",
+  "repo-url": "https://github.com/microsoft/playwright-cli",
+  "icon": "https://avatars.githubusercontent.com/u/6154722?s=48&v=4",
+  "description": "CLI for common Playwright actions. Record and generate Playwright code, inspect selectors and take screenshots",
+  "skill-whitelist": [
+    "playwright-cli"
+  ]
+}

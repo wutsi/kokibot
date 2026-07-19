@@ -147,6 +147,19 @@ class BootstrapTest {
     }
 
     @Test
+    fun `set - skill active persists active list`() {
+        setupSettingsFile()
+        bootstrap.init(getResourceFile("/home/007"))
+        doReturn(setOf("foo")).whenever(skillRegistry).activatedSkills()
+
+        bootstrap.set("skill.foo.active", true)
+
+        verify(skillRegistry).apply("foo.active", true)
+        val saved = jsonMapper.readValue(File(home, "config/settings.json"), Map::class.java)
+        assertEquals(listOf("foo"), (saved["skills"] as Map<*, *>)["active"])
+    }
+
+    @Test
     fun `set - skill instructions does not update settings json`() {
         setupSettingsFile()
         bootstrap.init(getResourceFile("/home/007"))

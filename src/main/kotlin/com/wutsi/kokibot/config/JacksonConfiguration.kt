@@ -23,19 +23,15 @@ open class JacksonConfiguration {
             .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
             .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
             .enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS)
-
             // Read
             .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION)
-
             // Deserialization
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
             .enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
-
             // Mapper
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
-
             // Serialization
             .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
             .changeDefaultPropertyInclusion { it.withValueInclusion(JsonInclude.Include.NON_NULL) }

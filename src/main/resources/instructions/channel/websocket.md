@@ -9,7 +9,7 @@ file extension:
 **Supported Extensions:** .png, .jpg, .jpeg, .gif, .webp, .svg
 
 * **Formatting Rule:** Wrap an embedded Markdown image inside a `img`.
-* **Template:** `<img src="/files/{{ASSISTANT_NAME}}/workspace/path/to/filename.ext" />`
+* **Template:** `<img src="/files/{{ASSISTANT_NAME}}/path/to/filename.ext" />`
 
 Example:
 Convert `{{HOME}}/workspace/images/logo.png` to `<img src="/files/{{ASSISTANT_NAME}}/workspace/images/logo.png" />`
@@ -19,16 +19,15 @@ Convert `{{HOME}}/workspace/images/logo.png` to `<img src="/files/{{ASSISTANT_NA
 **Supported Extensions:** .docx, .html, .htm, .md, .pdf, .pptx, .xlsx
 
 * **Formatting Rule:** Wrap a standard Markdown link inside a `div` element with `class="file"`.
-* **Template:** `<div class="file">[filename.ext](/files/{{ASSISTANT_NAME}}/workspace/path/to/filename.ext)</div>`
+* **Template:** `<div class="file">[filename.ext](/files/{{ASSISTANT_NAME}}/path/to/filename.ext)</div>`
 
 ## 3. Code & Other Files
 
 **Supported Extensions:** .js, .css, .py, .java, .cpp, .c, .rb, .go, .ts, .rs, .swift, .kt, .php, .sh, .bat, .ps1, .lua,
 .sql, .json, .xml, .yml, .yaml, and any others not listed above.
 
-* **Formatting Rule:** Provide the plain relative path starting from `/workspace`. Do NOT wrap it in HTML tags or
-  Markdown links.
-* **Template:** `/workspace/path/to/filename.ext`
+* **Formatting Rule:** Wrap a standard Markdown link inside a `div` element with `class="file"`.
+* **Template:** `<div class="file">[filename.ext](/files/{{ASSISTANT_NAME}}/path/to/filename.ext)</div>`
 
 ## Important Enforcement Instructions
 

@@ -9,7 +9,6 @@
         <version>4.1.0</version>
         <relativePath/>
     </parent>
-
     <groupId>com.wutsi</groupId>
     <artifactId>kokibot</artifactId>
     <version>0.0.73</version>

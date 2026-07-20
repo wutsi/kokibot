@@ -1,8 +1,5 @@
 package com.wutsi.kokibot.marketplace
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.skill.SkillRegistry
 import org.junit.jupiter.api.Assertions.assertEquals

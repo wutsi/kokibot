@@ -43,32 +43,6 @@ class PromptBuilder(
         }
         sb.append("<user>\n${query.text}\n</user>\n")
 
-        query.channelId?.let { channelId ->
-            loadChannelInstructions(channelId)?.let { channelInstructions ->
-                sb.append("\n---\n")
-                sb.append("# Formatting Instructions\n")
-                sb.append("<instructions>\n$channelInstructions\n</instructions>\n")
-            }
-        }
-
-        if (context.memory.isEnabled()) {
-            val longTermMemory = context.memory.get()
-            if (longTermMemory != null) {
-                sb.append("\n---\n")
-                sb.append("# Long-Term Memory\n")
-                sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
-                sb.append("<memory>\n$longTermMemory\n</memory>\n")
-            }
-
-            val shortTermMemory = context.dailyLog.get()
-            if (shortTermMemory != null) {
-                sb.append("\n---\n\n")
-                sb.append("# Short-Term Memory\n")
-                sb.append("Here are information that you have stored in your short-term memory in Markdown format:\n")
-                sb.append("<memory>\n$shortTermMemory\n</memory>\n")
-            }
-        }
-
         if (iterationMemory.isNotEmpty()) {
             sb.append("\n---\n\n")
             sb.append("# Previous reasoning steps and observations\n")
@@ -84,11 +58,13 @@ class PromptBuilder(
     ): String {
         val entries = listOfNotNull(
             loadInstructions(context),
-            identityInstructions(context),
-            dailyLogInstructions(context),
-            knowledgeBaseInstructions(context),
+            loadIdentity(context),
+            loadKnowledgeBase(context),
+            loadMemory(context),
+            channelInstructions(query.channelId),
             skillsInstructions(context),
             mcpInstructions(context),
+            dailyLogInstructions(context),
             securityInstructions(),
         )
         return applyVariables(entries.joinToString("\n\n---\n\n"), query, context)
@@ -110,6 +86,36 @@ class PromptBuilder(
         } else {
             null
         }
+    }
+
+    private fun loadMemory(context: Context): String? {
+        if (context.memory.isEnabled()) {
+            val sb = StringBuilder()
+            val longTermMemory = context.memory.get()
+            if (longTermMemory != null) {
+                sb.append("\n---\n")
+                sb.append("# Long-Term Memory\n")
+                sb.append("Here are information that you have stored in your long-term memory in Markdown format:\n")
+                sb.append("<memory>\n$longTermMemory\n</memory>\n")
+            }
+
+            val shortTermMemory = context.dailyLog.get()
+            if (shortTermMemory != null) {
+                sb.append("\n---\n\n")
+                sb.append("# Short-Term Memory\n")
+                sb.append("Here are information that you have stored in your short-term memory in Markdown format:\n")
+                sb.append("<memory>\n$shortTermMemory\n</memory>\n")
+            }
+            return sb.toString()
+        } else {
+            return null
+        }
+    }
+
+    private fun channelInstructions(channelId: String?): String? {
+        val xchannelId = channelId?.removePrefix("channel:") ?: return null
+        val input = javaClass.getResourceAsStream("/instructions/channel/$xchannelId.md") ?: return null
+        return IOUtils.toString(input, "utf-8")
     }
 
     private fun loadConversationMessages(query: Message, context: Context): List<ConversationMessage> {
@@ -151,7 +157,7 @@ class PromptBuilder(
         return "# Available MCP Servers\n\nActivate with `mcp_activate`:\n\n$lines"
     }
 
-    private fun identityInstructions(context: Context): String? {
+    private fun loadIdentity(context: Context): String? {
         val assistant = context.assistant
         val lines = listOfNotNull(
             "- **Assistant Handle:** ${assistant.name}",
@@ -181,7 +187,7 @@ class PromptBuilder(
         }
     }
 
-    private fun knowledgeBaseInstructions(context: Context): String? {
+    private fun loadKnowledgeBase(context: Context): String? {
         val kb = context.knowledgeBase
         if (!kb.isEnabled()) {
             return null
@@ -227,12 +233,6 @@ class PromptBuilder(
         return "# Knowledge Base Instructions\n\n" +
             "## Knowledge Base Content\n\nHere are the knowledge base entries available:\n\n$content\n" +
             "## Knowledge Base Usage Instructions\n\n$usage"
-    }
-
-    private fun loadChannelInstructions(channelId: String): String? {
-        val xchannelId = channelId.removePrefix("channel:")
-        val input = javaClass.getResourceAsStream("/instructions/channel/$xchannelId.md") ?: return null
-        return IOUtils.toString(input, "utf-8")
     }
 
     private fun applyVariables(text: String, query: Message, context: Context): String {

@@ -1,6 +1,5 @@
 package com.wutsi.kokibot.assistant
 
-import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
@@ -121,7 +120,7 @@ class PromptBuilderTest {
         doReturn("User prefers concise answers").whenever(memory).get()
         val query = Message(text = "Test query")
 
-        val prompt = builder.buildPrompt(query, emptyList(), context)
+        val prompt = builder.buildSystemInstructions(query, context)
 
         assertTrue(prompt.contains("# Long-Term Memory"))
         assertTrue(prompt.contains("User prefers concise answers"))
@@ -132,7 +131,7 @@ class PromptBuilderTest {
         doReturn("Today's task: implement feature X").whenever(dailyLog).get()
         val query = Message(text = "Test query")
 
-        val prompt = builder.buildPrompt(query, emptyList(), context)
+        val prompt = builder.buildSystemInstructions(query, context)
 
         assertTrue(prompt.contains("# Short-Term Memory"))
         assertTrue(prompt.contains("Today's task: implement feature X"))
@@ -179,14 +178,11 @@ class PromptBuilderTest {
         doReturn("Long-term fact").whenever(memory).get()
         doReturn("Short-term info").whenever(dailyLog).get()
         val query = Message(text = "Test query")
-        val iterationMemory = listOf("Iteration step")
 
-        val prompt = builder.buildPrompt(query, iterationMemory, context)
+        val prompt = builder.buildSystemInstructions(query, context)
 
-        assertTrue(prompt.contains("Test query"))
         assertTrue(prompt.contains("Long-term fact"))
         assertTrue(prompt.contains("Short-term info"))
-        assertTrue(prompt.contains("Iteration step"))
     }
 
     @Test
@@ -404,9 +400,8 @@ class PromptBuilderTest {
     fun `should append telegram channel instructions to prompt text`() {
         val query = Message(text = "Hello", channelId = "telegram")
 
-        val prompt = builder.buildPrompt(query, emptyList(), context)
+        val prompt = builder.buildSystemInstructions(query, context)
 
-        assertTrue(prompt.contains("Hello"))
         assertTrue(prompt.contains("# Telegram  Formatting Instructions"))
     }
 
@@ -414,9 +409,8 @@ class PromptBuilderTest {
     fun `should append websocket channel instructions to prompt text`() {
         val query = Message(text = "Hello", channelId = "websocket")
 
-        val prompt = builder.buildPrompt(query, emptyList(), context)
+        val prompt = builder.buildSystemInstructions(query, context)
 
-        assertTrue(prompt.contains("Hello"))
         assertTrue(prompt.contains("# File Referencing & Preview Formatting Rules"))
     }
 

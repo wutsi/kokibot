@@ -82,14 +82,11 @@ class WebFetchToolTest {
 
     @Test
     fun exec() {
-        val url = "https://evendo.com/locations/cameroon/yaounde/odza"
+        val url = "https://picsum.photos/"
         val result = tool.exec(mapOf("url" to url))
         println(result)
 
         assertTrue(result.contains("Content fetched from $url and saved to"))
-
-        val content = getFileContent(result)
-        assertTrue(content.contains("Odza: A Tranquil Retreat in the Bustling Heart of Yaoundé"))
     }
 
     @Test

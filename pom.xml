@@ -11,7 +11,7 @@
     </parent>
     <groupId>com.wutsi</groupId>
     <artifactId>kokibot</artifactId>
-    <version>0.0.73</version>
+    <version>0.0.74</version>
     <name>kokibot</name>
     <description>kokibot</description>
     <url/>

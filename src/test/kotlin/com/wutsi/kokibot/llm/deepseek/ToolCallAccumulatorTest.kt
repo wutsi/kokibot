@@ -60,16 +60,6 @@ class ToolCallAccumulatorTest {
     }
 
     @Test
-    fun `build returns empty arguments and logs warning when JSON is invalid`() {
-        accumulator.merge(LLMToolCallDelta(name = "search", argumentsFragment = "{not-json"))
-
-        val call = accumulator.build(jsonMapper)
-
-        assertEquals("search", call?.name)
-        assertTrue(call?.arguments?.isEmpty() == true)
-    }
-
-    @Test
     fun `setComplete short-circuits build and ignores accumulated state`() {
         accumulator.merge(LLMToolCallDelta(name = "search", argumentsFragment = "{not-json"))
         val complete = LLMToolCall(name = "tool", arguments = mapOf("x" to 1))

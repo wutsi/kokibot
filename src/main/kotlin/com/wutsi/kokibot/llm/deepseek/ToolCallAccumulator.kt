@@ -35,12 +35,7 @@ class ToolCallAccumulator(private val jsonMapper: JsonMapper) {
         val parsedArgs: Map<*, *> = if (rawArgs.isBlank()) {
             EMPTY_ARGS
         } else {
-            try {
-                jsonMapper.readValue(rawArgs, Map::class.java)
-            } catch (ex: Exception) {
-                LOGGER.warn("Failed to parse accumulated tool-call arguments. tool=$name arguments=$rawArgs", ex)
-                EMPTY_ARGS
-            }
+            jsonMapper.readValue(rawArgs, Map::class.java)
         }
         return LLMToolCall(name = fnName, arguments = parsedArgs, id = id ?: UUID.randomUUID().toString()).apply {}
     }

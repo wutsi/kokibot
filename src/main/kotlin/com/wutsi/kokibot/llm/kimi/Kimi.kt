@@ -41,9 +41,10 @@ class Kimi : Deepseek() {
 
     override fun availableModels(): List<String> {
         return listOf(
-            "kimi-k2.6",
+            "kimi-k3",
             "kimi-k2.7-code",
             "kimi-k2.7-code-highspeed",
+            "kimi-k2.6",
             "kimi-k2.5",
             "moonshot-v1-128k",
             "moonshot-v1-32k",

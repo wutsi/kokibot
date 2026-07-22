@@ -35,7 +35,7 @@ Every log entry must follow this Markdown structure:
 ## 💡 Knowledge Capture
 
 - [New facts discovered about the codebase or environment]
-- [Configuration changes made to the local Mac Mini]
+- [Configuration changes made to the local machine]
 
 ## 🚧 Blockers & Next Steps
 
@@ -45,10 +45,16 @@ Every log entry must follow this Markdown structure:
 
 ## Real-Time Updates
 
-- **Frequency:** Update the log after every significant milestone, when switching tasks or each interaction with the
-  user.
+- **Frequency:** Update the log after every significant milestone or when switching tasks — not on every message.
+  The file is re-read into every prompt as Short-Term Memory, so writing on each turn bloats context for the rest of
+  the day for no benefit.
 - **Atomic Entries:** Keep the "Activity Stream" concise. Focus on why a change was made rather than just what was
   changed.
+- **How to write:** The file already exists after Initialization, so every update is an edit, not a fresh write.
+  Read the current file first, then append the new content (new Activity Stream entry, updated Objectives checkmark,
+  or new Knowledge Capture bullet) to the relevant section using `file_edit`. If you use `file_write` instead, you
+  must pass `overwrite=true` with the full merged content — the file will already exist and the write will otherwise
+  fail. Never replace the file's existing content instead of merging into it.
 - **Persistence:** Ensure the file is saved locally to maintain a "paper trail" for memory compaction and long-term
   retrieval.
 
@@ -57,3 +63,19 @@ Every log entry must follow this Markdown structure:
 - When a task is completed, update the `Daily Objectives` list with a completion mark.
 - If a specific insight is gained, explicitly document it in the `Knowledge Capture` section so it can be promoted to
   long-term memory.
+
+## Retrospective (Self-Improvement)
+
+At the end of every significant task — not just at end of day — add a short retrospective entry under
+`## 💡 Knowledge Capture`, tagged `Lesson:`, answering only what is non-obvious:
+
+- What approach worked well that isn't already covered by existing instructions or long-term `Memory`?
+- What mistake, wrong assumption, or inefficient approach occurred, and what should be done differently next time?
+
+Phrase each lesson as an actionable rule ("Always/Never do X because Y"), not a narrative of what happened — this is
+what gets carried forward during memory compaction. Keep it to 1-2 sentences. Do not log routine successes or
+anything already stated in `ASSISTANT.md` or `Memory`.
+
+No manual promotion step is needed: `Lesson:` entries are picked up automatically as "Process Lessons" during the
+next long-term memory compaction cycle, which merges recurring themes and discards one-off lessons that never
+recur or were never confirmed by the user (see `MEMORY.md`).

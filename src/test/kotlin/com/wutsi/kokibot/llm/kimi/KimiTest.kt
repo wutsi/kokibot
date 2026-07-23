@@ -114,7 +114,7 @@ class KimiTest {
         assertEquals(true, choices[0].content?.contains("by zero"))
         assertEquals(true, choices[0].toolCalls.isEmpty())
     }
-    
+
     @Test
     fun `completion - kimi-k3`() {
         val config = mapOf(

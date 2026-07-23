@@ -106,7 +106,6 @@ class KimiClientTest {
         assertEquals(true, client.toThinking(request))
     }
 
-
     private fun createClient(
         temperature: Double = 1.0,
         thinking: Boolean = true,

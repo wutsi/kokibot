@@ -632,17 +632,93 @@ class DeepseekClientTest {
         assertNull(response)
     }
 
-    private fun createClient(): DeepseekClient {
+    @Test
+    fun `toThinking - null`() {
+        val client = createClient(thinking = null)
+        val request = mock<LLMRequest>()
+
+        assertEquals(false, client.toThinking(request))
+    }
+
+    @Test
+    fun `toThinking - false`() {
+        val client = createClient(thinking = false)
+        val request = mock<LLMRequest>()
+
+        assertEquals(false, client.toThinking(request))
+    }
+
+    @Test
+    fun `toThinking - true`() {
+        val client = createClient(thinking = true)
+        val request = mock<LLMRequest>()
+
+        assertEquals(true, client.toThinking(request))
+    }
+
+    @Test
+    fun toTemperature() {
+        val client = createClient(temperature = 0.6)
+        val request = mock<LLMRequest>()
+
+        assertEquals(0.6, client.toTemperature(request))
+    }
+
+    @Test
+    fun `reasoningEffort - thinking=false`() {
+        val client = createClient(thinking = false, reasoningEffort = "max")
+        val request = mock<LLMRequest>()
+
+        assertEquals(null, client.toReasoningEffort(request))
+    }
+
+    @Test
+    fun `reasoningEffort - thinking=true, reasoningEffort=standard`() {
+        val client = createClient(thinking = true, reasoningEffort = "standard")
+        val request = mock<LLMRequest>()
+
+        assertEquals("high", client.toReasoningEffort(request))
+    }
+
+    @Test
+    fun `reasoningEffort - thinking=true, reasoningEffort=high`() {
+        val client = createClient(thinking = true, reasoningEffort = "high")
+        val request = mock<LLMRequest>()
+
+        assertEquals("high", client.toReasoningEffort(request))
+    }
+
+    @Test
+    fun `reasoningEffort - thinking=true, reasoningEffort=null`() {
+        val client = createClient(thinking = true, reasoningEffort = null)
+        val request = mock<LLMRequest>()
+
+        assertEquals(null, client.toReasoningEffort(request))
+    }
+
+    @Test
+    fun `reasoningEffort - thinking=true, reasoningEffort=max`() {
+        val client = createClient(thinking = true, reasoningEffort = "max")
+        val request = mock<LLMRequest>()
+
+        assertEquals("max", client.toReasoningEffort(request))
+    }
+
+    private fun createClient(
+        temperature: Double = 1.0,
+        thinking: Boolean? = true,
+        reasoningEffort: String? = "max",
+    ): DeepseekClient {
         return DeepseekClient(
             apiKey = API_KEY,
             model = MODEL,
-            thinking = true,
-            temperature = 1.0,
+            thinking = thinking,
+            temperature = temperature,
             maxTokens = 2048,
             readTimeoutMillis = 1000,
             connectTimeoutMillis = 3000,
             restBuilder = restBuilder,
-            reasoningEffort = "max"
+            reasoningEffort = reasoningEffort,
         )
     }
 

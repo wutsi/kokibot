@@ -108,6 +108,28 @@ class DeepseekTest {
     }
 
     @Test
+    fun `completion - thinking=true`() {
+        val config = mapOf(
+            "model" to "deepseek-v4-flash",
+            "thinking" to true,
+            "reasoning-effort" to "high",
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(prompt = "What is the capital of France?"),
+            emptyList(),
+        )
+        // println(response)
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(true, choices[0].content?.contains("Paris"))
+        assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    @Test
     fun `completion with json output`() {
         val config = mapOf(
             "model" to "deepseek-v4-flash",
@@ -186,28 +208,6 @@ class DeepseekTest {
                 prompt = "Can you summarize this text?",
                 files = listOf(
                     File(this::class.java.getResource("/file/RL-1.pdf")!!.file)
-                )
-            ),
-            tools = emptyList()
-        )
-
-        val choices = response.choices
-        assertEquals(1, choices.size)
-        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
-        assertEquals(0, choices[0].toolCalls.size)
-        assertEquals(false, choices[0].content.isNullOrEmpty())
-        println(choices[0].content)
-    }
-
-    //    @Test
-    fun `completion with image`() {
-        llm.init(config, context)
-
-        val response = llm.completion(
-            request = LLMRequest(
-                prompt = "Can you describe this image?",
-                files = listOf(
-                    File(this::class.java.getResource("/file/medic.png")!!.file)
                 )
             ),
             tools = emptyList()

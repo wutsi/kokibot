@@ -1,6 +1,7 @@
 package com.wutsi.kokibot.llm.kimi
 
 import com.wutsi.kokibot.llm.LLMBalance
+import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.LLMUsage
 import com.wutsi.kokibot.llm.deepseek.DeepseekClient
 import com.wutsi.kokibot.util.MapUtil
@@ -11,6 +12,9 @@ import tools.jackson.databind.json.JsonMapper
  * Implementation of the Kimi LLM client.
  * It extends the DeepseekClient since they are both based on OpenAI API.
  * Refer to the Kimi documentation for more details: https://platform.kimi.ai/docs/api/overview
+ *
+ * API Documentations:
+ * - chat completion: https://platform.kimi.ai/docs/api/chat
  */
 class KimiClient(
     apiKey: String,
@@ -23,6 +27,7 @@ class KimiClient(
     restBuilder: RestBuilder = RestBuilder(),
     jsonMapper: JsonMapper = JsonMapper(),
     responseFormat: String? = null,
+    reasoningEffort: String? = null,
 ) : DeepseekClient(
     apiKey = apiKey,
     model = model,
@@ -34,6 +39,7 @@ class KimiClient(
     restBuilder = restBuilder,
     jsonMapper = jsonMapper,
     responseFormat = responseFormat,
+    reasoningEffort = reasoningEffort,
 ) {
     override fun getBaseUrl(): String {
         return "https://api.moonshot.ai/v1"
@@ -68,5 +74,17 @@ class KimiClient(
             totalTokens = MapUtil.toInt("total_tokens", usage) ?: 0,
             promptCacheHitTokens = MapUtil.toInt("cached_tokens", usage),
         )
+    }
+
+    override fun toTemperature(request: LLMRequest): Double? {
+        return null
+    }
+
+    override fun toThinking(request: LLMRequest): Boolean {
+        if (model.contains("-code")) {
+            return true
+        } else {
+            return super.toThinking(request)
+        }
     }
 }

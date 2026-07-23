@@ -30,11 +30,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * This is the client for the Deepseek API.
  * It is responsible for sending requests to the Deepseek API and parsing the responses.
+ *
+ * API Documentations:
+ * - chat completions: https://api-docs.deepseek.com/api/create-chat-completion
  */
 open class DeepseekClient(
     val apiKey: String,
     val model: String,
-    val thinking: Boolean? = null,
+    protected val thinking: Boolean? = null,
     val reasoningEffort: String? = null,
     val temperature: Double? = null,
     val maxTokens: Int? = null,
@@ -326,7 +329,7 @@ open class DeepseekClient(
     private fun toDeepseekRequest(request: LLMRequest, tools: List<Tool>): Map<*, *> {
         return mapOf(
             "model" to model,
-            "thinking" to if (thinking == true) {
+            "thinking" to if (toThinking(request)) {
                 mapOf(
                     "type" to "enabled",
                 )
@@ -335,14 +338,14 @@ open class DeepseekClient(
                     "type" to "disabled",
                 )
             },
-            "reasoning_effort" to if (thinking == true) reasoningEffort else null,
+            "reasoning_effort" to toReasoningEffort(request),
             "max_tokens" to maxTokens,
             "response_format" to responseFormat?.let {
                 mapOf(
                     "type" to if (it.contains("json", true)) "json_object" else "text",
                 )
             },
-            "temperature" to temperature,
+            "temperature" to toTemperature(request),
             "messages" to listOfNotNull(
                 request.systemInstructions?.let { systemInstructions ->
                     mapOf(
@@ -376,6 +379,26 @@ open class DeepseekClient(
             }.ifEmpty { null },
             "parallel_tool_calls" to true
         ).filter { entry -> entry.value != null }
+    }
+
+    internal open fun toThinking(request: LLMRequest): Boolean {
+        return thinking ?: false
+    }
+
+    internal open fun toTemperature(request: LLMRequest): Double? {
+        return temperature
+    }
+
+    internal open fun toReasoningEffort(request: LLMRequest): String? {
+        if (toThinking(request) == false) {
+            return null
+        }
+
+        return when (reasoningEffort?.lowercase()) {
+            null -> null
+            "max" -> "max"
+            else -> "high"
+        }
     }
 
     private fun toMessages(request: LLMRequest): List<Map<String, Any>> {

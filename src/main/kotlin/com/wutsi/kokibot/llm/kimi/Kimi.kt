@@ -6,9 +6,6 @@ import com.wutsi.kokibot.llm.deepseek.DeepseekClient
 /**
  * This is the implementation of the Deepseek LLM.
  * It uses the Deepseek API to generate responses.
- *
- * API Documentations:
- * - chat completion: https://platform.kimi.ai/docs/api/chat
  */
 class Kimi : Deepseek() {
     override fun getName(): String {
@@ -26,12 +23,14 @@ class Kimi : Deepseek() {
             connectTimeoutMillis = connectTimeoutMillis,
             jsonMapper = context.jsonMapper,
             responseFormat = responseFormat,
+            reasoningEffort = reasoningEffort,
         )
     }
 
     override fun getMaxContextWindow(): Int {
         return when {
-            model.startsWith("kimi-k2.") -> 256 * 1024
+            model.startsWith("kimi-k3") -> 1024 * 1024
+            model.startsWith("kimi-k2") -> 256 * 1024
             model.startsWith("moonshot-v1-128k") -> 128 * 1024
             model.startsWith("moonshot-v1-32k") -> 32 * 1024
             model.startsWith("moonshot-v1-8k") -> 8 * 1024

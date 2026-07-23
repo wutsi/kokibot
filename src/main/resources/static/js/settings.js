@@ -1403,8 +1403,9 @@ const Settings = {
                         </div>
                         <select id="llm-reasoning-effort-select" class="llm-settings-select">
                             <option value=""${reasoningEffort === '' ? ' selected' : ''}>Not set</option>
-                            <option value="min"${reasoningEffort === 'min' ? ' selected' : ''}>Minimal</option>
-                            <option value="max"${reasoningEffort === 'max' ? ' selected' : ''}>Maximum</option>
+                            <option value="standard"${reasoningEffort === 'standard' ? ' selected' : ''}>Standard</option>
+                            <option value="high"${reasoningEffort === 'high' ? ' high' : ''}>High</option>
+                            <option value="max"${reasoningEffort === 'max' ? ' selected' : ''}>Max</option>
                         </select>
                     </div>
                     <div class="setting-section-row llm-temperature-row">

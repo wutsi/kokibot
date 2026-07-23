@@ -20,6 +20,10 @@ class KimiTest {
     private val credentialService = mock<CredentialService>()
     private val config = mapOf(
         "model" to "kimi-k2.6",
+        "temperature" to 0.7,
+        "maxTokens" to 1024,
+        "thinking" to false,
+        "reasoning-effort" to "standard",
     )
     private val context = Context(
         home = File("/target"),
@@ -56,7 +60,85 @@ class KimiTest {
     }
 
     @Test
-    fun `completion with image file`() {
+    fun `completion - thinking=true`() {
+        val config = mapOf(
+            "model" to "kimi-k2.6",
+            "thinking" to true,
+            "reasoning-effort" to "high",
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(prompt = "What is the capital of France?"),
+            emptyList(),
+        )
+        // println(response)
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(true, choices[0].content?.contains("Paris"))
+        assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    @Test
+    fun `completion - kimi-k2_7-code`() {
+        val config = mapOf(
+            "model" to "kimi-k2.7-code",
+            "thinking" to false,
+            "reasoning-effort" to "standard",
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(
+                prompt = """
+                What's the bug on this code snippet?
+                ```kotlin
+                fun main() {
+                    val x = 10
+                    val y = 0
+                    val z = x / y
+                    println(z)
+                }
+                ```
+            """.trimIndent()
+            ),
+            emptyList(),
+        )
+        println(response)
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(true, choices[0].content?.contains("by zero"))
+        assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+    
+    @Test
+    fun `completion - kimi-k3`() {
+        val config = mapOf(
+            "model" to "kimi-k3",
+            "thinking" to true,
+            "reasoning-effort" to "high",
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(prompt = "What is the capital of France?"),
+            emptyList(),
+        )
+        // println(response)
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.STOP, choices[0].finishReason)
+        assertEquals(true, choices[0].content?.contains("Paris"))
+        assertEquals(true, choices[0].toolCalls.isEmpty())
+    }
+
+    @Test
+    fun `completion - image`() {
         llm.init(config, context)
 
         val response = llm.completion(
@@ -115,6 +197,7 @@ class KimiTest {
     @Test
     fun getMaxContextWindow() {
         val models = listOf(
+            "kimi-k3",
             "kimi-k2.6",
             "kimi-k2.7-code",
             "kimi-k2.7-code-highspeed",
@@ -127,6 +210,7 @@ class KimiTest {
             "moonshot-v1-8k-vision-preview"
         )
         val expected = listOf(
+            1024 * 1024,
             256 * 1024,
             256 * 1024,
             256 * 1024,

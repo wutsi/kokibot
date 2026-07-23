@@ -15,9 +15,6 @@ import org.slf4j.LoggerFactory
 /**
  * This is the implementation of the Deepseek LLM.
  * It uses the Deepseek API to generate responses.
- *
- * API Documentations:
- * - chat completions: https://api-docs.deepseek.com/api/create-chat-completion
  */
 open class Deepseek : LLM {
     companion object {

@@ -7,6 +7,10 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.service.credential.CredentialService
+import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.tools.ToolMetadata
+import com.wutsi.kokibot.tools.ToolParameter
+import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
@@ -49,7 +53,7 @@ class GeminiTest {
         assertEquals(1024 * 1024, llm.getMaxContextWindow())
     }
 
-    //    @Test
+    @Test
     fun completion() {
         llm.init(config, context)
 
@@ -66,13 +70,49 @@ class GeminiTest {
         assertEquals(true, choices[0].toolCalls.isEmpty())
     }
 
-    //    @Test
+    @Test
+    fun `completion with tool call`() {
+        val meta = ToolMetadata(
+            name = "date_tool_now",
+            description = "Get the current date and time for a given location",
+            parameters = listOf(
+                ToolParameter(
+                    name = "location",
+                    type = ToolParameterType.STRING,
+                    description = "The location to get the date and time for (e.g. 'Yaounde', 'Cameroon'). If not provided, ignore this parameter",
+                    required = false
+                )
+            )
+        )
+        val tool = mock<Tool>()
+        doReturn(meta).whenever(tool).metadata()
+
+        val config = mapOf(
+            "model" to "gemini-2.5-flash",
+            "tools" to listOf("date_tool_now"),
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(prompt = "What time is it at Paris?"),
+            listOf(tool)
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.TOOL_CALLS, choices[0].finishReason)
+        assertEquals(1, choices[0].toolCalls.size)
+        assertEquals(meta.name, choices[0].toolCalls[0].name)
+        assertEquals(mapOf("location" to "Paris"), choices[0].toolCalls[0].arguments)
+    }
+
+    @Test
     fun `completion with image file`() {
         llm.init(config, context)
 
         val response = llm.completion(
             request = LLMRequest(
-                prompt = "Can you summarize thie text?",
+                prompt = "Can you summarize this text?",
                 files = listOf(
                     File(this::class.java.getResource("/file/medic.png")!!.file)
                 )
@@ -117,8 +157,11 @@ class GeminiTest {
         assertEquals(
             listOf(
                 "gemini-3.5-flash",
+                "gemini-3.1-flash-image",
                 "gemini-3.1-flash-lite",
+                "gemini-3.1-flash-lite-image",
                 "gemini-3.1-pro-preview",
+                "gemini-3-pro-image",
                 "gemini-2.5-flash",
                 "gemini-2.5-flash-lite",
                 "gemini-2.5-pro",

@@ -7,6 +7,10 @@ import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.service.credential.CredentialService
+import com.wutsi.kokibot.tools.Tool
+import com.wutsi.kokibot.tools.ToolMetadata
+import com.wutsi.kokibot.tools.ToolParameter
+import com.wutsi.kokibot.tools.ToolParameterType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
@@ -158,6 +162,82 @@ class KimiTest {
         assertEquals(true, choices[0].content?.contains("Driver's License", true))
         assertEquals(true, choices[0].content?.contains("353 826 386", true))
         println(choices[0].content)
+    }
+
+    @Test
+    fun `completion with tool call`() {
+        val meta = ToolMetadata(
+            name = "date_tool_now",
+            description = "Get the current date and time for a given location",
+            parameters = listOf(
+                ToolParameter(
+                    name = "location",
+                    type = ToolParameterType.STRING,
+                    description = "The location to get the date and time for (e.g. 'Yaounde', 'Cameroon'). If not provided, ignore this parameter",
+                    required = true
+                )
+            )
+        )
+        val tool = mock<Tool>()
+        doReturn(meta).whenever(tool).metadata()
+
+        val config = mapOf(
+            "model" to "kimi-k2.6",
+            "tools" to listOf("date_tool_now"),
+        )
+        llm.init(config, context)
+
+        val response = llm.completion(
+            request = LLMRequest(prompt = "What time is it at Paris?"),
+            listOf(tool)
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.TOOL_CALLS, choices[0].finishReason)
+        assertEquals(1, choices[0].toolCalls.size)
+        assertEquals(meta.name, choices[0].toolCalls[0].name)
+        assertEquals(mapOf("location" to "Paris"), choices[0].toolCalls[0].arguments)
+    }
+
+    @Test
+    fun `completion with streaming AND tool call`() {
+        val meta = ToolMetadata(
+            name = "date_tool_now",
+            description = "Get the current date and time for a given location",
+            parameters = listOf(
+                ToolParameter(
+                    name = "location",
+                    type = ToolParameterType.STRING,
+                    description = "The location to get the date and time for (e.g. 'Yaounde', 'Cameroon'). If not provided, ignore this parameter",
+                    required = false
+                )
+            )
+        )
+        val tool = mock<Tool>()
+        doReturn(meta).whenever(tool).metadata()
+
+        val config = mapOf(
+            "model" to "kimi-k2.6",
+            "streaming" to true,
+            "tools" to listOf("date_tool_now"),
+        )
+        llm.init(config, context)
+
+        val response = llm.completionStream(
+            request = LLMRequest(prompt = "What time is it at Paris?"),
+            listOf(tool),
+            onChunk = { chunk ->
+                println("Chunk: " + chunk.delta)
+            }
+        )
+
+        val choices = response.choices
+        assertEquals(1, choices.size)
+        assertEquals(LLMFinishReason.TOOL_CALLS, choices[0].finishReason)
+        assertEquals(1, choices[0].toolCalls.size)
+        assertEquals(meta.name, choices[0].toolCalls[0].name)
+        assertEquals(mapOf("location" to "Paris"), choices[0].toolCalls[0].arguments)
     }
 
     @Test

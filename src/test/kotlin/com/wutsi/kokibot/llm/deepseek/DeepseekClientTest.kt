@@ -401,9 +401,9 @@ class DeepseekClientTest {
         assertEquals("Bearer $API_KEY", req.firstValue.headers["Authorization"]?.firstOrNull())
 
         val body = req.firstValue.body as Map<*, *>
-        assertEquals(4, body.size)
+        assertEquals(3, body.size)
         assertEquals(MODEL, body["model"])
-        assertEquals(mapOf("type" to "disabled"), body["thinking"])
+        assertEquals(null, body["thinking"])
         assertEquals(true, body["parallel_tool_calls"])
         assertEquals(
             listOf(
@@ -637,7 +637,7 @@ class DeepseekClientTest {
         val client = createClient(thinking = null)
         val request = mock<LLMRequest>()
 
-        assertEquals(false, client.toThinking(request))
+        assertEquals(null, client.toThinking(request))
     }
 
     @Test

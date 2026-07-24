@@ -1,5 +1,6 @@
 package com.wutsi.kokibot.llm.gemini
 
+import com.wutsi.kokibot.llm.LLMRequest
 import com.wutsi.kokibot.llm.deepseek.DeepseekClient
 import com.wutsi.kokibot.util.RestBuilder
 import tools.jackson.databind.json.JsonMapper
@@ -44,5 +45,9 @@ class GeminiClient(
             mimeType.startsWith("video/") ||
             mimeType.startsWith("audio/") ||
             mimeType.startsWith("application/pdf")
+    }
+
+    override fun toThinking(request: LLMRequest): Boolean? {
+        return null
     }
 }

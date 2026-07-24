@@ -80,7 +80,7 @@ class KimiClient(
         return null
     }
 
-    override fun toThinking(request: LLMRequest): Boolean {
+    override fun toThinking(request: LLMRequest): Boolean? {
         if (model.contains("-code")) {
             return true
         } else {

@@ -329,14 +329,10 @@ open class DeepseekClient(
     private fun toDeepseekRequest(request: LLMRequest, tools: List<Tool>): Map<*, *> {
         return mapOf(
             "model" to model,
-            "thinking" to if (toThinking(request)) {
-                mapOf(
-                    "type" to "enabled",
-                )
-            } else {
-                mapOf(
-                    "type" to "disabled",
-                )
+            "thinking" to when (toThinking(request)) {
+                true -> mapOf("type" to "enabled")
+                false -> mapOf("type" to "disabled")
+                null -> null
             },
             "reasoning_effort" to toReasoningEffort(request),
             "max_tokens" to maxTokens,
@@ -369,11 +365,11 @@ open class DeepseekClient(
                                     "description" to param.description,
                                 )
                             }.toMap(),
-                        ),
-                        "required" to meta.parameters
-                            .filter { param -> param.required }
-                            .map { param -> param.name }
-                            .ifEmpty { null },
+                            "required" to meta.parameters
+                                .filter { param -> param.required }
+                                .map { param -> param.name }
+                                .ifEmpty { null },
+                        ).filter { entry -> entry.value != null },
                     ).filter { entry -> entry.value != null }
                 )
             }.ifEmpty { null },
@@ -381,8 +377,8 @@ open class DeepseekClient(
         ).filter { entry -> entry.value != null }
     }
 
-    internal open fun toThinking(request: LLMRequest): Boolean {
-        return thinking ?: false
+    internal open fun toThinking(request: LLMRequest): Boolean? {
+        return thinking
     }
 
     internal open fun toTemperature(request: LLMRequest): Double? {
@@ -390,14 +386,14 @@ open class DeepseekClient(
     }
 
     internal open fun toReasoningEffort(request: LLMRequest): String? {
-        if (toThinking(request) == false) {
+        if (toThinking(request) == true) {
+            return when (reasoningEffort?.lowercase()) {
+                null -> null
+                "max" -> "max"
+                else -> "high"
+            }
+        } else {
             return null
-        }
-
-        return when (reasoningEffort?.lowercase()) {
-            null -> null
-            "max" -> "max"
-            else -> "high"
         }
     }
 

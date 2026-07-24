@@ -164,13 +164,13 @@ class DeepseekTest {
     fun `completion with tool call`() {
         val meta = ToolMetadata(
             name = "date_tool_now",
-            description = "Get the current date and time at Paris",
+            description = "Get the current date and time for a given location",
             parameters = listOf(
                 ToolParameter(
                     name = "location",
                     type = ToolParameterType.STRING,
-                    description = "The location to get the date and time for (e.g. 'Paris', 'Cameroon'). If not provided, ignore this parameter",
-                    required = false
+                    description = "The location to get the date and time for (e.g. 'London', 'Cameroon')",
+                    required = true
                 )
             )
         )
@@ -184,7 +184,7 @@ class DeepseekTest {
         llm.init(config, context)
 
         val response = llm.completion(
-            request = LLMRequest(prompt = "What time is it?"),
+            request = LLMRequest(prompt = "What time is it in Paris?"),
             listOf(tool)
         )
 
@@ -251,13 +251,13 @@ class DeepseekTest {
     fun `completion with streaming AND tool call`() {
         val meta = ToolMetadata(
             name = "date_tool_now",
-            description = "Get the current date and time at Paris",
+            description = "Get the current date and time for a given location",
             parameters = listOf(
                 ToolParameter(
                     name = "location",
                     type = ToolParameterType.STRING,
-                    description = "The location to get the date and time for (e.g. 'Paris', 'Cameroon'). If not provided, ignore this parameter",
-                    required = false
+                    description = "The location to get the date and time for (e.g. 'London', 'Cameroon')",
+                    required = true
                 )
             )
         )
@@ -272,7 +272,7 @@ class DeepseekTest {
         llm.init(config, context)
 
         val response = llm.completionStream(
-            request = LLMRequest(prompt = "What time is it?"),
+            request = LLMRequest(prompt = "What time is it at Paris?"),
             listOf(tool),
             onChunk = { chunk ->
                 println("Chunk: " + chunk.delta)

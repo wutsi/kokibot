@@ -76,6 +76,7 @@ class AssistantTest {
     fun setup() {
         doReturn(65536).whenever(llm).getMaxContextWindow()
         context.conversationRepository.init(emptyMap<Any, Any>(), context)
+        context.inbox.init(emptyMap<Any, Any>(), context)
         assistant.init(emptyMap<Any, Any>(), context)
 
         doReturn(true).whenever(tool1).activate()

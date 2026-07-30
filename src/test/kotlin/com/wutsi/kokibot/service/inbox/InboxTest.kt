@@ -42,7 +42,7 @@ class InboxTest {
 
     @Test
     fun `init creates inbox directories`() {
-        listOf(Inbox.PENDING, Inbox.PROCESSING, Inbox.DONE, Inbox.FAILED, Inbox.ORPHANED).forEach { state ->
+        listOf(Inbox.PENDING, Inbox.PROCESSING, Inbox.DONE, Inbox.FAILED, Inbox.ORPHANED, Inbox.CANCEL).forEach { state ->
             assert(File(home, "inbox/$state").isDirectory) { "Expected inbox/$state to exist" }
         }
     }
@@ -165,6 +165,37 @@ class InboxTest {
         inbox.fail("unknown-id", "error")
 
         assertEquals(0, failedCount())
+    }
+
+    @Test
+    fun `cancel - marks message as cancelled`() {
+        assertTrue(!inbox.isCancelled("msg-1"))
+
+        inbox.cancel("msg-1")
+
+        assertTrue(inbox.isCancelled("msg-1"))
+    }
+
+    @Test
+    fun `complete - clears cancel marker`() {
+        inbox.submit(message("msg-1"))
+        val polled = inbox.poll()!!
+        inbox.cancel(polled.id)
+
+        inbox.complete(polled.id, "The answer is 42")
+
+        assertTrue(!inbox.isCancelled(polled.id))
+    }
+
+    @Test
+    fun `fail - clears cancel marker`() {
+        inbox.submit(message("msg-1"))
+        val polled = inbox.poll()!!
+        inbox.cancel(polled.id)
+
+        inbox.fail(polled.id, "Something went wrong")
+
+        assertTrue(!inbox.isCancelled(polled.id))
     }
 
     @Test

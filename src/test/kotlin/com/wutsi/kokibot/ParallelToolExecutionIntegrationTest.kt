@@ -56,6 +56,8 @@ class ParallelToolExecutionIntegrationTest {
             assistantRegistry = mock<AssistantRegistry>(),
         )
 
+        context.inbox.init(emptyMap<Any, Any>(), context)
+
         assistant = Assistant("test-parallel")
         assistant.init(mapOf("thread-pool-size" to 4), context)
     }

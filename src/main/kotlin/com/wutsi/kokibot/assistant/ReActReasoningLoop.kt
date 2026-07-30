@@ -57,6 +57,13 @@ class ReActReasoningLoop(
             if (iteration++ > maxIterations) {
                 throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
             }
+            if (context.inbox.isCancelled(query.id)) {
+                return Message(
+                    text = "Query cancelled.",
+                    role = Role.ASSISTANT,
+                    finishReason = FinishReason.CANCELLED,
+                )
+            }
 
             val command = getCommand(query, context)
             if (command != null) {

@@ -24,6 +24,7 @@ import com.wutsi.kokibot.llm.LLMFinishReason
 import com.wutsi.kokibot.llm.LLMResponse
 import com.wutsi.kokibot.llm.LLMResponseChoice
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.service.inbox.Inbox
 import com.wutsi.kokibot.service.memory.SessionLog
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
@@ -44,6 +45,7 @@ class ReActReasoningLoopTest {
     private val promptBuilder = mock<PromptBuilder>()
     private val toolOrchestrator = mock<ToolOrchestrator>()
     private val channelRegistry = mock<ChannelRegistry>()
+    private val inbox = mock<Inbox>()
     private lateinit var reasoningLoop: ReActReasoningLoop
 
     private val channel = mock<Channel>()
@@ -57,8 +59,10 @@ class ReActReasoningLoopTest {
         doReturn(commandRegistry).whenever(context).commandRegistry
         doReturn(sessionLog).whenever(context).sessionLog
         doReturn(channelRegistry).whenever(context).channelRegistry
+        doReturn(inbox).whenever(context).inbox
 
         doReturn(channel).whenever(channelRegistry).get(any())
+        doReturn(false).whenever(inbox).isCancelled(any())
 
         doReturn(true).whenever(tool1).activate()
         doReturn(true).whenever(tool2).activate()
@@ -156,6 +160,20 @@ class ReActReasoningLoopTest {
         assertThrows<TooManyIterationException> {
             reasoningLoop.execute(query, null, 0, memory, context)
         }
+    }
+
+    @Test
+    fun `should return CANCELLED when query is cancelled`() {
+        val query = Message(id = "query-1", text = "Test", userId = "user1", channelId = "channel1")
+        val memory = mutableListOf<String>()
+        doReturn(true).whenever(inbox).isCancelled("query-1")
+
+        val result = reasoningLoop.execute(query, null, 0, memory, context)
+
+        assertEquals("Query cancelled.", result.text)
+        assertEquals(Role.ASSISTANT, result.role)
+        assertEquals(FinishReason.CANCELLED, result.finishReason)
+        verify(llm, times(0)).completion(any(), any())
     }
 
     @Test

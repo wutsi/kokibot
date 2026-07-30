@@ -17,6 +17,7 @@ class Inbox : Resource {
         const val DONE = "done"
         const val FAILED = "failed"
         const val ORPHANED = "orphaned"
+        const val CANCEL = "cancel"
     }
 
     private lateinit var context: Context
@@ -28,7 +29,7 @@ class Inbox : Resource {
     override fun init(config: Map<*, *>, context: Context) {
         this.context = context
         inboxDir = File(context.home, "inbox")
-        listOf(PENDING, PROCESSING, DONE, FAILED, ORPHANED).forEach { state ->
+        listOf(PENDING, PROCESSING, DONE, FAILED, ORPHANED, CANCEL).forEach { state ->
             File(inboxDir, state).mkdirs()
         }
         orphanProcessing()
@@ -78,6 +79,7 @@ class Inbox : Resource {
         }
         val message = context.jsonMapper.readValue(file.readText(), InboxMessage::class.java)
         move(file, message.copy(response = response, completedAt = LocalDateTime.now()), DONE)
+        clearCancel(id)
         LOGGER.info("Completed $id")
     }
 
@@ -93,7 +95,20 @@ class Inbox : Resource {
         }
         val message = context.jsonMapper.readValue(file.readText(), InboxMessage::class.java)
         move(file, message.copy(error = error, completedAt = LocalDateTime.now()), FAILED)
+        clearCancel(id)
         LOGGER.info("Failed $id: $error")
+    }
+
+    fun cancel(id: String) {
+        File(File(inboxDir, CANCEL), "$id.cancel").createNewFile()
+        LOGGER.info("Cancel requested for $id")
+    }
+
+    fun isCancelled(id: String): Boolean =
+        File(File(inboxDir, CANCEL), "$id.cancel").exists()
+
+    private fun clearCancel(id: String) {
+        File(File(inboxDir, CANCEL), "$id.cancel").delete()
     }
 
     private fun orphanProcessing() {

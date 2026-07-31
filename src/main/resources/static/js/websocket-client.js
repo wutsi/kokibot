@@ -15,6 +15,7 @@ class WebSocketClient {
             onOpen: null,
             onClose: null,
             onError: null,
+            onQueued: null,
             onReasoningChunk: null,
             onToolStatus: null,
             onFinalResponse: null,
@@ -81,6 +82,12 @@ class WebSocketClient {
 
     handleMessage(response) {
         switch (response.type) {
+            case 'QUEUED':
+                if (this.handlers.onQueued) {
+                    this.handlers.onQueued(response.id);
+                }
+                break;
+
             case 'REASONING_CHUNK':
                 if (this.handlers.onReasoningChunk) {
                     this.handlers.onReasoningChunk(response.content, response.usage);

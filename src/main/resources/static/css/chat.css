@@ -930,6 +930,20 @@ ol, li {
     fill: currentColor;
 }
 
+#send-button.stop-mode {
+    background-color: var(--color-accent-red);
+}
+
+#send-button.stop-mode:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.message-text.cancelled {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
 /* ===== Error Message ===== */
 .error-message {
     background-color: var(--color-error-bg);

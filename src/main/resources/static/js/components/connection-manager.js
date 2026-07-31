@@ -10,6 +10,7 @@ class ConnectionManager {
         this.handlers = {
             onOpen: null,
             onClose: null,
+            onQueued: null,
             onReasoningChunk: null,
             onToolStatus: null,
             onFinalResponse: null,
@@ -55,6 +56,10 @@ class ConnectionManager {
             }
 
             this.emit('error', error);
+        });
+
+        this.wsClient.on('Queued', (id) => {
+            this.emit('queued', id);
         });
 
         this.wsClient.on('ReasoningChunk', (chunk, usage) => {

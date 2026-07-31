@@ -9,10 +9,12 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.FinishReason
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.llm.LLMUsage
 import com.wutsi.kokibot.service.inbox.Inbox
+import com.wutsi.kokibot.service.inbox.InboxMessage
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -45,6 +47,7 @@ class WebSocketChannelTest {
         whenever(assistant.name).doReturn("test-agent")
         whenever(session.id).doReturn("session-123")
         whenever(session.isOpen).doReturn(true)
+        whenever(inbox.submit(any())).doReturn(InboxMessage(id = "query-1"))
     }
 
     @AfterEach
@@ -87,6 +90,24 @@ class WebSocketChannelTest {
         assertEquals(listOf("/a.txt"), submitted.filePaths)
         assertEquals("conv-42", submitted.conversationId)
         assertEquals(Role.USER, submitted.role)
+    }
+
+    @Test
+    fun `handleMessage sends QUEUED ack with the submitted message id`() {
+        channel.init(emptyMap<String, Any>(), context)
+        channel.handleConnectionEstablished(session)
+
+        channel.handleMessage(session, """{"query": "Hello", "filePaths": []}""")
+
+        verify(session).sendMessage(
+            argThat { msg ->
+                val response = jsonMapper.readValue(
+                    (msg as TextMessage).payload,
+                    WebSocketResponse::class.java,
+                )
+                response.type == WebSocketResponseType.QUEUED && response.id == "query-1"
+            },
+        )
     }
 
     @Test
@@ -160,6 +181,7 @@ class WebSocketChannelTest {
             channelId = "channel:websocket",
             userId = "anonymous",
             conversationId = "conv-xyz",
+            finishReason = FinishReason.CANCELLED,
         )
         assertTrue(channel.send(message))
 
@@ -171,7 +193,8 @@ class WebSocketChannelTest {
                 )
                 response.type == WebSocketResponseType.FINAL &&
                     response.content == "Hello" &&
-                    response.conversationId == "conv-xyz"
+                    response.conversationId == "conv-xyz" &&
+                    response.finishReason == "CANCELLED"
             },
         )
     }

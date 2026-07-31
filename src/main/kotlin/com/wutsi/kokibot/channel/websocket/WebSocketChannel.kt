@@ -75,6 +75,7 @@ class WebSocketChannel : Channel() {
             val response = WebSocketResponse(
                 type = WebSocketResponseType.FINAL,
                 content = message.text,
+                finishReason = message.finishReason?.name,
                 conversationId = message.conversationId,
             )
             session.sendMessage(TextMessage(jsonMapper.writeValueAsString(response)))
@@ -107,7 +108,7 @@ class WebSocketChannel : Channel() {
     internal fun handleMessage(session: WebSocketSession, payload: String) {
         try {
             val request = jsonMapper.readValue(payload, WebSocketRequest::class.java)
-            context.inbox.submit(
+            val inboxMessage = context.inbox.submit(
                 Message(
                     text = request.query,
                     role = Role.USER,
@@ -117,6 +118,7 @@ class WebSocketChannel : Channel() {
                     conversationId = request.conversationId,
                 )
             )
+            sendMessage(session, WebSocketResponse(type = WebSocketResponseType.QUEUED, id = inboxMessage.id))
         } catch (e: Exception) {
             LOGGER.error("Error submitting WebSocket message to inbox", e)
             try {

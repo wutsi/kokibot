@@ -11,6 +11,7 @@ const ChatUI = {
 
     agentName: null,
     currentMessageId: null,
+    currentQueryId: null,
     messageStartTime: null,
     elapsedTimer: null,
     chatContainer: null,
@@ -139,11 +140,18 @@ const ChatUI = {
 
         this.connectionManager.on('close', () => {
             this.updateConnectionStatus('disconnected', 'Disconnected');
+            this.currentQueryId = null;
             this.inputController.disable();
         });
 
         this.connectionManager.on('error', (error) => {
             this.updateConnectionStatus('error', 'Connection Error');
+            this.currentQueryId = null;
+        });
+
+        this.connectionManager.on('queued', (id) => {
+            this.currentQueryId = id;
+            this.inputController.showStopMode();
         });
 
         this.connectionManager.on('reasoningChunk', (chunk, usage) => {
@@ -163,6 +171,20 @@ const ChatUI = {
         this.inputController.on('send', (text, filesInfo) => {
             this.handleSend(text, filesInfo);
         });
+        this.inputController.on('stop', () => {
+            this.cancelCurrentQuery();
+        });
+    },
+
+    async cancelCurrentQuery() {
+        if (!this.currentQueryId) return;
+        const id = this.currentQueryId;
+        this.inputController.disableStopButton();
+        try {
+            await fetch(`/assistants/${this.agentName}/queries/${id}/cancel`, { method: 'POST' });
+        } catch (e) {
+            console.warn('Failed to cancel query:', e);
+        }
     },
 
     handleSend(text, filesInfo) {
@@ -219,7 +241,7 @@ const ChatUI = {
             return;
         }
 
-        this.messageRenderer.updateFinalResponse(messageElement, content);
+        this.messageRenderer.updateFinalResponse(messageElement, content, finishReason);
 
         clearInterval(this.elapsedTimer);
         this.elapsedTimer = null;
@@ -227,6 +249,7 @@ const ChatUI = {
         this.messageStartTime = null;
         if (elapsed !== null) this.tokenDisplay.finalize(messageElement, elapsed);
 
+        this.currentQueryId = null;
         this.inputController.enable();
 
         if (conversationId) {

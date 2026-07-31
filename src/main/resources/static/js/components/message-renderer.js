@@ -61,7 +61,7 @@ class MessageRenderer {
     /**
      * Update final response text
      */
-    updateFinalResponse(messageElement, text) {
+    updateFinalResponse(messageElement, text, finishReason = null) {
         const avatar = messageElement.querySelector('.message-avatar');
         if (avatar) {
             avatar.classList.remove('thinking');
@@ -77,6 +77,7 @@ class MessageRenderer {
             contentDiv.appendChild(textDiv);
         }
 
+        textDiv.classList.toggle('cancelled', finishReason === 'CANCELLED');
         textDiv.innerHTML = this.markdownRenderer.render(text);
         this.addImageDownloadButtons(textDiv);
         this.addCodeCopyButtons(textDiv);

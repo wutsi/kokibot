@@ -12,6 +12,7 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
+import com.wutsi.kokibot.FinishReason
 import com.wutsi.kokibot.Message
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.channel.Channel
@@ -163,6 +164,22 @@ class InboxPollerTest {
         val responseCaptor = argumentCaptor<Message>()
         verify(channel).send(responseCaptor.capture())
         assertEquals("conv-999", responseCaptor.firstValue.conversationId)
+    }
+
+    @Test
+    fun `tick - forwards finishReason in delivered response`() {
+        val channel = mock<Channel>()
+        doReturn(channel).whenever(channelRegistry).get("channel:telegram")
+        doReturn(Message(text = "Query cancelled.", role = Role.ASSISTANT, finishReason = FinishReason.CANCELLED))
+            .whenever(context.assistant).process(any(), anyOrNull())
+
+        inbox.submit(message("msg-1", channelId = "channel:telegram"))
+
+        poller.tick()
+
+        val responseCaptor = argumentCaptor<Message>()
+        verify(channel).send(responseCaptor.capture())
+        assertEquals(FinishReason.CANCELLED, responseCaptor.firstValue.finishReason)
     }
 
     @Test

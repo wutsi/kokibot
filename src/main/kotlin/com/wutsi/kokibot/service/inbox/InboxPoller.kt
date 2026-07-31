@@ -140,6 +140,7 @@ class InboxPoller : Resource {
                     text = response.text,
                     conversationId = response.conversationId,
                     role = Role.ASSISTANT,
+                    finishReason = response.finishReason,
                 )
             )
         } catch (e: Exception) {

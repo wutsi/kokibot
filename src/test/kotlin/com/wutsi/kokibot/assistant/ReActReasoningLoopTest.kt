@@ -11,6 +11,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.FinishReason
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.QueryCancelledException
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.TooManyIterationException
 import com.wutsi.kokibot.channel.Channel
@@ -163,16 +164,14 @@ class ReActReasoningLoopTest {
     }
 
     @Test
-    fun `should return CANCELLED when query is cancelled`() {
+    fun `should throw QueryCancelledException when query is cancelled`() {
         val query = Message(id = "query-1", text = "Test", userId = "user1", channelId = "channel1")
         val memory = mutableListOf<String>()
         doReturn(true).whenever(inbox).isCancelled("query-1")
 
-        val result = reasoningLoop.execute(query, null, 0, memory, context)
-
-        assertEquals("Query cancelled.", result.text)
-        assertEquals(Role.ASSISTANT, result.role)
-        assertEquals(FinishReason.CANCELLED, result.finishReason)
+        assertThrows<QueryCancelledException> {
+            reasoningLoop.execute(query, null, 0, memory, context)
+        }
         verify(llm, times(0)).completion(any(), any())
     }
 

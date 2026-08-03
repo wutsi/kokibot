@@ -4,6 +4,7 @@ import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.FinishReason
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.QueryCancelledException
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.TooManyIterationException
 import com.wutsi.kokibot.command.Command
@@ -58,11 +59,7 @@ class ReActReasoningLoop(
                 throw TooManyIterationException("Sorry, I cannot find the answer to your question.")
             }
             if (context.inbox.isCancelled(query.id)) {
-                return Message(
-                    text = "Query cancelled.",
-                    role = Role.ASSISTANT,
-                    finishReason = FinishReason.CANCELLED,
-                )
+                throw QueryCancelledException()
             }
 
             val command = getCommand(query, context)

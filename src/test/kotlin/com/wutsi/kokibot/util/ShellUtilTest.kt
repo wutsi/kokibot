@@ -47,7 +47,15 @@ class ShellUtilTest {
 
     @Test
     fun `exec - timed out`() {
-        val result = ShellUtil.exec("find ~/ -name x0x0x0x", timeoutSeconds = 1)
+        val result = ShellUtil.exec(
+            """
+                while true
+                do
+                    sleep 1
+                done
+            """.trimIndent(),
+            timeoutSeconds = 1,
+        )
         println(result.output)
 
         assertEquals(-1, result.status)

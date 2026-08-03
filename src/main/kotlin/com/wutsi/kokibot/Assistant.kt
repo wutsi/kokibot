@@ -260,6 +260,9 @@ class Assistant(val name: String = "") {
         } catch (e: TooManyIterationException) {
             LOGGER.error("Too many iterations!", e)
             Message(ERROR_TOO_MANY_ITERATIONS, Role.ASSISTANT, FinishReason.TOO_MANY_ITERATIONS)
+        } catch (e: QueryCancelledException) {
+            LOGGER.info("Query cancelled: ${query.id}")
+            Message(e.message ?: "Query cancelled.", Role.ASSISTANT, FinishReason.CANCELLED)
         } catch (e: Exception) {
             LOGGER.error("Unexpected error!", e)
             Message(ERROR_FAILURE + ". Error: ${e.message}", Role.ASSISTANT, FinishReason.FAILURE)

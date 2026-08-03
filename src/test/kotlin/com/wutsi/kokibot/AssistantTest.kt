@@ -487,6 +487,22 @@ class AssistantTest {
         verify(llm, times(4)).completion(any(), eq(listOf(tool1, tool2)))
     }
 
+    @Test
+    fun `process cancelled query`() {
+        // GIVEN
+        val prompt = Message("What is the capital of Cameroon", Role.USER)
+        context.inbox.cancel(prompt.id)
+
+        // WHEN
+        val result = assistant.process(prompt)
+
+        // THEN
+        assertEquals("Query cancelled.", result.text)
+        assertEquals(Role.ASSISTANT, result.role)
+        assertEquals(FinishReason.CANCELLED, result.finishReason)
+        verify(llm, times(0)).completion(any(), any())
+    }
+
     private fun getResourceFile(path: String): File {
         val resource = BootstrapTest::class.java.getResource(path)
             ?: throw IllegalArgumentException("Resource not found: $path")

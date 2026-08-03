@@ -59,6 +59,23 @@ class MessageRenderer {
     }
 
     /**
+     * Show a "Cancelling..." status line in an in-progress assistant message
+     */
+    showCancelling(messageElement) {
+        const contentDiv = messageElement.querySelector('.message-content');
+
+        let statusDiv = contentDiv.querySelector('.message-status');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.className = 'message-status cancelling';
+            contentDiv.insertBefore(statusDiv, contentDiv.firstChild);
+        }
+        statusDiv.textContent = 'Cancelling...';
+
+        this.scrollToBottom();
+    }
+
+    /**
      * Update final response text
      */
     updateFinalResponse(messageElement, text, finishReason = null) {
@@ -69,6 +86,11 @@ class MessageRenderer {
         }
 
         const contentDiv = messageElement.querySelector('.message-content');
+
+        const statusDiv = contentDiv.querySelector('.message-status');
+        if (statusDiv) {
+            statusDiv.remove();
+        }
 
         let textDiv = contentDiv.querySelector('.message-text');
         if (!textDiv) {

@@ -180,6 +180,12 @@ const ChatUI = {
         if (!this.currentQueryId) return;
         const id = this.currentQueryId;
         this.inputController.disableStopButton();
+
+        const messageElement = document.getElementById(this.currentMessageId);
+        if (messageElement) {
+            this.messageRenderer.showCancelling(messageElement);
+        }
+
         try {
             await fetch(`/assistants/${this.agentName}/queries/${id}/cancel`, { method: 'POST' });
         } catch (e) {

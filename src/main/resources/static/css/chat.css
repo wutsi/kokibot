@@ -944,6 +944,12 @@ ol, li {
     font-style: italic;
 }
 
+.message-status.cancelling {
+    color: var(--color-text-secondary);
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
 /* ===== Error Message ===== */
 .error-message {
     background-color: var(--color-error-bg);

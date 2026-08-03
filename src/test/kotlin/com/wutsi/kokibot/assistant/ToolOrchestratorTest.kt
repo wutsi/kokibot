@@ -8,8 +8,10 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.QueryCancelledException
 import com.wutsi.kokibot.channel.ChannelRegistry
 import com.wutsi.kokibot.llm.LLMToolCall
+import com.wutsi.kokibot.service.inbox.Inbox
 import com.wutsi.kokibot.service.memory.SessionLog
 import com.wutsi.kokibot.tools.Tool
 import com.wutsi.kokibot.tools.ToolMetadata
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class ToolOrchestratorTest {
     private val tool1 = mock<Tool>()
@@ -27,6 +30,7 @@ class ToolOrchestratorTest {
     private val toolRegistry = mock<ToolRegistry>()
     private val sessionLog = mock<SessionLog>()
     private val channelRegistry = mock<ChannelRegistry>()
+    private val inbox = mock<Inbox>()
     private val context = mock<Context>()
     private lateinit var orchestrator: ToolOrchestrator
 
@@ -35,6 +39,8 @@ class ToolOrchestratorTest {
         doReturn(sessionLog).whenever(context).sessionLog
         doReturn(toolRegistry).whenever(context).toolRegistry
         doReturn(channelRegistry).whenever(context).channelRegistry
+        doReturn(inbox).whenever(context).inbox
+        doReturn(false).whenever(inbox).isCancelled(any())
 
         doReturn(ToolMetadata(name = "tool1", parameters = emptyList())).whenever(tool1).metadata()
         doReturn("result1").whenever(tool1).exec(any())
@@ -291,5 +297,67 @@ class ToolOrchestratorTest {
 
         verify(tool1).exec(mapOf("arg1" to "value1"))
         assertEquals(2, memory.size)
+    }
+
+    @Test
+    fun `should throw QueryCancelledException when already cancelled before dispatch`() {
+        doReturn(true).whenever(inbox).isCancelled("test-id")
+
+        val toolCalls = listOf(
+            LLMToolCall(id = "1", name = "tool1", arguments = mapOf("arg1" to "value1"))
+        )
+        val memory = mutableListOf<String>()
+        val tools = mapOf("tool1" to tool1)
+        val query = Message(id = "test-id", userId = "user1", channelId = "channel1")
+
+        assertThrows<QueryCancelledException> {
+            orchestrator.executeTools(
+                id = query.id,
+                iteration = 1,
+                assistantName = "test-assistant",
+                toolCalls = toolCalls,
+                memory = memory,
+                tools = tools,
+                query = query,
+                context = context
+            )
+        }
+        verify(tool1, com.nhaarman.mockitokotlin2.never()).exec(any())
+    }
+
+    @Test
+    fun `should throw QueryCancelledException for a tool queued behind a cancelling one`() {
+        // threadPoolSize = 1 forces tool2's callable to wait behind tool1's on the shared executor,
+        // so by the time tool2 runs, cancellation (flipped as a side effect of tool1.exec) is visible.
+        orchestrator.destroy()
+        orchestrator = ToolOrchestrator(threadPoolSize = 1)
+
+        doReturn("result1").whenever(tool1).exec(any())
+        whenever(tool1.exec(any())).then {
+            doReturn(true).whenever(inbox).isCancelled("test-id")
+            "result1"
+        }
+
+        val toolCalls = listOf(
+            LLMToolCall(id = "1", name = "tool1", arguments = mapOf("arg1" to "value1")),
+            LLMToolCall(id = "2", name = "tool2", arguments = mapOf("arg2" to "value2"))
+        )
+        val memory = mutableListOf<String>()
+        val tools = mapOf("tool1" to tool1, "tool2" to tool2)
+        val query = Message(id = "test-id", userId = "user1", channelId = "channel1")
+
+        assertThrows<QueryCancelledException> {
+            orchestrator.executeTools(
+                id = query.id,
+                iteration = 1,
+                assistantName = "test-assistant",
+                toolCalls = toolCalls,
+                memory = memory,
+                tools = tools,
+                query = query,
+                context = context
+            )
+        }
+        verify(tool2, com.nhaarman.mockitokotlin2.never()).exec(any())
     }
 }

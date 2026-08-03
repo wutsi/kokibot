@@ -2,6 +2,7 @@ package com.wutsi.kokibot.assistant
 
 import com.wutsi.kokibot.Context
 import com.wutsi.kokibot.Message
+import com.wutsi.kokibot.QueryCancelledException
 import com.wutsi.kokibot.Role
 import com.wutsi.kokibot.ToolExecutionResult
 import com.wutsi.kokibot.llm.LLMToolCall
@@ -12,6 +13,7 @@ import com.wutsi.kokibot.util.StringUtil
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -53,6 +55,9 @@ class ToolOrchestrator(
     ) {
         if (toolCalls.isEmpty()) {
             return
+        }
+        if (context.inbox.isCancelled(query.id)) {
+            throw QueryCancelledException()
         }
 
         // Get results
@@ -143,6 +148,18 @@ class ToolOrchestrator(
         return futures.mapIndexed { index, future ->
             try {
                 future.get()
+            } catch (e: ExecutionException) {
+                val cause = e.cause
+                if (cause is QueryCancelledException) {
+                    throw cause
+                }
+                val call = toolCalls.getOrNull(index) ?: LLMToolCall(name = "unknown", id = "error-$index")
+                LOGGER.error("Tool execution failed for ${call.name}: ${e.message}", e)
+                ToolExecutionResult(
+                    call = call,
+                    result = "Unexpected error while executing tool `${call.name}`. Error=${cause?.message ?: e.message}",
+                    error = e
+                )
             } catch (e: Exception) {
                 val call = toolCalls.getOrNull(index) ?: LLMToolCall(name = "unknown", id = "error-$index")
                 LOGGER.error("Tool execution failed for ${call.name}: ${e.message}", e)
@@ -168,6 +185,10 @@ class ToolOrchestrator(
         return Callable {
             ExecutionContext.set(id, assistantName, query.userId, query.channelId)
             try {
+                if (context.inbox.isCancelled(query.id)) {
+                    throw QueryCancelledException()
+                }
+
                 val startTime = System.currentTimeMillis()
                 LOGGER.info(
                     "$iteration $assistantName TOOL ${call.name} " +

@@ -166,4 +166,35 @@ class MultiBootstrapTest {
         }
         assertNotNull(bootstrap.get("007"))
     }
+
+    @Test
+    fun delete() {
+        tempHome = Files.createTempDirectory("kokibot-delete-test").toFile()
+        home.copyRecursively(tempHome!!)
+
+        bootstrap.init(tempHome!!)
+        assertEquals(2, bootstrap.bootstraps.size)
+
+        bootstrap.delete("007")
+
+        assertEquals(1, bootstrap.bootstraps.size)
+        assertThrows<AssistantNotFoundException> { assistantRegistry.get("007") }
+        assertFalse(File(tempHome, "agents/007").exists())
+
+        val trashed = File(tempHome, "agents/.trash").listFiles()
+        assertNotNull(trashed)
+        assertEquals(1, trashed!!.size)
+        assertTrue(trashed[0].name.startsWith("007-"))
+        assertTrue(File(trashed[0], "config/settings.json").exists())
+    }
+
+    @Test
+    fun `delete - unknown name throws`() {
+        bootstrap.init(home)
+
+        assertThrows<AssistantNotFoundException> {
+            bootstrap.delete("unknown")
+        }
+        assertEquals(2, bootstrap.bootstraps.size)
+    }
 }

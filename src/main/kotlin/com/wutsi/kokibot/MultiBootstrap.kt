@@ -80,6 +80,18 @@ class MultiBootstrap(
         initBootstrap(newHome)
     }
 
+    fun delete(name: String) {
+        val bootstrap = get(name) ?: throw AssistantNotFoundException("Assistant with name `$name` not found")
+        val home = bootstrap.getContext().home
+
+        bootstraps.remove(bootstrap)
+        bootstrap.destroy()
+
+        val trashDir = File(home.parentFile, ".trash")
+        trashDir.mkdirs()
+        Files.move(home.toPath(), File(trashDir, "$name-${System.currentTimeMillis()}").toPath())
+    }
+
     fun get(name: String): Bootstrap? {
         return bootstraps.find { bootstrap -> bootstrap.getContext().assistant.name == name }
     }

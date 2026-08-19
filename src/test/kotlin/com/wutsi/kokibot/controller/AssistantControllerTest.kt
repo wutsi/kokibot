@@ -7,6 +7,7 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.wutsi.kokibot.Assistant
+import com.wutsi.kokibot.AssistantNotFoundException
 import com.wutsi.kokibot.Bootstrap
 import com.wutsi.kokibot.ChannelNotFoundException
 import com.wutsi.kokibot.ConfigurationException
@@ -335,6 +336,37 @@ class AssistantControllerTest {
 
         assertEquals(400, response.statusCode.value())
         assertEquals("Unknown assistant setting: invalid", (response.body as Map<*, *>)["error"])
+    }
+
+    @Test
+    fun `delete - success`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+
+        val response = rest.exchange(
+            "/assistants/007",
+            org.springframework.http.HttpMethod.DELETE,
+            null,
+            Map::class.java,
+        )
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(true, response.body!!["success"])
+        verify(multi).delete("007")
+    }
+
+    @Test
+    fun `delete - not found when assistant name unknown`() {
+        doReturn(listOf(createBootstrap("007"))).whenever(multi).bootstraps
+        doThrow(AssistantNotFoundException("Assistant not found: xxx")).whenever(multi).delete("xxx")
+
+        val response = rest.exchange(
+            "/assistants/xxx",
+            org.springframework.http.HttpMethod.DELETE,
+            null,
+            Any::class.java,
+        )
+
+        assertEquals(404, response.statusCode.value())
     }
 
     private fun createBootstrap(

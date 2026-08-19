@@ -1,9 +1,11 @@
 package com.wutsi.kokibot.controller
 
+import com.wutsi.kokibot.AssistantNotFoundException
 import com.wutsi.kokibot.ConfigurationException
 import com.wutsi.kokibot.MultiBootstrap
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -130,6 +132,16 @@ class AssistantController(private val multi: MultiBootstrap) {
             ResponseEntity.ok(mapOf("success" to true))
         } catch (e: ConfigurationException) {
             ResponseEntity.badRequest().body(mapOf("error" to (e.message ?: "Invalid setting")))
+        }
+    }
+
+    @DeleteMapping("/{name}")
+    fun delete(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
+        return try {
+            multi.delete(name)
+            ResponseEntity.ok(mapOf("success" to true))
+        } catch (e: AssistantNotFoundException) {
+            ResponseEntity.notFound().build()
         }
     }
 

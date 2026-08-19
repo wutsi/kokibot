@@ -135,6 +135,15 @@ a:hover {
     background-color: var(--color-bg-secondary);
 }
 
+.settings-action-btn-danger {
+    background-color: var(--color-accent-red);
+    color: white;
+}
+
+.settings-action-btn-danger:hover:not(:disabled) {
+    background-color: #b91c1c;
+}
+
 .setting-content {
     min-height: 400px;
     margin-top: 24px;

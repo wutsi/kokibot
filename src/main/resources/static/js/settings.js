@@ -383,6 +383,23 @@ const Settings = {
                     </div>
                     ${instructionsBodyHtml}
                 </div>
+                <div class="setting-section">
+                    <div class="setting-section-row">
+                        <h3 class="setting-section-title">Danger Zone</h3>
+                    </div>
+                    <div class="setting-section-row">
+                        <div class="setting-section-label">
+                            <span class="setting-section-name">Delete this agent</span>
+                            <span class="setting-section-hint">Removes the agent and moves its data to a trash folder. This cannot be undone from the UI.</span>
+                        </div>
+                        <button class="settings-action-btn settings-action-btn-danger" id="general-delete-agent-btn">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                            </svg>
+                            Delete Agent
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -422,6 +439,46 @@ const Settings = {
                 const file = e.target.files[0];
                 if (file) this.uploadIcon(file);
             });
+        }
+
+        document.getElementById('general-delete-agent-btn')?.addEventListener('click', (e) => {
+            this.deleteAgent(e.currentTarget);
+        });
+    },
+
+    async deleteAgent(btn) {
+        if (!this.agentName) return;
+        if (!window.confirm(`Delete agent "${this.agentName}"? This cannot be undone from the UI.`)) return;
+
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `
+            <svg class="loading-spinner" fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+            </svg>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}`, {
+                method: 'DELETE',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            Notifications.success(`Agent "${this.agentName}" deleted`, { duration: 3000 });
+            window.location.href = '/agents.html';
+        } catch (error) {
+            console.error('Error deleting agent:', error);
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            Notifications.error(
+                error.name === 'AbortError' ? 'Delete request timed out.' : 'Failed to delete agent. Please try again.',
+                { duration: 5000 }
+            );
         }
     },
 

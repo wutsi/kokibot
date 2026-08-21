@@ -1897,3 +1897,11 @@ h3.setting-section-title {
         background-color: #2d2d2d;
     }
 }
+
+/* ===== Advanced Tab ===== */
+.advanced-info {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+

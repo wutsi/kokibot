@@ -56,6 +56,10 @@ const Settings = {
                 this.navigateToChat();
             });
         }
+
+        document.getElementById('advanced-delete-agent-btn')?.addEventListener('click', (e) => {
+            this.deleteAgent(e.currentTarget);
+        });
     },
 
     setupTabLoaders() {
@@ -73,10 +77,6 @@ const Settings = {
                 this.loadGeneral();
                 this.loadedTabs.add(tabName);
                 break;
-            case 'memory':
-                this.loadMemory();
-                this.loadedTabs.add(tabName);
-                break;
             case 'heartbeat':
                 this.loadHeartbeat();
                 this.loadedTabs.add(tabName);
@@ -85,7 +85,8 @@ const Settings = {
                 this.loadSkills();
                 this.loadedTabs.add(tabName);
                 break;
-            case 'llm':
+            case 'advanced':
+                this.loadMemory();
                 this.loadLLM();
                 this.loadedTabs.add(tabName);
                 break;
@@ -383,23 +384,6 @@ const Settings = {
                     </div>
                     ${instructionsBodyHtml}
                 </div>
-                <div class="setting-section">
-                    <div class="setting-section-row">
-                        <h3 class="setting-section-title">Danger Zone</h3>
-                    </div>
-                    <div class="setting-section-row">
-                        <div class="setting-section-label">
-                            <span class="setting-section-name">Delete this agent</span>
-                            <span class="setting-section-hint">Removes the agent and moves its data to a trash folder. This cannot be undone from the UI.</span>
-                        </div>
-                        <button class="settings-action-btn settings-action-btn-danger" id="general-delete-agent-btn">
-                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                            </svg>
-                            Delete Agent
-                        </button>
-                    </div>
-                </div>
             </div>
         `;
 
@@ -440,10 +424,6 @@ const Settings = {
                 if (file) this.uploadIcon(file);
             });
         }
-
-        document.getElementById('general-delete-agent-btn')?.addEventListener('click', (e) => {
-            this.deleteAgent(e.currentTarget);
-        });
     },
 
     async deleteAgent(btn) {
@@ -1451,8 +1431,6 @@ const Settings = {
                             Change
                         </button>
                     </div>
-                </div>
-                <div class="setting-section">
                     <div class="setting-section-row">
                         <div class="setting-section-label">
                             <span class="setting-section-name">Reasoning Effort</span>
@@ -3216,7 +3194,7 @@ const Settings = {
 
             this.closeLLMModal();
             Notifications.success('Language model updated', { duration: 3000 });
-            this.onTabActivated('llm', true);
+            this.loadLLM();
         } catch (error) {
             console.error('Error saving LLM change:', error);
             Notifications.error(error.name === 'AbortError' ? 'Save request timed out.' : error.message || 'Failed to save. Please try again.');

@@ -52,6 +52,14 @@
                     <span>General</span>
                 </button>
 
+                <button class="sidebar-nav-item settings-nav-item" data-tab="instructions">
+                    <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
+                        <path
+                            d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                    <span>Instructions</span>
+                </button>
+
                 <button class="sidebar-nav-item settings-nav-item" data-tab="heartbeat">
                     <svg fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
                         <path
@@ -121,6 +129,24 @@
                                     <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
                                 </svg>
                                 <p>Loading general information...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions Tab -->
+                <div class="settings-tab-content" data-content="instructions">
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">Instructions</h2>
+                        <p class="settings-section-description">Custom instructions that guide your assistant's behavior</p>
+
+                        <div class="setting-content" id="instructions-content">
+                            <div class="general-loading">
+                                <svg class="loading-spinner" fill="currentColor" height="48" viewBox="0 0 24 24"
+                                     width="48">
+                                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                                </svg>
+                                <p>Loading instructions...</p>
                             </div>
                         </div>
                     </div>

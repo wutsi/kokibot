@@ -77,6 +77,10 @@ const Settings = {
                 this.loadGeneral();
                 this.loadedTabs.add(tabName);
                 break;
+            case 'instructions':
+                this.loadInstructions();
+                this.loadedTabs.add(tabName);
+                break;
             case 'heartbeat':
                 this.loadHeartbeat();
                 this.loadedTabs.add(tabName);
@@ -251,7 +255,6 @@ const Settings = {
         const name = agentData.name || '';
         const enabled = agentData.enabled !== false;
         const description = agentData.description || '';
-        const instructions = agentData.instructions || '';
         const firstName = agentData.firstName || '';
         const email = agentData.email || '';
         const language = agentData.language || '';
@@ -259,12 +262,7 @@ const Settings = {
         const whatsapp = agentData.whatsapp || '';
         const iconUrl = `/assistants/${this.escapeHtml(this.agentName)}/icon.png`;
 
-        this.generalInstructionsContent = instructions;
         this.generalDescription = description;
-
-        const instructionsBodyHtml = instructions.trim()
-            ? `<div class="instructions-text markdown-body" id="general-instructions-body">${new MarkdownRenderer().render(instructions)}</div>`
-            : `<p class="general-instructions-empty" id="general-instructions-body">No instructions configured</p>`;
 
         contentElement.innerHTML = `
             <div class="general-info">
@@ -352,57 +350,12 @@ const Settings = {
                         </div>
                     </div>
                 </div>
-                <div class="setting-section">
-                    <div class="setting-section-row">
-                        <h3 class="setting-section-title">Instructions</h3>
-                        <div class="general-instructions-actions">
-                            <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-copy-btn" title="Copy instructions to clipboard">
-                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                                    <path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1.1.9 2 2 2h11c1 0 2-.9 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/>
-                                </svg>
-                                Copy
-                            </button>
-                            <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-edit-btn">
-                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                                </svg>
-                                Edit
-                            </button>
-                            <button class="settings-action-btn settings-action-btn-primary" id="general-instructions-save-btn" style="display:none;">
-                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                                    <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
-                                </svg>
-                                Save
-                            </button>
-                            <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-cancel-btn" style="display:none;">
-                                <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
-                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                                </svg>
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                    ${instructionsBodyHtml}
-                </div>
             </div>
         `;
 
         document.getElementById('general-enabled-toggle')?.addEventListener('change', (e) => {
             const checked = e.target.checked;
             this.saveAssistantSetting('assistant.enabled', checked, checked ? 'Assistant enabled' : 'Assistant disabled');
-        });
-
-        document.getElementById('general-instructions-copy-btn')?.addEventListener('click', () => {
-            this.copyInstructionsToClipboard();
-        });
-        document.getElementById('general-instructions-edit-btn')?.addEventListener('click', () => {
-            this.enterGeneralInstructionsEditMode();
-        });
-        document.getElementById('general-instructions-save-btn')?.addEventListener('click', () => {
-            this.saveGeneralInstructions();
-        });
-        document.getElementById('general-instructions-cancel-btn')?.addEventListener('click', () => {
-            this.exitGeneralInstructionsEditMode();
         });
 
         document.getElementById('general-name-edit-btn')?.addEventListener('click', () => {
@@ -424,6 +377,98 @@ const Settings = {
                 if (file) this.uploadIcon(file);
             });
         }
+    },
+
+    async loadInstructions() {
+        if (!this.agentName) return;
+
+        const contentElement = document.getElementById('instructions-content');
+        if (!contentElement) return;
+
+        contentElement.innerHTML = `
+            <div class="general-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                    <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                </svg>
+                <p>Loading instructions...</p>
+            </div>
+        `;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`/assistants/${this.agentName}`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error('Failed to load instructions');
+
+            const agentData = await response.json();
+            this.displayInstructions(agentData);
+        } catch (error) {
+            console.error('Error loading instructions:', error);
+            contentElement.innerHTML = `<p class="settings-error">Failed to load instructions. Please try again.</p>`;
+            Notifications.error('Failed to load instructions', { duration: 5000 });
+        }
+    },
+
+    displayInstructions(agentData) {
+        const contentElement = document.getElementById('instructions-content');
+        if (!contentElement) return;
+
+        const instructions = agentData.instructions || '';
+        this.generalInstructionsContent = instructions;
+
+        const instructionsBodyHtml = instructions.trim()
+            ? `<div class="instructions-text markdown-body" id="general-instructions-body">${new MarkdownRenderer().render(instructions)}</div>`
+            : `<p class="general-instructions-empty" id="general-instructions-body">No instructions configured</p>`;
+
+        contentElement.innerHTML = `
+            <div class="setting-section">
+                <div class="setting-section-row">
+                    <h3 class="setting-section-title">Instructions</h3>
+                    <div class="general-instructions-actions">
+                        <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-copy-btn" title="Copy instructions to clipboard">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M16 1H4C3 1 2 2 2 3v14h2V3h12V1zm3 4H8C7 5 6 6 6 7v14c0 1.1.9 2 2 2h11c1 0 2-.9 2-2V7c0-1-1-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                            Copy
+                        </button>
+                        <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-edit-btn">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                            Edit
+                        </button>
+                        <button class="settings-action-btn settings-action-btn-primary" id="general-instructions-save-btn" style="display:none;">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                            </svg>
+                            Save
+                        </button>
+                        <button class="settings-action-btn settings-action-btn-secondary" id="general-instructions-cancel-btn" style="display:none;">
+                            <svg fill="currentColor" height="16" viewBox="0 0 24 24" width="16">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+                ${instructionsBodyHtml}
+            </div>
+        `;
+
+        document.getElementById('general-instructions-copy-btn')?.addEventListener('click', () => {
+            this.copyInstructionsToClipboard();
+        });
+        document.getElementById('general-instructions-edit-btn')?.addEventListener('click', () => {
+            this.enterGeneralInstructionsEditMode();
+        });
+        document.getElementById('general-instructions-save-btn')?.addEventListener('click', () => {
+            this.saveGeneralInstructions();
+        });
+        document.getElementById('general-instructions-cancel-btn')?.addEventListener('click', () => {
+            this.exitGeneralInstructionsEditMode();
+        });
     },
 
     async deleteAgent(btn) {

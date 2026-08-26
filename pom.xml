@@ -29,7 +29,7 @@
         <jakarta.activation-api.version>2.1.4</jakarta.activation-api.version>
         <java.version>17</java.version>
         <jqit.version>7.7.1.202607240634-r</jqit.version>
-        <jsoup.version>1.23.1</jsoup.version>
+        <jsoup.version>1.23.2</jsoup.version>
         <jodd.version>6.3.0</jodd.version>
         <kotlin.version>2.2.0</kotlin.version>
         <kotlin-jackson.version>2.22.2</kotlin-jackson.version>

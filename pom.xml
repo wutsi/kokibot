@@ -39,7 +39,7 @@
         <okhttp.version>5.5.0</okhttp.version>
         <pdfbox.vesion>3.0.8</pdfbox.vesion>
         <poi.version>5.5.1</poi.version>
-        <snakeyaml.version>2.6</snakeyaml.version>
+        <snakeyaml.version>2.7</snakeyaml.version>
         <telegram.version>10.2.1</telegram.version>
     </properties>
     <dependencies>

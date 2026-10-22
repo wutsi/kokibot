@@ -38,7 +38,7 @@
         <ktlint.version>1.8.0</ktlint.version>
         <okhttp.version>5.5.0</okhttp.version>
         <pdfbox.vesion>3.0.8</pdfbox.vesion>
-        <poi.version>5.5.1</poi.version>
+        <poi.version>6.0.0</poi.version>
         <snakeyaml.version>2.7</snakeyaml.version>
         <telegram.version>10.3.0</telegram.version>
     </properties>
